@@ -312,14 +312,6 @@ print(f'N good unit: {num_neuron}, N trials: {num_trial}')
 # # Variables needed for analysis below
 # How can we make this more general?
 #
-# Neural analyses below:
-# ```
-# modulation_index = np.divide((np.mean(spike_rate[:, indx_choice_a], 1) - np.mean(spike_rate[:, indx_choice_b], 1)),
-#                              (np.mean(spike_rate[:, indx_choice_a], 1) + np.mean(spike_rate[:, indx_choice_b], 1)))
-# p_1 = get_choice_time_shuffle(spike_rate, contrast_L, contrast_R, block, choice, 1000)
-# raster, timestamps = get_event_aligned_raster(spikes_unit['times'], events, tbin=binsize, values=None,
-#                                                 epoch=time_window, bin=True)
-# ```
 #
 # * `events`: Timestamps of trials, ndarray of shape (nevents,), dtype = float64
 # * `spikes_g`: Neural activity, dict with keys 'amps', 'clusters', 'depths', 'times', each of which is an ndarray of shape (nspikes,)
@@ -333,7 +325,31 @@ print(f'N good unit: {num_neuron}, N trials: {num_trial}')
 # * `block`: Probability of the grate being on the left? not sure which direction this is in, ndarray of shape (nevents,), dtype = float64
 #
 #
+# ## Neural modulation by choice:
+# ```
+# modulation_index = np.divide((np.mean(spike_rate[:, indx_choice_a], 1) - np.mean(spike_rate[:, indx_choice_b], 1)),
+#                              (np.mean(spike_rate[:, indx_choice_a], 1) + np.mean(spike_rate[:, indx_choice_b], 1)))
+# p_1 = get_choice_time_shuffle(spike_rate, contrast_L, contrast_R, block, choice, 1000)
+# ```
+#
 # `get_choice_time_shuffle` has hard-coded values like block == .8, so is not good code to use, unclear if we have something equivalent to a block prior for each experiment type, probably need something more general 
+#
+# ## Manifold
+# ```
+# raster, timestamps = get_event_aligned_raster(spikes_unit['times'], events, tbin=binsize, values=None,
+#                                                 epoch=time_window, bin=True)
+#                                                     psth_a, _ = get_psth(raster, trial_ids=indx_choice_a)
+# psth_b, _ = get_psth(raster, trial_ids=indx_choice_b)
+# ```
+#
+# ## Decoder
+# ```
+# X = spike_count.T  # shape of spike_count : n units x n trials in set -> transpose to fit model
+# y = choice
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+# clf = LogisticRegression(random_state=0).fit(X_train, y_train)
+# ```
+#
 
 # %% [markdown] id="7CTUdkeB-UoG"
 # ### Analysis
@@ -554,9 +570,12 @@ for count, clu_id in enumerate(cluster_SCm_IDs):
     spikes_unit = {key: val[spk_indx] for key, val in spikes_g.items()}
 
     # Compute raster
+    # raster is of shape (nevents,ntimebins)
+    # timestamps are the time bin edges
     raster, timestamps = get_event_aligned_raster(spikes_unit['times'], events, tbin=binsize, values=None,
                                                   epoch=time_window, bin=True)
-    # Compute PSTH (return only the mean)
+        
+    # Compute PSTH (return only the mean), mean over trials with each choice
     psth_a, _ = get_psth(raster, trial_ids=indx_choice_a)
     psth_b, _ = get_psth(raster, trial_ids=indx_choice_b)
 
@@ -568,6 +587,8 @@ for count, clu_id in enumerate(cluster_SCm_IDs):
 
     stack_psth[0, count, :] = psth_a
     stack_psth[1, count, :] = psth_b
+
+# stack_psth shape: (nchoices=2,nunit,nbin)
 
 # %% [markdown] id="2x1WmCyRSjQl"
 # Plot the stacked PSTHs:
@@ -595,10 +616,12 @@ ax[1].set_yticklabels(['unit #1'])
 
 # %% id="HBAiYhF4mjht"
 # ---------------------------------------------------
-# Perform PCA
+# Perform PCAX = spike_count.T  # shape of spike_count : n units x n trials in set -> transpose to fit model
+y = choice
 pca = PCA(n_components=2)
 # Use concatenate to place the PSTHs of the two conditions one after the other in time
 # Transpose before doing the PCA, so it's done on the unit axis
+# np.concatenate(stack_psth, axis=1) is of shape (nunit, nbin * nchoices2)
 trajs = pca.fit_transform(np.concatenate(stack_psth, axis=1).T).T
 
 # ---------------------------------------------------
@@ -777,11 +800,13 @@ sl.trials.keys()
 # 🐍 Note: This may not work in Colab, install this on your machine instead 🪛
 
 # %% id="WNw7FFnHgS9S"
-# !git clone https://github.com/berkgercek/neurencoding.git
+# done outside notebook
+# #!git clone https://github.com/berkgercek/neurencoding.git
 
 # %% id="o3J5jmUxggrf"
-# %cd /content/neurencoding
-# !pip install -e .
+# done outside notebook
+# #%cd /content/neurencoding
+# #!pip install -e .
 
 # %% [markdown] id="7QthjogrOaE5"
 # ###📘 Correlate neural activity with continuous variables instead of binary
