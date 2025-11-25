@@ -59,7 +59,7 @@ data = {
 
 ### 1. Brain-wide map of neural activity (IBL)
 
-**Reference**: [IBL, 2025](https://www.nature.com/articles/s41586-025-09235-0)
+**Reference**: [IBL, 2025](https://www.nature.com/articles/s41586-025-09235-0)   
 **Status**: Planned
 
 **Conversion Details**:
@@ -72,7 +72,7 @@ data = {
 
 ### 2. Unsupervised pretraining in biological neural networks
 
-**Reference**: [Zhong et al., 2025](https://www.nature.com/articles/s41586-025-09180-y)
+**Reference**: [Zhong et al., 2025](https://www.nature.com/articles/s41586-025-09180-y)  
 **Status**: Planned
 
 **Conversion Details**:
