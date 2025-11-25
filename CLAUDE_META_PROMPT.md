@@ -12,7 +12,7 @@ All datasets must be converted into the following Python dictionary structure:
 
 ```python
 data = {
-    'neural': [  # list of mice/subjects
+    'neural': [  # list of subjects (e.g., mice, rats)
         [  # list of trials for subject 1
             neuron_by_time_matrix,  # shape: (n_neurons, n_timepoints)
             neuron_by_time_matrix,  # trial 2
@@ -24,7 +24,7 @@ data = {
         ...
     ],
 
-    'input': [  # list of mice/subjects
+    'input': [  # list of subjects
         [  # list of trials for subject 1
             input_data,  # stimulus/task variables (with or without time dimension)
             ...
@@ -32,7 +32,7 @@ data = {
         ...
     ],
 
-    'output': [  # list of mice/subjects
+    'output': [  # list of subjects
         [  # list of trials for subject 1
             output_data,  # behavioral response (with or without time dimension)
             ...
