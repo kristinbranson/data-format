@@ -52,18 +52,15 @@ data = {
 
 - **neural**: Neural activity data organized by subject and trial, with consistent dimensions (neurons × time)
 - **input**: Task/stimulus variables that serve as inputs to the system (e.g., stimulus properties)
-- **output**: Behavioral or neural readouts that serve as the response variable (e.g., choice, reaction time)
+- **output**: Behavioral readouts that serve as the response variable (e.g., choice, reaction time)
 - **metadata**: Descriptive information about the dataset, task, and recording parameters
 
 ## Datasets
 
-### 1. International Brain Laboratory (IBL) Dataset
+### 1. Brain-wide map of neural activity (IBL)
 
-**Reference**: [Nature, 2025](https://www.nature.com/articles/s41586-025-09235-0)
-
+**Reference**: [IBL, 2025](https://www.nature.com/articles/s41586-025-09235-0)
 **Status**: Planned
-
-**Source**: IBL brain-wide Neuropixels recordings
 
 **Conversion Details**:
 - **Input**: Stimulus contrast and position
@@ -73,17 +70,10 @@ data = {
   - Task description: "Visual discrimination task with wheel turn response"
   - Brain regions: [To be determined from data]
 
-**Files**:
-- `IBLPrior/Imbizo_2023.py`: Original IBL analysis notebook
-- `IBLPrior/environment.yml`: Environment specification with IBL dependencies
+### 2. Unsupervised pretraining in biological neural networks
 
-### 2. Zhong et al., 2025 Dataset
-
-**Reference**: [Nature, 2025](https://www.nature.com/articles/s41586-025-09180-y)
-
+**Reference**: [Zhong et al., 2025](https://www.nature.com/articles/s41586-025-09180-y)
 **Status**: Planned
-
-**Source**: [To be added]
 
 **Conversion Details**:
 - **Input**: [To be determined]
