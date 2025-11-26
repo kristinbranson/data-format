@@ -17,6 +17,9 @@
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score
+
+import tqdm
 
 # %%
 nmice = 10
@@ -84,7 +87,7 @@ for mouse in range(nmice):
 # %%
 import matplotlib.pyplot as plt
 
-fig,ax = plt.subplots(4,1,figsize = (40,10),sharex=True)
+fig,ax = plt.subplots(4,1,figsize = (30,20),sharex=True)
 
 mouse = 0
 trial = 0
@@ -289,44 +292,156 @@ def predict(neural: list, input: list, model: dict, mouseid: list | None = None,
 
 
 # %%
-model = train_decoder(data['neural'], data['input'], data['output'], npcs=10)
-predicted_outputs, predicted_pcs = predict(data['neural'], data['input'], model)
+model_all = train_decoder(data['neural'], data['input'], data['output'], npcs=npcs)
+predicted_outputs, predicted_pcs = predict(data['neural'], data['input'], model_all)
 
 # %%
 mouse = 0
 trial = 0
-fig,ax = plt.subplots(1,1,figsize = (30,10),sharex=True)
-for pcidx in range(npcs):
-    maxv = np.percentile(data['pc'][mouse][trial][pcidx],99)
-    minv = np.percentile(data['pc'][mouse][trial][pcidx],1)
-    ax.plot([0,data['pc'][mouse][trial].shape[1]],[.5+pcidx,.5+pcidx],'--',color=[.7,.7,.7])
-    ax.plot((predicted_pcs[mouse][trial][pcidx] - minv)/(maxv - minv)*.9+.05+pcidx)
-    ax.plot((data['pc'][mouse][trial][pcidx] - minv)/(maxv - minv)*.9+.05+pcidx,'k--')
 
-ax.set_xlim([0,200])
+def debug_plot(data,gt,predicted_outputs,predicted_pcs,mouse,trial):
 
+    fig,ax = plt.subplots(2,1,figsize = (30,20),sharex=True)
+    for pcidx in range(npcs):
+        maxv = np.percentile(data['pc'][mouse][trial][pcidx],99)
+        minv = np.percentile(data['pc'][mouse][trial][pcidx],1)
+        ax[0].plot([0,data['pc'][mouse][trial].shape[1]],[.5+pcidx,.5+pcidx],'--',color=[.7,.7,.7])
+        ax[0].plot((predicted_pcs[mouse][trial][pcidx] - minv)/(maxv - minv)*.9+.05+pcidx)
+        ax[0].plot((data['pc'][mouse][trial][pcidx] - minv)/(maxv - minv)*.9+.05+pcidx,'k--')
+    ax[0].set_ylabel('PCs')
 
-# %%
-fig,ax = plt.subplots(1,1,figsize = (30,10),sharex=True)
-
-mouse = 0
-trial = 0
-for outdim in range(doutput):
-    ax.plot([0,data['neural'][mouse][trial].shape[1]],[.5+outdim,.5+outdim],'--',color = [.7,.7,.7])
-    ax.plot(predicted_outputs[mouse][trial][outdim,:]*.9+.05+outdim,'o-')
-    ax.plot(data['output'][mouse][trial][outdim,:]*.9+.05+outdim,'k.--')
+    for outdim in range(doutput):
+        ax[1].plot([0,data['neural'][mouse][trial].shape[1]],[.5+outdim,.5+outdim],'--',color = [.7,.7,.7])
+        ax[1].plot(predicted_outputs[mouse][trial][outdim,:]*.9+.05+outdim,'o-')
+        ax[1].plot(data['output'][mouse][trial][outdim,:]*.9+.05+outdim,'k.--')
+    ax[1].set_ylabel('Output')
     
-    
-ax.set_xlim([0,100])
+    return fig, ax
+
+fig,ax = debug_plot(data,gt,predicted_outputs,predicted_pcs,mouse,trial)
+ax[0].set_xlim([0,200])
 
 
 # %%
 def cross_validate_decoder(neural: list, input: list, output: list, metadata: str | None = None, nsets: int = 5, **kwargs):
     """
-    Cross-validates the decoder function. Performs nsets-fold cross-validation, training the decoder on nsets-1 sets and testing on 
+    Cross-validates the decoder function. Performs nsets-fold cross-validation, training the decoder on nsets-1 sets and testing on
     the held-out set. Each cross-validation set contains 1/nsets of the trials from each mouse.
-    Finds a random split of trials for each mouse into nsets sets, then, for each set, trains the decoder on the other nsets-1 sets and 
-    computes the predictions on the held out set. 
-    
+    Finds a random split of trials for each mouse into nsets sets, then, for each set, trains the decoder on the other nsets-1 sets and
+    computes the predictions on the held out set.
+    Then computes the F1 score for each output dimension
+    Inputs:
+        neural: neural activity. neural is a list of length nmice, neural[mouse] is a list
+                of length ntrials[mouse], and neural[mouse][trial] is a numpy array of shape (nneurons[mouse], T[mouse][trial]),
+                dtype = float32, giving the neural activity for that trial
+        input: variables beyond neural activity the decoder should input, e.g. the stimulis, condition. input is a list of
+                length nmice, input[mouse] is a list of length ntrials[mouse], and input[mouse][trial] is a numpy array of
+                shape (dinput, T[mouse][trial]), dtype = float32. with the input variable(s) for each timepoint.
+                dinput is the number of inputs. For discrete inputs, use a one-hot encoding.
+        output: the ground truth output for each trial. output is a list of length nmice, output[mouse] is a list of
+                length ntrials[mouse], and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]),
+                dtype = float32. with the output variable(s) for each timepoint.
+        metadata: optional dict with additional information about the experiment.
+        nsets: number of cross-validation sets (default: 5)
+    kwargs are passed to train_decoder
+    Returns:
+        f1scores: numpy array of shape (doutput,) with the F1 score for each output dimension
+        predictions: list of length nmice, predictions[mouse] is a list of length ntrials[mouse],
+                and predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = bool
+                with the predicted output variable(s) for each timepoint.
+        trial_splits: list of length nmice, trial_splits[mouse] is a list of length nsets,
+                trial_splits[mouse][set] is a numpy array with the trial indices for that set for that mouse.
     """
+
+    nmice = len(neural)
+
+    # Determine doutput from the first mouse's first trial
+    doutput = output[0][0].shape[0]
+
+    # Create random splits of trials for each mouse
+    trial_splits = []
+    for mouse in range(nmice):
+        ntrials = len(neural[mouse])
+        trial_indices = np.random.permutation(ntrials)
+
+        # Split trial indices into nsets
+        split_indices = np.array_split(trial_indices, nsets)
+        trial_splits.append(split_indices)
+
+    # Initialize storage for all predictions (will be filled in during cross-validation)
+    all_predictions = [[None for _ in range(len(neural[mouse]))] for mouse in range(nmice)]
+    all_pcs = [[None for _ in range(len(neural[mouse]))] for mouse in range(nmice)]
+
+    # Perform cross-validation
+    for test_set in tqdm.trange(nsets):
+        # Create training and test data for this fold
+        train_neural = [[] for _ in range(nmice)]
+        train_input = [[] for _ in range(nmice)]
+        train_output = [[] for _ in range(nmice)]
+
+        test_neural = [[] for _ in range(nmice)]
+        test_input = [[] for _ in range(nmice)]
+        test_output = [[] for _ in range(nmice)]
+
+        test_trial_indices = [[] for _ in range(nmice)]
+
+        for mouse in range(nmice):
+            for set_idx in range(nsets):
+                trials_in_set = trial_splits[mouse][set_idx]
+
+                if set_idx == test_set:
+                    # These trials go to test set
+                    for trial_idx in trials_in_set:
+                        test_neural[mouse].append(neural[mouse][trial_idx])
+                        test_input[mouse].append(input[mouse][trial_idx])
+                        test_output[mouse].append(output[mouse][trial_idx])
+                        test_trial_indices[mouse].append(trial_idx)
+                else:
+                    # These trials go to training set
+                    for trial_idx in trials_in_set:
+                        train_neural[mouse].append(neural[mouse][trial_idx])
+                        train_input[mouse].append(input[mouse][trial_idx])
+                        train_output[mouse].append(output[mouse][trial_idx])
+
+        # Train decoder on training data
+        model = train_decoder(train_neural, train_input, train_output, metadata={}, **kwargs)
+
+        # Predict on test data
+        test_predictions, test_pc = predict(test_neural, test_input, model)
+
+        # Store predictions in the correct positions
+        for mouse in range(nmice):
+            for idx, trial_idx in enumerate(test_trial_indices[mouse]):
+                all_predictions[mouse][trial_idx] = test_predictions[mouse][idx]
+                all_pcs[mouse][trial_idx] = test_pc[mouse][idx]
+                
+    # Concatenate all predictions and ground truth to compute F1 scores
+    all_pred_concat = []
+    all_output_concat = []
+
+    for mouse in range(nmice):
+        for trial in range(len(neural[mouse])):
+            # Flatten predictions and outputs across time: (doutput, T) -> (T, doutput)
+            all_pred_concat.append(all_predictions[mouse][trial].T)
+            all_output_concat.append(output[mouse][trial].T)
+
+    # Concatenate all timepoints from all trials and all mice
+    all_pred_concat = np.vstack(all_pred_concat)  # (total_timepoints, doutput)
+    all_output_concat = np.vstack(all_output_concat)  # (total_timepoints, doutput)
+
+    # Compute F1 score for each output dimension
+    f1scores = np.zeros(doutput)
+    for out_dim in range(doutput):
+        f1scores[out_dim] = f1_score(all_output_concat[:, out_dim], all_pred_concat[:, out_dim])
+
+    return f1scores, all_predictions, all_pcs, trial_splits
+
+
+# %%
+f1scores, cv_predictions, cv_pcs, trial_splits = cross_validate_decoder(data['neural'], data['input'], data['output'], nsets=5, npcs=npcs, debug=True)
+
+# %%
+fig, ax = debug_plot(data,gt,cv_predictions,cv_pcs,0,0)
+ax[0].set_xlim([0,200])
+print("F1 scores:", f1scores)
 
