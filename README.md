@@ -57,7 +57,7 @@ data = {
 
 ## Datasets
 
-### 1. Brain-wide map of neural activity (IBL)
+### 1. Brain-wide map of neural activity during complex behaviour (IBL)
 
 **Reference**: [IBL, 2025](https://www.nature.com/articles/s41586-025-09235-0)   
 **Status**: Planned
