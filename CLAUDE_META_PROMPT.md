@@ -4,7 +4,7 @@
 
 You are assisting with a project that tests how well Claude Code can help reorganize and reformat heterogeneous neuroscience datasets into a unified, standardized format. The project has two main goals:
 
-1. **Primary Goal**: Test Claude Code's ability to work with diverse neuroscience datasets and convert them into a common structure suitable for downstream analysis.
+**Primary Goal**: Test Claude Code's ability to work with diverse neuroscience datasets and convert them into a common structure suitable for downstream analysis.
 
 ## Target Data Format
 
@@ -103,10 +103,55 @@ When helping convert a new dataset, follow these steps:
 - Create visualizations to spot-check conversions
 
 ### 5. Documentation
+- **Create a CONVERSION_NOTES.md file** to track the entire conversion process
+  - Use an external file to record important information throughout the session
+  - Document all decisions, findings, and reasoning in real-time
+  - Track bugs discovered and how they were fixed
+  - Include validation results and key metrics
 - Document all conversion decisions and assumptions
 - Note any preprocessing steps applied
 - Record any data excluded and why
-- Update the README with dataset-specific details
+- Create a comprehensive README with dataset-specific details
+- Organize analysis/investigation files into a cache folder for cleanup
+
+## CONVERSION_NOTES.md Structure
+
+Create a `CONVERSION_NOTES.md` file at the beginning of the conversion process to maintain a detailed record. This file should include:
+
+### Session Information
+- Date and session overview
+- Dataset source and version
+- Goals and requirements
+
+### Chronological Log
+Document decisions and findings as you work:
+- **Initial Setup**: Environment, dependencies, data access
+- **Data Exploration**: Structure, dimensions, variables discovered
+- **Conversion Decisions**: Time windows, binning, alignment choices
+- **Bugs & Fixes**: Issues discovered and how they were resolved
+- **Validation Results**: All checks performed and outcomes
+
+### Key Decisions Section
+For each major decision, document:
+- **What**: The decision made (e.g., "Time window: [-0.5, +1.5]s")
+- **Why**: Rationale and trade-offs considered
+- **Validation**: How you verified it was correct
+- **Alternative**: Other approaches considered
+
+### Findings & Insights
+- Data quality issues discovered
+- Dataset-specific quirks or conventions
+- Performance metrics and statistics
+- Unexpected behaviors or edge cases
+
+### Final Cleanup
+At the end of the session:
+- Move analysis/investigation scripts to `cache/` folder
+- Create `cache/README_CACHE.md` to document cached files
+- Create final `README.md` summarizing the conversion
+- Ensure CONVERSION_NOTES.md captures all important decisions
+
+The CONVERSION_NOTES.md serves as a detailed technical log, while the final README.md provides user-facing documentation for using the converted data.
 
 ## Key Considerations
 
@@ -164,14 +209,20 @@ A successful conversion should:
 4. Include complete and accurate metadata
 5. Be reproducible with documented code
 6. Pass validation checks
+7. Include comprehensive CONVERSION_NOTES.md documenting all decisions
+8. Have a clean final directory structure with cache folder
+9. Provide user-friendly README.md for using the converted data
 
 ## Getting Started
 
 When the user presents a new dataset:
-1. Ask for the data source and format
-2. Request access to explore the data structure
-3. Clarify the task: What is input? What is output?
-4. Propose a conversion approach
-5. Iterate based on feedback
+1. **Create CONVERSION_NOTES.md** to start documenting the process
+2. Ask for the data source and format
+3. Request access to explore the data structure
+4. Clarify the task: What is input? What is output?
+5. Propose a conversion approach
+6. Document decisions in CONVERSION_NOTES.md as you work
+7. Iterate based on feedback
+8. Organize and clean up files at the end (cache folder, final README)
 
-Remember: The goal is not just to convert data, but to test how effectively Claude Code can assist with this complex, domain-specific task. Be thorough, ask good questions, and document your reasoning.
+Remember: The goal is not just to convert data, but to test how effectively Claude Code can assist with this complex, domain-specific task. Be thorough, ask good questions, and document your reasoning throughout the process.
