@@ -72,7 +72,7 @@ data = {
 
 ### 2. Unsupervised pretraining in biological neural networks
 
-**Reference**: [Zhong et al., 2025](https://www.nature.com/articles/s41586-025-09180-y)  
+**Reference**: [Zhong et al., 2025](https://www.nature.com/articles/s41586-025-09180-y)
 **Status**: Planned
 
 **Conversion Details**:
@@ -82,3 +82,16 @@ data = {
 - **Metadata**:
   - Task description: [To be determined]
   - Brain regions: [To be determined]
+
+### 3. Brain-wide neural activity underlying memory-guided movement
+
+**Reference**: [Chen et al., 2024](https://www.cell.com/cell/fulltext/S0092-8674(23)01445-9)
+**Status**: Planned
+
+**Conversion Details**:
+- **Input**: Auditory stimulus (high/low tone)
+- **Output**: Directional licking response (left/right lickport)
+- **Neural data**: Multi-regional Neuropixels recordings (mice)
+- **Metadata**:
+  - Task description: "Memory-guided directional licking task with auditory cue and delay period"
+  - Brain regions: Anterior lateral motor cortex (ALM), subcortical areas, midbrain, thalamus, striatum, and hindbrain

@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 from decoder import train_decoder_linear as train_decoder
 from decoder import predict_linear as predict
-from decoder import cross_validate_decoder, f1scores_all_mice
+from decoder import cross_validate_decoder, accuracy_all_mice
 
 
 # %%
@@ -28,12 +28,17 @@ nmice = 10
 dinput = 2
 doutput = 3
 npcs = 10
+ncategories = [2, 3, 4]  # different number of categories for each output dimension
 data = {'neural': [], 'input': [], 'output': [], 'pc': []}
 gt = {'decoder_neural': [], 'decoder_pca': [], 'decoder_input': []}
 sigma_neural = .1
 
-decoder_pca = np.random.randn(doutput,npcs)
-gt['decoder_pca'] = decoder_pca
+# Create separate decoder for each output dimension with appropriate number of categories
+decoder_pca_list = []
+for out_dim in range(doutput):
+    decoder_pca = np.random.randn(ncategories[out_dim], npcs)
+    decoder_pca_list.append(decoder_pca)
+gt['decoder_pca'] = decoder_pca_list
 
 def linear(coeff,x):
     if coeff.shape[1] == x.shape[0]:
@@ -41,11 +46,22 @@ def linear(coeff,x):
     assert coeff.shape[1] == x.shape[0] + 1
     return np.dot(coeff[:,1:],x) + coeff[:,0][:,None]
 
+def softmax(x, axis=0):
+    """Compute softmax values for each set of scores along specified axis."""
+    exp_x = np.exp(x - np.max(x, axis=axis, keepdims=True))
+    return exp_x / np.sum(exp_x, axis=axis, keepdims=True)
+
 for mouse in range(nmice):
     ntrials = np.random.randint(48,52)
     nneurons = np.random.randint(90,110)
     rate_per_input = np.random.randint(5,15,(nneurons,dinput))
-    decoder_input = np.random.randn(doutput,dinput+1)
+
+    # Create separate decoder_input for each output dimension
+    decoder_input_list = []
+    for out_dim in range(doutput):
+        decoder_input = np.random.randn(ncategories[out_dim], dinput+1)
+        decoder_input_list.append(decoder_input)
+
     neuralmouse = []
     outputmouse = []
     inputmouse = []
@@ -53,38 +69,45 @@ for mouse in range(nmice):
         T = np.random.randint(900,1100)
 
         inputidx = np.random.randint(0,dinput-1)
-        inputtrial = np.zeros((dinput,T),dtype=bool)
-        inputtrial[inputidx,:] = True
+        inputtrial = np.zeros((dinput,T),dtype=np.float32)
+        inputtrial[inputidx,:] = 1.0
 
-        neuraltrial = np.zeros((nneurons,T),dtype=object)
+        neuraltrial = np.zeros((nneurons,T),dtype=np.float32)
         for neuron in range(nneurons):
             rate = rate_per_input[neuron,inputidx]
             spikes = np.random.poisson(rate,(T,))
-            neuraltrial[neuron,:] = spikes
+            neuraltrial[neuron,:] = spikes.astype(np.float32)
 
         inputmouse.append(inputtrial)
         neuralmouse.append(neuraltrial)
-        
+
     # do pca on all data from this mouse
     allneural = np.hstack(neuralmouse)
     pca = PCA(n_components=npcs)
     pca.fit(allneural.T)
     pcsmouse = [pca.transform(neuraltrial.T).T for neuraltrial in neuralmouse]
     gt['decoder_neural'].append(pca)
-        
+
     for trial in range(ntrials):
         inputtrial = inputmouse[trial]
-        outputtrial = linear(decoder_pca,pcsmouse[trial]) + linear(decoder_input[:,1:],inputtrial)
+        outputtrial = np.zeros((doutput, inputtrial.shape[1]), dtype=np.int64)
+
+        # Generate categorical output for each dimension
+        for out_dim in range(doutput):
+            # Compute logits from PCA and input
+            logits = linear(decoder_pca_list[out_dim], pcsmouse[trial]) + linear(decoder_input_list[out_dim], inputtrial)
+            # Apply softmax and sample categories
+            probs = softmax(logits, axis=0)
+            # Take argmax to get deterministic categories
+            outputtrial[out_dim, :] = np.argmax(probs, axis=0)
+
         outputmouse.append(outputtrial)
 
-    mu = np.mean([np.mean(outputtrial,axis=1) for outputtrial in outputmouse],axis=0)
-    decoder_input[:,0] = -mu.flatten()
-    outputmouse = [outputtrial > mu[:,None] for outputtrial in outputmouse]
     data['neural'].append(neuralmouse)
     data['input'].append(inputmouse)
     data['output'].append(outputmouse)
     data['pc'].append(pcsmouse)
-    gt['decoder_input'].append(decoder_input)
+    gt['decoder_input'].append(decoder_input_list)
 
 # %%
 # plot a sample trial
@@ -108,17 +131,22 @@ for pcidx in range(npcs):
 ax[1].set_ylabel('PCs')
 
 for outdim in range(doutput):
-    ax[2].plot(data['output'][mouse][trial][outdim,:]*.9+.05+outdim)
+    # Normalize to [0, 1] range for plotting
+    normalized = data['output'][mouse][trial][outdim,:] / (ncategories[outdim] - 1)
+    ax[2].plot(normalized*.9+.05+outdim)
     ax[2].plot([0,data['neural'][mouse][trial].shape[1]],[.5+outdim,.5+outdim],'k--')
-ax[2].set_ylabel('Output')
-    
-decoded = linear(gt['decoder_pca'],pc) + linear(gt['decoder_input'][mouse],data['input'][mouse][trial])
+ax[2].set_ylabel('Output (categorical)')
+
+# Compute decoded logits for each output dimension
 for outdim in range(doutput):
-    maxv = np.percentile(decoded[outdim],99)
-    minv = np.percentile(decoded[outdim],1)
-    ax[3].plot((decoded[outdim] - minv)/(maxv - minv)*.9+.05+outdim)
+    logits = linear(gt['decoder_pca'][outdim], pc) + linear(gt['decoder_input'][mouse][outdim], data['input'][mouse][trial])
+    probs = softmax(logits, axis=0)
+    predicted_cat = np.argmax(probs, axis=0)
+    # Normalize to [0, 1] range for plotting
+    normalized = predicted_cat / (ncategories[outdim] - 1)
+    ax[3].plot(normalized*.9+.05+outdim)
     ax[3].plot([0,data['neural'][mouse][trial].shape[1]],[.5+outdim,.5+outdim],'k--')
-ax[3].set_ylabel('Decoded')
+ax[3].set_ylabel('Decoded (categorical)')
 fig.tight_layout()
 #ax[0].set_xlim([0,50])
 
@@ -144,9 +172,12 @@ def debug_plot(data,gt,predicted_outputs,predicted_pcs,mouse,trial):
 
     for outdim in range(doutput):
         ax[1].plot([0,data['neural'][mouse][trial].shape[1]],[.5+outdim,.5+outdim],'--',color = [.7,.7,.7])
-        ax[1].plot(predicted_outputs[mouse][trial][outdim,:]*.9+.05+outdim,'o-')
-        ax[1].plot(data['output'][mouse][trial][outdim,:]*.9+.05+outdim,'k.--')
-    ax[1].set_ylabel('Output')
+        # Normalize categorical values to [0, 1] for plotting
+        pred_normalized = predicted_outputs[mouse][trial][outdim,:] / (ncategories[outdim] - 1)
+        gt_normalized = data['output'][mouse][trial][outdim,:] / (ncategories[outdim] - 1)
+        ax[1].plot(pred_normalized*.9+.05+outdim,'o-', label='Predicted')
+        ax[1].plot(gt_normalized*.9+.05+outdim,'k.--', label='Ground truth')
+    ax[1].set_ylabel('Output (categorical)')
     
     return fig, ax
 
@@ -154,16 +185,16 @@ mouse = 0
 trial = 0
 fig,ax = debug_plot(data,gt,predicted_outputs,predicted_pcs,mouse,trial)
 fig.tight_layout()
-f1scores = f1scores_all_mice(data['output'], predicted_outputs)
-print("Training F1 scores per output dimension:", f1scores)
+accuracies = accuracy_all_mice(predicted_outputs, data['output'])
+print("Training accuracies per output dimension:", accuracies)
 #ax[0].set_xlim([0,200])
 
 # %%
-f1scores, cv_predictions, cv_pcs, trial_splits = cross_validate_decoder(data['neural'], data['input'], data['output'], nsets=5, npcs=npcs)
+accuracies, cv_predictions, cv_pcs, trial_splits = cross_validate_decoder(data['neural'], data['input'], data['output'], nsets=5, npcs=npcs, ncategories=ncategories, eval_fn=accuracy_all_mice)
 
 # %%
 fig, ax = debug_plot(data,gt,cv_predictions,cv_pcs,0,0)
 fig.tight_layout()
 #ax[0].set_xlim([0,200])
-print("CV F1 scores:", f1scores)
+print("CV accuracies:", accuracies)
 

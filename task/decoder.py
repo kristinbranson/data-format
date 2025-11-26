@@ -180,7 +180,7 @@ def predict_pca_logistic(neural: list, input: list, model: dict, mouseid: list |
 def train_decoder_linear(neural: list, input: list, output: list, metadata: dict = {}, **kwargs):
     """
     Trains a common decoder for all mice to predict output from neural and input data.
-    Jointly learns projection matrices for each mouse and a shared logistic regression decoder using PyTorch.
+    Jointly learns projection matrices for each mouse and separate shared decoders for each output dimension.
 
     Inputs:
         neural: neural activity. neural is a list of length nmice, neural[mouse] is a list
@@ -191,8 +191,8 @@ def train_decoder_linear(neural: list, input: list, output: list, metadata: dict
                 shape (dinput, T[mouse][trial]), dtype = float32. with the input variable(s) for each timepoint.
                 dinput is the number of inputs. For discrete inputs, use a one-hot encoding.
         output: variables we want to decode. output is a list of length nmice, output[mouse] is a list of length ntrials[mouse],
-                and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = bool with the
-                binary output variable(s) for each timepoint. Use a one-hot encoding for multi-class outputs.
+                and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = int with
+                categorical values for each timepoint. Each output[idx, t] is an integer from 0 to ncategories[idx]-1.
         metadata: optional dict with additional information about the experiment.
 
         Algorithm hyperparameters can be passed as keyword arguments:
@@ -200,18 +200,22 @@ def train_decoder_linear(neural: list, input: list, output: list, metadata: dict
         num_epochs: number of training epochs (default: 100)
         lr: learning rate (default: 0.01)
         batch_size: batch size for training (default: 1024)
+        ncategories: optional list of length doutput giving number of categories for each output dimension.
+                     If not provided, will be inferred from data.
 
     Returns:
         model: dict with trained decoder parameters. dict with the keys:
             'projection': list of length nmice, projection[mouse] is a torch tensor of shape (npcs, nneurons[mouse])
-            'decoder': torch linear layer for logistic regression
+            'decoder': list of length doutput, decoder[out_dim] is a torch linear layer for that output dimension
+            'ncategories': list of length doutput, ncategories[out_dim] is the number of categories for that output
             'device': torch device used for training
 
     """
 
     model = {
         'projection': [],
-        'decoder': None,
+        'decoder': [],
+        'ncategories': [],
         'device': None
     }
 
@@ -219,7 +223,7 @@ def train_decoder_linear(neural: list, input: list, output: list, metadata: dict
     num_epochs = kwargs.get('num_epochs', 100)
     lr = kwargs.get('lr', 0.01)
     batch_size = kwargs.get('batch_size', 1024)
-    
+
     nmice = len(neural)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model['device'] = device
@@ -227,22 +231,36 @@ def train_decoder_linear(neural: list, input: list, output: list, metadata: dict
     # Determine dimensions
     dinput = input[0][0].shape[0]
     doutput = output[0][0].shape[0]
-    
+
+    # Determine number of categories for each output dimension
+    if 'ncategories' in kwargs:
+        ncategories = kwargs['ncategories']
+    else:
+        ncategories = []
+        for out_dim in range(doutput):
+            max_cat = 0
+            for mouse in range(nmice):
+                for trial in range(len(output[mouse])):
+                    max_cat = max(max_cat, int(np.max(output[mouse][trial][out_dim, :])))
+            ncategories.append(max_cat + 1)
+
+    model['ncategories'] = ncategories
+
     # Prepare data for each mouse
     mouse_data = []
     for mouse in range(nmice):
         # Concatenate across trials for this mouse
         neural_concat = np.concatenate([neural[mouse][trial].T.astype(np.float32) for trial in range(len(neural[mouse]))], axis=0)
         input_concat = np.concatenate([input[mouse][trial].T for trial in range(len(input[mouse]))], axis=0).astype(np.float32)
-        output_concat = np.concatenate([output[mouse][trial].T for trial in range(len(output[mouse]))], axis=0).astype(np.float32)
-        
+        output_concat = np.concatenate([output[mouse][trial].T for trial in range(len(output[mouse]))], axis=0).astype(np.int64)
+
         mouse_data.append({
             'neural': torch.from_numpy(neural_concat).to(device),
             'input': torch.from_numpy(input_concat).to(device),
             'output': torch.from_numpy(output_concat).to(device),
             'nneurons': neural_concat.shape[1]
         })
-    
+
     # Initialize projection matrices for each mouse
     projection_layers = []
     for mouse in range(nmice):
@@ -252,58 +270,64 @@ def train_decoder_linear(neural: list, input: list, output: list, metadata: dict
         U, _, _ = torch.svd(mouse_data[mouse]['neural'].T)
         proj.weight.data = U[:npcs, :].clone()
         projection_layers.append(proj)
-    
-    # Initialize shared decoder (logistic regression)
-    decoder = nn.Linear(npcs + dinput, doutput).to(device)
-    
+
+    # Initialize separate decoders for each output dimension
+    decoders = []
+    for out_dim in range(doutput):
+        decoder = nn.Linear(npcs + dinput, ncategories[out_dim]).to(device)
+        decoders.append(decoder)
+
     # Collect all parameters
     all_params = []
     for proj in projection_layers:
         all_params.extend(proj.parameters())
-    all_params.extend(decoder.parameters())
-    
+    for decoder in decoders:
+        all_params.extend(decoder.parameters())
+
     optimizer = optim.Adam(all_params, lr=lr)
-    criterion = nn.BCEWithLogitsLoss()
-    
+    criterion = nn.CrossEntropyLoss()
+
     # Training loop
     for epoch in range(num_epochs):
         total_loss = 0
-        
+
         for mouse in range(nmice):
             n_samples = mouse_data[mouse]['neural'].shape[0]
             indices = torch.randperm(n_samples)
-            
+
             for i in range(0, n_samples, batch_size):
                 batch_indices = indices[i:min(i+batch_size, n_samples)]
-                
+
                 # Get batch data
                 neural_batch = mouse_data[mouse]['neural'][batch_indices]
                 input_batch = mouse_data[mouse]['input'][batch_indices]
                 output_batch = mouse_data[mouse]['output'][batch_indices]
-                
-                # Forward pass
+
+                # Forward pass - shared projection
                 projected = projection_layers[mouse](neural_batch)
                 combined = torch.cat([projected, input_batch], dim=1)
-                logits = decoder(combined)
-                
-                # Compute loss
-                loss = criterion(logits, output_batch)
-                
+
+                # Compute loss for each output dimension
+                loss = 0
+                for out_dim in range(doutput):
+                    logits = decoders[out_dim](combined)
+                    loss += criterion(logits, output_batch[:, out_dim])
+
                 # Backward pass
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                
+
                 total_loss += loss.item()
-        
+
         if (epoch + 1) % 20 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss:.4f}')
-    
+
     # Store trained parameters
     for mouse in range(nmice):
         model['projection'].append(projection_layers[mouse].weight.data.clone())
-    model['decoder'] = decoder
-    
+    model['decoder'] = decoders
+
     return model
 
 def predict_linear(neural: list, input: list, model: dict, mouseid: list | None = None, metadata: dict = {}):
@@ -320,37 +344,39 @@ def predict_linear(neural: list, input: list, model: dict, mouseid: list | None 
                 dinput is the number of inputs. For discrete inputs, use a one-hot encoding.
         model: dict with trained decoder parameters. dict with the keys:
                 'projection': list of length nmice, projection[mouse] is a torch tensor
-                'decoder': torch linear layer
+                'decoder': list of length doutput, decoder[out_dim] is a torch linear layer for that output dimension
+                'ncategories': list of length doutput with number of categories per output dimension
                 'device': torch device
-        mouseid: optional list of length nmice, giving the IDs of the mice. 
+        mouseid: optional list of length nmice, giving the IDs of the mice.
         metadata: optional dict with additional information about the experiment.
     Returns:
         predictions: list of length nmice, predictions[mouse] is a list of length ntrials[mouse],
-                and predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = bool
-                with the predicted output variable(s) for each timepoint.
+                and predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = int
+                with the predicted categorical output variable(s) for each timepoint.
         pcs: list of length nmice, pcs[mouse] is a list of length ntrials[mouse],
                 and pcs[mouse][trial] is a numpy array of shape (npcs, T[mouse][trial]) with the projected neural data.
     """
 
     nmice = len(neural)
     device = model['device']
-    decoder = model['decoder']
-    
+    decoders = model['decoder']
+    doutput = len(decoders)
+
     predictions = []
     pcs = []
-    
+
     with torch.no_grad():
         for mouseidx in range(nmice):
             if mouseid is not None:
                 mouse = mouseid[mouseidx]
             else:
                 mouse = mouseidx
-            
+
             ntrials = len(neural[mouseidx])
             mouse_predictions = []
             mouse_pcs = []
             projection = model['projection'][mouse]
-            
+
             for trial in range(ntrials):
                 # Get trial data
                 neural_trial = torch.from_numpy(neural[mouseidx][trial].T.astype(np.float32)).to(device)  # (T, nneurons)
@@ -358,19 +384,22 @@ def predict_linear(neural: list, input: list, model: dict, mouseid: list | None 
 
                 # Project neural data
                 projected = torch.matmul(neural_trial, projection.T)  # (T, npcs)
-                
-                # Decode
+
+                # Decode each output dimension
                 combined = torch.cat([projected, input_trial], dim=1)  # (T, npcs + dinput)
-                logits = decoder(combined)  # (T, doutput)
-                pred = (logits > 0).cpu().numpy()  # (T, doutput)
-                
+                pred = np.zeros((neural_trial.shape[0], doutput), dtype=np.int64)  # (T, doutput)
+
+                for out_dim in range(doutput):
+                    logits = decoders[out_dim](combined)  # (T, ncategories[out_dim])
+                    pred[:, out_dim] = torch.argmax(logits, dim=1).cpu().numpy()
+
                 # Store results
                 mouse_predictions.append(pred.T)  # (doutput, T)
                 mouse_pcs.append(projected.cpu().numpy().T)  # (npcs, T)
-            
+
             predictions.append(mouse_predictions)
             pcs.append(mouse_pcs)
-    
+
     return predictions, pcs
 
 def f1scores_all_mice(all_predictions: list, output: list):
@@ -405,19 +434,58 @@ def f1scores_all_mice(all_predictions: list, output: list):
     f1scores = np.zeros(doutput)
     for out_dim in range(doutput):
         f1scores[out_dim] = f1_score(all_output_concat[:, out_dim], all_pred_concat[:, out_dim])
-        
+
     return f1scores
 
+def accuracy_all_mice(all_predictions: list, output: list):
+    """
+    Concatenate all predictions and ground truth to compute accuracy across all mice and trials.
+    For categorical outputs.
+
+    Inputs:
+        all_predictions: list of length nmice, all_predictions[mouse] is a list of length ntrials[mouse],
+                and all_predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = int
+                with the predicted categorical output variable(s) for each timepoint.
+        output: the ground truth output for each trial. output is a list of length nmice, output[mouse] is a list of
+                length ntrials[mouse], and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]),
+                dtype = int with the categorical output variable(s) for each timepoint.
+    Returns:
+        accuracies: numpy array of shape (doutput,) with the accuracy for each output dimension
+    """
+    nmice = len(all_predictions)
+    all_pred_concat = []
+    all_output_concat = []
+    doutput = output[0][0].shape[0]
+
+    for mouse in range(nmice):
+        for trial in range(len(all_predictions[mouse])):
+            # Flatten predictions and outputs across time: (doutput, T) -> (T, doutput)
+            all_pred_concat.append(all_predictions[mouse][trial].T)
+            all_output_concat.append(output[mouse][trial].T)
+
+    # Concatenate all timepoints from all trials and all mice
+    all_pred_concat = np.vstack(all_pred_concat)  # (total_timepoints, doutput)
+    all_output_concat = np.vstack(all_output_concat)  # (total_timepoints, doutput)
+
+    # Compute accuracy for each output dimension
+    accuracies = np.zeros(doutput)
+    for out_dim in range(doutput):
+        accuracies[out_dim] = np.mean(all_pred_concat[:, out_dim] == all_output_concat[:, out_dim])
+
+    return accuracies
+
 def cross_validate_decoder(neural: list, input: list, output: list, metadata: str | None = None,
-                           train_decoder=train_decoder_linear, 
+                           train_decoder=train_decoder_linear,
                            predict=predict_linear,
-                           nsets: int = 5, **kwargs):
+                           nsets: int = 5,
+                           eval_fn=None,
+                           **kwargs):
     """
     Cross-validates the decoder function. Performs nsets-fold cross-validation, training the decoder on nsets-1 sets and testing on
     the held-out set. Each cross-validation set contains 1/nsets of the trials from each mouse.
     Finds a random split of trials for each mouse into nsets sets, then, for each set, trains the decoder on the other nsets-1 sets and
     computes the predictions on the held out set.
-    Then computes the F1 score for each output dimension
+    Then computes evaluation metric (F1 score or accuracy) for each output dimension
     Inputs:
         neural: neural activity. neural is a list of length nmice, neural[mouse] is a list
                 of length ntrials[mouse], and neural[mouse][trial] is a numpy array of shape (nneurons[mouse], T[mouse][trial]),
@@ -428,7 +496,7 @@ def cross_validate_decoder(neural: list, input: list, output: list, metadata: st
                 dinput is the number of inputs. For discrete inputs, use a one-hot encoding.
         output: the ground truth output for each trial. output is a list of length nmice, output[mouse] is a list of
                 length ntrials[mouse], and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]),
-                dtype = float32. with the output variable(s) for each timepoint.
+                dtype = float32 or int. with the output variable(s) for each timepoint.
         metadata: optional dict with additional information about the experiment.
         train_decoder: function to train the decoder. Should have the signature
                 model = train_decoder(neural_train, input_train, output_train, metadata, **kwargs)
@@ -437,15 +505,21 @@ def cross_validate_decoder(neural: list, input: list, output: list, metadata: st
                 predictions = predict(neural_test, input_test, model, mouseid, metadata)
                 Default: predict_linear
         nsets: number of cross-validation sets (default: 5)
+        eval_fn: evaluation function to compute performance metric. Should have the signature
+                scores = eval_fn(predictions, output)
+                Default: f1scores_all_mice (for binary outputs), can use accuracy_all_mice for categorical
     kwargs are passed to train_decoder
     Returns:
-        f1scores: numpy array of shape (doutput,) with the F1 score for each output dimension
+        scores: numpy array of shape (doutput,) with the evaluation metric for each output dimension
         predictions: list of length nmice, predictions[mouse] is a list of length ntrials[mouse],
-                and predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = bool
+                and predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial])
                 with the predicted output variable(s) for each timepoint.
         trial_splits: list of length nmice, trial_splits[mouse] is a list of length nsets,
                 trial_splits[mouse][set] is a numpy array with the trial indices for that set for that mouse.
     """
+
+    if eval_fn is None:
+        eval_fn = f1scores_all_mice
 
     nmice = len(neural)
 
@@ -506,7 +580,7 @@ def cross_validate_decoder(neural: list, input: list, output: list, metadata: st
                 all_predictions[mouse][trial_idx] = test_predictions[mouse][idx]
                 all_pcs[mouse][trial_idx] = test_pc[mouse][idx]
 
-    # Compute F1 scores across all mice and trials
-    f1scores = f1scores_all_mice(all_predictions, output) 
+    # Compute evaluation metric across all mice and trials
+    scores = eval_fn(all_predictions, output)
 
-    return f1scores, all_predictions, all_pcs, trial_splits
+    return scores, all_predictions, all_pcs, trial_splits
