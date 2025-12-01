@@ -13,6 +13,236 @@ import torch.optim as optim
 import matplotlib
 import matplotlib.pyplot as plt
 
+def verify_data_format(data: dict, verbose: bool = True):
+    """
+    Verifies that data is correctly formatted for train_decoder functions.
+
+    Inputs:
+        data: dict with keys 'neural', 'input', 'output', and optionally 'metadata'
+        verbose: if True, print detailed information about what's being checked
+
+    Returns:
+        valid: bool, True if data is valid, False otherwise
+        errors: list of str, error messages if data is invalid
+        warnings: list of str, warning messages for potential issues
+    """
+    errors = []
+    warnings = []
+
+    # Check that data is a dictionary
+    if not isinstance(data, dict):
+        errors.append(f"Data must be a dict, got {type(data)}")
+        return False, errors, warnings
+
+    # Check required keys
+    required_keys = ['neural', 'input', 'output']
+    for key in required_keys:
+        if key not in data:
+            errors.append(f"Missing required key: '{key}'")
+
+    if errors:
+        return False, errors, warnings
+
+    if verbose:
+        print("Checking data format for decoder compatibility...")
+        print("=" * 60)
+
+    # Get number of subjects
+    nmice = len(data['neural'])
+
+    if verbose:
+        print(f"Number of subjects: {nmice}")
+
+    # Check that all three lists have same number of subjects
+    if len(data['input']) != nmice:
+        errors.append(f"'neural' has {nmice} subjects but 'input' has {len(data['input'])}")
+    if len(data['output']) != nmice:
+        errors.append(f"'neural' has {nmice} subjects but 'output' has {len(data['output'])}")
+
+    if errors:
+        return False, errors, warnings
+
+    # Check each subject
+    for mouse in range(nmice):
+        if verbose:
+            print(f"\nSubject {mouse}:")
+
+        # Check that each subject's data is a list
+        if not isinstance(data['neural'][mouse], list):
+            errors.append(f"Subject {mouse}: neural data must be a list of trials, got {type(data['neural'][mouse])}")
+            continue
+        if not isinstance(data['input'][mouse], list):
+            errors.append(f"Subject {mouse}: input data must be a list of trials, got {type(data['input'][mouse])}")
+            continue
+        if not isinstance(data['output'][mouse], list):
+            errors.append(f"Subject {mouse}: output data must be a list of trials, got {type(data['output'][mouse])}")
+            continue
+
+        ntrials = len(data['neural'][mouse])
+        if verbose:
+            print(f"  Number of trials: {ntrials}")
+
+        # Check same number of trials across neural/input/output
+        if len(data['input'][mouse]) != ntrials:
+            errors.append(f"Subject {mouse}: neural has {ntrials} trials but input has {len(data['input'][mouse])}")
+        if len(data['output'][mouse]) != ntrials:
+            errors.append(f"Subject {mouse}: neural has {ntrials} trials but output has {len(data['output'][mouse])}")
+
+        if ntrials == 0:
+            warnings.append(f"Subject {mouse} has 0 trials")
+            continue
+
+        # Check each trial
+        for trial in range(ntrials):
+            # Check that each trial is a numpy array
+            if not isinstance(data['neural'][mouse][trial], np.ndarray):
+                errors.append(f"Subject {mouse}, trial {trial}: neural must be numpy array, got {type(data['neural'][mouse][trial])}")
+                continue
+            if not isinstance(data['input'][mouse][trial], np.ndarray):
+                errors.append(f"Subject {mouse}, trial {trial}: input must be numpy array, got {type(data['input'][mouse][trial])}")
+                continue
+            if not isinstance(data['output'][mouse][trial], np.ndarray):
+                errors.append(f"Subject {mouse}, trial {trial}: output must be numpy array, got {type(data['output'][mouse][trial])}")
+                continue
+
+            neural_trial = data['neural'][mouse][trial]
+            input_trial = data['input'][mouse][trial]
+            output_trial = data['output'][mouse][trial]
+
+            # Check neural array shape (must be 2D)
+            if neural_trial.ndim != 2:
+                errors.append(f"Subject {mouse}, trial {trial}: neural must be 2D array (n_neurons, n_timepoints), got shape {neural_trial.shape}")
+                continue
+
+            # Check input array shape (1D or 2D)
+            if input_trial.ndim not in [1, 2]:
+                errors.append(f"Subject {mouse}, trial {trial}: input must be 1D or 2D array, got {input_trial.ndim}D with shape {input_trial.shape}")
+                continue
+
+            # Check output array shape (1D or 2D)
+            if output_trial.ndim not in [1, 2]:
+                errors.append(f"Subject {mouse}, trial {trial}: output must be 1D or 2D array, got {output_trial.ndim}D with shape {output_trial.shape}")
+                continue
+
+            # Get dimensions
+            n_neurons, T_neural = neural_trial.shape
+
+            # Check that time dimensions match (for 2D input/output)
+            if input_trial.ndim == 2:
+                T_input = input_trial.shape[1]
+                if T_input != T_neural:
+                    errors.append(f"Subject {mouse}, trial {trial}: neural has {T_neural} timepoints but input has {T_input}")
+
+            if output_trial.ndim == 2:
+                T_output = output_trial.shape[1]
+                if T_output != T_neural:
+                    errors.append(f"Subject {mouse}, trial {trial}: neural has {T_neural} timepoints but output has {T_output}")
+
+            # Check data types
+            if not np.issubdtype(neural_trial.dtype, np.floating):
+                warnings.append(f"Subject {mouse}, trial {trial}: neural dtype is {neural_trial.dtype}, expected float32. Will be converted during training.")
+
+            if not np.issubdtype(input_trial.dtype, np.floating):
+                warnings.append(f"Subject {mouse}, trial {trial}: input dtype is {input_trial.dtype}, expected float32. Will be converted during training.")
+
+            # Output can be int or float depending on whether it's categorical
+            if not (np.issubdtype(output_trial.dtype, np.integer) or np.issubdtype(output_trial.dtype, np.floating)):
+                warnings.append(f"Subject {mouse}, trial {trial}: output dtype is {output_trial.dtype}, expected int or float")
+
+            # Check for NaN or Inf values
+            if np.any(np.isnan(neural_trial)) or np.any(np.isinf(neural_trial)):
+                errors.append(f"Subject {mouse}, trial {trial}: neural contains NaN or Inf values")
+            if np.any(np.isnan(input_trial)) or np.any(np.isinf(input_trial)):
+                errors.append(f"Subject {mouse}, trial {trial}: input contains NaN or Inf values")
+            if np.any(np.isnan(output_trial)) or np.any(np.isinf(output_trial)):
+                errors.append(f"Subject {mouse}, trial {trial}: output contains NaN or Inf values")
+
+            # Check if all neural data is zero
+            if np.all(neural_trial == 0):
+                warnings.append(f"Subject {mouse}, trial {trial}: all neural data is zero")
+
+            # Check that output values are categorical (whole numbers)
+            if not np.allclose(output_trial, np.round(output_trial)):
+                errors.append(f"Subject {mouse}, trial {trial}: output values must be categorical (whole numbers), found non-integer values")
+
+            # Only print details for first trial of each subject if verbose
+            if verbose and trial == 0:
+                print(f"  Trial {trial} shapes:")
+                print(f"    neural: {neural_trial.shape} (n_neurons={n_neurons}, n_timepoints={T_neural})")
+                print(f"    input:  {input_trial.shape}")
+                print(f"    output: {output_trial.shape}")
+
+        # Check consistency across trials (all trials should have same number of neurons)
+        if ntrials > 0:
+            n_neurons_first = data['neural'][mouse][0].shape[0]
+            for trial in range(1, ntrials):
+                if data['neural'][mouse][trial].shape[0] != n_neurons_first:
+                    errors.append(f"Subject {mouse}: trial 0 has {n_neurons_first} neurons but trial {trial} has {data['neural'][mouse][trial].shape[0]}")
+
+            # Check that input dimension is consistent across trials
+            input_dim_first = data['input'][mouse][0].shape[0] if data['input'][mouse][0].ndim > 1 else len(data['input'][mouse][0])
+            for trial in range(1, ntrials):
+                input_dim = data['input'][mouse][trial].shape[0] if data['input'][mouse][trial].ndim > 1 else len(data['input'][mouse][trial])
+                if input_dim != input_dim_first:
+                    errors.append(f"Subject {mouse}: trial 0 has input dimension {input_dim_first} but trial {trial} has {input_dim}")
+
+            # Check that output dimension is consistent across trials
+            output_dim_first = data['output'][mouse][0].shape[0] if data['output'][mouse][0].ndim > 1 else len(data['output'][mouse][0])
+            for trial in range(1, ntrials):
+                output_dim = data['output'][mouse][trial].shape[0] if data['output'][mouse][trial].ndim > 1 else len(data['output'][mouse][trial])
+                if output_dim != output_dim_first:
+                    errors.append(f"Subject {mouse}: trial 0 has output dimension {output_dim_first} but trial {trial} has {output_dim}")
+
+    # Check that input/output dimensions are consistent across all subjects
+    if nmice > 0:
+        # Find first subject with trials
+        first_mouse_with_trials = None
+        for mouse in range(nmice):
+            if len(data['neural'][mouse]) > 0:
+                first_mouse_with_trials = mouse
+                break
+
+        if first_mouse_with_trials is not None:
+            input_dim_ref = data['input'][first_mouse_with_trials][0].shape[0] if data['input'][first_mouse_with_trials][0].ndim > 1 else len(data['input'][first_mouse_with_trials][0])
+            output_dim_ref = data['output'][first_mouse_with_trials][0].shape[0] if data['output'][first_mouse_with_trials][0].ndim > 1 else len(data['output'][first_mouse_with_trials][0])
+
+            for mouse in range(nmice):
+                if len(data['neural'][mouse]) == 0:
+                    continue
+                input_dim = data['input'][mouse][0].shape[0] if data['input'][mouse][0].ndim > 1 else len(data['input'][mouse][0])
+                output_dim = data['output'][mouse][0].shape[0] if data['output'][mouse][0].ndim > 1 else len(data['output'][mouse][0])
+
+                if input_dim != input_dim_ref:
+                    errors.append(f"Input dimension mismatch: subject {first_mouse_with_trials} has {input_dim_ref} but subject {mouse} has {input_dim}")
+                if output_dim != output_dim_ref:
+                    errors.append(f"Output dimension mismatch: subject {first_mouse_with_trials} has {output_dim_ref} but subject {mouse} has {output_dim}")
+
+    # Check that input and output dimensions are not constant across all trials/subjects
+    if nmice > 0:
+        # Check input dimensions for constant values
+        min_input, max_input = get_range(data['input'])
+        for dim in range(len(min_input)):
+            if np.isclose(min_input[dim], max_input[dim]):
+                warnings.append(f"Input dimension {dim} is constant (value={min_input[dim]:.6f}) across all subjects and trials")
+
+        # Check output dimensions for constant values
+        min_output, max_output = get_range(data['output'])
+        for dim in range(len(min_output)):
+            if np.isclose(min_output[dim], max_output[dim]):
+                warnings.append(f"Output dimension {dim} is constant (value={min_output[dim]}) across all subjects and trials")
+
+    if verbose:
+        print("\n" + "=" * 60)
+        if errors:
+            print(f"VALIDATION FAILED with {len(errors)} error(s)")
+        elif warnings:
+            print(f"VALIDATION PASSED with {len(warnings)} warning(s)")
+        else:
+            print("VALIDATION PASSED - Data is correctly formatted!")
+
+    valid = len(errors) == 0
+    return valid, errors, warnings
+
 def get_dim(x: list):
     """
     Get the 0th dimension from the data.
