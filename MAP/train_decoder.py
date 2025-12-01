@@ -103,7 +103,7 @@ for mouse in np.random.permutation(nmice):
         break
 
 nplot = len(mousesplot)
-fig,ax = plt.subplots(3,nplot,figsize = (30,20),sharex='col')
+fig,ax = plt.subplots(3,nplot,figsize = (30,15),sharex='col')
 for iplot in range(nplot):
     plot_trial(data, mouse=mousesplot[iplot], trial=trialsplot[iplot], input_names=input_names, output_names=output_names, ax=ax[:,iplot])
 
@@ -161,7 +161,7 @@ model_all = train_decoder_linear(
 )
 
 # Predict on all data
-predictions_all, _ = predict_linear(neural, input_vars, model_all)
+predictions_all, pcs_all, confidences_all = predict_linear(neural, input_vars, model_all)
 
 # Evaluate
 scores_all = accuracy_all_mice(predictions_all, output_vars)
@@ -172,6 +172,14 @@ for out_dim in range(len(scores_all)):
     print(f"  {labels[out_dim]}: {scores_all[out_dim]:.4f}")
 
 print(f"\nMean accuracy: {scores_all.mean():.4f}")
+
+fig,ax = plt.subplots(3,nplot,figsize = (30,15),sharex='col')
+for iplot in range(nplot):
+    plot_trial(data, mouse=mousesplot[iplot], trial=trialsplot[iplot], input_names=input_names, output_names=output_names, ax=ax[:,iplot],
+               predictions=predictions_all)
+fig.suptitle('Decoder Predictions (Trained and Tested on All Data)', fontsize=16, fontweight='bold')
+fig.tight_layout()
+
 
 # %% [markdown]
 # ## Cross-Validation
