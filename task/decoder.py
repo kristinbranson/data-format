@@ -10,6 +10,199 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+import matplotlib.pyplot as plt
+
+def get_dim(x: list):
+    """
+    Get the 0th dimension from the data.
+    Inputs:
+        x: list of length nmice, x[mouse] is a list of length ntrials[mouse], and x[mouse][trial] is a numpy array of shape (d, T)
+    Returns:
+        d: int, dimension
+    """
+    ntrials_per_mouse = [len(x[mouse]) for mouse in range(len(x))]
+    mouse = np.nonzero(ntrials_per_mouse)[0][0]
+    d = x[mouse][0].shape[0]
+    return d
+
+def get_range(x: list):
+    """
+    Get the range of values across all mice and trials.
+    Inputs:
+        x: list of length nmice, x[mouse] is a list of length ntrials[mouse], and x[mouse][trial] is a numpy array of shape (d, T)
+    Returns:
+        min_x: numpy array of shape (dinput,), minimum input values
+        max_x: numpy array of shape (dinput,), maximum input values
+    """
+
+    d = get_dim(x)
+    min_x = np.zeros(d) + np.inf
+    max_x = np.zeros(d) - np.inf
+    for mouse in range(len(x)):
+        for trial in range(len(x[mouse])):
+            input_trial = x[mouse][trial]
+            if np.ndim(input_trial) == 1:
+                min_x = np.minimum(min_x, input_trial)
+                max_x = np.maximum(max_x, input_trial)
+            else:
+                min_x = np.minimum(min_x, input_trial.min(axis=1))
+                max_x = np.maximum(max_x, input_trial.max(axis=1))
+    return min_x, max_x
+
+def print_data_summary(data: dict):
+    """Prints a summary of the data structure."""
+    
+    nmice = len(data['neural'])
+    print(f"Number of mice: {nmice}")
+    ntrials_per_mouse = [len(data['neural'][mouse]) for mouse in range(nmice)]
+    print(f"Total number of trials: {sum(ntrials_per_mouse)}")
+    print(f"Number of trials per mouse: {ntrials_per_mouse}")
+    
+    # find first non-empty trial to get input/output dimensions
+    mouse = np.nonzero(ntrials_per_mouse)[0][0]
+    dinput = data['input'][mouse][0].shape[0]
+    doutput = data['output'][mouse][0].shape[0]    
+    print(f"Input dimension: {dinput}")
+    print(f"Output dimension: {doutput}")
+    
+    mean_T = []
+    mean_nneurons = []
+    min_T = []
+    max_T = []
+    min_nneurons = []
+    max_nneurons = []
+    input_range = []
+    output_range = []
+    unique_outputs = [set() for _ in range(doutput)]
+    for mouse in range(nmice):
+        ntrials = len(data['neural'][mouse])
+        Ts = [data['neural'][mouse][trial].shape[1] for trial in range(ntrials)]
+        nneurons = [data['neural'][mouse][trial].shape[0] for trial in range(ntrials)]
+        mean_T.append(np.mean(Ts))
+        mean_nneurons.append(np.mean(nneurons))
+        min_T.append(np.min(Ts))
+        max_T.append(np.max(Ts))
+        min_nneurons.append(np.min(nneurons))
+        max_nneurons.append(np.max(nneurons))
+        if np.ndim(data['input'][mouse][0]) == 1:
+            input_range.append((np.min([data['input'][mouse][trial] for trial in range(ntrials)],axis=0),
+                                np.max([data['input'][mouse][trial] for trial in range(ntrials)],axis=0)))
+        else:
+            input_range.append((np.min([data['input'][mouse][trial].min(axis=1) for trial in range(ntrials)],axis=0),
+                                np.max([data['input'][mouse][trial].max(axis=1) for trial in range(ntrials)],axis=0)))
+        if np.ndim(data['output'][mouse][0]) == 1:
+            output_range.append((np.min([data['output'][mouse][trial] for trial in range(ntrials)],axis=0),
+                                np.max([data['output'][mouse][trial] for trial in range(ntrials)],axis=0)))
+        else:
+            output_range.append((np.min([data['output'][mouse][trial].min(axis=1) for trial in range(ntrials)],axis=0),
+                                np.max([data['output'][mouse][trial].max(axis=1) for trial in range(ntrials)],axis=0)))
+            
+
+        for trial in range(ntrials):
+            for i in range(doutput):
+                if np.ndim(data['output'][mouse][trial]) == 1:
+                    unique_outputs[i].add(data['output'][mouse][trial][i])
+                else:
+                    unique_outputs[i].update(set(np.unique(data['output'][mouse][trial][i, :])))
+                
+    print(f"Summary statistics (across all mice):")
+    print(f"  T: mean: {np.mean(mean_T):.2f}, min: {np.min(min_T)}, max: {np.max(max_T)}")
+    print(f"  n_neurons: mean: {np.mean(mean_nneurons):.2f}, min: {np.min(min_nneurons)}, max: {np.max(max_nneurons)}")
+    input_range_all = (np.min([r[0] for r in input_range],axis=0), np.max([r[1] for r in input_range],axis=0))
+    output_range_all = (np.min([r[0] for r in output_range],axis=0), np.max([r[1] for r in output_range],axis=0))
+    print(f"  Input range:")
+    for i in range(dinput):
+        print(f"    {i}: [{input_range_all[0][i]:.1f}, {input_range_all[1][i]:.1f}]")
+    print(f"  Output range:")
+    for i in range(doutput):
+        print(f"    {i}: [{output_range_all[0][i]:.1f}, {output_range_all[1][i]:.1f}]")
+    print(f"  Unique outputs per dimension:")
+    for i in range(doutput):
+        print(f"    {i}: {{{', '.join(f'{x:.1f}' for x in unique_outputs[i])}}}")
+    print(f"\nPer-mouse statistics:")
+    print(f"  Mean T: " + ", ".join(f"{x:.1f}" for x in mean_T))
+    print(f"  Min T: " + ", ".join(f"{x}" for x in min_T))
+    print(f"  Max T: " + ", ".join(f"{x}" for x in max_T))
+    print(f"  Mean n_neurons: " + ", ".join(f"{x:.1f}" for x in mean_nneurons))
+    print(f"  Min n_neurons: " + ", ".join(f"{x}" for x in min_nneurons))
+    print(f"  Max n_neurons: " + ", ".join(f"{x}" for x in max_nneurons))
+    print(f"  Input range: {input_range}")
+    for i in range(dinput):
+        print(f"    {i}: [" + ", ".join(f"({r[0][i]:.1f}, {r[1][i]:.1f})" for r in input_range) + "]")
+    print(f"  Output range: {output_range}")
+    for i in range(doutput):
+        print(f"    {i}: [" + ", ".join(f"({r[0][i]:.1f}, {r[1][i]:.1f})" for r in output_range) + "]")
+
+    return
+
+def plot_trial(data: dict, mouse: int = 0, trial: int = 0, ax: list | None = None, 
+               input_names: list | None = None, output_names: list | None = None):
+    """
+    Plot neural, input, and output data for a specific trial of a specific mouse.
+    Inputs:
+        data: dict with keys 'neural', 'input', 'output' as described in train_decoder.py
+        mouse: index of the mouse to plot, default = 0
+        trial: index of the trial to plot, default = 0
+        ax: optional list of matplotlib axes to plot on. If None, new figure and axes will be created.
+    Returns:
+        fig: matplotlib figure
+        ax: list of matplotlib axes
+    """
+
+    if ax is None:
+        fig,ax = plt.subplots(3,1,figsize = (30,20),sharex=True)
+    else:
+        fig = ax[0].figure
+
+    # neural
+    for neuron in range(data['neural'][mouse][trial].shape[0]):
+        maxv = np.percentile(data['neural'][mouse][trial][neuron,:],99)
+        if maxv == 0:
+            maxv = 1.0
+        ax[0].plot(data['neural'][mouse][trial][neuron,:]/maxv+neuron)
+    ax[0].set_ylim((0,10))
+    ax[0].set_ylabel('Neural')
+
+    dinput = data['input'][mouse][trial].shape[0]
+    T = data['neural'][mouse][trial].shape[1]
+    min_input, max_input = get_range(data['input'])
+    if np.ndim(data['input'][mouse][trial]) == 1:
+        input = np.tile(data['input'][mouse][trial][:, np.newaxis], (1, T))
+    else:
+        input = data['input'][mouse][trial]
+    for indim in range(dinput):
+        # Normalize to [0, 1] range for plotting
+        normalized = (input[indim]-min_input[indim]) / (max_input[indim] - min_input[indim])
+        ax[1].plot(normalized*.9+.05+indim)
+        ax[1].plot([0,T],[indim,indim],'k--')
+    ax[1].plot([0,T],[dinput,dinput],'k--')
+    if input_names is None:
+        input_names = [f'In {i}' for i in range(dinput)]
+    ax[1].set_yticks(np.arange(dinput)+0.5)
+    ax[1].set_yticklabels(input_names)
+
+    doutput = data['output'][mouse][trial].shape[0]
+    _, max_output = get_range(data['output'])
+    if np.ndim(data['output'][mouse][trial]) == 1:
+        output = np.tile(data['output'][mouse][trial][:, np.newaxis], (1, T))
+    else:
+        output = data['output'][mouse][trial]
+    for outdim in range(doutput):
+        # Normalize to [0, 1] range for plotting
+        normalized = output[outdim] / max_output[outdim]
+        ax[2].plot(normalized*.9+.05+outdim)
+        ax[2].plot([0,T],[outdim,outdim],'k--')
+    ax[2].plot([0,T],[doutput,doutput],'k--')
+    if output_names is None:
+        output_names = [f'Out {i}' for i in range(doutput)]
+    ax[2].set_yticks(np.arange(doutput)+0.5)
+    ax[2].set_yticklabels(output_names)
+    
+    ax[0].set_title(f'Mouse {mouse}, Trial {trial}')
+
+    fig.tight_layout()
+    return fig, ax
+
 def train_decoder_pca_logistic(neural: list, input: list, output: list, metadata: dict = {}, **kwargs):
     """
     Trains a common decoder for all mice to predict output from neural and input data.
@@ -47,6 +240,36 @@ def train_decoder_pca_logistic(neural: list, input: list, output: list, metadata
 
     npcs = kwargs.get('npcs', 10)
     nmice = len(neural)
+
+    # Replicate 1D inputs/outputs along time axis to match neural data (make copies to avoid modifying original)
+    input_processed = []
+    output_processed = []
+    for mouse in range(nmice):
+        input_mouse = []
+        output_mouse = []
+        for trial in range(len(neural[mouse])):
+            T = neural[mouse][trial].shape[1]  # time dimension
+
+            # Handle 1D input - replicate along time
+            if input[mouse][trial].ndim == 1:
+                input_trial = np.tile(input[mouse][trial][:, np.newaxis], (1, T))
+            else:
+                input_trial = input[mouse][trial]
+            input_mouse.append(input_trial)
+
+            # Handle 1D output - replicate along time
+            if output[mouse][trial].ndim == 1:
+                output_trial = np.tile(output[mouse][trial][:, np.newaxis], (1, T))
+            else:
+                output_trial = output[mouse][trial]
+            output_mouse.append(output_trial)
+
+        input_processed.append(input_mouse)
+        output_processed.append(output_mouse)
+
+    # Use processed data instead of original
+    input = input_processed
+    output = output_processed
 
     # Store projected neural data and inputs/outputs for all mice
     all_projected_neural = []
@@ -111,6 +334,24 @@ def predict_pca_logistic(neural: list, input: list, model: dict, mouseid: list |
 
     nmice = len(neural)
     doutput = len(model['logisticregression'])
+
+    # Replicate 1D inputs along time axis to match neural data (make copies to avoid modifying original)
+    input_processed = []
+    for mouse in range(nmice):
+        input_mouse = []
+        for trial in range(len(neural[mouse])):
+            T = neural[mouse][trial].shape[1]  # time dimension
+
+            # Handle 1D input - replicate along time
+            if input[mouse][trial].ndim == 1:
+                input_trial = np.tile(input[mouse][trial][:, np.newaxis], (1, T))
+            else:
+                input_trial = input[mouse][trial]
+            input_mouse.append(input_trial)
+        input_processed.append(input_mouse)
+
+    # Use processed data instead of original
+    input = input_processed
 
     # Store projected neural data and inputs for all mice, and trial lengths
     all_projected_neural = []
@@ -228,9 +469,46 @@ def train_decoder_linear(neural: list, input: list, output: list, metadata: dict
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model['device'] = device
 
-    # Determine dimensions
-    dinput = input[0][0].shape[0]
-    doutput = output[0][0].shape[0]
+    # Determine dimensions (handle both 1D and 2D inputs/outputs)
+    if input[0][0].ndim == 1:
+        dinput = len(input[0][0])
+    else:
+        dinput = input[0][0].shape[0]
+
+    if output[0][0].ndim == 1:
+        doutput = len(output[0][0])
+    else:
+        doutput = output[0][0].shape[0]
+
+    # Replicate 1D inputs/outputs along time axis to match neural data (make copies to avoid modifying original)
+    input_processed = []
+    output_processed = []
+    for mouse in range(nmice):
+        input_mouse = []
+        output_mouse = []
+        for trial in range(len(neural[mouse])):
+            T = neural[mouse][trial].shape[1]  # time dimension
+
+            # Handle 1D input - replicate along time
+            if input[mouse][trial].ndim == 1:
+                input_trial = np.tile(input[mouse][trial][:, np.newaxis], (1, T))
+            else:
+                input_trial = input[mouse][trial]
+            input_mouse.append(input_trial)
+
+            # Handle 1D output - replicate along time
+            if output[mouse][trial].ndim == 1:
+                output_trial = np.tile(output[mouse][trial][:, np.newaxis], (1, T))
+            else:
+                output_trial = output[mouse][trial]
+            output_mouse.append(output_trial)
+
+        input_processed.append(input_mouse)
+        output_processed.append(output_mouse)
+
+    # Use processed data instead of original
+    input = input_processed
+    output = output_processed
 
     # Determine number of categories for each output dimension
     if 'ncategories' in kwargs:
@@ -362,6 +640,24 @@ def predict_linear(neural: list, input: list, model: dict, mouseid: list | None 
     decoders = model['decoder']
     doutput = len(decoders)
 
+    # Replicate 1D inputs along time axis to match neural data (make copies to avoid modifying original)
+    input_processed = []
+    for mouse in range(nmice):
+        input_mouse = []
+        for trial in range(len(neural[mouse])):
+            T = neural[mouse][trial].shape[1]  # time dimension
+
+            # Handle 1D input - replicate along time
+            if input[mouse][trial].ndim == 1:
+                input_trial = np.tile(input[mouse][trial][:, np.newaxis], (1, T))
+            else:
+                input_trial = input[mouse][trial]
+            input_mouse.append(input_trial)
+        input_processed.append(input_mouse)
+
+    # Use processed data instead of original
+    input = input_processed
+
     predictions = []
     pcs = []
 
@@ -410,8 +706,8 @@ def f1scores_all_mice(all_predictions: list, output: list):
                 and all_predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = bool
                 with the predicted output variable(s) for each timepoint.
         output: the ground truth output for each trial. output is a list of length nmice, output[mouse] is a list of
-                length ntrials[mouse], and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]),
-                dtype = float32. with the output variable(s) for each timepoint.
+                length ntrials[mouse], and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial])
+                OR (doutput,) (scalar per trial), dtype = float32. with the output variable(s) for each timepoint.
     Returns:
         f1scores: numpy array of shape (doutput,) with the F1 score for each output dimension
     """
@@ -422,9 +718,20 @@ def f1scores_all_mice(all_predictions: list, output: list):
 
     for mouse in range(nmice):
         for trial in range(len(all_predictions[mouse])):
-            # Flatten predictions and outputs across time: (doutput, T) -> (T, doutput)
-            all_pred_concat.append(all_predictions[mouse][trial].T)
-            all_output_concat.append(output[mouse][trial].T)
+            # Predictions are always (doutput, T)
+            pred_trial = all_predictions[mouse][trial].T  # (T, doutput)
+            all_pred_concat.append(pred_trial)
+
+            # Output can be (doutput,) or (doutput, T)
+            output_trial = output[mouse][trial]
+            if output_trial.ndim == 1:
+                # Scalar per trial: (doutput,) -> expand to (T, doutput) where all T are the same
+                T = pred_trial.shape[0]
+                output_trial_expanded = np.tile(output_trial[:, np.newaxis], (1, T)).T  # (T, doutput)
+                all_output_concat.append(output_trial_expanded)
+            else:
+                # Time-varying: (doutput, T) -> (T, doutput)
+                all_output_concat.append(output_trial.T)
 
     # Concatenate all timepoints from all trials and all mice
     all_pred_concat = np.vstack(all_pred_concat)  # (total_timepoints, doutput)
@@ -447,8 +754,8 @@ def accuracy_all_mice(all_predictions: list, output: list):
                 and all_predictions[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]) of dtype = int
                 with the predicted categorical output variable(s) for each timepoint.
         output: the ground truth output for each trial. output is a list of length nmice, output[mouse] is a list of
-                length ntrials[mouse], and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial]),
-                dtype = int with the categorical output variable(s) for each timepoint.
+                length ntrials[mouse], and output[mouse][trial] is a numpy array of shape (doutput, T[mouse][trial])
+                OR (doutput,) (scalar per trial), dtype = int with the categorical output variable(s) for each timepoint.
     Returns:
         accuracies: numpy array of shape (doutput,) with the accuracy for each output dimension
     """
@@ -459,9 +766,20 @@ def accuracy_all_mice(all_predictions: list, output: list):
 
     for mouse in range(nmice):
         for trial in range(len(all_predictions[mouse])):
-            # Flatten predictions and outputs across time: (doutput, T) -> (T, doutput)
-            all_pred_concat.append(all_predictions[mouse][trial].T)
-            all_output_concat.append(output[mouse][trial].T)
+            # Predictions are always (doutput, T)
+            pred_trial = all_predictions[mouse][trial].T  # (T, doutput)
+            all_pred_concat.append(pred_trial)
+
+            # Output can be (doutput,) or (doutput, T)
+            output_trial = output[mouse][trial]
+            if output_trial.ndim == 1:
+                # Scalar per trial: (doutput,) -> expand to (T, doutput) where all T are the same
+                T = pred_trial.shape[0]
+                output_trial_expanded = np.tile(output_trial[:, np.newaxis], (1, T)).T  # (T, doutput)
+                all_output_concat.append(output_trial_expanded)
+            else:
+                # Time-varying: (doutput, T) -> (T, doutput)
+                all_output_concat.append(output_trial.T)
 
     # Concatenate all timepoints from all trials and all mice
     all_pred_concat = np.vstack(all_pred_concat)  # (total_timepoints, doutput)
@@ -507,7 +825,7 @@ def cross_validate_decoder(neural: list, input: list, output: list, metadata: st
         nsets: number of cross-validation sets (default: 5)
         eval_fn: evaluation function to compute performance metric. Should have the signature
                 scores = eval_fn(predictions, output)
-                Default: f1scores_all_mice (for binary outputs), can use accuracy_all_mice for categorical
+                Default: accuracy_all_mice (for binary outputs), can use accuracy_all_mice for categorical
     kwargs are passed to train_decoder
     Returns:
         scores: numpy array of shape (doutput,) with the evaluation metric for each output dimension
@@ -519,7 +837,7 @@ def cross_validate_decoder(neural: list, input: list, output: list, metadata: st
     """
 
     if eval_fn is None:
-        eval_fn = f1scores_all_mice
+        eval_fn = accuracy_all_mice
 
     nmice = len(neural)
 
