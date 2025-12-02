@@ -282,7 +282,7 @@ def get_range(x: list):
 
 def print_data_summary(data: dict):
     """Prints a summary of the data structure."""
-    
+
     nmice = len(data['neural'])
     print(f"Number of mice: {nmice}")
     ntrials_per_mouse = [len(data['neural'][mouse]) for mouse in range(nmice)]
@@ -309,6 +309,7 @@ def print_data_summary(data: dict):
         nneurons_curr = data['neural'][mouse][0].shape[0]
         assert np.all([data['neural'][mouse][trial].shape[0] == nneurons_curr for trial in range(ntrials)])
         nneurons.append(nneurons_curr)
+        mean_T.append(np.mean(Ts))
         min_T.append(np.min(Ts))
         max_T.append(np.max(Ts))
         if np.ndim(data['input'][mouse][0]) == 1:
@@ -331,7 +332,39 @@ def print_data_summary(data: dict):
                     unique_outputs[i].add(data['output'][mouse][trial][i])
                 else:
                     unique_outputs[i].update(set(np.unique(data['output'][mouse][trial][i, :])))
-                
+                    
+    unique_outputs = [list(sorted(x)) for x in unique_outputs]
+                    
+    # compute fraction of each output value
+    hist_outputs = []
+    frac_outputs = []
+    bin_edges = []
+    for i in range(doutput):
+        centers = np.array(sorted(unique_outputs[i]))
+        edges = np.concatenate([[-np.inf], (centers[:-1] + centers[1:]) / 2, [np.inf]])
+        bin_edges.append(edges)
+
+    for mouse in range(nmice):
+        ntrials = len(data['neural'][mouse])
+        hist_mouse = [np.zeros(len(x)) for x in unique_outputs]
+        for trial in range(ntrials):
+            for i in range(doutput):
+                # count how often we see each value unique_outputs[i] in data['output'][mouse][trial][i]
+                if np.ndim(data['output'][mouse][trial]) == 1:
+                    idx = unique_outputs[i].index(data['output'][mouse][trial][i])
+                    hist_mouse[idx] += 1
+                else:
+                    counts,_ = np.histogram(data['output'][mouse][trial][i, :], bins=bin_edges[i], density=False)
+                    hist_mouse[i] += counts
+        frac_mouse = [x/np.maximum(1,np.sum(x)) for x in hist_mouse]
+        hist_outputs.append(hist_mouse)
+        frac_outputs.append(frac_mouse)
+    total_frac_outputs = [np.zeros(len(x)) for x in unique_outputs]
+
+    for i in range(doutput):
+        total_hist_outputs = np.sum([h[i] for h in hist_outputs], axis=0)
+        total_frac_outputs[i] = total_hist_outputs / np.maximum(1,np.sum(total_hist_outputs))
+
     print(f"Summary statistics (across all mice):")
     print(f"  T: mean: {np.mean(mean_T):.2f}, min: {np.min(min_T)}, max: {np.max(max_T)}")
     print(f"  n_neurons: mean: {np.mean(nneurons):.2f}', min: {np.min(nneurons)}, max: {np.max(nneurons)}")
@@ -343,9 +376,9 @@ def print_data_summary(data: dict):
     print(f"  Output range:")
     for i in range(doutput):
         print(f"    {i}: [{output_range_all[0][i]:.1f}, {output_range_all[1][i]:.1f}]")
-    print(f"  Unique outputs per dimension:")
+    print(f"  Unique outputs per dimension (fraction of data):")
     for i in range(doutput):
-        print(f"    {i}: {{{', '.join(f'{x:.1f}' for x in unique_outputs[i])}}}")
+        print(f"    {i}: {{{', '.join(f'{x:.1f} ({y:.3f})' for x,y in zip(unique_outputs[i],total_frac_outputs[i]))}}}")
     print(f"\nPer-mouse statistics:")
     print(f"  Mean T: " + ", ".join(f"{x:.1f}" for x in mean_T))
     print(f"  Min T: " + ", ".join(f"{x}" for x in min_T))
@@ -353,11 +386,24 @@ def print_data_summary(data: dict):
     print(f"  n_neurons: " + ", ".join(f"{x}" for x in nneurons))
     print(f"  Input range: {input_range}")
     for i in range(dinput):
-        print(f"    {i}: [" + ", ".join(f"({r[0][i]:.1f}, {r[1][i]:.1f})" for r in input_range) + "]")
+        s = f"    {i}: "
+        for r in input_range:
+            s += f"[{r[0][i]:.1f}, {r[1][i]:.1f}] "
+        print(s)
     print(f"  Output range: {output_range}")
     for i in range(doutput):
-        print(f"    {i}: [" + ", ".join(f"({r[0][i]:.1f}, {r[1][i]:.1f})" for r in output_range) + "]")
-
+        s = f"    {i}: "
+        for r in output_range:
+            s += f"[{r[0][i]:.1f}, {r[1][i]:.1f}] "
+        print(s)
+    print(f"  Output fraction of data:")
+    for i in range(doutput):
+        s = f"    {i}: ("
+        for j,v in enumerate(unique_outputs[i]):
+            for mouse in range(nmice):
+                s += f"{frac_outputs[mouse][i][j]:.3f} "
+            s = s.strip() + ")  "
+        print(s)
     return
 
 def plot_trial(data: dict, mouse: int = 0, trial: int = 0, ax: list | None = None, 
@@ -412,8 +458,8 @@ def plot_trial(data: dict, mouse: int = 0, trial: int = 0, ax: list | None = Non
         z = (max_input[indim] - min_input[indim])
         normalized = (input[indim]-min_input[indim]) / z if z else 0
         ax[1].plot(normalized*.9+.05+indim)
-        ax[1].plot([0,T],[indim,indim],'k--')
-    ax[1].plot([0,T],[dinput,dinput],'k--')
+        ax[1].plot([0,T],[indim,indim],':',color=[.7,.7,.7])
+    ax[1].plot([0,T],[dinput,dinput],':',color=[.7,.7,.7])
     if input_names is None:
         input_names = [f'In {i}' for i in range(dinput)]
     ax[1].set_yticks(np.arange(dinput)+0.5)
@@ -430,7 +476,7 @@ def plot_trial(data: dict, mouse: int = 0, trial: int = 0, ax: list | None = Non
         z = max_output[outdim]
         normalized = output[outdim] / z if z else 0
         h = ax[2].plot(normalized*.9+.05+outdim)
-        ax[2].plot([0,T],[outdim,outdim],'k--')
+        ax[2].plot([0,T],[outdim,outdim],':',color=[.7,.7,.7])
         if predictions is not None:
             pred = predictions[mouse][trial]
             normalized_pred = pred[outdim] / max_output[outdim]
@@ -441,7 +487,7 @@ def plot_trial(data: dict, mouse: int = 0, trial: int = 0, ax: list | None = Non
             # make color a little lighter for label
             colorlabel = tuple((c*.7+.3) for c in color)
             h[0].set_color(colorlabel)
-    ax[2].plot([0,T],[doutput,doutput],'k--')
+    ax[2].plot([0,T],[doutput,doutput],':',color=[.7,.7,.7])
     if output_names is None:
         output_names = [f'Out {i}' for i in range(doutput)]
     ax[2].set_yticks(np.arange(doutput)+0.5)
@@ -604,9 +650,16 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
     for mouse in range(nmice):
         nneurons = mouse_data[mouse]['nneurons']
         proj = nn.Linear(nneurons, npcs, bias=False).to(device)
-        # Initialize with SVD for stability
-        U, _, _ = torch.svd(mouse_data[mouse]['neural'].T)
-        proj.weight.data = U[:npcs, :].clone()
+        # Initialize with SVD for stability (use V from SVD of neural data)
+        # For neural data with shape (n_timepoints, n_neurons), SVD gives principal components in V
+        _, _, V = torch.svd(mouse_data[mouse]['neural'], some=True)
+        # V has shape (n_neurons, min(n_timepoints, n_neurons))
+        # Handle case where we have fewer timepoints than npcs
+        n_components = min(npcs, V.shape[1])
+        proj.weight.data[:n_components, :] = V[:, :n_components].T.clone()
+        # Initialize remaining components randomly if needed
+        if n_components < npcs:
+            nn.init.orthogonal_(proj.weight.data[n_components:, :])
         projection_layers.append(proj)
 
     # Initialize separate decoders for each output dimension

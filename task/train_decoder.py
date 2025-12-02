@@ -75,8 +75,13 @@ for i in range(nplot):
     plot_trial(data,mouse=mouseplot[i],trial=trialplot[i],ax=ax[:,i],
                 input_names=input_names,output_names=output_names,
                 nneurons_sample=nneurons_sample)
+    if i > 0:
+        ax[1,i].set_yticklabels([])
+        ax[2,i].set_yticklabels([])
+
 fig.suptitle('Sample Trials from Dataset')
 fig.tight_layout()
+fig.savefig('sample_trials.png', dpi=150)
 
 # train decoder on all the data -- overfit
 model_all = train_decoder(data['neural'], data['input'], data['output'], **train_params)
@@ -97,9 +102,14 @@ for i in range(nplot):
                 input_names=input_names,output_names=output_names,
                 nneurons_sample=nneurons_sample,
                 predictions=predictions_all)
-fig.suptitle('Training Data Predictions (Overfitting Check)')
-fig.tight_layout()
+    if i > 0:
+        ax[1,i].set_yticklabels([])
+        ax[2,i].set_yticklabels([])
 
+fig.suptitle('Training Data Predictions (Overfitting Check)')
+
+fig.tight_layout()
+fig.savefig('overfitting_check.png', dpi=150)
 
 # train with cross validation
 scores_cv, predictions_cv, pcs_cv, confidence_cv, trial_splits = \
@@ -121,6 +131,10 @@ for i in range(nplot):
                 input_names=input_names,output_names=output_names,
                 nneurons_sample=nneurons_sample,
                 predictions=predictions_cv)
+    if i > 0:
+        ax[1,i].set_yticklabels([])
+        ax[2,i].set_yticklabels([])
 fig.suptitle('Cross-Validated Predictions')
 fig.tight_layout()
+fig.savefig('cross_validated_predictions.png', dpi=150)
 
