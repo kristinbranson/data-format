@@ -546,6 +546,8 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         lr: learning rate (default: 0.01)
         batch_size: batch size for training (default: 1024)
         l1_weight: L1 regularization weight for projection matrices (default: 0.001)
+        svd_max_samples: maximum number of timepoints to use for SVD initialization (default: 50000).
+                         If a mouse has more timepoints than this, a random subset will be used.
         ncategories: optional list of length doutput giving number of categories for each output dimension.
                      If not provided, will be inferred from data.
 
@@ -646,14 +648,25 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         })
 
     # Initialize projection matrices for each mouse
+    svd_max_samples = kwargs.get('svd_max_samples', 50000)  # Max timepoints to use for SVD initialization
     projection_layers = []
     for mouse in range(nmice):
         nneurons = mouse_data[mouse]['nneurons']
         proj = nn.Linear(nneurons, npcs, bias=False).to(device)
         # Initialize with SVD for stability (use V from SVD of neural data)
         # For neural data with shape (n_timepoints, n_neurons), SVD gives principal components in V
-        _, _, V = torch.svd(mouse_data[mouse]['neural'], some=True)
-        # V has shape (n_neurons, min(n_timepoints, n_neurons))
+        # Use a random subset of timepoints if data is too large
+        n_timepoints = mouse_data[mouse]['neural'].shape[0]
+        if n_timepoints > svd_max_samples:
+            # Randomly sample timepoints for SVD initialization
+            indices = torch.randperm(n_timepoints)[:svd_max_samples]
+            neural_subset = mouse_data[mouse]['neural'][indices, :]
+            print(f"Mouse {mouse}: Using {svd_max_samples} of {n_timepoints} timepoints for SVD initialization")
+        else:
+            neural_subset = mouse_data[mouse]['neural']
+
+        _, _, V = torch.svd(neural_subset, some=True)
+        # V has shape (n_neurons, min(n_timepoints_subset, n_neurons))
         # Handle case where we have fewer timepoints than npcs
         n_components = min(npcs, V.shape[1])
         proj.weight.data[:n_components, :] = V[:, :n_components].T.clone()
