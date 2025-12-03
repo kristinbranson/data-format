@@ -29,14 +29,7 @@ train_params = {
 
 #### ADD CODE HERE ####
 # import load_data function specific to your data format
-# e.g. from  data import load_data, input_names, output_names
-
-from synthetic import generate_synthetic_data
-def load_data(filepath):
-    """Generate synthetic data for demonstration."""
-    print(f"Generating synthetic data...")
-    data,gt = generate_synthetic_data()
-    return data
+# e.g. from  convert_data import load_data, input_names, output_names
 
 #######################
 
