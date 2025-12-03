@@ -12,11 +12,13 @@ You are assisting with a project that tests how well Claude Code can help reorga
 
 ## Input Data
 
-- The data in directory `data` is from the paper "Brain-wide neural activity underlying memory-guided movement".
-- The pdf of this paper is `datapaper.pdf`.
-- Relevant parts of the Methods section are in the file `methods.txt`. Read this file to better understand the data.
-- Code that uses this data is in `MapVideoAnalysis`.
-- The data are quite large. First reformat a small sample of up to 2 mice with up to 20 trials each to debug. Only after this works, reformat the whole dataset.
+- The data in directory `data` is from the paper "A flexible hippocampal population code for experience relative to reward". Read this paper to better understand the experiment and data. 
+- The pdf of this paper is `paper.pdf`.
+- Relevant parts of the Methods section are in the file `methods.txt`. Read this file to better understand the experiment and data.
+- Code from the paper are in `Sosa_et_al_2024`
+- The data are quite large. First reformat a small sample of the data. Choose two mice and a subset of trials spaced evenly in time so that we cover all types of trials.
+- One of the output variables should be the position relative to the mouse's current rewarded location. To make this categorical, discretize it into 5 bins with log spacing so that nearby bins are smaller than far bins.
+- Ask the user for other possible output and input variables.
 
 ## Target Data Format
 
@@ -71,7 +73,7 @@ data = {
   - Examples: time from an aligning signal, stimulus characteristics such as:
     - visual: contrast, position, orientation
     - audio: frequency, amplitude
-  - Can be time-varying (n_timepoints,) or scalar values per trial. If at all possible, make it time-varying. 
+  - Can be time-varying (n_timepoints,) or scalar values per trial
   - Should capture all relevant contextual information for the decoder
   - If an input is a time such as onset of some stimulus, consider if it can be converted into a time series. 
 
@@ -80,7 +82,7 @@ data = {
   - Output variables must be **categorical**, i.e. discrete rather than continuous. If a variable of interest is not discrete, **propose sensible methods to discretize it to the user**. 
   - A behavioral response from the animal could be a decoder input (if it's not what we're decoding)
   - Examples: stimulus properties (contrast, orientation), choice (left/right), reaction time, position
-  - Can be time-varying or discrete values per trial. If at all possible, make it time-varying
+  - Can be time-varying or discrete values per trial
   - This is what we're trying to extract from the neural data
   - If an output is a time such as when a behavior occurred, consider if it can be converted into a time series.
   
@@ -94,9 +96,7 @@ Use the conda environment **decoder-data-format** to run any python code.
 
 ## Decoder Reference
 
-- Modify the script `train_decoder.py` with code to import the load_data function in the section marked `ADD CODE HERE`.
-- **Only modify code within the section marker `ADD CODE HERE`**. Do not modify other parts of this code or the `decoder.py` function.
-- If you believe there is a bug, tell the user about this. But check your own formatting carefully before deciding there is a bug in `train_decoder.py` or `decoder.py`
+- Modify the script `train_decoder.py` with code to import the load_data function in the section marked `ADD CODE HERE`
 - Run this script with `python train_decoder.py <data_file_path>` to help validate.
 - Pipe the output to the file `train_decoder_out.txt` so that the user can examine it.
 
@@ -158,8 +158,6 @@ When helping convert a new dataset, follow these steps:
 - Ensure that `train_decoder.py` runs without errors and does not produce infs or nans.
 - Document all output from this script to the user in CONVERSION_NOTES.md. 
 - **Examine the output of the script**, document all findings in CONVERSION_NOTES.md
-- Do the following first on the sample data.
-- Once everything is successful, convert and run on the full dataset. 
 
 ##### Step 4.2.1
 Check that all formatting checks pass (performed by decoder.py:verify_data_format()) and that **no errors** were reported . Investigate and **explain to the user any warnings**. 
@@ -172,8 +170,8 @@ Check that all formatting checks pass (performed by decoder.py:verify_data_forma
 Check that loss decreases over epochs of training decoders. 
 
 ##### Step 4.2.4
-- Check that **accuracy for each output dimension is high when overfitting** to the training data. If it is not, check for formatting bugs. If no bugs are found, consider whether the output should be represented differently. Should it be time-varying? Should discretization be done differently? Consider reasons that the training accuracy might be poor and discuss with the user. Report results for all classification tasks. 
-- Check that the cross validation accuracy for each output dimension is almost as high as when overfit to the training data. If it is much worse than the training accuracy, consider reasons this might be the case and discuss with user. 
+- Check that accuracy for each output dimension is high when overfitting to the training data. If it is not, consider reasons that this might be the case and ask the user. 
+- Check that the cross validation accuracy for each output dimension is almost as high as when overfit to the training data.
 
 ##### Step 4.2.5
 Ask the user to look at the plots produced and that they match expectations

@@ -352,7 +352,7 @@ def print_data_summary(data: dict):
                 # count how often we see each value unique_outputs[i] in data['output'][mouse][trial][i]
                 if np.ndim(data['output'][mouse][trial]) == 1:
                     idx = unique_outputs[i].index(data['output'][mouse][trial][i])
-                    hist_mouse[idx] += 1
+                    hist_mouse[i][idx] += 1
                 else:
                     counts,_ = np.histogram(data['output'][mouse][trial][i, :], bins=bin_edges[i], density=False)
                     hist_mouse[i] += counts
@@ -384,13 +384,13 @@ def print_data_summary(data: dict):
     print(f"  Min T: " + ", ".join(f"{x}" for x in min_T))
     print(f"  Max T: " + ", ".join(f"{x}" for x in max_T))
     print(f"  n_neurons: " + ", ".join(f"{x}" for x in nneurons))
-    print(f"  Input range: {input_range}")
+    print(f"  Input range:")
     for i in range(dinput):
         s = f"    {i}: "
         for r in input_range:
             s += f"[{r[0][i]:.1f}, {r[1][i]:.1f}] "
         print(s)
-    print(f"  Output range: {output_range}")
+    print(f"  Output range:")
     for i in range(doutput):
         s = f"    {i}: "
         for r in output_range:
