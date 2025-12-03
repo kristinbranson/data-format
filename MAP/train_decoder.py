@@ -22,26 +22,25 @@ nneurons_sample = 50
 input_names = None
 output_names = None
 train_params = {
-    'npcs': 5,  # Reduced from 10 due to small sample size
+    'npcs': 10,
     'lr': 1e-3,
     'l1_weight': 1e-4
 }
 
 #### ADD CODE HERE ####
-# Import load_data function for MAP dataset
-from convert_map_data import load_data
+# Load MAP dataset
+import pickle
 
-# Define variable names for visualization
-input_names = [
-    'time_from_go_cue (s)',
-    'trial_instruction (0=left, 1=right)',
-    'photostim_power (mW)'
-]
+def load_data(data_file_path):
+    """Load MAP dataset from pickle file."""
+    with open(data_file_path, 'rb') as f:
+        data = pickle.load(f)
+    return data
 
-output_names = [
-    'choice_direction (0=left, 1=right)',
-    'outcome (0=miss, 1=hit)'
-]
+# Set input and output names for plotting
+input_names = ['Time from go cue (s)', 'Photostim (0=ctrl, 1=ALM)']
+output_names = ['Lick direction (0=L, 1=R, 2=none)', 'Outcome (0=hit, 1=miss, 2=ign)', 'Early lick (0=no, 1=yes)']
+
 #######################
 
 # path to data file is the first argument
@@ -79,6 +78,10 @@ for i in range(nplot):
     plot_trial(data,mouse=mouseplot[i],trial=trialplot[i],ax=ax[:,i],
                 input_names=input_names,output_names=output_names,
                 nneurons_sample=nneurons_sample)
+    if i > 0:
+        ax[1,i].set_yticklabels([])
+        ax[2,i].set_yticklabels([])
+
 fig.suptitle('Sample Trials from Dataset')
 fig.tight_layout()
 fig.savefig('sample_trials.png', dpi=150)
@@ -102,7 +105,12 @@ for i in range(nplot):
                 input_names=input_names,output_names=output_names,
                 nneurons_sample=nneurons_sample,
                 predictions=predictions_all)
+    if i > 0:
+        ax[1,i].set_yticklabels([])
+        ax[2,i].set_yticklabels([])
+
 fig.suptitle('Training Data Predictions (Overfitting Check)')
+
 fig.tight_layout()
 fig.savefig('overfitting_check.png', dpi=150)
 
@@ -126,6 +134,9 @@ for i in range(nplot):
                 input_names=input_names,output_names=output_names,
                 nneurons_sample=nneurons_sample,
                 predictions=predictions_cv)
+    if i > 0:
+        ax[1,i].set_yticklabels([])
+        ax[2,i].set_yticklabels([])
 fig.suptitle('Cross-Validated Predictions')
 fig.tight_layout()
 fig.savefig('cross_validated_predictions.png', dpi=150)
