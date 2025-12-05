@@ -352,7 +352,7 @@ def print_data_summary(data: dict):
                 # count how often we see each value unique_outputs[i] in data['output'][mouse][trial][i]
                 if np.ndim(data['output'][mouse][trial]) == 1:
                     idx = unique_outputs[i].index(data['output'][mouse][trial][i])
-                    hist_mouse[idx] += 1
+                    hist_mouse[i][idx] += 1
                 else:
                     counts,_ = np.histogram(data['output'][mouse][trial][i, :], bins=bin_edges[i], density=False)
                     hist_mouse[i] += counts
@@ -384,13 +384,13 @@ def print_data_summary(data: dict):
     print(f"  Min T: " + ", ".join(f"{x}" for x in min_T))
     print(f"  Max T: " + ", ".join(f"{x}" for x in max_T))
     print(f"  n_neurons: " + ", ".join(f"{x}" for x in nneurons))
-    print(f"  Input range: {input_range}")
+    print(f"  Input range:")
     for i in range(dinput):
         s = f"    {i}: "
         for r in input_range:
             s += f"[{r[0][i]:.1f}, {r[1][i]:.1f}] "
         print(s)
-    print(f"  Output range: {output_range}")
+    print(f"  Output range:")
     for i in range(doutput):
         s = f"    {i}: "
         for r in output_range:
@@ -546,6 +546,11 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         lr: learning rate (default: 0.01)
         batch_size: batch size for training (default: 1024)
         l1_weight: L1 regularization weight for projection matrices (default: 0.001)
+        svd_max_samples: maximum number of timepoints to use for SVD initialization (default: 50000).
+                         If a mouse has more timepoints than this, a random subset will be used.
+        svd_max_neurons: maximum number of neurons to use for SVD initialization (default: 2000).
+                         If a mouse has more neurons than this, random Gaussian projection will be used.
+                         The final weight is the product of the random projection and SVD matrices.
         ncategories: optional list of length doutput giving number of categories for each output dimension.
                      If not provided, will be inferred from data.
 
@@ -646,20 +651,52 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         })
 
     # Initialize projection matrices for each mouse
+    svd_max_samples = kwargs.get('svd_max_samples', 50000)  # Max timepoints to use for SVD initialization
+    svd_max_neurons = kwargs.get('svd_max_neurons', 2000)   # Max neurons to use for SVD initialization
     projection_layers = []
     for mouse in range(nmice):
         nneurons = mouse_data[mouse]['nneurons']
         proj = nn.Linear(nneurons, npcs, bias=False).to(device)
+
         # Initialize with SVD for stability (use V from SVD of neural data)
         # For neural data with shape (n_timepoints, n_neurons), SVD gives principal components in V
-        _, _, V = torch.svd(mouse_data[mouse]['neural'], some=True)
-        # V has shape (n_neurons, min(n_timepoints, n_neurons))
-        # Handle case where we have fewer timepoints than npcs
-        n_components = min(npcs, V.shape[1])
-        proj.weight.data[:n_components, :] = V[:, :n_components].T.clone()
+        # Use random subsets if data is too large
+        n_timepoints = mouse_data[mouse]['neural'].shape[0]
+
+        # Sample timepoints if needed
+        if n_timepoints > svd_max_samples:
+            time_indices = torch.randperm(n_timepoints)[:svd_max_samples]
+            neural_subset = mouse_data[mouse]['neural'][time_indices, :]
+            print(f"Mouse {mouse}: Using {svd_max_samples} of {n_timepoints} timepoints for SVD initialization")
+        else:
+            neural_subset = mouse_data[mouse]['neural']
+
+        # Use random projection if too many neurons
+        if nneurons > svd_max_neurons:
+            # Create random Gaussian projection matrix: (n_neurons, svd_max_neurons)
+            P = torch.randn(nneurons, svd_max_neurons, device=device)
+            # Project neural data: (n_timepoints, n_neurons) @ (n_neurons, svd_max_neurons) = (n_timepoints, svd_max_neurons)
+            neural_projected = neural_subset @ P
+            print(f"Mouse {mouse}: Using random projection to {svd_max_neurons} of {nneurons} neurons for SVD initialization")
+
+            # SVD on projected data
+            _, _, V = torch.svd(neural_projected, some=True)
+            # V has shape (svd_max_neurons, min(n_timepoints_subset, svd_max_neurons))
+
+            # Compose: final weight = (P @ V[:, :npcs]).T = V[:, :npcs].T @ P.T
+            n_components = min(npcs, V.shape[1])
+            proj.weight.data[:n_components, :] = (V[:, :n_components].T @ P.T).clone()
+        else:
+            # Standard SVD without random projection
+            _, _, V = torch.svd(neural_subset, some=True)
+            # V has shape (n_neurons, min(n_timepoints_subset, n_neurons))
+            n_components = min(npcs, V.shape[1])
+            proj.weight.data[:n_components, :] = V[:, :n_components].T.clone()
+
         # Initialize remaining components randomly if needed
         if n_components < npcs:
             nn.init.orthogonal_(proj.weight.data[n_components:, :])
+
         projection_layers.append(proj)
 
     # Initialize separate decoders for each output dimension
