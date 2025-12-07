@@ -181,18 +181,26 @@ Use `all_data.json` to create a human-readable intervention summary. For each us
 * Triggering cause (one-sentence summary)
 * Notes on corrections or redirections
 
-### Official Categories
+### Official Categories (confirmed, use these definitions)
 
-1. **Validation Flag / Correction Requested**
-2. **Instruction Non-Compliance**
-3. **User Question**
-4. **Workflow Progression / Next Step**
-5. **Spec Refinement**
-6. **Result Review / Approval or Rejection**
-7. **Meta Request**
-8. **Out-of-Band Content**
+1. **Workflow Progression / Next Step** — user asks to proceed, continue, or move the work forward.
+2. **Spec Refinement** — user refines requirements, scope, or desired outputs.
+3. **Correction** — user flags an error, mismatch, or requests a fix/improvement.
+4. **User Question** — user asks a question about the work, data, or approach.
+5. **User Information** — user provides a status/progress update without requesting action.
+6. **Request** — user asks for a specific action or new task (not necessarily a correction).
+7. **Result Review / Approval or Rejection** — user reviews results and reacts (accept/reject/concern).
 
-The Agent may add more if justified and will list them.
+Use these categories and their descriptions when labeling interventions. When categorizing, call the OpenAI API (no heuristics) and pass these definitions in the prompt.
+
+### Stage Labels (use these definitions)
+
+- **Initialization** — setup and starting instructions/context.
+- **Conversion** — data loading and conversion.
+- **Visualization** — plotting or visualization.
+- **Documentation** — notes, README, logging progress.
+- **Validation** — verifying data structure and values, decoder training.
+- **Cleanup** — final tidy-up, directory clean.
 
 ---
 

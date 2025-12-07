@@ -245,35 +245,73 @@ def summarize_text(text: str, max_len: int = 300) -> str:
     return f"{head} ... {tail}"
 
 
-def categorize_user_message(text: str) -> Tuple[List[str], bool]:
-    """Assign categories and mark if the user requested a correction/branch."""
-    lowered = text.lower()
-    categories: List[str] = []
-    correction = any(word in lowered for word in ["wrong", "error", "fix", "correct", "mistake", "issue"])
-    question = "?" in text or any(
-        lowered.startswith(prefix) for prefix in ["what", "how", "why", "does", "do ", "can ", "should ", "where"]
+def categorize_user_message(text: str, context: str = "") -> Tuple[List[str], bool, Optional[str]]:
+    """
+    Assign categories and stage using the OpenAI API with the confirmed definitions in AGENTS.md.
+    Returns (categories, correction_flag, stage). Raises an explicit exception on failure so callers can log.
+    """
+    try:
+        import os
+        from openai import OpenAI
+    except ImportError:
+        raise RuntimeError("openai package is not installed; cannot categorize")
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY not set; cannot categorize")
+
+    client = OpenAI(api_key=api_key)
+    system_prompt = (
+        "You are a classifier. Choose zero or more categories and one stage based on the user message.\n"
+        "Categories:\n"
+        "1. Workflow Progression / Next Step — user asks to proceed, continue, or move the work forward.\n"
+        "2. Spec Refinement — user refines requirements, scope, or desired outputs.\n"
+        "3. Correction — user flags an error, mismatch, or requests a fix/improvement.\n"
+        "4. User Question — user asks a question about the work, data, or approach.\n"
+        "5. User Information — user provides a status/progress update without requesting action.\n"
+        "6. Request — user asks for a specific action or new task (not necessarily a correction).\n"
+        "7. Result Review / Approval or Rejection — user reviews results and reacts (accept/reject/concern).\n"
+        "Stages:\n"
+        "1. Initialization — setup and starting instructions/context.\n"
+        "2. Conversion — data loading and conversion.\n"
+        "3. Visualization — plotting or visualization.\n"
+        "4. Documentation — notes, README, logging progress.\n"
+        "5. Validation — verifying data structure and values, decoder training.\n"
+        "6. Cleanup — final tidy-up, directory clean.\n"
+        "Respond with JSON: {\"categories\": [...], \"stage\": \"StageName\"}."
     )
-    if correction:
-        categories.append("Validation Flag / Correction Requested")
-    if question:
-        categories.append("User Question")
-    if any(word in lowered for word in ["next", "continue", "proceed", "carry on", "go ahead"]):
-        categories.append("Workflow Progression / Next Step")
-    if any(word in lowered for word in ["refine", "update", "change", "adjust", "clarify", "spec", "format"]):
-        categories.append("Spec Refinement")
-    if any(word in lowered for word in ["approve", "reject", "looks good", "thanks", "ok"]):
-        categories.append("Result Review / Approval or Rejection")
-    if "instruction" in lowered or "guideline" in lowered:
-        categories.append("Meta Request")
-    if not categories:
-        categories.append("Workflow Progression / Next Step")
-    return categories, correction
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": f"User message: {text}\n\nRecent context (previous steps): {context or 'n/a'}",
+                },
+            ],
+            temperature=0,
+            max_tokens=200,
+        )
+        content = resp.choices[0].message.content
+        parsed = json.loads(content)
+        cats = parsed.get("categories", []) if isinstance(parsed, dict) else []
+        categories = [str(c) for c in cats if isinstance(c, str)]
+        stage = parsed.get("stage") if isinstance(parsed, dict) else None
+        if isinstance(stage, str):
+            stage = stage.strip()
+        else:
+            stage = None
+    except Exception as exc:
+        raise RuntimeError(f"OpenAI categorization failed: {exc}") from exc
+    correction = "Correction" in categories
+    return categories, correction, stage
 
 
 def compute_stats(numbers: List[float]) -> Dict[str, Optional[float]]:
     """Compute descriptive statistics for a numeric series."""
     if not numbers:
-        return {"mean": None, "median": None, "stdev": None, "min": None, "max": None, "count": 0}
+        return {"mean": None, "median": None, "stdev": None, "min": None, "max": None, "count": 0, "total": 0}
     return {
         "mean": statistics.mean(numbers),
         "median": statistics.median(numbers),
@@ -281,6 +319,7 @@ def compute_stats(numbers: List[float]) -> Dict[str, Optional[float]]:
         "min": min(numbers),
         "max": max(numbers),
         "count": len(numbers),
+        "total": sum(numbers),
     }
 
 
@@ -433,15 +472,29 @@ def build_steps(
                 continue
             if isinstance(display_content, str) and is_out_of_context_restart(display_content):
                 continue
-            prev_entry = steps[-2] if len(steps) >= 2 else None  # step just appended is current
+            prev_entries = []
+            if len(steps) >= 2:
+                prev_entries.append(steps[-2])
+            if len(steps) >= 3:
+                prev_entries.append(steps[-3])
+            context_parts = []
+            for prev in prev_entries:
+                prev_summary = prev.summarized_content or summarize_text(prev.display_content)
+                context_parts.append(f"Step {prev.step_number}: {prev_summary}")
+            context_str = " | ".join(context_parts)
             trigger = None
-            if prev_entry:
-                trigger = prev_entry.summarized_content or summarize_text(prev_entry.display_content)
-            categories, correction = categorize_user_message(display_content)
+            if prev_entries:
+                trigger = prev_entries[0].summarized_content or summarize_text(prev_entries[0].display_content)
+            try:
+                categories, correction, stage = categorize_user_message(display_content, context=context_str)
+            except Exception as exc:
+                warnings.append(f"categorization_failed_step_{idx}: {exc}")
+                categories, correction, stage = [], False, None
             interventions.append(
                 {
                     "raw_message": display_content,
                     "categories": categories,
+                    "stage": stage,
                     "preceding_step": idx - 1 if idx > 1 else None,
                     "trigger": trigger,
                     "caused_correction_or_branch": correction,
@@ -473,10 +526,31 @@ def write_intervention_summary(path: Path, interventions: List[Dict[str, Any]]) 
         lines.append(f"## Intervention {idx}")
         lines.append(f"- Quote: \"{iv['raw_message']}\"")
         lines.append(f"- Categories: {', '.join(iv['categories'])}")
+        lines.append(f"- Stage: {iv.get('stage')}")
         lines.append(f"- Step before message: {iv.get('preceding_step')}")
-        lines.append(f"- Trigger: {iv.get('trigger')}")
+        trigger = iv.get("trigger")
+        if isinstance(trigger, str):
+            trigger = " ".join(trigger.split())
+        lines.append(f"- Trigger: {trigger}")
         lines.append(f"- Caused correction/branch: {'Yes' if iv.get('caused_correction_or_branch') else 'No'}")
         lines.append("")
+    path.write_text("\n".join(lines))
+
+
+def write_category_totals(path: Path, interventions: List[Dict[str, Any]]) -> None:
+    from collections import Counter
+    lines = ["# Intervention Category Totals", ""]
+    if not interventions:
+        lines.append("No user interventions detected.")
+    else:
+        cat_counts = Counter()
+        for iv in interventions:
+            for c in iv.get("categories", []):
+                cat_counts[c] += 1
+        lines.append("| Category | Count |")
+        lines.append("| --- | --- |")
+        for cat, count in sorted(cat_counts.items(), key=lambda kv: kv[0].lower()):
+            lines.append(f"| {cat} | {count} |")
     path.write_text("\n".join(lines))
 
 
@@ -571,13 +645,13 @@ def write_token_usage(path: Path, steps: List[StepEntry], tokens_per_tool: Dict[
         lines.append("No tool token usage recorded.")
     else:
         lines.append("")
-        lines.append("| Type | Mean | Median | Stdev | Min | Max | Calls |")
-        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        lines.append("| Type | Mean | Median | Stdev | Min | Max | Calls | Total |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
         for tool, counts in tokens_per_tool.items():
             stats = compute_stats(counts)
             lines.append(
                 f"| {tool} | {stats['mean'] or 0:.2f} | {stats['median'] or 0:.2f} | {stats['stdev'] or 0:.2f} | "
-                f"{stats['min'] or 0:.2f} | {stats['max'] or 0:.2f} | {stats['count']} |"
+                f"{stats['min'] or 0:.2f} | {stats['max'] or 0:.2f} | {stats['count']} | {int(stats['total'])} |"
             )
     path.write_text("\n".join(lines))
 
@@ -618,7 +692,8 @@ def write_file_index(path: Path) -> None:
         "markdown_outputs": [
             "01_intervention_summary.md",
             "02_work_summary.md",
-            "03_token_usage.md",
+            "03_intervention_category_totals.md",
+            "04_token_usage.md",
         ],
         "JSON": "all_data.json",
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -672,8 +747,9 @@ def process_conversation(convo_dir: Path) -> None:
     (convo_dir / "all_data.json").write_text(json.dumps(all_data, indent=2, ensure_ascii=False))
     write_intervention_summary(convo_dir / "01_intervention_summary.md", interventions)
     write_work_summary(convo_dir / "02_work_summary.md", steps)
-    write_token_usage(convo_dir / "03_token_usage.md", steps, tokens_per_tool)
-    write_file_index(convo_dir / "04_file_index.json")
+    write_category_totals(convo_dir / "03_intervention_category_totals.md", interventions)
+    write_token_usage(convo_dir / "04_token_usage.md", steps, tokens_per_tool)
+    write_file_index(convo_dir / "05_file_index.json")
 
 
 def discover_conversations(parent_dir: Path, specific: Optional[List[str]]) -> List[Path]:
