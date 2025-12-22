@@ -278,6 +278,36 @@ Accuracy on training data:
 3. See `DECODER_ANALYSIS.md` for performance details
 4. Check `cache/` for detailed logs if needed
 
+---
+
+## Update: Full Dataset Conversion (2025-12-09)
+
+### Script Enhancement
+Modified `convert_data.py` to support true full dataset conversion:
+
+**Command Line Behavior**:
+- `--mode sample` (default): 2 mice (sub-m11, sub-m12), 5 sessions each, 10 trials/session
+- `--mode full`: ALL 11 mice, ALL sessions, ALL trials (~80-100 per session)
+
+**All 11 Subjects**:
+- sub-m11, sub-m12, sub-m13, sub-m14, sub-m15, sub-m17, sub-m18, sub-m19, sub-m3, sub-m4, sub-m7
+
+**Expected Full Dataset Size**:
+- ~11 mice × ~12 sessions/mouse × ~80 trials/session = ~10,560 trials
+- Each session treated as separate "subject" in decoder format = ~120+ sessions
+
+**Usage**:
+```bash
+# Sample data (quick, ~100 trials)
+python convert_data.py --mode sample
+
+# Full data (all mice, all trials)
+python convert_data.py --mode full
+
+# Custom subset
+python convert_data.py --subjects sub-m11 sub-m13 --n-trials 20
+```
+
 **Success Criteria Met**:
 - [x] Match target data structure exactly
 - [x] Preserve all relevant information from source

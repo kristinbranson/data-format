@@ -2,10 +2,10 @@
 
 | Category | Count |
 | --- | --- |
-| Correction | 3 |
-| Request | 7 |
-| Result Review / Approval or Rejection | 1 |
-| User Information | 5 |
-| User Question | 12 |
+| Correction | 6 |
+| Request | 8 |
+| Result Review / Approval or Rejection | 2 |
+| User Information | 6 |
+| User Question | 18 |
 | Validation | 1 |
-| Workflow Progression / Next Step | 11 |
+| Workflow Progression / Next Step | 15 |

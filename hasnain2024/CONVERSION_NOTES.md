@@ -565,9 +565,23 @@ Modified `convert_data.py` (lines 476-601):
 - **Speedup**: ~7.6x
 - **Efficiency**: Near-linear scaling with available CPUs
 
+### Neuron Filtering (Added 2025-12-09)
+
+**Rationale**: The paper states "All units with firing rates exceeding 1 Hz were included in all other analyses"
+
+**Implementation**:
+- Added `compute_session_firing_rates()` function to calculate session-wide firing rate per neuron
+- Added `min_firing_rate_hz` config parameter (default: 1.0 Hz)
+- Filter applied before trial processing to ensure consistent neuron counts
+
+**Impact on neuron counts**:
+- H2 probe sessions (EKH1, EKH3): ~99-100% neurons kept (already high firing rates)
+- Neuropixels sessions (JEB13, JEB14, etc.): ~30-45% neurons kept (many sparse units filtered)
+- Overall: ~65% of neurons removed, file size reduced from 1.3 GB to 449 MB
+
 ### Final Dataset Properties
 
-**File**: `hasnain2024_full_data.pkl` (1.3 GB)
+**File**: `hasnain2024_full_data.pkl` (449 MB)
 
 **Structure**:
 - **24 subjects** (one per recording session)
@@ -577,20 +591,20 @@ Modified `convert_data.py` (lines 476-601):
 **Note**: Subject 19 (JEB6 session) excluded due to 0 valid trials (all trials had data errors)
 
 **Dimensions**:
-- Neural: 27-1258 neurons per subject (consistent within each subject)
+- Neural: 27-418 neurons per subject (after firing rate filtering, consistent within each subject)
 - Input: 9 features × 47 time bins
 - Output: 3 categorical features per trial
 - Time: 47 bins × 75 ms = 3.525 seconds per trial
 
 ### Validation Results - Full Dataset ✓
 
-**Log file**: `train_decoder_full_output.log` (182 lines)
+**Log file**: `train_decoder_full_output.log`
 
 **Data Summary Statistics**:
 - Input dimension: 9
 - Output dimension: 3
 - Time bins per trial: 47
-- Average neurons per subject: 463.5 (range: 27-1258)
+- Average neurons per subject: 164.5 (range: 27-418)
 
 **Input ranges** (all valid, no constant dimensions):
 - Time from go cue: [0.5, 31.2] seconds
@@ -604,23 +618,24 @@ Modified `convert_data.py` (lines 476-601):
 - Outcome: 17.8% incorrect, 82.2% correct
 
 **Training Performance** (Overfitting Check):
-- Output 0 (Lick direction): **73.12%** accuracy
-- Output 1 (Context): **92.23%** accuracy
+- Output 0 (Lick direction): **72.45%** accuracy
+- Output 1 (Context): **90.42%** accuracy
 - Output 2 (Outcome): **100.00%** accuracy
 
-**Cross-Validation Performance** (5-fold, 28.6 minutes):
-- Output 0 (Lick direction): **68.72%** accuracy
-- Output 1 (Context): **91.12%** accuracy
-- Output 2 (Outcome): **99.98%** accuracy
+**Cross-Validation Performance** (5-fold, 26.7 minutes):
+- Output 0 (Lick direction): **68.37%** accuracy
+- Output 1 (Context): **90.61%** accuracy
+- Output 2 (Outcome): **100.00%** accuracy
 
-**Loss curves**: Smooth decrease from 318.7 → 197.1 (training), 262.6 → 168.4 (CV fold 1)
+**Loss curves**: Smooth decrease from 329.6 → 206.0 (training)
 
 **Key Observations**:
 1. ✓ Cross-validation very close to training accuracy (minimal overfitting)
-2. ✓ Lick direction: 69% CV accuracy for 50/50 binary task (good performance)
+2. ✓ Lick direction: 68% CV accuracy for 50/50 binary task (good performance)
 3. ✓ Context: 91% CV accuracy despite class imbalance (84/16 split)
-4. ✓ Outcome: Near-perfect prediction (99.98% CV), likely due to distinct neural patterns for correct/incorrect trials
-5. ✓ Training/CV gap: 4.4% (lick), 1.1% (context), 0.02% (outcome) - excellent generalization
+4. ✓ Outcome: Perfect prediction (100% CV)
+5. ✓ Training/CV gap: 4.1% (lick), -0.2% (context), 0% (outcome) - excellent generalization
+6. ✓ Firing rate filtering removed ~65% of neurons with negligible impact on decoder performance
 
 ### Issues Encountered and Fixed
 
@@ -630,9 +645,10 @@ Modified `convert_data.py` (lines 476-601):
 - **Solution**: Added filtering to exclude subjects with 0 valid trials
 - **Result**: Final dataset has 24 subjects (JEB6 excluded)
 
-**Issue 2: Multiple Validation Attempts**
-- Created several log files during debugging and optimization phases
-- Final complete validation output: `train_decoder_full_output.log`
+**Issue 2: Missing Neuron Filtering (Fixed 2025-12-09)**
+- **Problem**: Paper specifies neurons with firing rate > 1 Hz should be used
+- **Solution**: Added `compute_session_firing_rates()` and filtering in `convert_session()`
+- **Result**: File size reduced 65%, decoder performance unchanged
 
 ### Comparison: Sample vs. Full Dataset
 

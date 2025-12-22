@@ -29,6 +29,9 @@ CONFIG = {
     'align_event': 'goCue',  # Align to go cue
     'time_window': [-2.0, 1.5],  # Seconds relative to go cue
 
+    # Neuron filtering (from paper: "All units with firing rates exceeding 1 Hz were included")
+    'min_firing_rate_hz': 1.0,  # Minimum firing rate threshold
+
     # Trial selection
     'include_trial_types': ['hit', 'miss', 'early'],  # Exclude 'no' response trials
     'min_trials_per_condition': 5,  # Minimum trials needed
@@ -97,9 +100,65 @@ def bin_spikes(spike_times, time_bins):
     firing_rates = counts / bin_width
     return firing_rates
 
-def extract_neural_data(f, obj, trial_idx, time_bins):
+def compute_session_firing_rates(f, obj):
+    """
+    Compute session-wide firing rate for each neuron.
+
+    Returns:
+    --------
+    firing_rates : list of float
+        Firing rate in Hz for each neuron
+    neuron_info : list of dict
+        Info about each neuron (probe_idx, unit_idx)
+    """
+    clu = obj['clu']
+    clu_data = clu[()]
+
+    firing_rates = []
+    neuron_info = []
+
+    for probe_idx, clu_ref in enumerate(clu_data.flatten()):
+        probe = f[clu_ref]
+        n_units = probe['tm'].shape[0]
+
+        for unit_idx in range(n_units):
+            # Get all spike times for this neuron
+            tm_ref = probe['tm'][unit_idx, 0]
+            spike_times = f[tm_ref][()].flatten()
+            n_spikes = len(spike_times)
+
+            # Calculate firing rate
+            if n_spikes > 1:
+                duration = spike_times[-1] - spike_times[0]
+                if duration > 0:
+                    fr = n_spikes / duration
+                else:
+                    fr = 0.0
+            else:
+                fr = 0.0
+
+            firing_rates.append(fr)
+            neuron_info.append({'probe_idx': probe_idx, 'unit_idx': unit_idx})
+
+    return firing_rates, neuron_info
+
+
+def extract_neural_data(f, obj, trial_idx, time_bins, neuron_mask=None):
     """
     Extract and bin neural data for one trial
+
+    Parameters:
+    -----------
+    f : h5py.File
+        Open HDF5 file handle
+    obj : h5py.Group
+        The 'obj' group from the file
+    trial_idx : int
+        Trial index (0-based)
+    time_bins : array
+        Time bin edges
+    neuron_mask : array of bool, optional
+        Which neurons to include (True = include). If None, include all.
 
     Returns:
     --------
@@ -108,8 +167,8 @@ def extract_neural_data(f, obj, trial_idx, time_bins):
     clu = obj['clu']
     clu_data = clu[()]
 
-    n_neurons = 0
     all_rates = []
+    neuron_idx = 0
 
     # Process both probes
     for probe_idx, clu_ref in enumerate(clu_data.flatten()):
@@ -117,6 +176,11 @@ def extract_neural_data(f, obj, trial_idx, time_bins):
         n_units = probe['tm'].shape[0]
 
         for unit_idx in range(n_units):
+            # Check if this neuron should be included
+            if neuron_mask is not None and not neuron_mask[neuron_idx]:
+                neuron_idx += 1
+                continue
+
             # Get spike times for this trial
             trialtm_ref = probe['trialtm'][unit_idx, 0]
             trial_nums_ref = probe['trial'][unit_idx, 0]
@@ -131,7 +195,7 @@ def extract_neural_data(f, obj, trial_idx, time_bins):
             # Bin the spikes
             firing_rate = bin_spikes(trial_spikes, time_bins)
             all_rates.append(firing_rate)
-            n_neurons += 1
+            neuron_idx += 1
 
     # Stack into matrix
     neural_matrix = np.array(all_rates)  # (n_neurons, n_timebins)
@@ -302,6 +366,7 @@ def convert_session(file_path, config, max_trials=None):
 
     bin_size_sec = config['bin_size_ms'] / 1000.0
     time_window = config['time_window']
+    min_firing_rate = config.get('min_firing_rate_hz', 1.0)  # Default: 1 Hz threshold
 
     # Create time bins
     time_bins = np.arange(time_window[0], time_window[1] + bin_size_sec, bin_size_sec)
@@ -317,6 +382,13 @@ def convert_session(file_path, config, max_trials=None):
         obj = f['obj']
         bp = obj['bp']
         bp_ev = bp['ev']
+
+        # Compute session-wide firing rates and filter neurons
+        firing_rates, neuron_info = compute_session_firing_rates(f, obj)
+        neuron_mask = np.array([fr >= min_firing_rate for fr in firing_rates])
+        n_total_neurons = len(firing_rates)
+        n_kept_neurons = np.sum(neuron_mask)
+        print(f"  Neurons: {n_kept_neurons}/{n_total_neurons} with firing rate >= {min_firing_rate} Hz")
 
         n_trials_total = int(bp['Ntrials'][0, 0])
         if max_trials is not None:
@@ -345,9 +417,9 @@ def convert_session(file_path, config, max_trials=None):
             # Create time bins relative to alignment
             trial_time_bins = time_bins + align_time
 
-            # Extract neural data
+            # Extract neural data (with firing rate filter)
             try:
-                neural_matrix = extract_neural_data(f, obj, trial_idx, trial_time_bins)
+                neural_matrix = extract_neural_data(f, obj, trial_idx, trial_time_bins, neuron_mask)
 
                 # Extract kinematic data
                 kinematic_matrix, feat_names = extract_kinematic_data(

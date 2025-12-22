@@ -519,10 +519,30 @@ def build_steps(
 # ----------------------------- Markdown builders --------------------------- #
 
 def write_intervention_summary(path: Path, interventions: List[Dict[str, Any]]) -> None:
-    lines = ["# Intervention Summary", ""]
-    if not interventions:
+    lines: List[str] = []
+    start_idx = 0
+    if path.exists():
+        try:
+            existing = path.read_text().splitlines()
+            lines.extend(existing)
+            for line in existing:
+                if line.startswith("## Intervention "):
+                    num = line.split("## Intervention ", 1)[1].strip()
+                    if num.isdigit():
+                        start_idx = max(start_idx, int(num))
+            if lines and lines[-1].strip() != "":
+                lines.append("")  # ensure trailing blank line
+        except Exception:
+            lines = []
+            start_idx = 0
+    if not lines:
+        lines = ["# Intervention Summary", ""]
+
+    remaining = interventions[start_idx:]
+    if not remaining and start_idx == 0 and not interventions:
         lines.append("No user interventions detected.")
-    for idx, iv in enumerate(interventions, 1):
+    for offset, iv in enumerate(remaining, 1):
+        idx = start_idx + offset
         lines.append(f"## Intervention {idx}")
         lines.append(f"- Quote: \"{iv['raw_message']}\"")
         lines.append(f"- Categories: {', '.join(iv['categories'])}")

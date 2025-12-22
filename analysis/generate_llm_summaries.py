@@ -78,6 +78,7 @@ def main() -> None:
     parser.add_argument("--delay", type=float, default=0.5, help="Delay between API calls (seconds)")
     parser.add_argument("--max-steps", type=int, default=None, help="Limit number of steps to summarize (for debugging)")
     parser.add_argument("--skip-if-existing", action="store_true", help="Skip processing if convo.summaries.json/txt already exists")
+    parser.add_argument("--resume-if-existing", action="store_true", help="Resume from existing summaries instead of overwriting")
     args = parser.parse_args()
 
     if OpenAI is None:
@@ -104,6 +105,23 @@ def main() -> None:
         print(f"Skipping {convo_dir} because {out_path.name} already exists.")
         return
 
+    # Load existing summaries if present so we can resume.
+    summaries: Dict[str, str] = {}
+    if args.resume_if_existing and out_path.exists():
+        try:
+            if args.output_format == "json":
+                data = json.loads(out_path.read_text())
+                if isinstance(data, dict):
+                    summaries = {str(k): str(v) for k, v in data.items()}
+            else:
+                for line in out_path.read_text().splitlines():
+                    if "." in line:
+                        prefix, rest = line.split(".", 1)
+                        if prefix.strip().isdigit():
+                            summaries[prefix.strip()] = rest.strip()
+        except Exception:
+            summaries = {}
+
     records, warnings = ar_load_records(convo_dir)
     if not records:
         sys.stderr.write("No JSONL records found.\n")
@@ -117,12 +135,13 @@ def main() -> None:
     max_steps = args.max_steps or len(steps)
     steps_to_process = steps[:max_steps]
 
-    summaries: Dict[str, str] = {}
     iterator = steps_to_process
     if tqdm is not None:
         iterator = tqdm(steps_to_process, desc="Summarizing steps", unit="step")
 
     for step in iterator:
+        if str(step.step_number) in summaries:
+            continue  # already summarized
         summary = summarize_step(
             client,
             args.model,

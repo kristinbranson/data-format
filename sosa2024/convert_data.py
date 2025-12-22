@@ -11,6 +11,8 @@ import os
 import pickle
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing
 
 
 # Reward zone definitions (cm)
@@ -22,6 +24,10 @@ REWARD_ZONES = {
 
 # Track parameters
 TRACK_LENGTH = 450  # cm
+
+# All available subjects in the dataset
+ALL_SUBJECTS = ['sub-m11', 'sub-m12', 'sub-m13', 'sub-m14', 'sub-m15',
+                'sub-m17', 'sub-m18', 'sub-m19', 'sub-m3', 'sub-m4', 'sub-m7']
 
 
 def get_reward_zone_from_identifier(identifier: str) -> str:
@@ -289,7 +295,7 @@ def infer_reward_zone(session_data: Dict, session_id: str) -> str:
 
 
 def convert_session(subject_id: str, session_file: str, data_dir: str = 'data',
-                   n_trials_to_select: int = 10) -> Optional[Dict]:
+                   n_trials_to_select: Optional[int] = None) -> Optional[Dict]:
     """
     Convert data for one session.
 
@@ -297,7 +303,7 @@ def convert_session(subject_id: str, session_file: str, data_dir: str = 'data',
         subject_id: Subject ID (e.g., 'sub-m11')
         session_file: NWB filename for this session
         data_dir: Directory containing NWB files
-        n_trials_to_select: Number of trials to select from session
+        n_trials_to_select: Number of trials to select from session (None = all trials)
 
     Returns:
         Dict with 'trials' list and 'session_metadata', or None if failed
@@ -328,10 +334,13 @@ def convert_session(subject_id: str, session_file: str, data_dir: str = 'data',
         print(f"    Warning: No valid trials found")
         return None
 
-    # Select subset of trials (evenly spaced)
-    n_trials = min(n_trials_to_select, len(unique_trials))
-    trial_indices = np.linspace(0, len(unique_trials) - 1, n_trials, dtype=int)
-    selected_trials = unique_trials[trial_indices]
+    # Select trials (all if n_trials_to_select is None, otherwise evenly spaced subset)
+    if n_trials_to_select is None:
+        selected_trials = unique_trials
+    else:
+        n_trials = min(n_trials_to_select, len(unique_trials))
+        trial_indices = np.linspace(0, len(unique_trials) - 1, n_trials, dtype=int)
+        selected_trials = unique_trials[trial_indices]
 
     print(f"    Processing {len(selected_trials)} trials (out of {len(unique_trials)})...")
 
@@ -382,7 +391,8 @@ def convert_session(subject_id: str, session_file: str, data_dir: str = 'data',
 
 
 def convert_subject(subject_id: str, data_dir: str = 'data',
-                    session_indices: Optional[List[int]] = None) -> List[Dict]:
+                    session_indices: Optional[List[int]] = None,
+                    n_trials_to_select: Optional[int] = None) -> List[Dict]:
     """
     Convert data for one subject, returning sessions separately.
 
@@ -390,6 +400,7 @@ def convert_subject(subject_id: str, data_dir: str = 'data',
         subject_id: Subject ID (e.g., 'sub-m11')
         data_dir: Directory containing NWB files
         session_indices: Which sessions to include (None = all)
+        n_trials_to_select: Number of trials to select per session (None = all)
 
     Returns:
         List of session dicts, each with 'trials' and 'session_metadata'
@@ -405,7 +416,7 @@ def convert_subject(subject_id: str, data_dir: str = 'data',
     all_sessions = []
 
     for nwb_file in nwb_files:
-        session_data = convert_session(subject_id, nwb_file, data_dir, n_trials_to_select=10)
+        session_data = convert_session(subject_id, nwb_file, data_dir, n_trials_to_select=n_trials_to_select)
         if session_data is not None:
             all_sessions.append(session_data)
 
@@ -522,19 +533,83 @@ def load_data(filepath: str) -> Dict:
     return data
 
 
+def _convert_session_wrapper(args):
+    """Wrapper for parallel session conversion."""
+    subject_id, session_file, data_dir, n_trials_to_select = args
+    try:
+        result = convert_session(subject_id, session_file, data_dir, n_trials_to_select)
+        return result
+    except Exception as e:
+        print(f"Error processing {subject_id}/{session_file}: {e}")
+        return None
+
+
+def convert_all_sessions_parallel(subjects: List[str], data_dir: str = 'data',
+                                   session_indices: Optional[List[int]] = None,
+                                   n_trials_to_select: Optional[int] = None,
+                                   n_workers: int = 4) -> List[Dict]:
+    """
+    Convert all sessions in parallel.
+
+    Args:
+        subjects: List of subject IDs
+        data_dir: Directory containing NWB files
+        session_indices: Which sessions to include (None = all)
+        n_trials_to_select: Number of trials per session (None = all)
+        n_workers: Number of parallel workers
+
+    Returns:
+        List of session dicts
+    """
+    # Build list of all (subject, session_file) pairs
+    tasks = []
+    for subject_id in subjects:
+        subject_dir = os.path.join(data_dir, subject_id)
+        nwb_files = sorted([f for f in os.listdir(subject_dir) if f.endswith('.nwb')])
+
+        if session_indices is not None:
+            nwb_files = [nwb_files[i] for i in session_indices if i < len(nwb_files)]
+
+        for nwb_file in nwb_files:
+            tasks.append((subject_id, nwb_file, data_dir, n_trials_to_select))
+
+    print(f"\nProcessing {len(tasks)} sessions with {n_workers} workers...")
+
+    all_sessions = []
+
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        futures = {executor.submit(_convert_session_wrapper, task): task for task in tasks}
+
+        completed = 0
+        for future in as_completed(futures):
+            completed += 1
+            result = future.result()
+            if result is not None:
+                all_sessions.append(result)
+
+            # Progress update every 10 sessions
+            if completed % 10 == 0 or completed == len(tasks):
+                print(f"  Progress: {completed}/{len(tasks)} sessions")
+
+    print(f"  Completed: {len(all_sessions)} sessions with valid data")
+    return all_sessions
+
+
 def main():
     """Main conversion script."""
     import argparse
 
     parser = argparse.ArgumentParser(description='Convert Sosa et al. 2024 dataset to standardized format')
     parser.add_argument('--mode', type=str, choices=['sample', 'full'], default='sample',
-                       help='Conversion mode: "sample" for subset of data, "full" for all data')
-    parser.add_argument('--subjects', type=str, nargs='+', default=['sub-m11', 'sub-m12'],
-                       help='Subject IDs to convert (default: sub-m11 sub-m12)')
+                       help='Conversion mode: "sample" for subset of data, "full" for all data (all mice, all trials)')
+    parser.add_argument('--subjects', type=str, nargs='+', default=None,
+                       help='Subject IDs to convert (default: sub-m11 sub-m12 for sample mode, all 11 mice for full mode)')
     parser.add_argument('--output', type=str, default=None,
                        help='Output filename (default: auto-generated based on mode)')
-    parser.add_argument('--n-trials', type=int, default=10,
-                       help='Number of trials to select per session (default: 10)')
+    parser.add_argument('--n-trials', type=int, default=None,
+                       help='Number of trials to select per session (default: 10 for sample mode, all for full mode)')
+    parser.add_argument('--parallel', type=int, default=0, metavar='N',
+                       help='Number of parallel workers (default: 0 = sequential, recommended: 4-8 for full mode)')
 
     args = parser.parse_args()
 
@@ -542,7 +617,24 @@ def main():
     print("Sosa et al. 2024 Dataset Conversion")
     print("="*60)
     print(f"Mode: {args.mode}")
-    print(f"Subjects: {', '.join(args.subjects)}")
+
+    # Determine subjects based on mode (unless explicitly specified)
+    if args.subjects is not None:
+        subjects = args.subjects
+    elif args.mode == 'full':
+        subjects = ALL_SUBJECTS  # All 11 mice
+    else:  # sample
+        subjects = ['sub-m11', 'sub-m12']  # Default 2 mice for sample
+
+    # Determine n_trials based on mode (unless explicitly specified)
+    if args.n_trials is not None:
+        n_trials = args.n_trials
+    elif args.mode == 'full':
+        n_trials = None  # All trials
+    else:  # sample
+        n_trials = 10
+
+    print(f"Subjects: {', '.join(subjects)}")
 
     # Determine session selection based on mode
     if args.mode == 'sample':
@@ -554,15 +646,33 @@ def main():
         session_indices = None
         print("Processing all sessions")
 
-    print(f"Trials per session: {args.n_trials}")
+    if n_trials is None:
+        print("Trials per session: all")
+    else:
+        print(f"Trials per session: {n_trials}")
+
+    if args.parallel > 0:
+        print(f"Parallel workers: {args.parallel}")
 
     # Collect all sessions (each session will be a "subject" in the decoder format)
-    all_sessions = []
-    for subject_id in args.subjects:
-        subject_sessions = convert_subject(subject_id, session_indices=session_indices)
-        all_sessions.extend(subject_sessions)  # Flatten sessions from all mice
+    import time
+    start_time = time.time()
 
-    print(f"\nTotal sessions collected: {len(all_sessions)}")
+    if args.parallel > 0:
+        # Parallel processing
+        all_sessions = convert_all_sessions_parallel(
+            subjects, session_indices=session_indices,
+            n_trials_to_select=n_trials, n_workers=args.parallel
+        )
+    else:
+        # Sequential processing
+        all_sessions = []
+        for subject_id in subjects:
+            subject_sessions = convert_subject(subject_id, session_indices=session_indices, n_trials_to_select=n_trials)
+            all_sessions.extend(subject_sessions)
+
+    elapsed = time.time() - start_time
+    print(f"\nTotal sessions collected: {len(all_sessions)} (took {elapsed:.1f}s)")
 
     # Format for decoder
     print("\nFormatting data for decoder...")
