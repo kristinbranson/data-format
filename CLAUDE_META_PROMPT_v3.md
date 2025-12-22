@@ -27,43 +27,30 @@
 
 ## Reference Information
 
-- The reference **paper** "A flexible hippocampal population code for experience relative to reward" is in the file `paper.pdf`.
+- The reference **paper** "Separating cognitive and motor processes in the behaving mouse" is in the file `paper.pdf`.
 - Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`. 
 - **Code** from the paper are in the directory `code`.
 - **Data** from the paper are in the directory `data`.
 
 ## Decoder Task
 
-Temporally align based on start of the trial. 
-
 ### Decoder Inputs:
-- Time from start of trial in seconds (continuous, time-varying)
-- Environment type (binary, ENV1 vs ENV2, per trial)
-- Trial number (continuous, per trial)
-- Previous trial outcome (binary, omitted = 0, rewarded = 1, per trial)
+- Time from go cue onset in seconds (continuous, time-varying)
 
 ### Decoder Outputs
-- Distance to any location in the reward zone, time-varying. Discretization bins:
-  - 0:  < -50 cm
-  - 1: 50 to -10 cm
-  - 2: -10 cm to < 0 cm
-  - 3: 0 cm
-  - 4: >0 cm to +10 cm
-  - 5: +10 to +50 cm
-  - 6: > +50 cm
-- Absolute position in corridor, discretized into 5 equal-sized bins, time-varying
-- Speed, time-varying. Discretized into bins:
-  - 0: < 2 cm/s
-  - 1: 2-10 cm/s
-  - 2: 10-20 cm/s
-  - 3: 20-40 cm/s
-  - 4: > 40 cm/s
-- Lick, time-varying. 0 = no, 1 = yes
-- Reward zone location, per-trial. 0 = A, 1 = B, 2 = C
-- Reward outcome, per-trial. 0 = no, 1 = yes
+- **Motion energy**: Discretize with per-session thresholds, time-varying
+  - 0: <= 33th percentile
+  - 1: from 33th to 66th perentile
+  - 2: > 66th percentile
+- **Postnatal age**: per-trial
+  - 0: Early: < P9
+  - 1: Mid: P9 to P10
+  - 2: Late: > P10
 
 ## Target Data Format
 
+- Split sessions into 1-minute trials. 
+- **Combine all sessions from the same subject into one session**. 
 - Save the full converted dataset to the pickle file `converted_data.pkl`.
 - All datasets must be converted into the following Python dictionary structure:
 
@@ -191,7 +178,7 @@ These functions will be used during the validation phase to ensure:
 Your processing and formatting must **match the reference paper and code** with respect to:
 - Loading of data
 - Temporal alignment of different time series streams (neural, inputs, outputs)
-- Processing of input and output data streams
+- Processing of neural, input, and output data streams
 - Curation of data: filtering of low-quality neurons, trials, sessions, and mice.
 
 To check consistency, you must compare statistics available in the reference paper and your converted dataset. 
@@ -241,6 +228,8 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 - Look for documentation or README files in the `code` directory
 - Read the provided reference code bases to see how the reference paper loaded and manipulated the data
 - Understand which functions are being called to read, curate, process, and manipulate the data
+- For neural imaging data, does delta F over F need to be computed? 
+- For elecrophysiology neural data, do cells need to be filtered based on quality? 
 - Note to file important functions, their inputs, and outputs
 
 **Done when**: You have documented key functions and their purposes in CONVERSION_NOTES.md under "Step 1".
@@ -282,6 +271,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
   - Variables important to experiments
   - Temporal alignment
   - Temporal binning
+- Read the reference paper to find information about expected decoder accuracy.
 
 **Done when**: You have documented expected dataset statistics and processing details in CONVERSION_NOTES.md under "Step 3".
 
@@ -359,7 +349,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
   - Vectorize loops
   - Avoid unnecessary file I/O
   - Use parallel processing if beneficial
-  - Include timing information to find bottlenecks
+  - Print timing information to find bottlenecks
 - Plots for `--show-processing` mode should visually convince the user that every step of the conversion is correct.
   - There are no temporal misalignments
   - Discretization of continuous outputs is correct
@@ -368,9 +358,9 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 - Validate data shapes and types at each step
 - Include sanity checks (e.g., trial counts match across arrays)
 
-**Done when**: `convert_data.py` exists and runs without errors.
+**Done when**: `convert_data.py` exists and runs efficiently without errors.
 
-**⚠️ DO NOT PROCEED** to Step 7 until `convert_data.py` exists. 
+**⚠️ DO NOT PROCEED** to Step 7 until `convert_data.py` exists and you have updated Step 6 in CONVERSION_NOTES.md.
 
 ---
 
@@ -384,8 +374,11 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
   b. Check dimensions are consistent across trials/sessions.
   c. Check that no data is missed during conversion. 
   d. Validate that metadata accurately describes the data.
-2. Run `python -u train_decoder.py sample_data.pkl --verify-only > verification_sample_out.txt`.
-3. Analyze the output file `verification_sample_out.txt`:
+2. Improve efficiency of conversion.
+  a. Look at and note timing information for the conversion. 
+  b. Identify and speed up bottlenecks by writing more efficient code. 
+3. Run `python -u train_decoder.py sample_data.pkl --verify-only > verification_sample_out.txt`.
+4. Analyze the output file `verification_sample_out.txt`:
   a. Verify no errors reported.
   b. Attempt to address any warnings
   c. Check input ranges and output value distributions against expectations from reference texts.
@@ -494,6 +487,8 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 **Actions**:
 - Pretend you are a critical reviewer whose job is to find errors
 - If the accuracy is not high for **every** output, assess whether there is a conversion issue causing this
+- High accuracy is near 100%, not just better than chance
+- Compare decoder accuracy to accuracy reported in the paper. 
 - Note any issues found
 - Fix issues and re-run affected steps
 - Iterate until no issues remain
@@ -603,6 +598,10 @@ Directory contents:
 **Trial curation rules**:
 [Describe rules]
 
+### Decoders Trained
+| Decoded variable | Accuracy |
+| | |
+
 ---
 
 ## Step 4: Check for Consistency
@@ -639,6 +638,12 @@ Directory contents:
 
 [Implementation notes]
 
+Code inefficiencies identified:
+[Note]
+
+Code speedups added:
+[Note]
+
 ---
 
 ## Step 7: Sample Conversion and Validation
@@ -666,6 +671,14 @@ Directory contents:
 
 ### Processing Plots Review
 [Notes on any anomalies]
+
+### Run Time Estimates
+
+| Speed-ups Implemented | Time Savings |
+| | |
+
+| Step | Time / Session | Estimated Total Time |
+| | | |
 
 ---
 
@@ -750,6 +763,10 @@ Directory contents:
 **Status**: [NOT STARTED | IN PROGRESS | COMPLETE]
 
 ### Accuracy Analysis
+
+| Variable | Achieved Accuracy | Expectation from Paper |
+| | |
+
 [Analysis of any low accuracies]
 
 ### Issues Found and Resolved
