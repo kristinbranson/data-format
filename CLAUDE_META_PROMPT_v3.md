@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-# Training a Neural Decoder
+# Data Reformatting and Training an Universal Neural Decoder
 
 ---
 
@@ -21,36 +21,29 @@
 ## Project Context
 
 - You are a computational neuroscientist. Your goal is to load and reformat data from a neuroscience paper into a specified structure suitable for downstream analysis.
-- You need to use the **SAME** processing of the data described in the provided reference paper and code repository. 
-- To test that you have done this successfully, you will use provided code to train a neural decoder that **inputs neural activity** and **predicts experimental and behavioral variables**. 
-- We will assess your correctness on **matching the processing the loading and processing described in the reference texts and code**. 
+- You need to use the **SAME** processing of the data described in the provided reference paper and code repository.
+- To test that you have done this successfully, you will use provided code to train a neural decoder that **inputs neural activity** and **predicts experimental and behavioral variables**.
+- We will assess your correctness on **matching the processing the loading and processing described in the reference texts and code**.
 
 ## Reference Information
 
 - The reference **paper** "Separating cognitive and motor processes in the behaving mouse" is in the file `paper.pdf`.
-- Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`. 
+- Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`.
 - **Code** from the paper are in the directory `code`.
 - **Data** from the paper are in the directory `data`.
 
 ## Decoder Task
+[Change For Each Task, Ask for User Input If Not Specified]
 
 ### Decoder Inputs:
-- Time from go cue onset in seconds (continuous, time-varying)
+- TBD
 
 ### Decoder Outputs
-- **Motion energy**: Discretize with per-session thresholds, time-varying
-  - 0: <= 33th percentile
-  - 1: from 33th to 66th perentile
-  - 2: > 66th percentile
-- **Postnatal age**: per-trial
-  - 0: Early: < P9
-  - 1: Mid: P9 to P10
-  - 2: Late: > P10
+- TBD
 
 ## Target Data Format
 
-- Split sessions into 1-minute trials. 
-- **Combine all sessions from the same subject into one session**. 
+- **Combine all sessions from the same subject into one session**.
 - Save the full converted dataset to the pickle file `converted_data.pkl`.
 - All datasets must be converted into the following Python dictionary structure:
 
@@ -113,23 +106,23 @@ data = {
 
 - **neural**: Neural activity data (e.g., firing rates, spike counts) organized by session and trial
   - Dimensions: (n_neurons, n_timepoints) for each trial.
-  - Time bins should be consistent across trials/sessions. 
+  - Time bins should be consistent across trials/sessions.
 
 - **input**: Variables that serve as inputs **to the decoder**
   - These are **decoder inputs**. They could be task inputs to the animal, but inputs to the animal can also be decoder outputs.
   - Examples: time from an aligning signal, stimulus characteristics such as:
     - visual: contrast, position, orientation
     - audio: frequency, amplitude
-  - Dimensions: (d_input, n_timepoints) for each trial. 
+  - Dimensions: (d_input, n_timepoints) for each trial.
   - Should capture all relevant contextual information for the decoder
-  - If an input is a time such as onset of some stimulus, represent it as a binary time series. 
+  - If an input is a time such as onset of some stimulus, represent it as a binary time series.
 
 - **output**: Variables to be decoded/predicted from neural activity
   - These are what we want the decoder to **predict**. They could be the animal's output behavior or properties of the stimulus.
-  - Output variables must be **categorical**, i.e. discrete rather than continuous. If a variable is not discrete, follow instructions from Decoder Task to discretize it. 
+  - Output variables must be **categorical**, i.e. discrete rather than continuous. If a variable is not discrete, follow instructions from Decoder Task to discretize it.
   - Examples: stimulus properties (contrast, orientation), choice (left/right), reaction time, position
   - Can be time-varying or discrete values per trial. If at all possible, make it time-varying
-  - If an output is a time such as when a behavior occurred, represent it as a binary time series. 
+  - If an output is a time such as when a behavior occurred, represent it as a binary time series.
 
 - **subjects**: List of names of all unique subjects (mice).
 - **subject_idx**: Index into subjects for each session.
@@ -139,25 +132,23 @@ data = {
 - **brain_region_idx**: Index into brain_regions for each neuron in each session.
 
 - **input_names**: Names of each input variable.
-  - Order should match order of `input` dimensions. 
+  - Order should match order of `input` dimensions.
 
 - **output_names**: Names of each output variable.
   - Order should match order of `output` dimensions.
 - **output_values**: Names of each output value for each output variable.
   - Order should match categorical `output` values.
 
-- **metadata**: Descriptive information. 
+- **metadata**: Descriptive information.
   - 'task_description': Concise description of the task
   - 'temporal_alignment_event': Concise description of temporal alignment event
-  - 'off_start': Signed time from alignment event to start of trial. Negative means before event, positive after. 
+  - 'off_start': Signed time from alignment event to start of trial. Negative means before event, positive after.
   - 'session_info': Signed time from alignment event to end of trial
   - Add other relevant fields, e.g. session_info
 
-## Python environment
+## ⚠️ Python environment
 
-- Use the conda environment **decoder-data-format** to run any python code.
-- Conda setup script is in /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
-- If you need to install any other libraries, create a new conda environment in this directory
+- If you need to install any other libraries, create a new python virtual environment (venv) in this directory
 
 ## Decoder Reference
 
@@ -167,9 +158,9 @@ data = {
 ### Purpose
 
 These functions will be used during the validation phase to ensure:
-1. Data structure is correct - will report errors and warnings to stdout. 
-2. Dimensions are consistent - will report errors and warnings to stdout. 
-3. Values are sensible - will report errors and warnings to stdout. 
+1. Data structure is correct - will report errors and warnings to stdout.
+2. Dimensions are consistent - will report errors and warnings to stdout.
+3. Values are sensible - will report errors and warnings to stdout.
 4. Decoder can successfully train and predict
 5. Poor performance indicates data formatting issues that need investigation
 
@@ -181,13 +172,13 @@ Your processing and formatting must **match the reference paper and code** with 
 - Processing of neural, input, and output data streams
 - Curation of data: filtering of low-quality neurons, trials, sessions, and mice.
 
-To check consistency, you must compare statistics available in the reference paper and your converted dataset. 
+To check consistency, you must compare statistics available in the reference paper and your converted dataset.
 
-Whenever possible, invent **SANITY CHECKS** that your loading and processing matches the reference paper and code. 
+Whenever possible, invent **SANITY CHECKS** that your loading and processing matches the reference paper and code.
 
-Discrepancies are only allowed if required by the Decoder Input and Decoder Output specifications above. 
+Discrepancies are only allowed if required by the Decoder Input and Decoder Output specifications above.
 
-It is imperative that you make **NO MISTAKES**. Be critical of results **after every step of processing**. You will be assessed on consistency of loading and processing with the reference texts and code. 
+It is imperative that you make **NO MISTAKES**. Be critical of results **after every step of processing**. You will be assessed on consistency of loading and processing with the reference texts and code.
 
 ---
 
@@ -205,13 +196,13 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 
 **Actions**:
 1. **FIRST**: Create `CONVERSION_NOTES.md` with the template structure shown at the end of this document
-2. Verify you can access the conda environment `decoder-data-format`
+2. Create a virtual environment in the current folder for any any dependencies
 3. List the contents of this directory to understand what files are available
 4. **REMINDER**: Do NOT look at any files outside this directory
 
-**Done when**: 
+**Done when**:
 - `CONVERSION_NOTES.md` exists with the proper template structure
-- You have confirmed the conda environment works
+- You have confirmed the virtual environment works
 - You have listed directory contents in CONVERSION_NOTES.md
 
 **⚠️ CHECKPOINT**: Before proceeding to Step 1, verify that `CONVERSION_NOTES.md` exists by running `ls -la CONVERSION_NOTES.md`. If it doesn't exist, STOP and create it now.
@@ -228,8 +219,8 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 - Look for documentation or README files in the `code` directory
 - Read the provided reference code bases to see how the reference paper loaded and manipulated the data
 - Understand which functions are being called to read, curate, process, and manipulate the data
-- For neural imaging data, does delta F over F need to be computed? 
-- For elecrophysiology neural data, do cells need to be filtered based on quality? 
+- For neural imaging data, does delta F over F need to be computed?
+- For elecrophysiology neural data, do cells need to be filtered based on quality?
 - Note to file important functions, their inputs, and outputs
 
 **Done when**: You have documented key functions and their purposes in CONVERSION_NOTES.md under "Step 1".
@@ -281,7 +272,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 
 ### Step 4: Check for Consistency
 
-**Goal**: Verify your understanding is consistent across all sources. 
+**Goal**: Verify your understanding is consistent across all sources.
 
 **Actions**:
 - Compare your understanding of:
@@ -313,7 +304,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
   - How to discretize continuous outputs (Follow Decoder Task section)
   - Which inputs/outputs should be **time-varying** vs **per-trial** (Follow Decoder Task section)
   - How does the reference code load and manipulate this data?
-  - When possible, import or copy code from the reference code in `code` directory. 
+  - When possible, import or copy code from the reference code in `code` directory.
 - Consult CONVERSION_NOTES.md under Steps 1-4 and reference materials to determine:
   - Temporal binning for spike rates (if applicable)
   - Temporal alignment of trials
@@ -372,24 +363,24 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 1. Run `python -u convert_data.py sample_data.pkl --sample --show-processing > conversion_sample_out.txt`
   a. Verify the sample data structure matches the specification.
   b. Check dimensions are consistent across trials/sessions.
-  c. Check that no data is missed during conversion. 
+  c. Check that no data is missed during conversion.
   d. Validate that metadata accurately describes the data.
 2. Improve efficiency of conversion.
-  a. Look at and note timing information for the conversion. 
-  b. Identify and speed up bottlenecks by writing more efficient code. 
+  a. Look at and note timing information for the conversion.
+  b. Identify and speed up bottlenecks by writing more efficient code.
 3. Run `python -u train_decoder.py sample_data.pkl --verify-only > verification_sample_out.txt`.
 4. Analyze the output file `verification_sample_out.txt`:
   a. Verify no errors reported.
   b. Attempt to address any warnings
   c. Check input ranges and output value distributions against expectations from reference texts.
 
-**Done when**: 
+**Done when**:
 - `sample_data.pkl` is created and passes manual inspection
 - `verification_sample_out.txt` is created and passes inspection
 - Processing plots show no anomalies
 - Document sample statistics in CONVERSION_NOTES.md under "Step 7"
 
-**⚠️ DO NOT PROCEED** to Step 8 until `sample_data.pkl` and `verification_sample_out.txt` files exist, and CONVERSION_NOTES.md Step 7 is filled in. 
+**⚠️ DO NOT PROCEED** to Step 8 until `sample_data.pkl` and `verification_sample_out.txt` files exist, and CONVERSION_NOTES.md Step 7 is filled in.
 
 ---
 
@@ -405,13 +396,13 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 **Investigate any issues**:
 - If accuracy is low: check for conversion bugs or reconsider output representation
 
-**Done when**: 
+**Done when**:
 - Decoder training completes without errors
 - Loss decreases over epochs
 - Accuracies are reasonable
 - Document all results in CONVERSION_NOTES.md under "Step 8"
 
-**⚠️ DO NOT PROCEED** to Step 9 until `train_decoder_sample_out.txt` file exists, and CONVERSION_NOTES.md Step 8 is filled in. 
+**⚠️ DO NOT PROCEED** to Step 9 until `train_decoder_sample_out.txt` file exists, and CONVERSION_NOTES.md Step 8 is filled in.
 
 ---
 
@@ -424,7 +415,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 2. If estimated time is very long, optimize bottlenecks first
 3. Run `python -u convert_data.py converted_data.pkl --full > conversion_full_out.txt`
 4. Run `python -u train_decoder.py converted_data.pkl --verify-only 2>&1 | tee verification_full_out.txt`
-5. Check that no data was lost during conversion 
+5. Check that no data was lost during conversion
 6. Spot-check a few sessions to verify data integrity
 7. **Check for consistency** between dataset statistics in `verification_full_out.txt` and the reference texts
 8. Investigate any inconsistencies, and revise the conversion script until all dataset statistics are consistent
@@ -447,7 +438,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 - Pretend you are a critical reviewer whose job is to find errors
 - Examine all outputs and logs for anomalies
 - Write sanity checks to spot-check raw data against converted data
-- Compare `convert_data.py` to reference code in `code` directory. 
+- Compare `convert_data.py` to reference code in `code` directory.
 - Verify key statistics match the paper exactly
 - Look at the plots from conversion `processing_<sessioninfo>.png` to find anomalies
 - Check edge cases (first/last trials, session boundaries, etc.)
@@ -458,7 +449,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 
 **Done when**: You have documented your review findings and all issues are resolved in CONVERSION_NOTES.md under "Step 10".
 
-**⚠️ DO NOT PROCEED** to Step 11 until you have checked for consistency between **every** statistic in the reference texts, code, and data and documented in CONVERSION_NOTES.md under Step 10. 
+**⚠️ DO NOT PROCEED** to Step 11 until you have checked for consistency between **every** statistic in the reference texts, code, and data and documented in CONVERSION_NOTES.md under Step 10.
 
 ---
 
@@ -474,7 +465,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 3. **Check training**: Verify loss decreases over epochs
 4. **Check accuracy**: For each output, verify accuracy is good
 
-**Done when**: 
+**Done when**:
 1. Full decoder training completes (the script finishes running)
 2. Accuracy results are documented in CONVERSION_NOTES.md under "Step 11" with a table of accuracies
 
@@ -488,7 +479,7 @@ It is imperative that you make **NO MISTAKES**. Be critical of results **after e
 - Pretend you are a critical reviewer whose job is to find errors
 - If the accuracy is not high for **every** output, assess whether there is a conversion issue causing this
 - High accuracy is near 100%, not just better than chance
-- Compare decoder accuracy to accuracy reported in the paper. 
+- Compare decoder accuracy to accuracy reported in the paper.
 - Note any issues found
 - Fix issues and re-run affected steps
 - Iterate until no issues remain
@@ -576,13 +567,13 @@ Directory contents:
 ### Expected Statistics (from paper/methods)
 | Statistic | Value | Source Quote |
 |-----------|-------|--------------|
-| Neurons (total) | | | 
+| Neurons (total) | | |
 | Neurons / session | | |
 | Subjects | | |
 | Sessions / subject | | |
 | Trials (total) | | |
 | Trials / session | | |
-| Reward rate | | | | 
+| Reward rate | | | |
 | Lick rate | | | |
 | Reward zone A rate | | | |
 | Reward zone B rate | | | |
