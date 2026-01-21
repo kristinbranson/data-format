@@ -27,18 +27,27 @@
 
 ## Reference Information
 
-- The reference **paper** "Separating cognitive and motor processes in the behaving mouse" is in the file `paper.pdf`.
-- Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`.
-- **Code** from the paper are in the directory `code`.
-- **Data** from the paper are in the directory `data`.
+- The reference **papers**:
+  - "A brain-wide map of neural activity during complex behaviour" describes how the data were collected and is in the file `datapaper.pdf`.
+  - "Exploiting correlations across trials and behavioral sessions to improve neural decoding" describes how the code were used and is in the file `methodpaper.pdf`.
+  - A white paper about the data architecture is in `dataarchitecture.pdf`
+- Some parts of the papers that describe the experiment and processing have been copied to the file `methods.txt`.
+- **Code** from the methods paper are in the directory `code`.
+- **Data** from the data paper are in the directory `data`. Some data may be missing and may need to be downloaded.
+- **Documentation** about how to access the data can be found at https://docs.internationalbrainlab.org/public_docs/public_introduction.html.
 
 ## Decoder Task
+Temporally align based on stimulus onset
 
 ### Decoder Inputs:
-- Environment geometry as 9d binary vector, 1 if walled, 0 if open, per trial 
+- Time since stimulus onset, continuous, time-varying
+- Trial number in block, continuous, per-trial
 
 ### Decoder Outputs
-- Position discretized into 3 x 3 = 9 spatial bins, bin 0: x∈[0,25), y∈[0,25) (top-left), bin 1: x∈[25,50), y∈[0,25) (top-center), ... (row-major order, same as partition numbering), bin 8: x∈[50,75], y∈[50,75] (bottom-right), time-varying, 0: {0.0 (0.099), 1.0 (0.098), 2.0 (0.135), 3.0 (0.075), 4.0 (0.057), 5.0 (0.077), 6.0 (0.116), 7.0 (0.141), 8.0 (0.201)}
+- Choice, binary, per-trial, left = 0, right = 1
+- Prior probability of left, per-trial, 0.2 -> 0, 0.5 -> 1, 0.8 -> 2
+- Wheel speed discretized into 3 bins, time-varying
+- Whisker motion energy discretized into 3 bins, time-varying
 
 ## Target Data Format
 

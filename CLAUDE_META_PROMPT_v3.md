@@ -27,13 +27,13 @@
 
 ## Reference Information
 
-- The reference **paper** "Separating cognitive and motor processes in the behaving mouse" is in the file `paper.pdf`.
+- The reference **paper** is in the file `paper.pdf`.
 - Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`.
 - **Code** from the paper are in the directory `code`.
 - **Data** from the paper are in the directory `data`.
 
 ## Decoder Task
-[Change For Each Task, Ask for User Input If Not Specified]
+** Change For Each Task, Ask for User Input If Not Specified **
 
 ### Decoder Inputs:
 - TBD
