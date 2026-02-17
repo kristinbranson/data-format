@@ -75,6 +75,15 @@ def interp(new_idx,old_idx,old_data,**kwargs):
     f = interp1d(old_idx, old_data, axis=0, **kwargs)
     return f(new_idx)
 
+
+def get_trial_starts_ends(trial_start,teleport):
+    trial_start_idx = np.nonzero(trial_start)[0]
+    is_teleport_start = (teleport[1:] > 0) & (teleport[:-1] <= 0)
+    trial_end_idx = np.nonzero(is_teleport_start)[0] + 1 
+    assert len(trial_start_idx) == len(trial_end_idx), f"Number of trial starts ({len(trial_start_idx)}) does not match number of trial ends ({len(trial_end_idx)})"
+    return trial_start_idx, trial_end_idx
+        
+
 def survey_session_data(subject, session, datadir=DATADIR):
     nwb_file_path = get_nwb_file(subject, session, datadir)
     info = {}
@@ -122,19 +131,24 @@ def survey_session_data(subject, session, datadir=DATADIR):
         teleport = behavior_data['teleport'].data[:]
         info['unique_teleport'] = np.unique(teleport[istrial])
         
-        trial_number = behavior_data['trial number'].data[:]
-        ntrials = int(trial_number.max()) + 1
+        # trial number and trial start do not agree with each other
+        # use trial_start and teleport to find starts and ends of trials
+        trial_start_idx, trial_end_idx = get_trial_starts_ends(behavior_data['trial_start'].data[:], teleport)
+        trial_length = trial_end_idx - trial_start_idx
+        info['trial_length_range'] = (trial_length.min(), trial_length.max())
+
+        ntrials = len(trial_start_idx)
         info['ntrials'] = ntrials
         info['reward_zone_positions'] = np.full((ntrials, 2), np.nan)
         for trial in range(ntrials):
-            idx = trial_number == trial
+            idx = np.arange(trial_start_idx[trial], trial_end_idx[trial], dtype=int)
             pos_trial = position[idx]
             reward_zone_trial = reward_zone[idx] > 0
             if not np.any(reward_zone_trial):
                 continue
             info['reward_zone_positions'][trial] = [np.min(pos_trial[reward_zone_trial]), np.max(pos_trial[reward_zone_trial])]
-        
-        return info
+                    
+    return info
     
 def get_bin_centers(bin_edges,data):
     # replace infinity with the max/min of the data for plotting purposes
@@ -194,12 +208,9 @@ def convert_session_data(subject, session, info, trial_offset, time_bin_size=Non
     behavior_time_bin_size = np.median(np.diff(timestamps))*1000 # ms
     
     # trial number for each time point
-    trial_number = behavior_data['trial number'].data[:][:T]
-    ntrials = int(trial_number.max()) + 1
+    trial_start_idx, trial_end_idx = get_trial_starts_ends(behavior_data['trial_start'].data[:], behavior_data['teleport'].data[:])
+    ntrials = len(trial_start_idx)
     
-    # 0 vs 1 for whether a time point is the start of a trial
-    #trial_start_times = behavior_data['trial_start'].data[:][:T] # redundant with trial number
-
     # reward_amounts are all the same
     reward_amounts = behavior_data['Reward'].data[:][:T]
     assert np.allclose(reward_amounts,reward_amounts[0]), f"Reward amounts are not all the same, unique values: {np.unique(reward_amounts)}"
@@ -254,7 +265,7 @@ def convert_session_data(subject, session, info, trial_offset, time_bin_size=Non
     min_distance_to_reward_zone = np.inf
     max_distance_to_reward_zone = -np.inf
     for trial in range(ntrials):
-        idx = trial_number == trial
+        idx = np.arange(trial_start_idx[trial], trial_end_idx[trial], dtype=int)
         if idx.sum() < min_ntimepoints:
             print(f"Skipping trial {trial} in subject {subject} session {session} because it has only {idx.sum()} < {min_ntimepoints} time points")
             istrial[trial] = False
@@ -286,7 +297,7 @@ def convert_session_data(subject, session, info, trial_offset, time_bin_size=Non
         if trial == 0:
             input_curr[3,:] = 0 # no previous trial, so set to 0
         else:
-            prev_reward_idx = trial_number == (trial - 1)
+            prev_reward_idx = np.arange(trial_start_idx[trial-1], trial_end_idx[trial-1], dtype=int)
             isprevreward = np.any(isreward[prev_reward_idx])
             input_curr[3,:] = int(isprevreward)
             
@@ -334,15 +345,15 @@ def convert_session_data(subject, session, info, trial_offset, time_bin_size=Non
                                 sharex='col', sharey=sharey)
         
         distance_bin_centers = get_bin_centers(distance_to_reward_zone_bins, np.array([min_distance_to_reward_zone, max_distance_to_reward_zone]))
-        position_bin_centers = get_bin_centers(position_bins, position[trial_number>=0])
-        speed_bin_centers = get_bin_centers(speed_bins, speed[trial_number>=0])
+        position_bin_centers = get_bin_centers(position_bins, position[trial_start_idx[0]:trial_end_idx[-1]])
+        speed_bin_centers = get_bin_centers(speed_bins, speed[trial_start_idx[0]:trial_end_idx[-1]])
         
         for triali, trial in enumerate(trials_plot):
             input_curr = input[trial]
             output_curr = output[trial]
             neural_curr = neural[trial]
             nneurons = np.minimum(max_neurons_plot,neural_curr.shape[0])
-            idx = trial_number == trial
+            idx = np.arange(trial_start_idx[trial], trial_end_idx[trial], dtype=int)
             timestamps_curr = timestamps[idx]
             for neuroni in range(nneurons):
                 z = np.maximum(1,np.percentile(spike_data[spike_data[:,neuroni]>0,neuroni], 95))
