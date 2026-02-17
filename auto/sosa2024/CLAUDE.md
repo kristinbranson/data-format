@@ -45,7 +45,7 @@ Temporally align based on start of the trial.
 ### Decoder Outputs
 - Distance to any location in the reward zone, time-varying. Discretization bins:
   - 0:  < -50 cm
-  - 1: 50 to -10 cm
+  - 1: -50 to -10 cm
   - 2: -10 cm to < 0 cm
   - 3: 0 cm
   - 4: >0 cm to +10 cm
