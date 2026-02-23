@@ -42,8 +42,6 @@
 - TBD
 
 ## Target Data Format
-
-- **Combine all sessions from the same subject into one session**.
 - Save the full converted dataset to the pickle file `converted_data.pkl`.
 - All datasets must be converted into the following Python dictionary structure:
 
