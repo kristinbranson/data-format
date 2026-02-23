@@ -11,10 +11,15 @@
 
 ### Step 5: Mapping Planning
 - `trace` contains neural activity
-- `trace` contains NaN on different days, **handle missing data**
+- `trace` contains NaN on different days,
 - `input` should be neural activity (`trace`) and environment geometry (`blocked`)
 - `output` should be discretized location variable (computed from `position`)
 
 - Assume location and neural data are aligned (no other info avialible)
 - Potentially bin/filter neural data
 
+**Notes on important decisions**
+- missing data in `trace`
+- change environment geometry to one-hot encoding
+- filter/bin "spikes" data
+- cut 40-min session into shorter "trials"
