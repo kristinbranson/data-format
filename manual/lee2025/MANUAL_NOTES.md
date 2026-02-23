@@ -19,7 +19,7 @@
 - Potentially bin/filter neural data
 
 **Notes on important decisions**
-- missing data in `trace`
+- missing data in `trace` - different neuron on recording days
 - change environment geometry to one-hot encoding
 - filter/bin "spikes" data
 - cut 40-min session into shorter "trials"
