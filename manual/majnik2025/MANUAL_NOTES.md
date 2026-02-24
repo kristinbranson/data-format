@@ -1,0 +1,11 @@
+### Step 2: Dataset Exploration
+- 6 subjects, organized as folders, with each session a seperate folder
+- `F.npy` - raw data (n_neurons, n_samples); `Fneu.npy` - neuropil
+- Use suite2p.extraction.dcnv to preprocess the data
+https://suite2p.readthedocs.io/en/latest/deconvolution/
+
+- Imaging and video at 30Hz, with microscope acquisition acting as a trigger for camera frame acquisition
+(Should be synced except for frame drop)
+- move_deve contains information on motion energy
+- Use `interframe_int.npy` to deal with missing frames (dt >> 1/30 sec)
+- Motion energy data needs to be normalized
