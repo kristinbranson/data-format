@@ -9,3 +9,12 @@ https://suite2p.readthedocs.io/en/latest/deconvolution/
 - move_deve contains information on motion energy
 - Use `interframe_int.npy` to deal with missing frames (dt >> 1/30 sec)
 - Motion energy data needs to be normalized
+
+### Step 5: Mappling Planning
+- Use `F` and `Fneu` to compute preprocessed data
+- Use motion engery as the output variable (discretized)
+- Fix alignment (interpolation) when there are frames missing
+
+**Note on important decisions**
+- Use Suite2P for data preprocessing (or at least some version of it)
+- Handle missing frame issue
