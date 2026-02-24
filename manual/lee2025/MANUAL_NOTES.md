@@ -1,3 +1,6 @@
+The format and organization of this dataset to be relatively simple;
+The main issue is more about understanding the data "conceptually" (domain knowledge?)
+
 ### Step 2: Dataset Exploration
 - Each QLAK-CA1-* file under /data represents data from a single animal in the experiment (N=7)
 - There was not enough metadata provided with the files (e.g., sampling rate, preprocessing etc.)
