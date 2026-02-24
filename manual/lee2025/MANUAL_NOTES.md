@@ -19,7 +19,16 @@
 - Potentially bin/filter neural data
 
 **Notes on important decisions**
-- missing data in `trace` - different neuron on recording days
-- change environment geometry to one-hot encoding
-- filter/bin "spikes" data
-- cut 40-min session into shorter "trials"
+- Missing data in `trace` - different neuron on recording days
+- Change environment geometry to one-hot encoding
+- Filter "spikes" data
+- Cut 40-min session into shorter "trials"
+- Discretization of position - environment size (75 cm * 75 cm)
+
+### Step 6: Script Development
+- Memory issue for reading all the data
+
+### Step 11: Full Decoder Training
+- Not quite sure how to think about the **"missing neurons"** issue here;
+across sessions, different neurons are recorded, we might need to train
+a seperate projection matrix for each recording session
