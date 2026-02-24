@@ -112,8 +112,6 @@ def main(out_path):
     print(f'Subjects: {subjects}')
 
     # --- first pass: preprocess all sessions ---
-    # flat lists across all subjects, plus bookkeeping
-    subject_idx_list = []  # one entry per session
     session_Fc = []
     session_me = []
     sessions_per_subject = []
@@ -132,38 +130,38 @@ def main(out_path):
 
             session_Fc.append(Fc)
             session_me.append(me)
-            subject_idx_list.append(si)
 
     # --- discretize motion energy across all sessions ---
     all_output, bin_edges = discretize_motion_energy(session_me)
     print(f'\nMotion energy bin edges: {bin_edges}')
 
-    # --- assemble into nested lists (by subject) ---
-    neural = []   # list of list of arrays
-    inp = []      # list of list of arrays
-    output = []   # list of list of arrays
+    # --- assemble: one session per subject, daily recordings as trials ---
+    neural = []   # list of sessions (one per subject), each a list of trials
+    inp = []
+    output = []
+    brain_region_idx = []
+    subject_idx_list = []
 
     idx = 0
-    for n_sess in sessions_per_subject:
-        neural_subj = []
-        inp_subj = []
-        output_subj = []
+    for si, n_sess in enumerate(sessions_per_subject):
+        neural_trials = []
+        inp_trials = []
+        output_trials = []
         for _ in range(n_sess):
             Fc = session_Fc[idx]
             n_frames = Fc.shape[1]
             t = (np.arange(n_frames) / FS).astype(np.float32)
 
-            neural_subj.append(Fc)                         # (n_neurons, n_frames)
-            inp_subj.append(t[np.newaxis, :])              # (1, n_frames)
-            output_subj.append(all_output[idx][np.newaxis, :])  # (1, n_frames)
+            neural_trials.append(Fc)                              # (n_neurons, n_frames)
+            inp_trials.append(t[np.newaxis, :])                   # (1, n_frames)
+            output_trials.append(all_output[idx][np.newaxis, :])  # (1, n_frames)
             idx += 1
 
-        neural.append(neural_subj)
-        inp.append(inp_subj)
-        output.append(output_subj)
-
-    n_neurons_per_session = [session_Fc[i].shape[0] for i in range(len(session_Fc))]
-    brain_region_idx = [np.zeros(n, dtype=np.int64) for n in n_neurons_per_session]
+        neural.append(neural_trials)
+        inp.append(inp_trials)
+        output.append(output_trials)
+        brain_region_idx.append(np.zeros(neural_trials[0].shape[0], dtype=np.int64))
+        subject_idx_list.append(si)
 
     output_value_names = [f'level_{i}' for i in range(N_LEVELS)]
 
@@ -209,16 +207,20 @@ def main(out_path):
     print(f'metadata: {data["metadata"]}')
     print()
 
-    for si, subject in enumerate(data['subjects']):
-        print(f'[{subject}] {len(data["neural"][si])} sessions')
-        for ti in range(len(data['neural'][si])):
+    n_sessions = len(neural)
+    print(f'total sessions (subjects): {n_sessions}')
+    for si in range(n_sessions):
+        subj = data['subjects'][data['subject_idx'][si]]
+        n_trials = len(data['neural'][si])
+        br = data['brain_region_idx'][si]
+        print(f'  session {si} [{subj}]: {n_trials} trials  region_idx {br.shape}')
+        for ti in range(n_trials):
             n = data['neural'][si][ti]
             i = data['input'][si][ti]
             o = data['output'][si][ti]
-            br = data['brain_region_idx'][sum(sessions_per_subject[:si]) + ti]
             levels, counts = np.unique(o, return_counts=True)
-            print(f'  session {ti}: neural {n.shape}  input {i.shape}  output {o.shape}  '
-                  f'region_idx {br.shape}  output_counts={dict(zip(levels, counts))}')
+            print(f'    trial {ti}: neural {n.shape}  input {i.shape}  output {o.shape}  '
+                  f'output_counts={dict(zip(levels, counts))}')
 
 
 if __name__ == '__main__':
