@@ -25,7 +25,7 @@ The main issue is more about understanding the data "conceptually" (domain knowl
 - Missing data in `trace` - different neuron on recording days
 - Change environment geometry to one-hot encoding
 - Filter "spikes" data
-- Cut 40-min session into shorter "trials"
+- Cut 40-min session into shorter "trials", or smooth the data to a different temporal resolution
 - Discretization of position - environment size (75 cm * 75 cm)
 
 ### Step 6: Script Development
