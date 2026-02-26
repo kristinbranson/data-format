@@ -11,7 +11,8 @@ from scipy.interpolate import interp1d
 DATADIR = 'data'
 SURVEYFILE = 'survey_info.pkl'
 
-np.random.seed(0)
+_sosa2024_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _sosa2024_seed) % 2**31)
 
 input_names = ['time_from_trial_start','environment','trial_number','previous_reward_outcome']
 output_names = ['distance_to_reward_zone','position','speed','lick','reward_location','reward_outcome']

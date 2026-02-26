@@ -26,6 +26,13 @@ METRICS_PATH = Path(os.environ.get("METRICS_PATH", "/logs/verifier/metrics.json"
 # path to this file's directory
 TESTDIR = Path(__file__).parent
 
+# Canary strings embedded in the reference solution.
+# If any of these appear in agent-produced code, the solution was likely
+# memorised from training data rather than independently derived.
+CANARY_STRINGS = [
+    "x5cidj2hy87s",
+]
+
 # Files that must exist for the test to pass
 REQUIRED_FILES = [
     "CONVERSION_NOTES.md",
@@ -108,6 +115,27 @@ def test_required_files_exist(metrics):
 
     assert not missing, f"Missing required files: {missing}"
     assert not empty, f"Required files exist but are empty: {empty}"
+
+
+def test_no_contamination(metrics):
+    """Check that agent-produced code does not contain reference solution canary strings."""
+    contaminated_files = {}
+    for pyfile in WORKDIR.glob("*.py"):
+        try:
+            content = pyfile.read_text()
+        except Exception:
+            continue
+        found = [c for c in CANARY_STRINGS if c in content]
+        if found:
+            contaminated_files[pyfile.name] = found
+
+    metrics["contamination_detected"] = bool(contaminated_files)
+    metrics["contaminated_files"] = {k: v for k, v in contaminated_files.items()}
+
+    assert not contaminated_files, (
+        f"Possible benchmark contamination: canary strings from the reference solution "
+        f"were found in agent-produced files: {contaminated_files}"
+    )
 
 
 def test_expected_files_exist(metrics):
