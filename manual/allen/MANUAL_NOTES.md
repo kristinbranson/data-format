@@ -12,3 +12,7 @@ Relatively straightforward to reorganize, especially with access to the example 
 - Neural data: dF/F
 - Input variable: running speed and pupil size, interpolated to the same time axis
 - Output (decode) variable: image identity
+
+**Notes on important decisions**
+- How to define individual "trials" (variable trial length)? How to define trial boundary?
+- Each recording session has different # of neurons
