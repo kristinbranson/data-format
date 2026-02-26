@@ -10,7 +10,7 @@ https://suite2p.readthedocs.io/en/latest/deconvolution/
 - Use `interframe_int.npy` to deal with missing frames (dt >> 1/30 sec)
 - Motion energy data needs to be normalized
 
-### Step 5: Mappling Planning
+### Step 5: Mapping Planning
 - Use `F` and `Fneu` to compute preprocessed data
 - Use motion engery as the output variable (discretized)
 - Fix alignment (interpolation) when there are frames missing
