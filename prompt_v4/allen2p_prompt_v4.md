@@ -23,11 +23,8 @@
 
 ## Reference Information
 
-- The reference **paper** "<FILL IN>" is in the file `paper.pdf`.
-- Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`.
-- **Code** from the paper are in the directory `code`.
-- **Data** from the paper are in the directory `data`.
-- **Documentation** on <FILL IN> is at <FILL IN>
+- The reference **paper** "Allen Brain Observatory: Visual Behavior 2P Technical Whitepaper" is in the file `paper.pdf`.
+- **Code** from the paper are in the directory `code`. (In this case, we have the example jupyter notebooks from the offical documentation website)
 
 ## Decoder Task
 
