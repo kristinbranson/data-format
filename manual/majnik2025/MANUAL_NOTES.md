@@ -16,8 +16,8 @@ https://suite2p.readthedocs.io/en/latest/deconvolution/
 - Fix alignment (interpolation) when there are frames missing
 
 **Note on important decisions**
-- Use Suite2P for data preprocessing (or at least some version of it)
-- How to deal with 40 min session (chunk into smaller trials?)
-- Handle missing frame issue
+- Use Suite2P for *data preprocessing* (or at least some version of it)
+- How to deal with 40 min session (chunk into smaller 1-minute "trials")
+- Handle *missing frame* issue
 The dropped frames need to be extracted by looking at dt = interframe_int * 1000 > 0.04 (sec)
 Don't quite understand the unit of this variable but *1000 seems to work
