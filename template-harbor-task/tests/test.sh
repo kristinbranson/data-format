@@ -27,36 +27,23 @@ export PATH="$HOME/.local/bin:$PATH"
 JUDGE_DIR=/logs/verifier/judge
 mkdir -p "$JUDGE_DIR"
 
-# Claude CLI refuses --permission-mode bypassPermissions as root.
-# Create a non-root user to run the judge.
-useradd -m -s /bin/bash judge 2>/dev/null || true
-install -m 755 "$(which claude)" /usr/local/bin/claude 2>/dev/null || true
-chmod -R o+rX /app /logs /tests 2>/dev/null || true
-chown -R judge:judge "$JUDGE_DIR"
-
 # Step 1: Document agent decisions
 cd "$JUDGE_DIR"
-runuser -u judge -- env \
-  CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
-  HOME=/home/judge \
-  claude -p "$(cat /tests/decisions_instructions.md)" \
-    --model sonnet \
-    --permission-mode bypassPermissions \
-    --output-format stream-json \
-    --no-session-persistence \
-    --verbose \
+claude -p "$(cat /tests/decisions_instructions.md)" \
+  --model sonnet \
+  --permission-mode bypassPermissions \
+  --output-format stream-json \
+  --no-session-persistence \
+  --verbose \
   2>&1 | tee judge_step1_log.txt || true
 
 # Step 2: Evaluate decisions
-runuser -u judge -- env \
-  CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
-  HOME=/home/judge \
-  claude -p "$(cat /tests/eval_instructions.md)" \
-    --model sonnet \
-    --permission-mode bypassPermissions \
-    --output-format stream-json \
-    --no-session-persistence \
-    --verbose \
+claude -p "$(cat /tests/eval_instructions.md)" \
+  --model sonnet \
+  --permission-mode bypassPermissions \
+  --output-format stream-json \
+  --no-session-persistence \
+  --verbose \
   2>&1 | tee judge_step2_log.txt || true
 cd /
 

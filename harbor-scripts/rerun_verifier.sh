@@ -39,6 +39,9 @@ else
     echo "Using existing Docker image $IMAGE_NAME"
 fi
 
+# Get Claude OAuth token for LLM judge
+export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+
 # Create a fresh verifier output directory for this re-run
 VERIFIER_OUT="$TRIAL_DIR/verifier_rerun_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$VERIFIER_OUT"
@@ -55,8 +58,11 @@ echo ""
 #   - tests -> /tests
 #   - verifier output -> /logs/verifier
 #   - agent logs -> /logs/agent (for chown)
+# Claude CLI is installed first (same as Harbor's agent setup phase),
+# then test.sh runs pytest + LLM judge.
 docker run --rm \
     --gpus all \
+    -e CLAUDE_CODE_OAUTH_TOKEN \
     -v "$SNAPSHOT_DIR":/app \
     -v "$DATA_DIR":/app/data:ro \
     -v "$TASK_DIR/tests":/tests:ro \
@@ -64,8 +70,11 @@ docker run --rm \
     -v "$TRIAL_DIR/agent":/logs/agent \
     -w /app \
     "$IMAGE_NAME" \
-    bash /tests/test.sh
+    bash -c 'apt-get update -qq && apt-get install -y -qq curl >/dev/null 2>&1 && curl -fsSL https://claude.ai/install.sh | bash && export PATH="$HOME/.local/bin:$PATH" && bash /tests/test.sh'
 
 echo ""
 echo "Verifier output written to: $VERIFIER_OUT"
 echo "Reward: $(cat "$VERIFIER_OUT/reward.txt" 2>/dev/null || echo 'N/A')"
+if [ -f "$VERIFIER_OUT/reward.json" ]; then
+    echo "Judge:  $(python3 -c "import json; d=json.load(open('$VERIFIER_OUT/reward.json')); print(f\"LLM={d.get('llm_judge_reward','N/A'):.3f}\")" 2>/dev/null || echo 'N/A')"
+fi
