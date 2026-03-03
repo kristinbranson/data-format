@@ -23,38 +23,19 @@
 
 ## Reference Information
 
-- The reference **paper** "<FILL IN>" is in the file `paper.pdf`.
+- The reference **paper** "longitudinal tracking of neuronal activity from the same cells in the developing brain using Track2p" is in the file `paper.pdf`.
 - Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`.
 - **Code** from the paper are in the directory `code`.
 - **Data** from the paper are in the directory `data`.
-- **Documentation** on <FILL IN> is at <FILL IN>
 
 ## Decoder Task
-
-<CUSTOMIZE THIS>
-(Example)
-- Temporally align based on **Go cue onset**.
-- Extract **2.5 s before to 1.5 s after** the go cue for each trial
-- Use **50-ms-width bins** for computing firing rates.
+Decode information regarding animal motion from the neural activities recorded from mouse barrel cortex.
 
 ### Decoder Inputs:
-
-<CUSTOMIZE THIS>
-(Example)
-- Time from **tone onset** in seconds (continuous, time-varying)
-- Whether **photostimulation** is on at every time point (discrete, time-varying)
+Time elapsed from the beginning of the experiment. Time-varying.
 
 ### Decoder Outputs
-
-<CUSTOMIZE THIS>
-(Example)
-- Lick direction **choice** (left = 0, right = 1, per-trial)
-- **Outcome** (ignore = 0, miss = 1, hit = 2, per-trial)
-- **Early lick** (no = 0, yes = 1, per-trial)
-- **Tongue y-position**, per-session discretization:
-  - 0: < 40th percentile of y-position over the session
-  - 1: 40th to 60th percentile of y-position over the session
-  - 2: > 60th percentile of y-position over the session
+Motion energy, normalized and discretized into five equal-percentile bins. Time-varying.
 
 ## Target Data Format
 
