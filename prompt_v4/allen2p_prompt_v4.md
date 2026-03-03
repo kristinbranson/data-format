@@ -28,30 +28,19 @@
 
 ## Decoder Task
 
-<CUSTOMIZE THIS>
-(Example)
-- Temporally align based on **Go cue onset**.
-- Extract **2.5 s before to 1.5 s after** the go cue for each trial
-- Use **50-ms-width bins** for computing firing rates.
+Collect and convert data under the "Visual Behavior" task.
+Temporally align based on ophys timestamp.
+Segment each recording session into individual trials, each consisting of 30 ophys frames before each image change.
 
 ### Decoder Inputs:
 
-<CUSTOMIZE THIS>
-(Example)
-- Time from **tone onset** in seconds (continuous, time-varying)
-- Whether **photostimulation** is on at every time point (discrete, time-varying)
+No inputs for this task.
 
 ### Decoder Outputs
 
-<CUSTOMIZE THIS>
-(Example)
-- Lick direction **choice** (left = 0, right = 1, per-trial)
-- **Outcome** (ignore = 0, miss = 1, hit = 2, per-trial)
-- **Early lick** (no = 0, yes = 1, per-trial)
-- **Tongue y-position**, per-session discretization:
-  - 0: < 40th percentile of y-position over the session
-  - 1: 40th to 60th percentile of y-position over the session
-  - 2: > 60th percentile of y-position over the session
+Image identity, categorical variable. Static per-trial.
+Running speed, discretized into five equal percentile bins. Time-varying.
+Pupil diameter, discretized into five equal percentile bins.  Time-varying.
 
 ## Target Data Format
 
