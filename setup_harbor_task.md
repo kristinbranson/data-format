@@ -16,3 +16,4 @@ cp ../instruction.md instruction_reference.md
 cp ../solution/convert_data.py reference_convert_data.py
 ```
 9. Follow instructions in `decisions_instructions.md` to create `data-format/harbor-tasks/<taskname>/tests/reference_DECISIONS.md`
+10. Generate reference stats by running `data-format/harbor-scripts/generate_reference_stats.sh <taskname>`
