@@ -23,38 +23,18 @@
 
 ## Reference Information
 
-- The reference **paper** "<FILL IN>" is in the file `paper.pdf`.
+- The reference **paper** "Identifying representational structure in CA1 to benchmark theoretical models of cognitive mapping" is in the file `paper.pdf`.
 - Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`. 
 - **Code** from the paper are in the directory `code`.
 - **Data** from the paper are in the directory `data`.
-- **Documentation** on <FILL IN> is at <FILL IN>
 
 ## Decoder Task
 
-<CUSTOMIZE THIS>
-(Example)
-- Temporally align based on **Go cue onset**. 
-- Extract **2.5 s before to 1.5 s after** the go cue for each trial
-- Use **50-ms-width bins** for computing firing rates. 
-
 ### Decoder Inputs:
-
-<CUSTOMIZE THIS>
-(Example)
-- Time from **tone onset** in seconds (continuous, time-varying)
-- Whether **photostimulation** is on at every time point (discrete, time-varying)
+- Environment geometry as 9-dimensional binary vector, each dimension representing a grid location. Its value should be 1 if walled and 0 if open. This is static per-trial.
 
 ### Decoder Outputs
-
-<CUSTOMIZE THIS>
-(Example)
-- Lick direction **choice** (left = 0, right = 1, per-trial)
-- **Outcome** (ignore = 0, miss = 1, hit = 2, per-trial)
-- **Early lick** (no = 0, yes = 1, per-trial)
-- **Tongue y-position**, per-session discretization:
-  - 0: < 40th percentile of y-position over the session
-  - 1: 40th to 60th percentile of y-position over the session
-  - 2: > 60th percentile of y-position over the session
+- **Mouse positon** discretized into 3 x 3 = 9 spatial bins, each of length 25cm, time-varying. 
 
 ## Target Data Format
 
@@ -107,7 +87,6 @@ data = {
     ],
 
     'metadata': {
-        'task_description': str, # description of output tasks
         'time_bin_size': float, # length of time bin in ms
         'temporal_alignment_event': str, # description of alignment event
         'off_start': float or None, # signed time from alignment event to start of trial in seconds, None if N/A
@@ -122,14 +101,12 @@ data = {
 - **neural**: Neural activity data (e.g., firing rates, spike counts) organized by session and trial
   - Dimensions: (n_neurons, n_timepoints) for each trial.
   - Time bins should be the same size for all trials and sessions. 
-  - There needs to be at least two trials within each session in order to evaluate the decoder performance.
 
 - **input**: Variables that serve as inputs **to the decoder**
   - These are **decoder inputs**. They could be task inputs to the animal, but inputs to the animal can also be decoder outputs.
-  - Examples: time from an aligning signal, stimulus characteristics, animal behavior properties such as:
+  - Examples: time from an aligning signal, stimulus characteristics such as:
     - visual: contrast, position, orientation
     - audio: frequency, amplitude
-    - behavior: running speed, pupil size
   - Dimensions: (d_input, n_timepoints) for each trial. 
   - Should capture all relevant contextual information for the decoder
   - If an input is a time such as onset of some stimulus, represent it as a binary time series. 
