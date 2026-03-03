@@ -2,22 +2,18 @@
 
 Document the decisions of another agentic AI system for a rubric of decision points.
 
-**File paths**:
-TASKDIR = `/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks/sosa2024`
-JOBDIR = `/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs/claude/2026-02-26__14-00-02/sosa2024__Ams2RP5`
-MANUALDIR = `/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/manual/sosa2024`
-
 **Agentic AI Inputs**:
-- Instructions: `TASKDIR/instruction.md`
-- Reference code, text, and data are in `TASKDIR/environment` and described in `TASKDIR/instruction.md`
+- Instructions: `/tests/instruction_reference.md`
+- Reference code, text, and data are in `/app/code/`, `/app/paper.pdf`, `/app/methods.txt`, `/app/data/`. Descriptions are available in `/tests/instruction_reference.md`
 
 **Agentic AI Outputs**:
-- The code the AI created is in `JOBDIR/verifier/snapshot`
-  snapshot/
-  │                                                                                                                
-  ├── CONVERSION_NOTES.md                    # Agent's documentation of conversion decisions,  │                                          # sanity checks, and validation results. 
+- The code the AI created is in `/app`
+  /app/
   │
-  ├── convert_data.py                        # Agent's conversion script. 
+  ├── CONVERSION_NOTES.md                    # Agent"s documentation of conversion decisions,
+  │                                          # sanity checks, and validation results.
+  │
+  ├── convert_data.py                        # Agent"s conversion script.
   │
   ├── converted_data.pkl                     # Full converted dataset in target format.
   │                                          # Contains neural, input, output, metadata.
@@ -31,8 +27,8 @@ MANUALDIR = `/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmar
   │
   ├── train_decoder_full_out.txt             # stdout from full decoder training.
 
-- The AI's process is recorded in the directory `JOBDIR/agent`.  Relevant files include:
-  agent/
+- The AI's process is recorded in the directory `/logs/agent`.  Relevant files include:
+  /logs/agent/
   ├── claude-code.txt                    # Stream-JSON trajectory log (341 lines, 2.2MB)
   │                                      # One JSON object per line: tool_use events (Read, Write,
   │                                      # Edit, Bash, Grep, etc.), assistant messages, system init,
@@ -53,19 +49,14 @@ MANUALDIR = `/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmar
           │       ├── b1312x90z.txt      #   Truncated tool outputs stored by ID
           │       ├── ...
 
+**Step 1**. The AI's goal was to load, process, and reformat the data from a neuroscience paper into a specified structure suitable for downstream analysis, using the **SAME** processing described in the provided reference paper and code. Read through the `instruction.md` to understand the task.
 
-**Human Solution**:
-- The human-generated solution code is in `MANUALDIR/convert_data.py`
-- Human-generated answers to the questions below are in `MANUALDIR/DECISIONS.md`. You may use these answers to understand **how** to answer the questions below. 
-
-**Step 1**. The AI's goal was to load, process, and reformat the data from a neuroscience paper into a specified structure suitable for downstream analysis, using the **SAME** processing described in the provided reference paper and code. Read through the `instruction.md` to understand the task. 
-
-**Step 2**. Create the file `DECISIONS.md` with the template shown at the end of this document. 
+**Step 2**. Create the file `DECISIONS.md` with the template shown at the end of this document.
 
 **Step 3**. Answer the following questions about the AI-generated solution in `DECISIONS.md`. For each question:
 i. Summarize the relevant code or decisions.
 ii. Provide code snippets from `convert_data.py`.
-iii. Summarize the agentic AI's justification for its decisions. 
+iii. Summarize the agentic AI's justification for its decisions.
 
 1-a.  How are **all the data** for all subjects, sessions, and trials loaded in?
 
@@ -77,7 +68,7 @@ iii. Summarize the agentic AI's justification for its decisions.
 
 1-e. How are trials filtered based on quality controls? 
 
-2-a. What variables in the raw data is the `neural` data derived from? 
+2-a. What variables in the raw data is the `neural` data derived from?
 
 2-b. How is the `neural` data processed? 
 
@@ -85,7 +76,7 @@ iii. Summarize the agentic AI's justification for its decisions.
 
 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`? 
 
-2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`? 
+2-e. What is the temporal resolution (time bin size) of the converted data? Is any temporal rebinning applied?
 
 3-a. What variables in the raw data is `input` *Time from start of trial in seconds* derived from? 
 
@@ -171,7 +162,7 @@ iii. <Justification>
 
 ...
 
-## 4-b. What processing is involved in computing `input` *Environment type*?
+## 13-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 i. <Decisions>
 

@@ -1,27 +1,53 @@
 #!/bin/bash
 
-AGENT="${1:-claude}"
-NTRIALS="${2:-1}"
+AGENT="claude"
+NTRIALS=1
+TASK=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --agent)    AGENT="$2"; shift 2 ;;
+    --ntrials)  NTRIALS="$2"; shift 2 ;;
+    --task)     TASK="$2"; shift 2 ;;
+    --help|-h)
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name]"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name]"
+      exit 1
+      ;;
+  esac
+done
+
 JOBS_DIR="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs/${AGENT}"
+
+TASK_FLAG=""
+if [ -n "$TASK" ]; then
+  TASK_FLAG="-t $TASK"
+fi
 
 source /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
 conda activate eval-data-format
 
+# Always export CLAUDE_CODE_OAUTH_TOKEN — required by [verifier.env] in task.toml for LLM judge
+export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+
 case "$AGENT" in
   claude)
-    export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
-    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n 1
+    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG
     ;;
   codex)
     export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json)
-    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "codex" -m "gpt-5.2-codex" -o "$JOBS_DIR" -k "$NTRIALS" -n 1
+    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "codex" -m "gpt-5.2-codex" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG
     ;;
   oracle)
-    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "oracle" -o "$JOBS_DIR" -k 1 -n 1
+    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "oracle" -o "$JOBS_DIR" -k 1 -n 1 $TASK_FLAG
     ;;
   *)
     echo "Unknown agent: $AGENT"
-    echo "Usage: $0 [claude|oracle|codex] [ntrials]"
+    echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name]"
     exit 1
     ;;
 esac
