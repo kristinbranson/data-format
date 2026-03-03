@@ -23,38 +23,21 @@
 
 ## Reference Information
 
-- The reference **paper** "<FILL IN>" is in the file `paper.pdf`.
+- The reference **paper** "identifying representational structure in CA1 to benchmark theoretical models of cognitive mapping" is in the file `paper.pdf`.
 - Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`.
 - **Code** from the paper are in the directory `code`.
 - **Data** from the paper are in the directory `data`.
-- **Documentation** on <FILL IN> is at <FILL IN>
 
 ## Decoder Task
+Decode the location of the mice from the neural activities data recorded in the CA1 region.
 
-<CUSTOMIZE THIS>
-(Example)
-- Temporally align based on **Go cue onset**.
-- Extract **2.5 s before to 1.5 s after** the go cue for each trial
-- Use **50-ms-width bins** for computing firing rates.
+The experiment consists of long recording sessions, which will be split into 1-minute trials within each session.
 
 ### Decoder Inputs:
-
-<CUSTOMIZE THIS>
-(Example)
-- Time from **tone onset** in seconds (continuous, time-varying)
-- Whether **photostimulation** is on at every time point (discrete, time-varying)
+Environment geometry to represent which part of the arena is blocked. Static per-trial.
 
 ### Decoder Outputs
-
-<CUSTOMIZE THIS>
-(Example)
-- Lick direction **choice** (left = 0, right = 1, per-trial)
-- **Outcome** (ignore = 0, miss = 1, hit = 2, per-trial)
-- **Early lick** (no = 0, yes = 1, per-trial)
-- **Tongue y-position**, per-session discretization:
-  - 0: < 40th percentile of y-position over the session
-  - 1: 40th to 60th percentile of y-position over the session
-  - 2: > 60th percentile of y-position over the session
+Mouse positon discretized into 3 x 3 = 9 spatial bins. time-varying.
 
 ## Target Data Format
 
