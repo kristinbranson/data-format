@@ -30,14 +30,13 @@
 
 ## Decoder Task
 Decode the location of the mice from the neural activities data recorded in the CA1 region.
-
 The experiment consists of long recording sessions, which will be split into 1-minute trials within each session.
 
 ### Decoder Inputs:
 Environment geometry to represent which part of the arena is blocked. Static per-trial.
 
 ### Decoder Outputs
-Mouse positon discretized into 3 x 3 = 9 spatial bins. time-varying.
+Mouse positon discretized into 3 x 3 = 9 spatial bins. Time-varying.
 
 ## Target Data Format
 
