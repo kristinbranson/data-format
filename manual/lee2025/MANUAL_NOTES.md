@@ -19,14 +19,17 @@ The main issue is more about understanding the data "conceptually" (domain knowl
 - `output` should be discretized location variable (computed from `position`)
 
 - Assume location and neural data are aligned (no other info avialible)
-- Potentially bin/filter neural data
+- Potentially bin/filter neural data?
 
 **Notes on important decisions**
-- Missing data in `trace` - different neuron on recording days
-- Change environment geometry to one-hot encoding
-- Filter "spikes" data
-- Cut 40-min session into shorter "trials", or smooth the data to a different temporal resolution
+`neural`:
+- Remove neurons with NaN (missing recording) on each day
+- Sensible format of the binarized calcium data
+`input`:
+- Encode the environment geometry as a vector
+`output`:
 - Discretization of position - environment size (75 cm * 75 cm)
+- Cut 40-min session into shorter "trials"
 
 ### Step 6: Script Development
 - Memory issue for reading all the data
