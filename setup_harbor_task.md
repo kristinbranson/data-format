@@ -15,3 +15,4 @@ cp ../instruction.md instruction_reference.md
 cp ../solution/convert_data.py reference_convert_data.py
 ```
 9. Follow instructions in `decisions_instructions.md` to create `data-format/harbor-tasks/<taskname>/tests/reference_DECISIONS.md`
+10. Modify `data-format/harbor-tasks/<taskname>/solution/solve.sh` to include commands tailored to this task

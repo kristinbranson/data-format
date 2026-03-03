@@ -60,11 +60,10 @@ runuser -u judge -- env \
   2>&1 | tee judge_step2_log.txt || true
 cd /
 
-# Compute reward from llm_judge_eval.json
+# Compute reward from llm_judge_eval.json and merge into metrics.json
 python3 /tests/compute_reward.py \
   --eval-json "$JUDGE_DIR/llm_judge_eval.json" \
-  --pytest-reward /logs/verifier/reward.txt \
-  --output /logs/verifier/reward.json 2>&1 || true
+  --metrics-json /logs/verifier/metrics.json 2>&1 || true
 
 # Fix ownership of all log files to match host user
 HOST_UID=$(stat -c '%u' /logs/verifier)

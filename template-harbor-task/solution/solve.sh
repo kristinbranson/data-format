@@ -21,16 +21,14 @@ EOF
 # Copy convert_data.py to /app so tests can find it
 cp "$SCRIPT_DIR/convert_data.py" "$OUTDIR/convert_data.py"
 
-# survey
-python3 "$SCRIPT_DIR/convert_data.py" --survey-only --datadir /app/data --surveyfile "$OUTDIR/survey_info.pkl" > "$OUTDIR/conversion_survey_out.txt"
 # convert sample
-python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data --surveyfile "$OUTDIR/survey_info.pkl" "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt"
+python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt"
 # verify sample
 python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt"
 # train on sample
 python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt"
 # convert full data
-python3 "$SCRIPT_DIR/convert_data.py" --full --datadir /app/data --surveyfile "$OUTDIR/survey_info.pkl" "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
+python3 "$SCRIPT_DIR/convert_data.py" --full --datadir /app/data "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
 # verify full data
 python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
 # train on full data

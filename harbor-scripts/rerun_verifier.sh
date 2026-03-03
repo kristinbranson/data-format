@@ -75,6 +75,6 @@ docker run --rm \
 echo ""
 echo "Verifier output written to: $VERIFIER_OUT"
 echo "Reward: $(cat "$VERIFIER_OUT/reward.txt" 2>/dev/null || echo 'N/A')"
-if [ -f "$VERIFIER_OUT/reward.json" ]; then
-    echo "Judge:  $(python3 -c "import json; d=json.load(open('$VERIFIER_OUT/reward.json')); print(f\"LLM={d.get('llm_judge_reward','N/A'):.3f}\")" 2>/dev/null || echo 'N/A')"
+if [ -f "$VERIFIER_OUT/metrics.json" ]; then
+    echo "Judge:  $(python3 -c "import json; d=json.load(open('$VERIFIER_OUT/metrics.json')); r=d.get('llm_judge_reward'); print(f'LLM={r:.3f}' if r is not None else 'N/A')" 2>/dev/null || echo 'N/A')"
 fi
