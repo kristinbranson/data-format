@@ -12,3 +12,4 @@ Relatively straightforward to reorganize, especially with access to the example 
 - Neural data: dF/F
 - Input variable: running speed and pupil size, interpolated to the same time axis
 - Output (decode) variable: image identity
+- Error handling: Skip session for which there are (partially) missing data.
