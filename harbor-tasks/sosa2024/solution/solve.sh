@@ -39,3 +39,8 @@ python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/co
 # Persist outputs to mounted volume so they survive even with --disable-verification
 mkdir -p /logs/verifier/snapshot
 cp "$OUTDIR"/*.pkl "$OUTDIR"/*.json "$OUTDIR"/*.txt "$OUTDIR"/*.py "$OUTDIR"/*.md /logs/verifier/snapshot/ 2>/dev/null || true
+
+# Fix ownership to match host user
+HOST_UID=$(stat -c '%u' /logs/verifier)
+HOST_GID=$(stat -c '%g' /logs/verifier)
+chown -R "$HOST_UID:$HOST_GID" /logs/verifier/ /logs/agent/ 2>/dev/null || true

@@ -681,9 +681,9 @@ def _prepare_session_data(neural: list, input: list, output: list, device, doutp
         input_concat = np.concatenate([input_processed[session][trial].T for trial in range(len(input_processed[session]))], axis=0).astype(np.float32)
         output_concat = np.concatenate([output_processed[session][trial].T for trial in range(len(output_processed[session]))], axis=0).astype(np.int64)
         session_data.append({
-            'neural': torch.from_numpy(neural_concat).to(device),
-            'input': torch.from_numpy(input_concat).to(device),
-            'output': torch.from_numpy(output_concat).to(device),
+            'neural': torch.from_numpy(neural_concat),
+            'input': torch.from_numpy(input_concat),
+            'output': torch.from_numpy(output_concat),
             'nneurons': neural_concat.shape[1]
         })
 
@@ -827,7 +827,7 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         # Use random projection if too many neurons
         if nneurons > svd_max_neurons:
             # Create random Gaussian projection matrix: (n_neurons, svd_max_neurons)
-            P = torch.randn(nneurons, svd_max_neurons, device=device)
+            P = torch.randn(nneurons, svd_max_neurons)
             # Project neural data: (n_timepoints, n_neurons) @ (n_neurons, svd_max_neurons) = (n_timepoints, svd_max_neurons)
             neural_projected = neural_subset @ P
             print(f"Session {session}: Using random projection to {svd_max_neurons} of {nneurons} neurons for SVD initialization")
@@ -838,13 +838,13 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
 
             # Compose: final weight = (P @ V[:, :npcs]).T = V[:, :npcs].T @ P.T
             n_components = min(npcs, V.shape[1])
-            proj.weight.data[:n_components, :] = (V[:, :n_components].T @ P.T).clone()
+            proj.weight.data[:n_components, :] = (V[:, :n_components].T @ P.T).to(device).clone()
         else:
             # Standard SVD without random projection
             _, _, V = torch.svd(neural_subset, some=True)
             # V has shape (n_neurons, min(n_timepoints_subset, n_neurons))
             n_components = min(npcs, V.shape[1])
-            proj.weight.data[:n_components, :] = V[:, :n_components].T.clone()
+            proj.weight.data[:n_components, :] = V[:, :n_components].T.to(device).clone()
 
         # Initialize remaining components randomly if needed
         if n_components < npcs:
@@ -871,18 +871,27 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
     criterion = nn.CrossEntropyLoss(reduction='none')
 
     # Training loop
+    # Data stays on CPU; each session is moved to GPU one at a time.
+    # backward() is called per session to free the computation graph before
+    # loading the next session. Gradients accumulate across sessions.
     for epoch in range(num_epochs):
-        loss = 0.
+        epoch_loss = 0.
+        optimizer.zero_grad()
+
         for session in range(nsessions):
-            neural_batch = session_data[session]['neural']
-            input_batch = session_data[session]['input']
-            output_batch = session_data[session]['output']
+            if session_data[session] is None:
+                continue
+            # Move this session's data to device
+            neural_batch = session_data[session]['neural'].to(device)
+            input_batch = session_data[session]['input'].to(device)
+            output_batch = session_data[session]['output'].to(device)
 
             # Forward pass - shared projection
             projected = projection_layers[session](neural_batch)
             combined = torch.cat([projected, input_batch], dim=1)
 
             # Compute loss for each output dimension
+            session_loss = torch.tensor(0., device=device)
             for out_dim in range(doutput):
                 logits = decoders[out_dim](combined)
                 target = output_batch[:, out_dim]
@@ -891,24 +900,25 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
                 if balanced_loss:
                     # Manual per-sample weighting (matches torch_brain exactly)
                     sample_weights = class_weights[out_dim][target]
-                    loss += (sample_weights * loss_per_sample).sum() / sample_weights.sum()
+                    session_loss += (sample_weights * loss_per_sample).sum() / sample_weights.sum()
                 else:
-                    loss += loss_per_sample.mean()
+                    session_loss += loss_per_sample.mean()
 
             # Add L1 regularization on current session's projection matrix
             if l1_weight > 0:
                 l1_loss = torch.sum(torch.abs(projection_layers[session].weight))
-                loss += l1_weight * l1_loss
+                session_loss += l1_weight * l1_loss
 
-        # Backward pass
-        optimizer.zero_grad()
-        loss.backward()
+            # Backward per session: frees computation graph, accumulates gradients
+            session_loss.backward()
+            epoch_loss += session_loss.item()
+
         optimizer.step()
 
         if ((epoch + 1) % 10 == 0) or (epoch < 10):
             # Loss is sum of per-output-dim means across sessions
             # Normalize by (nsessions * doutput) to get average per output per session
-            train_loss_normalized = loss.item() / (nsessions * doutput)
+            train_loss_normalized = epoch_loss / (nsessions * doutput)
             print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {train_loss_normalized:.6f}')
 
     # Store trained parameters
@@ -1375,9 +1385,9 @@ def train_validate_decoder(neural: list, input: list, output: list, metadata: st
         for session in range(nsessions):
             if test_session_data[session] is None:
                 continue
-            neural_test = test_session_data[session]['neural']
-            input_test = test_session_data[session]['input']
-            output_test = test_session_data[session]['output']
+            neural_test = test_session_data[session]['neural'].to(device)
+            input_test = test_session_data[session]['input'].to(device)
+            output_test = test_session_data[session]['output'].to(device)
 
             projection = model['projection'][session]
             projected = torch.matmul(neural_test, projection.T)
