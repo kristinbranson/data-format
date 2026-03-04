@@ -1,17 +1,17 @@
 """Convert lee2025 .mat files to standardized pickle format.
 
 Usage:
-    python -u convert_data.py <output_path.pkl> [--datadir <dir>]
+    python -u convert_data.py <output_path.pkl>
+    python -u convert_data.py <output_path.pkl> --sample
 
-The neural trace data is binary (0/1/NaN). To save memory, it is stored as
-int8 with -1 representing NaN (missing neuron).
-
-Data structure: each .mat file is one subject with one session. Each session
-contains multiple trials (individual ~40 min recordings). The outer list is
-indexed by session (one per subject), the inner list by trial.
+Data structure: each recording session (per subject) becomes its own session.
+Each session is split into 1-minute trials (1800 timepoints at 30 Hz).
+A subject with 31 recording sessions produces 31 sessions in the output.
+Only neurons actually recorded in each session are kept (no NaN padding).
+All arrays are float32 for decoder compatibility.
 """
 
-import os
+import sys
 import glob
 import argparse
 import numpy as np
@@ -20,9 +20,12 @@ import pickle
 
 
 ARENA_SIZE = 75.0
-N_GRID = 5
+N_GRID = 3
 N_BLOCKED_POSITIONS = 9
-TIME_BIN_SIZE = 1000.0 / 30.0  # ~33.33 ms
+SAMPLING_RATE = 30  # Hz
+TIME_BIN_SIZE = 1000.0 / SAMPLING_RATE  # ~33.33 ms
+TRIAL_DURATION_SEC = 60  # 1 minute per trial
+TRIAL_LENGTH = SAMPLING_RATE * TRIAL_DURATION_SEC  # 1800 timepoints
 
 
 def discretize_position(position, n_grid=N_GRID, arena_size=ARENA_SIZE):
@@ -41,89 +44,143 @@ def encode_blocked(blk_indices, n_positions=N_BLOCKED_POSITIONS):
         n_positions: total number of possible blocked positions
 
     Returns:
-        (n_positions,) array with 1s at blocked indices, 0s elsewhere
+        (n_positions,) float32 array with 1s at blocked indices, 0s elsewhere
     """
-    blocked = np.zeros(n_positions, dtype=np.int8)
+    blocked = np.zeros(n_positions, dtype=np.float32)
     if not (len(blk_indices) == 1 and blk_indices[0] == -1):
         blocked[blk_indices.astype(int)] = 1
     return blocked
 
 
-def process_mat_file(filepath):
-    """Process a single .mat file into lists of trials for neural/input/output.
+def split_into_trials(data, trial_length=TRIAL_LENGTH):
+    """Split a (d, n_timepoints) or (n_timepoints,) array into 1-minute trials.
+
+    The last chunk is dropped if shorter than trial_length.
 
     Returns:
-        neural_trials: list of (n_neurons, n_timepoints) int8 arrays
-        input_trials: list of (n_blocked_positions,) int8 arrays
-        output_trials: list of (n_timepoints,) int8 arrays
+        list of arrays, each of shape (d, trial_length) or (trial_length,)
+    """
+    if data.ndim == 1:
+        n_trials = len(data) // trial_length
+        return [data[i * trial_length:(i + 1) * trial_length] for i in range(n_trials)]
+    else:
+        n_trials = data.shape[1] // trial_length
+        return [data[:, i * trial_length:(i + 1) * trial_length] for i in range(n_trials)]
+
+
+def process_mat_file(filepath):
+    """Process a single .mat file.
+
+    Each recording session in the file becomes a separate session.
+    Each session is split into 1-minute trials.
+    Only neurons actually recorded are kept.
+
+    Returns:
+        sessions: list of dicts with keys 'neural', 'input', 'output', 'n_neurons'
     """
     f = h5py.File(filepath, 'r')
 
     trace_refs = f['trace']
     pos_refs = f['position']
     blk_refs = f['blocked'][:][0]
-    n_trials = trace_refs.shape[0]
+    n_recording_sessions = trace_refs.shape[0]
 
-    neural_trials = []
-    input_trials = []
-    output_trials = []
+    sessions = []
 
-    for i in range(n_trials):
-        # trace: (timepoints, neurons) -> (neurons, timepoints), int8 with -1 for NaN
-        trace = f[trace_refs[i][0]][:]
-        nan_mask = np.isnan(trace)
-        trace[nan_mask] = -1
-        trace_int8 = trace.astype(np.int8)
-        neural_trials.append(trace_int8.T)
+    for i in range(n_recording_sessions):
+        # trace: (timepoints, neurons) -> keep only recorded neurons -> (n_active, n_timepoints)
+        trace = f[trace_refs[i][0]][:]  # (timepoints, neurons)
+        active_mask = ~np.all(np.isnan(trace), axis=0)
+        trace = trace[:, active_mask].astype(np.float32).T  # (n_active, n_timepoints)
 
-        # position -> discretized class labels (1, n_timepoints) as int8
-        position = f[pos_refs[i][0]][:].T
-        output_trials.append(discretize_position(position)[np.newaxis, :])
+        # position -> discretized class labels (1, n_timepoints)
+        position = f[pos_refs[i][0]][:].T  # (2, n_timepoints)
+        output = discretize_position(position)[np.newaxis, :]  # (1, n_timepoints)
 
-        # blocked -> one-hot (n_blocked_positions,) as int8
+        # blocked -> one-hot (n_blocked_positions,)
         blk_indices = f[blk_refs[i]][:].flatten()
-        input_trials.append(encode_blocked(blk_indices))
+        blocked = encode_blocked(blk_indices)
+
+        # split into 1-minute trials
+        neural_trials = split_into_trials(trace)
+        output_trials = split_into_trials(output)
+        input_trials = [blocked] * len(neural_trials)
+
+        n_active = int(active_mask.sum())
+        sessions.append({
+            'neural': neural_trials,
+            'input': input_trials,
+            'output': output_trials,
+            'n_neurons': n_active,
+        })
 
     f.close()
-    return neural_trials, input_trials, output_trials
+    return sessions
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Convert lee2025 .mat files to standardized pickle format.')
-    parser.add_argument('output_path', type=str, help='Output pickle file path')
-    parser.add_argument('--datadir', type=str, default='./data', help='Directory containing .mat files (default: ./data)')
-    mode_group = parser.add_mutually_exclusive_group()
-    mode_group.add_argument('--full', action='store_true', default=True, help='Process all sessions (default)')
-    mode_group.add_argument('--sample', action='store_true', help='Process only 2 sessions for testing')
+    parser = argparse.ArgumentParser(description='Convert lee2025 .mat files to pickle format')
+    parser.add_argument('output', help='Output pickle file path')
+    parser.add_argument('--datadir', type=str, default='./data',
+                        help='Directory containing .mat files (default: ./data)')
+
+    parser.add_argument('--show-processing', action='store_true',
+                        help='Show processing details (no effect, for testing)')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--full', action='store_true', default=True,
+                       help='Process all sessions (default)')
+    mode.add_argument('--sample', action='store_true',
+                       help='Process only 2 total sessions for testing')
     args = parser.parse_args()
 
-    output_path = args.output_path
-    mat_files = sorted(glob.glob(os.path.join(args.datadir, '*.mat')))
-    if args.sample:
-        mat_files = mat_files[:2]
+    output_path = args.output
+    mat_files = sorted(glob.glob(f'{args.datadir}/*.mat'))
     print(f"Found {len(mat_files)} subjects")
 
+    if args.sample:
+        print("Sample mode: processing only 2 total sessions")
+        max_total_sessions = 2
+    else:
+        max_total_sessions = None
+
     subjects = []
+    subject_idx_list = []
     all_neural = []
     all_input = []
     all_output = []
     all_region_idx = []
 
-    for mat_file in mat_files:
+    for subj_i, mat_file in enumerate(mat_files):
+        if max_total_sessions is not None and len(all_neural) >= max_total_sessions:
+            break
+
         name = mat_file.split('/')[-1].replace('.mat', '')
         subjects.append(name)
         print(f"\nProcessing {name}...")
 
-        neural_trials, input_trials, output_trials = process_mat_file(mat_file)
-        n_trials = len(neural_trials)
-        n_neurons = neural_trials[0].shape[0]
-        n_timepoints = neural_trials[0].shape[1]
-        print(f"  {n_trials} trials, {n_neurons} neurons, {n_timepoints} timepoints/trial")
+        sessions = process_mat_file(mat_file)
+        if max_total_sessions is not None:
+            remaining = max_total_sessions - len(all_neural)
+            sessions = sessions[:remaining]
+        print(f"  {len(sessions)} recording sessions")
 
-        all_neural.append(neural_trials)
-        all_input.append(input_trials)
-        all_output.append(output_trials)
-        all_region_idx.append(np.zeros(n_neurons, dtype=np.int8))  # all CA1
+        for sess_i, sess in enumerate(sessions):
+            all_neural.append(sess['neural'])
+            all_input.append(sess['input'])
+            all_output.append(sess['output'])
+            subject_idx_list.append(subj_i)
+            all_region_idx.append(np.zeros(sess['n_neurons'], dtype=np.int32))
+
+            n_trials = len(sess['neural'])
+            n_neurons = sess['n_neurons']
+            trial_len = sess['neural'][0].shape[1] if n_trials > 0 else 0
+            output_classes = np.unique(np.concatenate([t.flatten() for t in sess['output']]))
+            blocked_str = sess['input'][0].astype(int) if n_trials > 0 else []
+            print(f"    session {sess_i}: {n_neurons} neurons, {n_trials} trials, "
+                  f"{trial_len} timepoints/trial, "
+                  f"neural dtype={sess['neural'][0].dtype}, "
+                  f"output classes={output_classes.astype(int)}, "
+                  f"blocked={blocked_str}")
 
     n_classes = N_GRID ** 2
     output_values = [[f"grid_{i}" for i in range(n_classes)]]
@@ -134,7 +191,7 @@ def main():
         'output': all_output,
 
         'subjects': subjects,
-        'subject_idx': np.arange(len(subjects)),
+        'subject_idx': np.array(subject_idx_list, dtype=np.int32),
 
         'brain_regions': ['CA1'],
         'brain_region_idx': all_region_idx,
@@ -147,16 +204,18 @@ def main():
             'time_bin_size': TIME_BIN_SIZE,
             'arena_size': [75, 75],
             'n_grid': N_GRID,
-            'neural_encoding': 'int8: 0=inactive, 1=active, -1=missing (NaN)',
+            'trial_duration_sec': TRIAL_DURATION_SEC,
         },
     }
 
-    print(f"\nSaving to {output_path}...")
+    n_sessions = len(all_neural)
+    total_trials = sum(len(s) for s in all_neural)
+    print(f"\nTotal: {len(subjects)} subjects, {n_sessions} sessions, {total_trials} trials")
+    print(f"Saving to {output_path}...")
     with open(output_path, 'wb') as f:
         pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    total_trials = sum(len(s) for s in all_neural)
-    print(f"Done. {len(subjects)} subjects, {total_trials} total trials")
+    print("Done.")
 
 
 if __name__ == '__main__':

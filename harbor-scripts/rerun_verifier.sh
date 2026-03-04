@@ -42,6 +42,11 @@ fi
 # Get Claude OAuth token for LLM judge
 export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
 
+# OpenAI API key for Codex judge
+if [ -z "${OPENAI_API_KEY:-}" ]; then
+    echo "Warning: OPENAI_API_KEY not set. Codex judge will be skipped."
+fi
+
 # Create a fresh verifier output directory for this re-run
 VERIFIER_OUT="$TRIAL_DIR/verifier_rerun_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$VERIFIER_OUT"
@@ -63,6 +68,7 @@ echo ""
 docker run --rm \
     --gpus all \
     -e CLAUDE_CODE_OAUTH_TOKEN \
+    -e OPENAI_API_KEY \
     -v "$SNAPSHOT_DIR":/app \
     -v "$DATA_DIR":/app/data:ro \
     -v "$TASK_DIR/tests":/tests:ro \
@@ -70,11 +76,34 @@ docker run --rm \
     -v "$TRIAL_DIR/agent":/logs/agent \
     -w /app \
     "$IMAGE_NAME" \
-    bash -c 'apt-get update -qq && apt-get install -y -qq curl >/dev/null 2>&1 && curl -fsSL https://claude.ai/install.sh | bash && export PATH="$HOME/.local/bin:$PATH" && bash /tests/test.sh'
+    bash -c '
+      apt-get update -qq && apt-get install -y -qq curl >/dev/null 2>&1
+      # Install Claude CLI
+      curl -fsSL https://claude.ai/install.sh | bash
+      export PATH="$HOME/.local/bin:$PATH"
+      # Install Codex CLI (requires Node.js via nvm)
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
+      export NVM_DIR="$HOME/.nvm"
+      \. "$NVM_DIR/nvm.sh" || true
+      nvm install 22 >/dev/null 2>&1
+      npm install -g @openai/codex@latest >/dev/null 2>&1
+      bash /tests/test.sh
+    '
 
 echo ""
 echo "Verifier output written to: $VERIFIER_OUT"
 echo "Reward: $(cat "$VERIFIER_OUT/reward.txt" 2>/dev/null || echo 'N/A')"
 if [ -f "$VERIFIER_OUT/metrics.json" ]; then
-    echo "Judge:  $(python3 -c "import json; d=json.load(open('$VERIFIER_OUT/metrics.json')); r=d.get('llm_judge_reward'); print(f'LLM={r:.3f}' if r is not None else 'N/A')" 2>/dev/null || echo 'N/A')"
+    echo "Judge:  $(python3 -c "
+import json
+d = json.load(open('$VERIFIER_OUT/metrics.json'))
+parts = []
+for model in ['claude', 'codex']:
+    r = d.get(f'llm_judge_{model}_reward')
+    if r is not None:
+        parts.append(f'{model}={r:.3f}')
+    elif f'llm_judge_{model}_error' in d:
+        parts.append(f'{model}=ERR')
+print(', '.join(parts) if parts else 'N/A')
+" 2>/dev/null || echo 'N/A')"
 fi
