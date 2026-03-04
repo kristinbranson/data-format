@@ -32,3 +32,7 @@ python3 "$SCRIPT_DIR/convert_data.py" --full --datadir /app/data "$OUTDIR/conver
 python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
 # train on full data
 python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt"
+
+# Persist outputs to mounted volume so they survive even with --disable-verification
+mkdir -p /logs/verifier/snapshot
+cp "$OUTDIR"/*.pkl "$OUTDIR"/*.json "$OUTDIR"/*.txt "$OUTDIR"/*.py "$OUTDIR"/*.md /logs/verifier/snapshot/ 2>/dev/null || true
