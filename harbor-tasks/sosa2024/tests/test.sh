@@ -32,9 +32,9 @@ mkdir -p "$JUDGE_DIR"
 
 echo "=== [4/7] Setting up judge user and CLI tools ==="
 # Claude CLI refuses --permission-mode bypassPermissions as root.
+# Create a non-root user for claude only; codex runs fine as root.
 useradd -m -s /bin/bash judge 2>/dev/null || true
 install -m 755 "$(which claude)" /usr/local/bin/claude 2>/dev/null || true
-install -m 755 "$(which codex)" /usr/local/bin/codex 2>/dev/null || true
 chmod -R o+rX /app /logs /tests 2>/dev/null || true
 
 # --- Claude Opus 4.6 ---
@@ -74,13 +74,9 @@ cd /
 echo "=== [6/7] Codex judge: documenting decisions (step 1/2) ==="
 CODEX_DIR="$JUDGE_DIR/codex"
 mkdir -p "$CODEX_DIR"
-chown -R judge:judge "$CODEX_DIR"
 
 cd "$CODEX_DIR"
-runuser -u judge -- env \
-  OPENAI_API_KEY="$OPENAI_API_KEY" \
-  HOME=/home/judge \
-  codex exec "$(cat /tests/decisions_instructions.md)" \
+codex exec "$(cat /tests/decisions_instructions.md)" \
     -m gpt-5.3-codex \
     --dangerously-bypass-approvals-and-sandbox \
     --json \
@@ -90,10 +86,7 @@ runuser -u judge -- env \
 
 echo "=== [6/7] Codex judge: evaluating decisions (step 2/2) ==="
 EVAL_PROMPT="$(sed 's|/logs/verifier/judge/DECISIONS.md|/logs/verifier/judge/codex/DECISIONS.md|g' /tests/eval_instructions.md)"
-runuser -u judge -- env \
-  OPENAI_API_KEY="$OPENAI_API_KEY" \
-  HOME=/home/judge \
-  codex exec "$EVAL_PROMPT" \
+codex exec "$EVAL_PROMPT" \
     -m gpt-5.3-codex \
     --dangerously-bypass-approvals-and-sandbox \
     --json \
