@@ -38,9 +38,9 @@ No inputs for this task.
 
 ### Decoder Outputs
 
-Image identity, categorical variable. Static per-trial.
-Running speed, discretized into five equal percentile bins. Time-varying.
-Pupil diameter, discretized into five equal percentile bins.  Time-varying.
+- Image identity, categorical variable. Static per-trial.
+- Running speed, discretized into five equal percentile bins. Time-varying.
+- Pupil diameter, discretized into five equal percentile bins.  Time-varying.
 
 ## Target Data Format
 
