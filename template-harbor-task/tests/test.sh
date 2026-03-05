@@ -31,6 +31,21 @@ JUDGE_DIR=/logs/verifier/judge
 mkdir -p "$JUDGE_DIR"
 
 echo "=== [4/7] Setting up judge user and CLI tools ==="
+# Install CLIs if not already present (Harbor only pre-installs them in the agent container)
+apt-get update -qq && apt-get install -y -qq curl >/dev/null 2>&1 || true
+if ! command -v claude &>/dev/null; then
+  echo "Installing Claude CLI..."
+  curl -fsSL https://claude.ai/install.sh | bash 2>&1 || true
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+if ! command -v codex &>/dev/null; then
+  echo "Installing Codex CLI..."
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash 2>&1
+  export NVM_DIR="$HOME/.nvm"
+  \. "$NVM_DIR/nvm.sh" || true
+  nvm install 22 >/dev/null 2>&1
+  npm install -g @openai/codex@latest >/dev/null 2>&1
+fi
 # Claude CLI refuses --permission-mode bypassPermissions as root.
 # Create a non-root user for claude only; codex runs fine as root.
 useradd -m -s /bin/bash judge 2>/dev/null || true
@@ -74,6 +89,12 @@ cd /
 echo "=== [6/7] Codex judge: documenting decisions (step 1/2) ==="
 CODEX_DIR="$JUDGE_DIR/codex"
 mkdir -p "$CODEX_DIR"
+
+# Reconstruct codex auth.json from base64-encoded env var (codex uses OAuth, not API key)
+if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
+  mkdir -p /root/.codex
+  echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
+fi
 
 cd "$CODEX_DIR"
 codex exec "$(cat /tests/decisions_instructions.md)" \

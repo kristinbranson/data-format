@@ -42,9 +42,12 @@ fi
 # Get Claude OAuth token for LLM judge
 export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
 
-# OpenAI API key for Codex judge
-if [ -z "${OPENAI_API_KEY:-}" ]; then
-    echo "Warning: OPENAI_API_KEY not set. Codex judge will be skipped."
+# Codex auth (uses OAuth tokens, not a plain API key)
+if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+    export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json 2>/dev/null || true)
+fi
+if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+    echo "Warning: Codex auth not available. Codex judge will be skipped."
 fi
 
 # Create a fresh verifier output directory for this re-run
@@ -63,12 +66,11 @@ echo ""
 #   - tests -> /tests
 #   - verifier output -> /logs/verifier
 #   - agent logs -> /logs/agent (for chown)
-# Claude CLI is installed first (same as Harbor's agent setup phase),
-# then test.sh runs pytest + LLM judge.
+# test.sh installs Claude and Codex CLIs if not already present.
 docker run --rm \
     --gpus all \
     -e CLAUDE_CODE_OAUTH_TOKEN \
-    -e OPENAI_API_KEY \
+    -e CODEX_AUTH_JSON_B64 \
     -v "$SNAPSHOT_DIR":/app \
     -v "$DATA_DIR":/app/data:ro \
     -v "$TASK_DIR/tests":/tests:ro \
@@ -76,19 +78,7 @@ docker run --rm \
     -v "$TRIAL_DIR/agent":/logs/agent \
     -w /app \
     "$IMAGE_NAME" \
-    bash -c '
-      apt-get update -qq && apt-get install -y -qq curl >/dev/null 2>&1
-      # Install Claude CLI
-      curl -fsSL https://claude.ai/install.sh | bash
-      export PATH="$HOME/.local/bin:$PATH"
-      # Install Codex CLI (requires Node.js via nvm)
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
-      export NVM_DIR="$HOME/.nvm"
-      \. "$NVM_DIR/nvm.sh" || true
-      nvm install 22 >/dev/null 2>&1
-      npm install -g @openai/codex@latest >/dev/null 2>&1
-      bash /tests/test.sh
-    '
+    bash /tests/test.sh
 
 echo ""
 echo "Verifier output written to: $VERIFIER_OUT"
