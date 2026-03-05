@@ -53,3 +53,7 @@ case "$AGENT" in
     exit 1
     ;;
 esac
+
+# Fix permissions on agent logs — Claude Code creates session files with restrictive
+# permissions (0604) that block Harbor's post-processing trajectory conversion.
+chmod -R a+rX "$JOBS_DIR" 2>/dev/null || true

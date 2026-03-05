@@ -8,6 +8,10 @@ pip install pytest==8.4.1 pytest-json-ctrf==0.3.5
 
 mkdir -p /logs/verifier
 
+# Fix permissions on agent logs — Claude Code creates session files with restrictive
+# permissions (0604) that block Harbor's post-processing trajectory conversion.
+chmod -R a+rX /logs/agent/ 2>/dev/null || true
+
 echo "=== [2/7] Snapshotting agent-created files ==="
 # Snapshot agent-created files (excluding large binaries)
 cd /app && comm -23 <(find . -not -path './data/*' -type f | sort) <(sort .manifest | sed 's|^/app|.|') | while read f; do

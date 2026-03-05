@@ -1,6 +1,9 @@
 1. Copy -r `data-format/template-harbor-task` to `data-format/harbor-tasks/<taskname>`
-2. Meld `data-format/prompts/harbor_instructions_v4.md` with `data-format/prompts/<taskname>_prompt_v3.md` to create `data-format/prompts/<taskname>_prompt_v4.md`
-3. Copy `data-format/prompts/<taskname>_prompt_v4.md` to `data-format/harbor-tasks/<taskname>/instruction.md`
+2. Meld`data-format/prompts/harbor_instructions_v4.md` with either:
+- `data-format/prompts/<taskname>_prompt_v3.md`
+- OR `data-format/prompt_v4/<taskname>_prompt_v4.md`
+to create `data-format/prompt_v4/<taskname>_prompt_v4.md`
+3. Copy `data-format/prompt_v4/<taskname>_prompt_v4.md` to `data-format/harbor-tasks/<taskname>/instruction.md`
 4. Copy references into `data-format/harbor-tasks/<taskname>/environment`:
   - `data-format/auto/<taskname>/paper.pdf`
   - `data-format/auto/<taskname>/methods.txt`
@@ -15,5 +18,5 @@ cd data-format/harbor-tasks/<taskname>/tests
 cp ../instruction.md instruction_reference.md
 cp ../solution/convert_data.py reference_convert_data.py
 ```
-9. Follow instructions in `decisions_instructions.md` to create `data-format/harbor-tasks/<taskname>/tests/reference_DECISIONS.md`
+9. Ask Claude: Follow instructions in `decisions_instructions.md` to create `reference_DECISIONS.md` based on ../solution/convert_data.py
 10. Generate reference stats by running `data-format/harbor-scripts/generate_reference_stats.sh <taskname>`

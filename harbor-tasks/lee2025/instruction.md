@@ -147,9 +147,9 @@ data = {
 
 ## Python environment
 
-- Use the conda environment **decoder-data-format** to run any python code.
-- Conda setup script is in /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
-- If you need to install any other libraries, create a new conda environment in this directory
+- All required Python packages are already installed in the system Python environment.
+- Use `python3` to run any python code.
+- If you need to install additional libraries, use `pip install`.
 
 ## Decoder Reference
 
@@ -203,13 +203,13 @@ You will be assessed on whether the decisions you make on how to load, filter, p
 
 **Actions**:
 1. **FIRST**: Create `CONVERSION_NOTES.md` with the template structure shown at the end of this document
-2. Verify you can access the conda environment `decoder-data-format`
+2. Verify you can run `python3` and import key packages (numpy, torch)
 3. List the contents of this directory to understand what files are available
 4. **REMINDER**: Do NOT look at any files outside this directory
 
 **Done when**: 
 - `CONVERSION_NOTES.md` exists with the proper template structure
-- You have confirmed the conda environment works
+- You have confirmed Python and key packages work
 - You have listed directory contents in CONVERSION_NOTES.md
 
 **⚠️ CHECKPOINT**: Before proceeding to Step 1, verify that `CONVERSION_NOTES.md` exists by running `ls -la CONVERSION_NOTES.md`. If it doesn't exist, STOP and create it now.

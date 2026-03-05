@@ -27,6 +27,7 @@
 - Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`. 
 - **Code** from the paper are in the directory `code`.
 - **Data** from the paper are in the directory `data`.
+- **Documentation** on nwb file format is at https://nwb-schema.readthedocs.io/en/latest/
 
 ## Decoder Task
 
@@ -124,12 +125,14 @@ data = {
 - **neural**: Neural activity data (e.g., firing rates, spike counts) organized by session and trial
   - Dimensions: (n_neurons, n_timepoints) for each trial.
   - Time bins should be the same size for all trials and sessions. 
+  - There needs to be at least two trials within each session in order to evaluate the decoder performance.
 
 - **input**: Variables that serve as inputs **to the decoder**
   - These are **decoder inputs**. They could be task inputs to the animal, but inputs to the animal can also be decoder outputs.
-  - Examples: time from an aligning signal, stimulus characteristics such as:
+  - Examples: time from an aligning signal, stimulus characteristics, our animal behavior such as:
     - visual: contrast, position, orientation
     - audio: frequency, amplitude
+    - behavior: running speed, pupil size
   - Dimensions: (d_input, n_timepoints) for each trial. 
   - Should capture all relevant contextual information for the decoder
   - If an input is a time such as onset of some stimulus, represent it as a binary time series. 
