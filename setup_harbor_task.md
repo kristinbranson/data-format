@@ -11,7 +11,7 @@ to create `data-format/prompt_v4/<taskname>_prompt_v4.md`
 5. Modify `data-format/harbor-tasks/<taskname>/environment/docker-compose.yaml` to point to the location of the data for this task
 6. Copy manual solution from `data-format/manual/<taskname>/convert_data.py` to `data-format/harbor-tasks/<taskname>/solution`
 7. Modify `data-format/harbor-tasks/<taskname>/solution/solve.sh` to include commands tailored to this task
-7. Tailor a version of `data-format/harbor-tasks/sosa2024/tests/decisions_instructions.md` for this task, put in `data-format/harbor-tasks/<taskname>/tests/decisions_instructions.md`
+7. Tailor a version of `data-format/harbor-tasks/sosa2024/tests/judge_instructions.md` for this task, put in `data-format/harbor-tasks/<taskname>/tests/judge_instructions.md`
 8.
 ```bash
 cd data-format/harbor-tasks/<taskname>/tests

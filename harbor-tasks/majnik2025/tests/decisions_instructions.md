@@ -27,27 +27,30 @@ Document the decisions of another agentic AI system for a rubric of decision poi
   │
   ├── train_decoder_full_out.txt             # stdout from full decoder training.
 
-- The AI's process is recorded in the directory `/logs/agent`.  Relevant files include:
-  /logs/agent/
-  ├── claude-code.txt                    # Stream-JSON trajectory log (341 lines, 2.2MB)
-  │                                      # One JSON object per line: tool_use events (Read, Write,
-  │                                      # Edit, Bash, Grep, etc.), assistant messages, system init,
-  │                                      # and final result. PRIMARY SOURCE for reconstructing what
-  │                                      # the agent did.
-  └── sessions/                          # Claude Code internal session state
-      ├── .claude.json                   #   Session config: tool usage counts, OAuth account info,
-      │                                  #   timestamps
-      └── projects/-app/
-          ├── <session-id>.jsonl         #   FULL CONVERSATION TRANSCRIPT (255 lines, 1.8MB)
-          │                              #   Each line is a JSON object with role (user/assistant),
-          │                              #   content (text + tool_use + tool_result blocks).
-          │                              #   This is the richest source for reconstruction.
-          ├── <session-id>/
-          │   ├── subagents/             #   Transcripts from Task tool subagents
-          │   │   ├── agent-*.jsonl      #   3 subagent transcripts (18-90 lines each)
-          │   └── tool-results/          #   Cached large tool results (39-51KB each)
-          │       ├── b1312x90z.txt      #   Truncated tool outputs stored by ID
-          │       ├── ...
+- The AI's process is recorded in `/logs/agent/trajectory.json` (ATIF format).
+  This is a JSON file with the following structure:
+  ```json
+  {
+    "schema_version": "ATIF-v1.2",
+    "session_id": "...",
+    "agent": {"name": "...", "version": "...", "model_name": "..."},
+    "steps": [
+      {
+        "step_id": 1,
+        "source": "user" | "agent" | "system",
+        "message": "text content",
+        "reasoning_content": "agent's internal reasoning (if available)",
+        "tool_calls": [{"tool_call_id": "...", "function_name": "Write", "arguments": {...}}],
+        "observation": {"results": [{"content": "tool output"}]}
+      },
+      ...
+    ],
+    "final_metrics": {"total_prompt_tokens": ..., "total_completion_tokens": ..., "total_steps": ...}
+  }
+  ```
+  Each step is a message, tool call, or tool result. Agent reasoning, code written
+  (via Write/Edit tools), and shell commands (via Bash/exec tools) are all captured
+  in the steps list. This is the PRIMARY SOURCE for reconstructing what the agent did.
 
 **Step 1**. The AI's goal was to load, process, and reformat the data from a neuroscience paper into a specified structure suitable for downstream analysis, using the **SAME** processing described in the provided reference paper and code. Read through the `instruction.md` to understand the task.
 

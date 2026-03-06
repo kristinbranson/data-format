@@ -1,34 +1,26 @@
-# Document AI-generated code decisions
+# Document and evaluate AI-generated code decisions
 
-Document the decisions of another agentic AI system for a rubric of decision points.
+Document the decisions of another agentic AI system, then evaluate them against a human reference solution.
 
-**Agentic AI Inputs**:
-- Instructions: `/tests/instruction_reference.md`
+## Available Files
+
+**Task Instructions**:
+- Instructions given to the AI: `/tests/instruction_reference.md`
 - Reference code, text, and data are in `/app/code/`, `/app/paper.pdf`, `/app/methods.txt`, `/app/data/`. Descriptions are available in `/tests/instruction_reference.md`
 
-**Agentic AI Outputs**:
-- The code the AI created is in `/app`
+**Agentic AI Outputs** (the code/files the AI created are in `/app`):
   /app/
-  │
-  ├── CONVERSION_NOTES.md                    # Agent"s documentation of conversion decisions,
+  ├── CONVERSION_NOTES.md                    # Agent's documentation of conversion decisions,
   │                                          # sanity checks, and validation results.
-  │
-  ├── convert_data.py                        # Agent"s conversion script.
-  │
+  ├── convert_data.py                        # Agent's conversion script.
   ├── converted_data.pkl                     # Full converted dataset in target format.
-  │                                          # Contains neural, input, output, metadata.
-  │
   ├── README.md                              # User-facing documentation.
-  │
   ├── conversion_full_out.txt                # stdout from full conversion run.
-  │
   ├── verification_full_out.txt              # stdout from `train_decoder.py --verify-only`
   │                                          # on full data.
-  │
   ├── train_decoder_full_out.txt             # stdout from full decoder training.
 
-- The AI's process is recorded in `/logs/agent/trajectory.json` (ATIF format).
-  This is a JSON file with the following structure:
+**Agent Trajectory** (recorded in `/logs/agent/trajectory.json`, ATIF format):
   ```json
   {
     "schema_version": "ATIF-v1.2",
@@ -52,42 +44,66 @@ Document the decisions of another agentic AI system for a rubric of decision poi
   (via Write/Edit tools), and shell commands (via Bash/exec tools) are all captured
   in the steps list. This is the PRIMARY SOURCE for reconstructing what the agent did.
 
-**Step 1**. The AI's goal was to load, process, and reformat the data from a neuroscience paper into a specified structure suitable for downstream analysis, using the **SAME** processing described in the provided reference paper and code. Read through the `instruction.md` to understand the task.
+**Human Reference Solution**:
+- Human-generated solution code: `/tests/reference_convert_data.py`
+- Human-generated decision descriptions: `/tests/reference_DECISIONS.md`
 
-**Step 2**. Create the file `DECISIONS.md` with the template shown at the end of this document.
+---
 
-**Step 3**. Answer the following questions about the AI-generated solution in `DECISIONS.md`. For each question:
-i. Summarize the relevant code or decisions.
-ii. Provide code snippets from `convert_data.py`.
-iii. Summarize the agentic AI's justification for its decisions.
+## Task
+
+The AI's goal was to load, process, and reformat the data from a neuroscience paper into a specified structure suitable for downstream analysis, using the **SAME** processing described in the provided reference paper and code.
+
+You must produce **two output files**: `DECISIONS.md` and `llm_judge_eval.json`.
+
+---
+
+## Step 1: Understand the task
+
+- Read `/tests/instruction_reference.md` to understand what the AI was asked to do.
+- Read `/tests/reference_DECISIONS.md` to understand the human reference decisions.
+- Read `/tests/reference_convert_data.py` to understand the human reference code.
+- Read `/app/convert_data.py` to understand the AI's code.
+- Optionally read `/logs/agent/trajectory.json` to understand the AI's reasoning and process.
+
+## Step 2: Document the AI's decisions
+
+Create the file `DECISIONS.md` using the template at the end of this document.
+
+For each question below:
+  i. Summarize the relevant code or decisions the AI made.
+  ii. Provide code snippets from the AI's `convert_data.py`.
+  iii. Summarize the AI's justification for its decisions (from CONVERSION_NOTES.md or trajectory).
+
+### Decision Questions
 
 1-a.  How are **all the data** for all subjects, sessions, and trials loaded in?
 
 1-b. How are the data split into subjects (mice)?
 
-1-c. How are the data split into sessions? 
+1-c. How are the data split into sessions?
 
-1-d. How are the data split into trials? 
+1-d. How are the data split into trials?
 
-1-e. How are trials filtered based on quality controls? 
+1-e. How are trials filtered based on quality controls?
 
 2-a. What variables in the raw data is the `neural` data derived from?
 
-2-b. How is the `neural` data processed? 
+2-b. How is the `neural` data processed?
 
 2-c. How is the `neural` data filtered based on quality controls?
 
-2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`? 
+2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 2-e. What is the temporal resolution (time bin size) of the converted data? Is any temporal rebinning applied?
 
-3-a. What variables in the raw data is `input` *Time from start of trial in seconds* derived from? 
+3-a. What variables in the raw data is `input` *Time from start of trial in seconds* derived from?
 
 3-b. What processing is involved in computing `input` *Time from start of trial in seconds*?
 
-3-c. How is the `input` *Time from start of trial in seconds* aligned with the neural data? 
+3-c. How is the `input` *Time from start of trial in seconds* aligned with the neural data?
 
-4-a. What variables in the raw data is `input` *Environment type* derived from? 
+4-a. What variables in the raw data is `input` *Environment type* derived from?
 
 4-b. What processing is involved in computing `input` *Environment type*?
 
@@ -139,10 +155,49 @@ iii. Summarize the agentic AI's justification for its decisions.
 
 13-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
+## Step 3: Evaluate the AI's decisions
 
-## DECISONS.md Template
+Compare the AI's decisions (from Step 2) against the human reference solution (`/tests/reference_DECISIONS.md` and `/tests/reference_convert_data.py`).
 
-**Create this file IMMEDIATELY in Step 2. Follow this template exactly:**
+Create the file `llm_judge_eval.json` with the following structure:
+```json
+{
+    "1-a": {
+        "question": "How are **all the data** for all subjects, sessions, and trials loaded in?",
+        "decision_correctness": "<category>",
+        "decision_correctness_justification": "<text>",
+        "code_correctness": "<category>",
+        "code_correctness_justification": "<text>"
+    },
+    "1-b": {
+        ...
+    }
+    ...
+}
+```
+
+For each decision point, assess:
+
+`"decision_correctness"`: Did the AI make a decision consistent with the instructions and reference? Rate with one of:
+- `"MATCH"`: AI's decision **matches** the human decision
+- `"BETTER"`: AI's decision is **better** than the human decision
+- `"OK"`: AI's decision does not match the human decision, but it is **equally as justified**
+- `"CONCERNING"`: AI's decision is not technically wrong given ambiguity in the instructions, but it is a concerning choice that should be checked by a human
+- `"INCORRECT"`: AI's decision is **incorrect**
+
+In `"decision_correctness_justification"`, justify your rating.
+
+`"code_correctness"`: Does the code correctly implement its decision? Rate with one of:
+- `"CORRECT"`: AI code matches its decision
+- `"INCORRECT"`: AI code does **not** match its decision
+
+In `"code_correctness_justification"`, justify your rating.
+
+---
+
+## DECISIONS.md Template
+
+**Create this file in Step 2. Follow this template exactly:**
 
 ```markdown
 # Decisions
@@ -155,7 +210,7 @@ ii. <Code snippets>
 
 iii. <Justification>
 
-## 1-b. How are the data split into subjects? 
+## 1-b. How are the data split into subjects?
 
 i. <Decisions>
 

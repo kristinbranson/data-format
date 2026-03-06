@@ -3,19 +3,23 @@
 # Use this file to install test dependencies and run the tests.
 # It will be copied to /tests/test.sh and run from the working directory.
 
-echo "=== [1/7] Installing test dependencies ==="
+echo "=== [1/6] Installing test dependencies ==="
 pip install pytest==8.4.1 pytest-json-ctrf==0.3.5
 
 mkdir -p /logs/verifier
 
-echo "=== [2/7] Snapshotting agent-created files ==="
+# Fix permissions on agent logs — Claude Code creates session files with restrictive
+# permissions (0604) that block Harbor's post-processing trajectory conversion.
+chmod -R a+rX /logs/agent/ 2>/dev/null || true
+
+echo "=== [2/6] Snapshotting agent-created files ==="
 # Snapshot agent-created files (excluding large binaries)
 cd /app && comm -23 <(find . -not -path './data/*' -type f | sort) <(sort .manifest | sed 's|^/app|.|') | while read f; do
   mkdir -p "/logs/verifier/snapshot/$(dirname "$f")" && cp "$f" "/logs/verifier/snapshot/$f"
 done
 cd /
 
-echo "=== [3/7] Running pytest ==="
+echo "=== [3/6] Running pytest ==="
 # CTRF produces a standard test report in JSON format which is useful for logging.
 pytest --ctrf /logs/verifier/ctrf.json /tests/test_outputs.py -rA
 
@@ -30,7 +34,7 @@ export PATH="$HOME/.local/bin:$PATH"
 JUDGE_DIR=/logs/verifier/judge
 mkdir -p "$JUDGE_DIR"
 
-echo "=== [4/7] Setting up judge user and CLI tools ==="
+echo "=== [4/6] Setting up judge user and CLI tools ==="
 # Install CLIs if not already present (Harbor only pre-installs them in the agent container)
 apt-get update -qq && apt-get install -y -qq curl >/dev/null 2>&1 || true
 if ! command -v claude &>/dev/null; then
@@ -53,7 +57,7 @@ install -m 755 "$(which claude)" /usr/local/bin/claude 2>/dev/null || true
 chmod -R o+rX /app /logs /tests 2>/dev/null || true
 
 # --- Claude Opus 4.6 ---
-echo "=== [5/7] Claude judge: documenting decisions (step 1/2) ==="
+echo "=== [5/6] Claude judge ==="
 CLAUDE_DIR="$JUDGE_DIR/claude"
 mkdir -p "$CLAUDE_DIR"
 chown -R judge:judge "$CLAUDE_DIR"
@@ -62,31 +66,18 @@ cd "$CLAUDE_DIR"
 runuser -u judge -- env \
   CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
   HOME=/home/judge \
-  claude -p "$(cat /tests/decisions_instructions.md)" \
+  claude -p "$(cat /tests/judge_instructions.md)" \
     --model opus \
     --permission-mode bypassPermissions \
     --output-format stream-json \
     --no-session-persistence \
     --verbose \
-  2>&1 | tee judge_step1_log.txt || true
-
-echo "=== [5/7] Claude judge: evaluating decisions (step 2/2) ==="
-EVAL_PROMPT="$(sed 's|/logs/verifier/judge/DECISIONS.md|/logs/verifier/judge/claude/DECISIONS.md|g' /tests/eval_instructions.md)"
-runuser -u judge -- env \
-  CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
-  HOME=/home/judge \
-  claude -p "$EVAL_PROMPT" \
-    --model opus \
-    --permission-mode bypassPermissions \
-    --output-format stream-json \
-    --no-session-persistence \
-    --verbose \
-  2>&1 | tee judge_step2_log.txt || true
+  2>&1 | tee judge_log.txt || true
 
 cd /
 
 # --- Codex GPT 5.3 ---
-echo "=== [6/7] Codex judge: documenting decisions (step 1/2) ==="
+echo "=== [6/6] Codex judge ==="
 CODEX_DIR="$JUDGE_DIR/codex"
 mkdir -p "$CODEX_DIR"
 
@@ -97,28 +88,18 @@ if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
 fi
 
 cd "$CODEX_DIR"
-codex exec "$(cat /tests/decisions_instructions.md)" \
+codex exec "$(cat /tests/judge_instructions.md)" \
     -m gpt-5.3-codex \
     --dangerously-bypass-approvals-and-sandbox \
     --json \
     --ephemeral \
     --skip-git-repo-check \
-  2>&1 | tee judge_step1_log.txt || true
-
-echo "=== [6/7] Codex judge: evaluating decisions (step 2/2) ==="
-EVAL_PROMPT="$(sed 's|/logs/verifier/judge/DECISIONS.md|/logs/verifier/judge/codex/DECISIONS.md|g' /tests/eval_instructions.md)"
-codex exec "$EVAL_PROMPT" \
-    -m gpt-5.3-codex \
-    --dangerously-bypass-approvals-and-sandbox \
-    --json \
-    --ephemeral \
-    --skip-git-repo-check \
-  2>&1 | tee judge_step2_log.txt || true
+  2>&1 | tee judge_log.txt || true
 
 cd /
 
 # --- Compute rewards and merge into metrics.json ---
-echo "=== [7/7] Computing rewards ==="
+echo "=== Computing rewards ==="
 python3 /tests/compute_reward.py \
   --eval-json "$CLAUDE_DIR/llm_judge_eval.json" \
   --model-name claude \
