@@ -30,7 +30,7 @@
 
 - Collect and convert data under the "Visual Behavior" task.
 - Temporally align based on ophys timestamp.
-- Segment each recording session into individual trials, each consisting of 30 ophys frames at the time of image change. Include both the "Go" and "Catch" trials, but exclude the "Aborted" and "Auto-rewarded" trials.
+- Segment each recording session into individual trials based on how they are defined in the experiment. Include both the "Go" and "Catch" trials, but exclude the "Aborted" and "Auto-rewarded" trials.
 
 ### Decoder Inputs:
 
@@ -38,7 +38,8 @@ No inputs for this task.
 
 ### Decoder Outputs
 
-- Image identity, categorical variable. Static per-trial.
+- Image identity, categorical variable. Time-varying.
+- Image change, binary variable of value 0/1 before/after image change. Time-varying.
 - Running speed, discretized into five equal percentile bins. Time-varying.
 - Pupil diameter, discretized into five equal percentile bins.  Time-varying.
 - Trial outcome. Static per-trial.
