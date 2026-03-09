@@ -34,12 +34,14 @@ conda activate eval-data-format
 # Always export CLAUDE_CODE_OAUTH_TOKEN — required by [verifier.env] in task.toml for LLM judge
 export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
 
+# Export codex auth for LLM judge (codex uses OAuth, not a plain API key)
+export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json 2>/dev/null || true)
+
 case "$AGENT" in
   claude)
     harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG
     ;;
   codex)
-    export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json)
     harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "codex" -m "gpt-5.2-codex" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG
     ;;
   oracle)
@@ -51,3 +53,7 @@ case "$AGENT" in
     exit 1
     ;;
 esac
+
+# Fix permissions on agent logs — Claude Code creates session files with restrictive
+# permissions (0604) that block Harbor's post-processing trajectory conversion.
+chmod -R a+rX "$JOBS_DIR" 2>/dev/null || true

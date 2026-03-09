@@ -46,7 +46,7 @@ def encode_blocked(blk_indices, n_positions=N_BLOCKED_POSITIONS):
     Returns:
         (n_positions,) float32 array with 1s at blocked indices, 0s elsewhere
     """
-    blocked = np.zeros(n_positions, dtype=np.int8)
+    blocked = np.zeros(n_positions, dtype=np.float32)
     if not (len(blk_indices) == 1 and blk_indices[0] == -1):
         blocked[blk_indices.astype(int)] = 1
     return blocked

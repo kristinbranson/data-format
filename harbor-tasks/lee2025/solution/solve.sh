@@ -21,6 +21,7 @@ EOF
 # Copy convert_data.py to /app so tests can find it
 cp "$SCRIPT_DIR/convert_data.py" "$OUTDIR/convert_data.py"
 
+# convert sample
 python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt"
 # verify sample
 python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt"
@@ -31,7 +32,7 @@ python3 "$SCRIPT_DIR/convert_data.py" --full --datadir /app/data "$OUTDIR/conver
 # verify full data
 python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
 # train on full data
-python3 /app/train_decoder.py --cpu --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt"
+python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt"
 
 # Persist outputs to mounted volume so they survive even with --disable-verification
 mkdir -p /logs/verifier/snapshot

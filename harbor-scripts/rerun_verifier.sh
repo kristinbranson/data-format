@@ -42,6 +42,14 @@ fi
 # Get Claude OAuth token for LLM judge
 export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
 
+# Codex auth (uses OAuth tokens, not a plain API key)
+if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+    export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json 2>/dev/null || true)
+fi
+if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+    echo "Warning: Codex auth not available. Codex judge will be skipped."
+fi
+
 # Create a fresh verifier output directory for this re-run
 VERIFIER_OUT="$TRIAL_DIR/verifier_rerun_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$VERIFIER_OUT"
@@ -58,11 +66,11 @@ echo ""
 #   - tests -> /tests
 #   - verifier output -> /logs/verifier
 #   - agent logs -> /logs/agent (for chown)
-# Claude CLI is installed first (same as Harbor's agent setup phase),
-# then test.sh runs pytest + LLM judge.
+# test.sh installs Claude and Codex CLIs if not already present.
 docker run --rm \
     --gpus all \
     -e CLAUDE_CODE_OAUTH_TOKEN \
+    -e CODEX_AUTH_JSON_B64 \
     -v "$SNAPSHOT_DIR":/app \
     -v "$DATA_DIR":/app/data:ro \
     -v "$TASK_DIR/tests":/tests:ro \
@@ -70,11 +78,22 @@ docker run --rm \
     -v "$TRIAL_DIR/agent":/logs/agent \
     -w /app \
     "$IMAGE_NAME" \
-    bash -c 'apt-get update -qq && apt-get install -y -qq curl >/dev/null 2>&1 && curl -fsSL https://claude.ai/install.sh | bash && export PATH="$HOME/.local/bin:$PATH" && bash /tests/test.sh'
+    bash /tests/test.sh
 
 echo ""
 echo "Verifier output written to: $VERIFIER_OUT"
 echo "Reward: $(cat "$VERIFIER_OUT/reward.txt" 2>/dev/null || echo 'N/A')"
 if [ -f "$VERIFIER_OUT/metrics.json" ]; then
-    echo "Judge:  $(python3 -c "import json; d=json.load(open('$VERIFIER_OUT/metrics.json')); r=d.get('llm_judge_reward'); print(f'LLM={r:.3f}' if r is not None else 'N/A')" 2>/dev/null || echo 'N/A')"
+    echo "Judge:  $(python3 -c "
+import json
+d = json.load(open('$VERIFIER_OUT/metrics.json'))
+parts = []
+for model in ['claude', 'codex']:
+    r = d.get(f'llm_judge_{model}_reward')
+    if r is not None:
+        parts.append(f'{model}={r:.3f}')
+    elif f'llm_judge_{model}_error' in d:
+        parts.append(f'{model}=ERR')
+print(', '.join(parts) if parts else 'N/A')
+" 2>/dev/null || echo 'N/A')"
 fi

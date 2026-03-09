@@ -2,9 +2,7 @@ import pynwb
 import os
 import numpy as np
 import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-plt.ion()
 import pickle
 import argparse
 from scipy.interpolate import interp1d
@@ -12,7 +10,8 @@ from scipy.interpolate import interp1d
 DATADIR = 'data'
 SURVEYFILE = 'survey_info.pkl'
 
-np.random.seed(0)
+_sosa2024_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _sosa2024_seed) % 2**31)
 
 input_names = ['time_from_trial_start','environment','trial_number','previous_reward_outcome']
 output_names = ['distance_to_reward_zone','position','speed','lick','reward_location','reward_outcome']
@@ -392,22 +391,22 @@ def convert_session_data(subject, session, info, trial_offset, time_bin_size=Non
         
     return neural, input, output
 
-def survey(force=False):
-    if not force and os.path.exists(SURVEYFILE):
-        print(f"Loading existing survey from {SURVEYFILE}")
-        with open(SURVEYFILE, 'rb') as f:
+def survey(force=False, datadir=DATADIR, surveyfile=SURVEYFILE):
+    if not force and os.path.exists(surveyfile):
+        print(f"Loading existing survey from {surveyfile}")
+        with open(surveyfile, 'rb') as f:
             return pickle.load(f)
     all_info = {}
-    subjects = get_subjects()
+    subjects = get_subjects(datadir=datadir)
     all_info['reward_zone_positions'] = {}
     fig,ax = plt.subplots(1,len(subjects), figsize=(2*len(subjects),20),sharex=True,sharey=True)
 
     for i,subject in enumerate(subjects):
-        sessions = get_sessions(subject)
+        sessions = get_sessions(subject, datadir=datadir)
         print(f"Subject: {subject}, Sessions: {sessions}")
         all_info['reward_zone_positions'][subject] = np.zeros((0,2))
         for session in sessions:
-            info = survey_session_data(subject, session)
+            info = survey_session_data(subject, session, datadir=datadir)
             print(f"Subject {subject}, Session {session}:")
             for key, value in info.items():
                 print(f"  {key}: {value}")
@@ -462,7 +461,7 @@ def survey(force=False):
     all_info['reward_zone_states'] = {k: v['states'] for k,v in segment_results.items()}
     all_info['reward_zone_dist'] = {k: v['zone_dist'] for k,v in segment_results.items()}
     
-    with open(f'{SURVEYFILE}', 'wb') as f:
+    with open(surveyfile, 'wb') as f:
         pickle.dump(all_info, f)
         
     return all_info
@@ -530,6 +529,8 @@ def main():
 
     parser = argparse.ArgumentParser(description='Convert Sosa et al. 2024 NWB data to pickle format.')
     parser.add_argument('outpicklefile', type=str, nargs='?', default='converted_data.pkl', help='Output pickle file path')
+    parser.add_argument('--datadir', type=str, default=DATADIR, help='Directory containing NWB data files')
+    parser.add_argument('--surveyfile', type=str, default=SURVEYFILE, help='Path to survey info pickle file (for saving/loading)')
     parser.add_argument('--show-processing', action='store_true', help='Plot visualizations of processing steps for up to 2 sessions')
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument('--sample', action='store_true', help='Process only 2 sessions for testing')
@@ -542,9 +543,9 @@ def main():
     show_processing = args.show_processing
     max_show_sessions = 2
 
-    info = survey(force=args.survey_only)
+    info = survey(force=args.survey_only, datadir=args.datadir, surveyfile=args.surveyfile)
     if args.survey_only:
-        print(f"Survey complete. Results saved to {SURVEYFILE}")
+        print(f"Survey complete. Results saved to {args.surveyfile}")
         return
 
     values, counts = np.unique(info['neural_time_bin_size'], return_counts=True)
@@ -554,7 +555,7 @@ def main():
     data['neural'] = []
     data['input'] = []
     data['output'] = []
-    data['subjects'] = get_subjects()
+    data['subjects'] = get_subjects(datadir=args.datadir)
     data['subject_idx'] = []
     data['brain_regions'] = ['CA1']
     data['brain_region_idx'] = []
@@ -567,7 +568,7 @@ def main():
         'off_start': None, # signed time from alignment event to start of trial in seconds, None if N/A
         'off_end': None, # signed time from alignment event to end of trial in seconds, None if N/A
     }
-    sessions_per_subject = {subject: get_sessions(subject) for subject in data['subjects']}
+    sessions_per_subject = {subject: get_sessions(subject, datadir=args.datadir) for subject in data['subjects']}
     if args.sample:
         # choose max_sessions random sessions across all subjects
         all_sessions = [(subject, session) for subject, sessions in sessions_per_subject.items() for session in sessions]
@@ -598,8 +599,8 @@ def main():
             else:
                 figfile = None
             
-            neural, input, output = convert_session_data(subject, session, info, trial_offset, time_bin_size=time_bin_size, 
-                                                         show_processing=show_procecssing_curr, figfile=figfile)
+            neural, input, output = convert_session_data(subject, session, info, trial_offset, time_bin_size=time_bin_size,
+                                                         show_processing=show_procecssing_curr, figfile=figfile, datadir=args.datadir)
             data['neural'].append(neural)
             data['input'].append(input)
             data['output'].append(output)
