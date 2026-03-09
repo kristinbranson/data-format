@@ -5,13 +5,14 @@ Usage:
     python -u convert_data.py <output_path.pkl> --sample
 
 Data: All mice from the VisualBehavior project (single-plane ophys).
-Each session has one imaging plane. Trials are 30 ophys frames before
-each image-change onset.
+Each session has one imaging plane. Trials are segmented using the
+built-in trials table: 30 ophys frames after stimulus change onset.
 
 Output variables (decoded from neural activity):
   - running_speed: percentile-binned across all sessions (time-varying)
   - pupil_diameter: percentile-binned across all sessions (time-varying)
-  - image_name: categorical image identity (per-trial)
+  - image_name: categorical image on screen after change (per-trial)
+  - trial_outcome: categorical hit/miss/false_alarm/correct_reject (per-trial)
 """
 
 import sys
@@ -28,9 +29,11 @@ warnings.filterwarnings("ignore", message="Ignoring the following cached namespa
 import allensdk.brain_observatory.behavior.behavior_project_cache as bpc
 
 # ---------- constants ----------
-N_FRAMES_PRE = 30       # frames before change onset per trial
+N_FRAMES = 30           # ophys frames after stimulus change onset
 N_LEVELS = 5            # discretization levels for running / pupil
 PROJECT_CODE = 'VisualBehavior'
+
+TRIAL_OUTCOMES = ['hit', 'miss', 'false_alarm', 'correct_reject']
 
 
 def get_cache(cache_dir):
@@ -70,9 +73,8 @@ def extract_session_data(bc, session_experiments):
                        kind='linear', bounds_error=False, fill_value=np.nan)
     pupil_diameter = f_pupil(ophys_ts)
 
-    # --- Stimulus table (change detection block) ---
-    stim = ref_ds.stimulus_presentations[
-        ref_ds.stimulus_presentations.stimulus_block_name.str.contains('change_detection')]
+    # --- Trials table ---
+    trials_table = ref_ds.trials
 
     return {
         'ophys_ts': ophys_ts,
@@ -80,12 +82,15 @@ def extract_session_data(bc, session_experiments):
         'plane_labels': plane_labels,
         'running_speed': running_speed,
         'pupil_diameter': pupil_diameter,
-        'stim': stim,
+        'trials_table': trials_table,
     }
 
 
-def segment_trials(session_data, n_frames_pre=N_FRAMES_PRE):
-    """Segment into trials: n_frames_pre ophys frames before each image change.
+def segment_trials(session_data, n_frames=N_FRAMES):
+    """Segment into trials using the built-in trials table.
+
+    For each non-aborted trial with a valid change_time, extract
+    n_frames ophys frames starting from the stimulus change onset.
 
     Returns list of trial dicts with raw (continuous) running/pupil.
     """
@@ -93,30 +98,35 @@ def segment_trials(session_data, n_frames_pre=N_FRAMES_PRE):
     neural_data = session_data['neural_data']
     running_speed = session_data['running_speed']
     pupil_diameter = session_data['pupil_diameter']
-    stim = session_data['stim']
+    trials_table = session_data['trials_table']
+    T = len(ophys_ts)
 
-    stim_shown = stim[stim['image_name'] != 'omitted'].reset_index(drop=True)
-    changes = stim_shown[stim_shown['is_change'] == True]
+    # Skip aborted and auto-rewarded trials, and trials without a valid change_time
+    valid_trials = trials_table[
+        (~trials_table['aborted']) &
+        (~trials_table['auto_rewarded']) &
+        (trials_table['change_time'].notna())
+    ]
 
     trials = []
-    for _, change_row in changes.iterrows():
-        change_time = change_row['start_time']
-        frame_idx = np.searchsorted(ophys_ts, change_time) - 1
-        start_idx = frame_idx - n_frames_pre + 1
-        if start_idx < 0:
+    for _, row in valid_trials.iterrows():
+        change_time = row['change_time']
+        start_idx = np.searchsorted(ophys_ts, change_time)
+        end_idx = start_idx + n_frames  # exclusive
+        if end_idx > T:
             continue
-        idx = np.arange(start_idx, frame_idx + 1)
+        idx = np.arange(start_idx, end_idx)
 
-        # Identify pre-change image
-        pre_change_flashes = stim_shown[
-            (stim_shown['end_time'] <= change_time) &
-            (stim_shown['start_time'] >= ophys_ts[start_idx])]
-        image_names = pre_change_flashes['image_name'].unique()
-        if len(image_names) != 1:
-            continue
+        # Determine trial outcome
+        outcome = 'other'
+        for label in TRIAL_OUTCOMES:
+            if row[label]:
+                outcome = label
+                break
 
         trials.append({
-            'image_name': image_names[0],
+            'image_name': row['change_image_name'],
+            'trial_outcome': outcome,
             'neural': neural_data[:, idx].astype(np.float32),     # (N, 30)
             'running': running_speed[idx].astype(np.float32),     # (30,)
             'pupil': pupil_diameter[idx].astype(np.float32),      # (30,)
@@ -243,6 +253,10 @@ def main():
     image_to_code = {name: i for i, name in enumerate(all_image_names)}
     print(f"\nImage codes ({len(all_image_names)} images): {image_to_code}")
 
+    # Trial outcome mapping
+    outcome_to_code = {name: i for i, name in enumerate(TRIAL_OUTCOMES)}
+    print(f"Trial outcome codes: {outcome_to_code}")
+
     # ---- Assemble output format ----
     print("\n=== Assembling output ===")
     all_neural = []
@@ -280,13 +294,16 @@ def main():
 
             run_disc = apply_discretize(t['running'], run_edges)
             pup_disc = apply_discretize(t['pupil'], pupil_edges)
-            code = image_to_code[t['image_name']]
-            image_row = np.full(N_FRAMES_PRE, code, dtype=np.int8)
+            image_code = image_to_code[t['image_name']]
+            image_row = np.full(N_FRAMES, image_code, dtype=np.int8)
+            outcome_code = outcome_to_code.get(t['trial_outcome'], -1)
+            outcome_row = np.full(N_FRAMES, outcome_code, dtype=np.int8)
             output_trials.append(np.vstack([
                 run_disc[np.newaxis, :],
                 pup_disc[np.newaxis, :],
                 image_row[np.newaxis, :],
-            ]))  # (3, 30)
+                outcome_row[np.newaxis, :],
+            ]))  # (4, 30)
 
         all_neural.append(neural_trials)
         all_input.append(input_trials)
@@ -307,11 +324,12 @@ def main():
     run_value_names = [f'level_{i}' for i in range(N_LEVELS)]
     pupil_value_names = [f'level_{i}' for i in range(N_LEVELS)]
     image_value_names = all_image_names
+    outcome_value_names = TRIAL_OUTCOMES
 
     # ---- Compute off_start / off_end ----
     time_bin_size_s = time_bin_size_ms / 1000.0
-    off_end = 0.0
-    off_start = -(N_FRAMES_PRE - 1) * time_bin_size_s
+    off_start = 0.0
+    off_end = (N_FRAMES - 1) * time_bin_size_s
 
     data = {
         'neural': all_neural,
@@ -325,19 +343,24 @@ def main():
         'brain_region_idx': all_region_idx,
 
         'input_names': [],
-        'output_names': ['running_speed', 'pupil_diameter', 'image_name'],
-        'output_values': [run_value_names, pupil_value_names, image_value_names],
+        'output_names': ['running_speed', 'pupil_diameter', 'image_name',
+                         'trial_outcome'],
+        'output_values': [run_value_names, pupil_value_names,
+                          image_value_names, outcome_value_names],
 
         'metadata': {
-            'task_description': ('Decode running speed, pupil diameter, and '
-                                 'image identity from visual cortex calcium '
-                                 'imaging during change detection task'),
+            'task_description': ('Decode running speed, pupil diameter, '
+                                 'image identity, and trial outcome from '
+                                 'visual cortex calcium imaging during '
+                                 'change detection task'),
             'time_bin_size': time_bin_size_ms,
-            'temporal_alignment_event': 'image_change_onset',
+            'temporal_alignment_event': 'stimulus_change_onset',
             'off_start': off_start,
             'off_end': off_end,
+            'n_frames': N_FRAMES,
             'project_code': PROJECT_CODE,
             'image_to_code': image_to_code,
+            'outcome_to_code': outcome_to_code,
             'n_discretization_levels': N_LEVELS,
             'running_bin_edges': run_edges.tolist(),
             'pupil_bin_edges': pupil_edges.tolist(),
@@ -361,7 +384,7 @@ def main():
     print(f"Brain regions: {all_brain_regions}")
     print(f"Image codes: {image_to_code}")
     print(f"Time bin size: {time_bin_size_ms:.2f} ms")
-    print(f"Trial window: {off_start:.3f}s to {off_end:.3f}s relative to change onset")
+    print(f"Trial window: {off_start:.3f}s to {off_end:.3f}s relative to stimulus change onset")
     print(f"Discretization levels (running/pupil): {N_LEVELS}")
     print(f"Output names: {data['output_names']}")
     print(f"Output values: {data['output_values']}")
