@@ -204,7 +204,7 @@ iii. Dropped frame interpolation ensures the motion energy signal matches the ne
 
 ## 4-c. How is `output` *Motion energy* aligned with the neural data?
 
-i. The video and neural data are acquired synchronously at 30 Hz, so they are aligned frame-for-frame in principle. However, occasional video frames are dropped, making the motion energy array shorter than the neural data. Dropped frames are detected by interframe intervals exceeding 0.04s and are filled by inserting the average of neighboring values. After interpolation, an assertion verifies the lengths match.
+i. The video and neural data are acquired synchronously at 30 Hz, so they are aligned frame-for-frame in principle. However, occasional video frames are dropped, making the motion energy array shorter than the neural data. Dropped frames are detected by interframe intervals exceeding 0.04s and are filled by inserting the average of neighboring values. After interpolation, an assertion verifies the lengths match. The time unit here is a bit strange but `dt * 1000 > 0.04` seems to work well.
 
 ii.
 ```python
