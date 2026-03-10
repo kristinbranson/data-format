@@ -29,12 +29,14 @@
 - **Data** from the paper are in the directory `data`.
 
 ## Decoder Task
+Decode the location of the mice from the neural activities data recorded in the CA1 region.
+The experiment consists of long recording sessions, which will be split into 1-minute trials within each session.
 
 ### Decoder Inputs:
-- Environment geometry as 9-dimensional binary vector, each dimension representing a grid location. Its value should be 1 if walled and 0 if open. This is static per-trial.
+Environment geometry to represent which part of the arena is blocked. Static per-trial.
 
 ### Decoder Outputs
-- **Mouse positon** discretized into 3 x 3 = 9 spatial bins, each of length 25cm, time-varying. 
+Mouse positon discretized into 3 x 3 = 9 spatial bins. Time-varying.
 
 ## Target Data Format
 
@@ -87,6 +89,7 @@ data = {
     ],
 
     'metadata': {
+        'task_description': str, # description of output tasks
         'time_bin_size': float, # length of time bin in ms
         'temporal_alignment_event': str, # description of alignment event
         'off_start': float or None, # signed time from alignment event to start of trial in seconds, None if N/A
@@ -101,12 +104,14 @@ data = {
 - **neural**: Neural activity data (e.g., firing rates, spike counts) organized by session and trial
   - Dimensions: (n_neurons, n_timepoints) for each trial.
   - Time bins should be the same size for all trials and sessions. 
+  - There needs to be at least two trials within each session in order to evaluate the decoder performance.
 
 - **input**: Variables that serve as inputs **to the decoder**
   - These are **decoder inputs**. They could be task inputs to the animal, but inputs to the animal can also be decoder outputs.
-  - Examples: time from an aligning signal, stimulus characteristics such as:
+  - Examples: time from an aligning signal, stimulus characteristics, our animal behavior such as:
     - visual: contrast, position, orientation
     - audio: frequency, amplitude
+    - behavior: running speed, pupil size
   - Dimensions: (d_input, n_timepoints) for each trial. 
   - Should capture all relevant contextual information for the decoder
   - If an input is a time such as onset of some stimulus, represent it as a binary time series. 
@@ -142,9 +147,9 @@ data = {
 
 ## Python environment
 
-- Use the conda environment **decoder-data-format** to run any python code.
-- Conda setup script is in /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
-- If you need to install any other libraries, create a new conda environment in this directory
+- All required Python packages are already installed in the system Python environment.
+- Use `python3` to run any python code.
+- If you need to install additional libraries, use `pip install`.
 
 ## Decoder Reference
 
@@ -198,13 +203,13 @@ You will be assessed on whether the decisions you make on how to load, filter, p
 
 **Actions**:
 1. **FIRST**: Create `CONVERSION_NOTES.md` with the template structure shown at the end of this document
-2. Verify you can access the conda environment `decoder-data-format`
+2. Verify you can run `python3` and import key packages (numpy, torch)
 3. List the contents of this directory to understand what files are available
 4. **REMINDER**: Do NOT look at any files outside this directory
 
 **Done when**: 
 - `CONVERSION_NOTES.md` exists with the proper template structure
-- You have confirmed the conda environment works
+- You have confirmed Python and key packages work
 - You have listed directory contents in CONVERSION_NOTES.md
 
 **⚠️ CHECKPOINT**: Before proceeding to Step 1, verify that `CONVERSION_NOTES.md` exists by running `ls -la CONVERSION_NOTES.md`. If it doesn't exist, STOP and create it now.
