@@ -193,8 +193,6 @@ def main():
         all_mouse_ids = all_mouse_ids[:2]
         print(f"  (sample mode: using first {len(all_mouse_ids)} mice)")
 
-    # ---- Pass 1: extract all sessions for all mice ----
-    print("\n=== Pass 1: Extract sessions ===")
     # session_results: list of (mouse_id, session_data, trials)
     session_results = []
     subjects = []  # ordered unique mouse IDs
