@@ -76,7 +76,7 @@ runuser -u judge -- env \
 
 cd /
 
-# --- Codex GPT 5.3 ---
+# --- Codex GPT 5.4 ---
 echo "=== [6/6] Codex judge ==="
 CODEX_DIR="$JUDGE_DIR/codex"
 mkdir -p "$CODEX_DIR"
@@ -89,7 +89,7 @@ fi
 
 cd "$CODEX_DIR"
 codex exec "$(cat /tests/judge_instructions.md)" \
-    -m gpt-5.3-codex \
+    -m gpt-5.4 \
     --dangerously-bypass-approvals-and-sandbox \
     --json \
     --ephemeral \
