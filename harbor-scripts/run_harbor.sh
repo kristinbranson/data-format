@@ -21,7 +21,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-JOBS_DIR="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs/${AGENT}"
+JOBS_DIR="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs/raw"
+REORG_BASE="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs"
 
 TASK_FLAG=""
 if [ -n "$TASK" ]; then
@@ -57,3 +58,19 @@ esac
 # Fix permissions on agent logs — Claude Code creates session files with restrictive
 # permissions (0604) that block Harbor's post-processing trajectory conversion.
 chmod -R a+rX "$JOBS_DIR" 2>/dev/null || true
+
+# Post-process: reorganize outputs into jobs/<task>/<agent>/<timestamp>_trial<N>/
+LATEST_JOB=$(ls -td "$JOBS_DIR"/20* 2>/dev/null | head -1)
+if [ -n "$LATEST_JOB" ]; then
+  TIMESTAMP=$(basename "$LATEST_JOB")
+  declare -A task_trial_num
+  for trial_dir in "$LATEST_JOB"/*__*/; do
+    [ -d "$trial_dir" ] || continue
+    task_name=$(basename "$trial_dir" | sed 's/__[^_]*$//')
+    task_trial_num[$task_name]=$(( ${task_trial_num[$task_name]:-0} + 1 ))
+    dest="$REORG_BASE/$task_name/$AGENT/${TIMESTAMP}_trial${task_trial_num[$task_name]}"
+    mkdir -p "$(dirname "$dest")"
+    mv "$trial_dir" "$dest"
+    echo "Results moved to $dest"
+  done
+fi

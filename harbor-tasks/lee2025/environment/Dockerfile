@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y software-properties-common \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y \
     python3.13 python3.13-venv python3.13-dev \
-    build-essential unzip git libgl1 libglib2.0-0 \
+    build-essential unzip git curl libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1 \
     && python3 -m ensurepip --upgrade \
@@ -17,6 +17,13 @@ RUN pip install --no-cache-dir torch==2.6.0 torchvision==0.21.0 \
 RUN pip install --no-cache-dir numpy scipy matplotlib tqdm opencv-python \
     scikit-learn h5py pandas pynwb dandi ONE-api suite2p \
     allensdk@git+https://github.com/AllenInstitute/AllenSDK.git
+
+# Install Claude CLI and Codex CLI for LLM judge (verifier)
+RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && npm i -g @openai/codex
+ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 

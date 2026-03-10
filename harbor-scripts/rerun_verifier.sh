@@ -5,8 +5,10 @@
 # Usage:
 #   ./rerun_verifier.sh <trial_dir>
 #
+# The task name is inferred from the trial path: jobs/<task>/<agent>/<timestamp>/
+#
 # Example:
-#   ./rerun_verifier.sh /home/bransonk@hhmi.org/harbor-tasks/data-format/jobs/claude/2026-02-25__00-04-07/sosa2024__stecaxC
+#   ./rerun_verifier.sh /path/to/jobs/sosa2024/oracle/2026-03-10__00-06-35_trial1/
 #
 # Requirements:
 #   - The trial must have verifier/snapshot/ with converted_data.pkl
@@ -14,11 +16,29 @@
 
 set -euo pipefail
 
-TASK_DIR="/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks/sosa2024"
-DATA_DIR="/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/sosa2024/data"
-IMAGE_NAME="hb__sosa2024-reverify"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 TRIAL_DIR="${1:?Usage: $0 <trial_dir>}"
+
+# Infer task name from trial directory path: .../jobs/<task>/<agent>/<timestamp>/
+TASK_NAME="$(basename "$(dirname "$(dirname "$TRIAL_DIR")")")"
+TASK_DIR="$REPO_DIR/harbor-tasks/$TASK_NAME"
+IMAGE_NAME="hb__${TASK_NAME}-reverify"
+
+if [ ! -d "$TASK_DIR" ]; then
+    echo "Error: Task directory not found: $TASK_DIR"
+    echo "Inferred task name '$TASK_NAME' from trial path. Expected jobs/<task>/<agent>/<timestamp>/"
+    exit 1
+fi
+
+# Read data directory from docker-compose.yaml (the host path mounted to /app/data)
+COMPOSE="$TASK_DIR/environment/docker-compose.yaml"
+DATA_DIR=$(grep ':/app/data' "$COMPOSE" | sed 's|.*- ||; s|:/app/data.*||; s|^ *||')
+if [ ! -d "$DATA_DIR" ]; then
+    echo "Error: Data directory not found: $DATA_DIR (from $COMPOSE)"
+    exit 1
+fi
 
 # Validate trial directory
 SNAPSHOT_DIR="$TRIAL_DIR/verifier/snapshot"
@@ -66,7 +86,7 @@ echo ""
 #   - tests -> /tests
 #   - verifier output -> /logs/verifier
 #   - agent logs -> /logs/agent (for chown)
-# test.sh installs Claude and Codex CLIs if not already present.
+# Claude and Codex CLIs are pre-installed in the Docker image.
 docker run --rm \
     --gpus all \
     -e CLAUDE_CODE_OAUTH_TOKEN \

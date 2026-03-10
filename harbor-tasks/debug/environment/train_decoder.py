@@ -50,8 +50,10 @@ use_cpu = args.cpu
 nneurons_sample = 50
 input_names = None
 output_names = None
+# Reduced from defaults (100 PCs, 200 epochs) for fast debug iteration
 train_params = {
-    'npcs': 100,
+    'npcs': 10,
+    'num_epochs': 10,
     'lr': 1e-3,
     'l1_weight': 1e-4,
     'balanced_loss': True,
