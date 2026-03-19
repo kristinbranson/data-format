@@ -3,12 +3,19 @@
 # Rerun the verifier (test_outputs.py) against an existing trial's snapshot.
 #
 # Usage:
-#   ./rerun_verifier.sh <trial_dir>
+#   ./rerun_verifier.sh [OPTIONS] <trial_dir>
+#
+# Options:
+#   --claude-judge-only   Only rerun the Claude judge and update metrics.json
+#   --codex-judge-only    Only rerun the Codex judge and update metrics.json
+#   --judges-only         Rerun both judges and update metrics.json
 #
 # The task name is inferred from the trial path: jobs/<task>/<agent>/<timestamp>/
 #
 # Example:
 #   ./rerun_verifier.sh /path/to/jobs/sosa2024/oracle/2026-03-10__00-06-35_trial1/
+#   ./rerun_verifier.sh --claude-judge-only /path/to/jobs/lee2025/claude/2026-03-10__11-18-23_trial3/
+#   ./rerun_verifier.sh --codex-judge-only /path/to/jobs/sosa2024/claude/2026-03-10__19-44-11_trial1/
 #
 # Requirements:
 #   - The trial must have verifier/snapshot/ with converted_data.pkl
@@ -16,10 +23,22 @@
 
 set -euo pipefail
 
+RUN_CLAUDE_JUDGE=false
+RUN_CODEX_JUDGE=false
+JUDGE_ONLY=false
+while [[ "${1:-}" == --* ]]; do
+    case "$1" in
+        --claude-judge-only) RUN_CLAUDE_JUDGE=true; JUDGE_ONLY=true; shift ;;
+        --codex-judge-only)  RUN_CODEX_JUDGE=true;  JUDGE_ONLY=true; shift ;;
+        --judges-only)       RUN_CLAUDE_JUDGE=true; RUN_CODEX_JUDGE=true; JUDGE_ONLY=true; shift ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-TRIAL_DIR="${1:?Usage: $0 <trial_dir>}"
+TRIAL_DIR="${1:?Usage: $0 [--claude-judge-only|--codex-judge-only|--judges-only] <trial_dir>}"
 
 # Infer task name from trial directory path: .../jobs/<task>/<agent>/<timestamp>/
 TASK_NAME="$(basename "$(dirname "$(dirname "$TRIAL_DIR")")")"
@@ -70,38 +89,150 @@ if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
     echo "Warning: Codex auth not available. Codex judge will be skipped."
 fi
 
-# Create a fresh verifier output directory for this re-run
-VERIFIER_OUT="$TRIAL_DIR/verifier_rerun_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$VERIFIER_OUT"
+# Harbor copies test files into the container (upload_dir) rather than bind-mounting.
+# NFS-mounted paths lose permissions when accessed by non-host users inside Docker.
+# Replicate Harbor's behavior by copying tests to a local tmpdir before mounting.
+TESTS_TMPDIR=$(mktemp -d)
+cp -r "$TASK_DIR/tests/." "$TESTS_TMPDIR/"
+chmod -R a+rX "$TESTS_TMPDIR"
+trap 'rm -rf "$TESTS_TMPDIR"' EXIT
 
-echo "Trial:    $TRIAL_DIR"
-echo "Snapshot: $SNAPSHOT_DIR"
-echo "Output:   $VERIFIER_OUT"
+if [ "$JUDGE_ONLY" = true ]; then
+    VERIFIER_OUT="$TRIAL_DIR/verifier"
+    if [ ! -d "$VERIFIER_OUT" ]; then
+        echo "Error: No verifier directory at $VERIFIER_OUT"
+        exit 1
+    fi
+
+    JUDGES=""
+    [ "$RUN_CLAUDE_JUDGE" = true ] && JUDGES="$JUDGES claude"
+    [ "$RUN_CODEX_JUDGE" = true ] && JUDGES="$JUDGES codex"
+
+    echo "Trial:    $TRIAL_DIR"
+    echo "Snapshot: $SNAPSHOT_DIR"
+    echo "Mode:     Judge only ($JUDGES) — updating existing verifier/"
+    echo ""
+
+    # Build the inline script for selected judges
+    JUDGE_SCRIPT='
+export PATH="$HOME/.local/bin:$PATH"
+JUDGE_DIR=/logs/verifier/judge
+
+useradd -m -s /bin/bash judge 2>/dev/null || true
+install -m 755 "$(which claude)" /usr/local/bin/claude 2>/dev/null || true
+chmod -R o+rX /app /logs /tests 2>/dev/null || true
+'
+
+    if [ "$RUN_CLAUDE_JUDGE" = true ]; then
+        JUDGE_SCRIPT+='
+CLAUDE_DIR="$JUDGE_DIR/claude"
+rm -rf "$CLAUDE_DIR"
+mkdir -p "$CLAUDE_DIR"
+chown -R judge:judge "$CLAUDE_DIR"
+
+echo "=== Running Claude judge ==="
+cd "$CLAUDE_DIR"
+runuser -u judge -- env \
+  CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
+  HOME=/home/judge \
+  claude -p "$(cat /tests/judge_instructions.md)" \
+    --model opus \
+    --permission-mode bypassPermissions \
+    --output-format stream-json \
+    --no-session-persistence \
+    --verbose \
+  2>&1 | tee judge_log.txt || true
+
+cd /
+python3 /tests/compute_reward.py \
+  --eval-json "$CLAUDE_DIR/llm_judge_eval.json" \
+  --model-name claude \
+  --metrics-json /logs/verifier/metrics.json 2>&1 || true
+'
+    fi
+
+    if [ "$RUN_CODEX_JUDGE" = true ]; then
+        JUDGE_SCRIPT+='
+CODEX_DIR="$JUDGE_DIR/codex"
+rm -rf "$CODEX_DIR"
+mkdir -p "$CODEX_DIR"
+
+if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
+  mkdir -p /root/.codex
+  echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
+fi
+
+echo "=== Running Codex judge ==="
+cd "$CODEX_DIR"
+codex exec "$(cat /tests/judge_instructions.md)" \
+    -m gpt-5.4 \
+    --dangerously-bypass-approvals-and-sandbox \
+    --json \
+    --ephemeral \
+    --skip-git-repo-check \
+  2>&1 | tee judge_log.txt || true
+
+cd /
+python3 /tests/compute_reward.py \
+  --eval-json "$CODEX_DIR/llm_judge_eval.json" \
+  --model-name codex \
+  --metrics-json /logs/verifier/metrics.json 2>&1 || true
+'
+    fi
+
+    JUDGE_SCRIPT+='
+HOST_UID=$(stat -c "%u" /logs/verifier)
+HOST_GID=$(stat -c "%g" /logs/verifier)
+chown -R "$HOST_UID:$HOST_GID" /logs/verifier/ 2>/dev/null || true
+echo "=== Judge rerun complete ==="
+'
+
+    docker run --rm \
+        --gpus all \
+        -e CLAUDE_CODE_OAUTH_TOKEN \
+        -e CODEX_AUTH_JSON_B64 \
+        -v "$SNAPSHOT_DIR":/app \
+        -v "$DATA_DIR":/app/data:ro \
+        -v "$TESTS_TMPDIR":/tests:ro \
+        -v "$VERIFIER_OUT":/logs/verifier \
+        -v "$TRIAL_DIR/agent":/logs/agent \
+        -w /app \
+        "$IMAGE_NAME" \
+        bash -c "$JUDGE_SCRIPT"
+else
+    # Full verifier rerun
+    VERIFIER_OUT="$TRIAL_DIR/verifier_rerun_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$VERIFIER_OUT"
+
+    echo "Trial:    $TRIAL_DIR"
+    echo "Snapshot: $SNAPSHOT_DIR"
+    echo "Output:   $VERIFIER_OUT"
+    echo ""
+
+    # Run test.sh inside the container
+    # Mount layout matches Harbor:
+    #   - snapshot -> /app (the agent's working directory)
+    #   - data -> /app/data (the source data)
+    #   - tests -> /tests
+    #   - verifier output -> /logs/verifier
+    #   - agent logs -> /logs/agent (for chown)
+    # Claude and Codex CLIs are pre-installed in the Docker image.
+    docker run --rm \
+        --gpus all \
+        -e CLAUDE_CODE_OAUTH_TOKEN \
+        -e CODEX_AUTH_JSON_B64 \
+        -v "$SNAPSHOT_DIR":/app \
+        -v "$DATA_DIR":/app/data:ro \
+        -v "$TESTS_TMPDIR":/tests:ro \
+        -v "$VERIFIER_OUT":/logs/verifier \
+        -v "$TRIAL_DIR/agent":/logs/agent \
+        -w /app \
+        "$IMAGE_NAME" \
+        bash /tests/test.sh
+fi
+
 echo ""
-
-# Run test.sh inside the container
-# Mount layout matches Harbor:
-#   - snapshot -> /app (the agent's working directory)
-#   - data -> /app/data (the source data)
-#   - tests -> /tests
-#   - verifier output -> /logs/verifier
-#   - agent logs -> /logs/agent (for chown)
-# Claude and Codex CLIs are pre-installed in the Docker image.
-docker run --rm \
-    --gpus all \
-    -e CLAUDE_CODE_OAUTH_TOKEN \
-    -e CODEX_AUTH_JSON_B64 \
-    -v "$SNAPSHOT_DIR":/app \
-    -v "$DATA_DIR":/app/data:ro \
-    -v "$TASK_DIR/tests":/tests:ro \
-    -v "$VERIFIER_OUT":/logs/verifier \
-    -v "$TRIAL_DIR/agent":/logs/agent \
-    -w /app \
-    "$IMAGE_NAME" \
-    bash /tests/test.sh
-
-echo ""
-echo "Verifier output written to: $VERIFIER_OUT"
+echo "Verifier output: $VERIFIER_OUT"
 echo "Reward: $(cat "$VERIFIER_OUT/reward.txt" 2>/dev/null || echo 'N/A')"
 if [ -f "$VERIFIER_OUT/metrics.json" ]; then
     echo "Judge:  $(python3 -c "

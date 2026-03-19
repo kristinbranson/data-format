@@ -64,6 +64,7 @@ LATEST_JOB=$(ls -td "$JOBS_DIR"/20* 2>/dev/null | head -1)
 if [ -n "$LATEST_JOB" ]; then
   TIMESTAMP=$(basename "$LATEST_JOB")
   declare -A task_trial_num
+  REORG_DIRS=()
   for trial_dir in "$LATEST_JOB"/*__*/; do
     [ -d "$trial_dir" ] || continue
     task_name=$(basename "$trial_dir" | sed 's/__[^_]*$//')
@@ -72,5 +73,149 @@ if [ -n "$LATEST_JOB" ]; then
     mkdir -p "$(dirname "$dest")"
     mv "$trial_dir" "$dest"
     echo "Results moved to $dest"
+    REORG_DIRS+=("$dest")
   done
+
+  # --- Summary table ---
+  echo ""
+  echo "============================== RESULTS SUMMARY =============================="
+  printf "%-15s %-8s %-8s %-14s %-14s %-7s\n" "TASK" "TRIAL" "AGENT" "CLAUDE_JUDGE" "CODEX_JUDGE" "REWARD"
+  printf "%-15s %-8s %-8s %-14s %-14s %-7s\n" "----" "-----" "-----" "------------" "-----------" "------"
+  for dest in "${REORG_DIRS[@]}"; do
+    t_task=$(basename "$(dirname "$(dirname "$dest")")")
+    t_trial=$(basename "$dest" | grep -o 'trial[0-9]*')
+
+    # Agent status
+    agent_ok="ok"
+    if [ -f "$dest/agent/trajectory.json" ]; then
+      agent_err=$(python3 -c "
+import json
+d = json.load(open('$dest/agent/trajectory.json'))
+steps = d.get('steps', [])
+if len(steps) <= 2 and len(steps) > 0:
+    msg = steps[-1].get('message','')
+    if '401' in msg or 'error' in msg.lower():
+        print(msg[:60])
+" 2>/dev/null)
+      if [ -n "$agent_err" ]; then
+        agent_ok="FAIL"
+      fi
+    else
+      agent_ok="?"
+    fi
+
+    # Claude judge
+    claude_j="—"
+    if [ -f "$dest/verifier/metrics.json" ]; then
+      claude_j=$(python3 -c "
+import json
+d = json.load(open('$dest/verifier/metrics.json'))
+r = d.get('llm_judge_claude_reward')
+if r is not None:
+    print(f'{r:.3f}')
+elif 'llm_judge_claude_error' in d:
+    print('ERR')
+else:
+    print('—')
+" 2>/dev/null || echo "?")
+    fi
+
+    # Codex judge
+    codex_j="—"
+    if [ -f "$dest/verifier/metrics.json" ]; then
+      codex_j=$(python3 -c "
+import json
+d = json.load(open('$dest/verifier/metrics.json'))
+r = d.get('llm_judge_codex_reward')
+if r is not None:
+    print(f'{r:.3f}')
+elif 'llm_judge_codex_error' in d:
+    print('ERR')
+else:
+    print('—')
+" 2>/dev/null || echo "?")
+    fi
+
+    # Reward
+    reward="—"
+    if [ -f "$dest/verifier/reward.txt" ]; then
+      reward=$(cat "$dest/verifier/reward.txt")
+    fi
+
+    printf "%-15s %-8s %-8s %-14s %-14s %-7s\n" "$t_task" "$t_trial" "$agent_ok" "$claude_j" "$codex_j" "$reward"
+  done
+
+  # Print warnings and errors
+  has_issues=false
+  for dest in "${REORG_DIRS[@]}"; do
+    t_task=$(basename "$(dirname "$(dirname "$dest")")")
+    t_trial=$(basename "$dest" | grep -o 'trial[0-9]*')
+    label="$t_task/$t_trial"
+
+    # Agent error (auth failure or crash)
+    if [ -f "$dest/agent/trajectory.json" ]; then
+      agent_err=$(python3 -c "
+import json
+d = json.load(open('$dest/agent/trajectory.json'))
+steps = d.get('steps', [])
+if len(steps) <= 2 and len(steps) > 0:
+    msg = steps[-1].get('message','')
+    if '401' in msg or 'error' in msg.lower():
+        print(msg[:200])
+" 2>/dev/null)
+      if [ -n "$agent_err" ]; then
+        has_issues=true
+        echo "ERROR $label agent: $agent_err"
+      fi
+    else
+      has_issues=true
+      echo "ERROR $label: no agent/trajectory.json"
+    fi
+
+    # Missing key agent outputs
+    if [ ! -f "$dest/verifier/snapshot/converted_data.pkl" ] && [ ! -f "$dest/verifier/snapshot/convert_data.py" ]; then
+      has_issues=true
+      echo "WARN  $label: agent produced no convert_data.py or converted_data.pkl"
+    fi
+
+    # Missing metrics.json
+    if [ ! -f "$dest/verifier/metrics.json" ]; then
+      has_issues=true
+      echo "ERROR $label: no metrics.json"
+    else
+      # Check for judge errors or missing rewards
+      python3 -c "
+import json
+d = json.load(open('$dest/verifier/metrics.json'))
+label = '$label'
+for model in ['claude', 'codex']:
+    e = d.get(f'llm_judge_{model}_error')
+    r = d.get(f'llm_judge_{model}_reward')
+    if e:
+        print(f'ERROR {label} {model} judge: {e[:200]}')
+    elif r is None:
+        print(f'WARN  {label} {model} judge: no reward produced')
+" 2>/dev/null | while read line; do
+        has_issues=true
+        echo "$line"
+      done
+    fi
+
+    # Check for permission errors in judge logs (e.g. NFS issues)
+    for model in claude codex; do
+      logfile="$dest/verifier/judge/$model/judge_log.txt"
+      if [ -f "$logfile" ]; then
+        if grep -q 'EACCES\|permission denied\|Stale file handle' "$logfile" 2>/dev/null; then
+          has_issues=true
+          echo "WARN  $label $model judge: permission errors reading files (NFS issue?)"
+        fi
+      fi
+    done
+  done
+
+  if [ "$has_issues" = false ]; then
+    echo ""
+    echo "No errors detected."
+  fi
+  echo "============================================================================="
 fi

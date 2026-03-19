@@ -34,6 +34,9 @@ def main():
         print(f"Warning: could not read metrics.json: {e}", file=sys.stderr)
         metrics = {}
 
+    # Clear any stale error from a prior run
+    metrics[f"llm_judge_{args.model_name}_error"] = ""
+
     # Read LLM judge evaluation
     try:
         with open(args.eval_json) as f:
