@@ -117,10 +117,6 @@ if [ "$JUDGE_ONLY" = true ]; then
     JUDGE_SCRIPT='
 export PATH="$HOME/.local/bin:$PATH"
 JUDGE_DIR=/logs/verifier/judge
-
-useradd -m -s /bin/bash judge 2>/dev/null || true
-install -m 755 "$(which claude)" /usr/local/bin/claude 2>/dev/null || true
-chmod -R o+rX /app /logs /tests 2>/dev/null || true
 '
 
     if [ "$RUN_CLAUDE_JUDGE" = true ]; then
@@ -128,13 +124,13 @@ chmod -R o+rX /app /logs /tests 2>/dev/null || true
 CLAUDE_DIR="$JUDGE_DIR/claude"
 rm -rf "$CLAUDE_DIR"
 mkdir -p "$CLAUDE_DIR"
-chown -R judge:judge "$CLAUDE_DIR"
 
 echo "=== Running Claude judge ==="
 cd "$CLAUDE_DIR"
-runuser -u judge -- env \
+# IS_SANDBOX=1 allows claude to run --permission-mode bypassPermissions as root,
+# matching how Harbor runs the claude agent.
+IS_SANDBOX=1 \
   CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
-  HOME=/home/judge \
   claude -p "$(cat /tests/judge_instructions.md)" \
     --model opus \
     --permission-mode bypassPermissions \

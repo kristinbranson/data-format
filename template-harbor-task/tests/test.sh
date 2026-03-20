@@ -34,23 +34,19 @@ export PATH="$HOME/.local/bin:$PATH"
 JUDGE_DIR=/logs/verifier/judge
 mkdir -p "$JUDGE_DIR"
 
-echo "=== [4/6] Setting up judge user ==="
-# Claude CLI refuses --permission-mode bypassPermissions as root.
-# Create a non-root user for claude only; codex runs fine as root.
-useradd -m -s /bin/bash judge 2>/dev/null || true
-install -m 755 "$(which claude)" /usr/local/bin/claude 2>/dev/null || true
-chmod -R o+rX /app /logs /tests 2>/dev/null || true
+echo "=== [4/6] Setting up judge ==="
 
 # --- Claude Opus 4.6 ---
 echo "=== [5/6] Claude judge ==="
 CLAUDE_DIR="$JUDGE_DIR/claude"
 mkdir -p "$CLAUDE_DIR"
-chown -R judge:judge "$CLAUDE_DIR"
 
 cd "$CLAUDE_DIR"
-runuser -u judge -- env \
+# IS_SANDBOX=1 allows claude to run --permission-mode bypassPermissions as root,
+# matching how Harbor runs the claude agent. This avoids creating a non-root user
+# that cannot access krb5-authenticated NFS mounts.
+IS_SANDBOX=1 \
   CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
-  HOME=/home/judge \
   claude -p "$(cat /tests/judge_instructions.md)" \
     --model opus \
     --permission-mode bypassPermissions \

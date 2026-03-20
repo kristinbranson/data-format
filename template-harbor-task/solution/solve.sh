@@ -18,21 +18,28 @@ cat > "$OUTDIR/README.md" << 'EOF'
 Reference solution output.
 EOF
 
-# Copy convert_data.py to /app so tests can find it
-cp "$SCRIPT_DIR/convert_data.py" "$OUTDIR/convert_data.py"
+# check if convert_data.py exists in script directory
+if [ -f "$SCRIPT_DIR/convert_data.py" ]; then
 
-# convert sample
-python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt"
-# verify sample
-python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt"
-# train on sample
-python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt"
-# convert full data
-python3 "$SCRIPT_DIR/convert_data.py" --full --datadir /app/data "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
-# verify full data
-python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
-# train on full data
-python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt"
+    # Copy convert_data.py to /app so tests can find it
+    cp "$SCRIPT_DIR/convert_data.py" "$OUTDIR/convert_data.py"
+
+    # convert sample
+    python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt"
+    # verify sample
+    python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt"
+    # train on sample
+    python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt"
+    # convert full data
+    python3 "$SCRIPT_DIR/convert_data.py" --full --datadir /app/data "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
+    # verify full data
+    python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
+    # train on full data
+    python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt"
+
+else
+    echo "convert_data.py not found in $SCRIPT_DIR, skipping data conversion steps." > "$OUTDIR/conversion_full_out.txt"
+fi
 
 # Persist outputs to mounted volume so they survive even with --disable-verification
 mkdir -p /logs/verifier/snapshot
