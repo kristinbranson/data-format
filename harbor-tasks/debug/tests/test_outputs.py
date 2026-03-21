@@ -99,6 +99,23 @@ def submitted_data_stats(submitted_data_full):
     stats['nneurons_total'] = stats['nsessions'] * stats['nneurons_mean']
     return stats
 
+def test_gpu_available(metrics):
+    """Test that CUDA GPU is available to PyTorch."""
+    metrics["gpu_available"] = torch.cuda.is_available()
+    assert torch.cuda.is_available(), "CUDA is not available to PyTorch"
+
+
+def test_data_dir_accessible(metrics):
+    """Test that the source data directory is mounted and readable."""
+    data_dir = WORKDIR / "data"
+    metrics["data_dir_exists"] = data_dir.exists()
+    metrics["data_dir_readable"] = data_dir.exists() and len(list(data_dir.iterdir())) > 0 if data_dir.exists() else False
+    assert data_dir.exists(), f"Data directory {data_dir} does not exist"
+    assert data_dir.is_dir(), f"{data_dir} is not a directory"
+    contents = list(data_dir.iterdir())
+    assert len(contents) > 0, f"Data directory {data_dir} is empty"
+
+
 def test_required_files_exist(metrics):
     """Test that all required output files exist and are non-empty."""
     missing = []

@@ -3,19 +3,25 @@
 AGENT="claude"
 NTRIALS=1
 TASK=""
+USE_PODMAN=false
+USE_APIKEYS=false
+ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)    AGENT="$2"; shift 2 ;;
     --ntrials)  NTRIALS="$2"; shift 2 ;;
     --task)     TASK="$2"; shift 2 ;;
+    --podman)   USE_PODMAN=true; shift ;;
+    --apikeys)  USE_APIKEYS=true; shift ;;
+    --env)      ENV_FILE="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name]"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman] [--apikeys] [--env FILE]"
       exit 0
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name]"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman] [--apikeys] [--env FILE]"
       exit 1
       ;;
   esac
@@ -30,27 +36,50 @@ if [ -n "$TASK" ]; then
 fi
 
 source /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
-conda activate eval-data-format
+conda activate eval-data-format-podman
 
-# Always export CLAUDE_CODE_OAUTH_TOKEN — required by [verifier.env] in task.toml for LLM judge
-export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+# --- Auth setup ---
+if [ "$USE_APIKEYS" = true ]; then
+  # Use API keys from env file
+  if [ ! -f "$ENV_FILE" ]; then
+    echo "Error: env file not found: $ENV_FILE"
+    exit 1
+  fi
+  source "$ENV_FILE"
+  if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+    echo "Error: ANTHROPIC_API_KEY not set in $ENV_FILE"
+    exit 1
+  fi
+  if [ -z "${OPENAI_API_KEY:-}" ]; then
+    echo "Error: OPENAI_API_KEY not set in $ENV_FILE"
+    exit 1
+  fi
+else
+  # Use OAuth tokens from CLI credentials
+  export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+  export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json 2>/dev/null || true)
+fi
 
-# Export codex auth for LLM judge (codex uses OAuth, not a plain API key)
-export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json 2>/dev/null || true)
+PODMAN_FLAG=""
+if [ "$USE_PODMAN" = true ]; then
+  PODMAN_FLAG="--ek use_podman=true"
+fi
+
+HARBOR_TASKS=/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks
 
 case "$AGENT" in
   claude)
-    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG
+    harbor run -p "$HARBOR_TASKS" -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG $PODMAN_FLAG
     ;;
   codex)
-    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "codex" -m "gpt-5.4" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG
+    harbor run -p "$HARBOR_TASKS" -a "codex" -m "gpt-5.4" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG $PODMAN_FLAG
     ;;
   oracle)
-    harbor run -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks -a "oracle" -o "$JOBS_DIR" -k 1 -n 1 $TASK_FLAG
+    harbor run -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n 1 $TASK_FLAG $PODMAN_FLAG
     ;;
   *)
     echo "Unknown agent: $AGENT"
-    echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name]"
+    echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman]"
     exit 1
     ;;
 esac

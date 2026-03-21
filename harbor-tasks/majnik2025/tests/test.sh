@@ -45,8 +45,10 @@ cd "$CLAUDE_DIR"
 # IS_SANDBOX=1 allows claude to run --permission-mode bypassPermissions as root,
 # matching how Harbor runs the claude agent. This avoids creating a non-root user
 # that cannot access krb5-authenticated NFS mounts.
-IS_SANDBOX=1 \
-  CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
+CLAUDE_ENV="IS_SANDBOX=1"
+[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && CLAUDE_ENV="$CLAUDE_ENV CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN"
+[ -n "${ANTHROPIC_API_KEY:-}" ] && CLAUDE_ENV="$CLAUDE_ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+env $CLAUDE_ENV \
   claude -p "$(cat /tests/judge_instructions.md)" \
     --model opus \
     --permission-mode bypassPermissions \
@@ -62,10 +64,13 @@ echo "=== [6/6] Codex judge ==="
 CODEX_DIR="$JUDGE_DIR/codex"
 mkdir -p "$CODEX_DIR"
 
-# Reconstruct codex auth.json from base64-encoded env var (codex uses OAuth, not API key)
+# Codex auth: use OAuth auth.json if available, otherwise OPENAI_API_KEY
 if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
   mkdir -p /root/.codex
   echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
+fi
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  export OPENAI_API_KEY
 fi
 
 cd "$CODEX_DIR"
