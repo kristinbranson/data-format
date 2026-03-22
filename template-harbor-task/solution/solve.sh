@@ -31,7 +31,7 @@ if [ -f "$SCRIPT_DIR/convert_data.py" ]; then
     # train on sample
     python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt"
     # convert full data
-    python3 "$SCRIPT_DIR/convert_data.py" --full --datadir /app/data "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
+    python3 "$SCRIPT_DIR/convert_data.py" --datadir /app/data "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
     # verify full data
     python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
     # train on full data
