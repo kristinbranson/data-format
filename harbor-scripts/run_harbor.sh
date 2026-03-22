@@ -27,16 +27,19 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-JOBS_DIR="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs/raw"
-REORG_BASE="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs"
+JOBS_DIR="$HOME/harbor-tasks/data-format/jobs/raw"
+REORG_BASE="$HOME/harbor-tasks/data-format/jobs"
 
 TASK_FLAG=""
 if [ -n "$TASK" ]; then
   TASK_FLAG="-t $TASK"
 fi
 
-source /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
+source $HOME/miniforge3/etc/profile.d/conda.sh
 conda activate eval-data-format-podman
+if [ "$USE_PODMAN" = true ]; then
+  export REGISTRY_AUTH_FILE="$HOME/.config/containers/auth.json"
+fi
 
 # --- Auth setup ---
 if [ "$USE_APIKEYS" = true ]; then
@@ -56,8 +59,8 @@ if [ "$USE_APIKEYS" = true ]; then
   fi
 else
   # Use OAuth tokens from CLI credentials
-  export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
-  export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json 2>/dev/null || true)
+  export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+  export CODEX_AUTH_JSON_B64=$(base64 -w0 $HOME/.codex/auth.json 2>/dev/null || true)
 fi
 
 PODMAN_FLAG=""
@@ -65,7 +68,8 @@ if [ "$USE_PODMAN" = true ]; then
   PODMAN_FLAG="--ek use_podman=true"
 fi
 
-HARBOR_TASKS=/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+HARBOR_TASKS="$(cd "$SCRIPT_DIR/../harbor-tasks" && pwd)"
 
 case "$AGENT" in
   claude)

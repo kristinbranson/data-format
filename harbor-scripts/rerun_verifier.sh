@@ -79,11 +79,11 @@ else
 fi
 
 # Get Claude OAuth token for LLM judge
-export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('/home/bransonk@hhmi.org/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
 
 # Codex auth (uses OAuth tokens, not a plain API key)
 if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
-    export CODEX_AUTH_JSON_B64=$(base64 -w0 /home/bransonk@hhmi.org/.codex/auth.json 2>/dev/null || true)
+    export CODEX_AUTH_JSON_B64=$(base64 -w0 $HOME/.codex/auth.json 2>/dev/null || true)
 fi
 if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
     echo "Warning: Codex auth not available. Codex judge will be skipped."

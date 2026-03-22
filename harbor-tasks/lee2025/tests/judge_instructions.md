@@ -54,7 +54,7 @@ Document the decisions of another agentic AI system, then evaluate them against 
 
 The AI's goal was to load, process, and reformat the data from a neuroscience paper into a specified structure suitable for downstream analysis, using the **SAME** processing described in the provided reference paper and code.
 
-You must produce **two output files**: `DECISIONS.md` and `llm_judge_eval.json`.
+You must produce **two output files**: `DECISIONS.md` and `llm_judge_eval.json`. Write these files to the directory you are currently in, not to `/app/` or any other directory.
 
 ---
 
