@@ -32,7 +32,7 @@ TIME_AFTER_GO = 1.5   # seconds after go cue
 BIN_SIZE = 0.05       # 50 ms bins
 N_BINS = int((TIME_BEFORE_GO + TIME_AFTER_GO) / BIN_SIZE)  # 80 bins
 
-# Data directory
+# Data directory (default; overridden by --datadir)
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 
@@ -383,11 +383,11 @@ def process_session(nwb_path, show_processing=False, session_idx=0):
 
             # Combine outputs - per-trial outputs are broadcast to time dimension
             output_data = np.stack([
-                np.full(N_BINS, choice, dtype=np.float32),
-                np.full(N_BINS, outcome_val, dtype=np.float32),
-                np.full(N_BINS, early_lick_val, dtype=np.float32),
-                tongue_discrete
-            ], axis=0).astype(np.float32)
+                np.full(N_BINS, int(choice), dtype=np.int64),
+                np.full(N_BINS, int(outcome_val), dtype=np.int64),
+                np.full(N_BINS, int(early_lick_val), dtype=np.int64),
+                tongue_discrete.astype(np.int64)
+            ], axis=0).astype(np.int64)
 
             output_trials.append(output_data)
 
@@ -492,8 +492,14 @@ def main():
                        help='Process only 2 sessions for testing')
     parser.add_argument('--show-processing', action='store_true',
                        help='Plot visualizations of processing steps')
+    parser.add_argument('--datadir', type=str, default=None,
+                       help='Path to data directory (default: data/ next to script)')
 
     args = parser.parse_args()
+
+    if args.datadir is not None:
+        global DATA_DIR
+        DATA_DIR = args.datadir
 
     print("=" * 60)
     print("MAP Data Conversion")

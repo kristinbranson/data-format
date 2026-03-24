@@ -2,26 +2,32 @@
 
 AGENT="claude"
 NTRIALS=1
+NCONCURRENT=1
 TASK=""
 USE_PODMAN=false
 USE_APIKEYS=false
 ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env"
+CONFIG_FILE=""
+GPUIDS=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)    AGENT="$2"; shift 2 ;;
     --ntrials)  NTRIALS="$2"; shift 2 ;;
+    --nconcurrent) NCONCURRENT="$2"; shift 2 ;;
     --task)     TASK="$2"; shift 2 ;;
+    --config)   CONFIG_FILE="$2"; shift 2 ;;
+    --gpuids)   GPUIDS="$2"; shift 2 ;;
     --podman)   USE_PODMAN=true; shift ;;
     --apikeys)  USE_APIKEYS=true; shift ;;
     --env)      ENV_FILE="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman] [--apikeys] [--env FILE]"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--podman] [--apikeys] [--env FILE]"
       exit 0
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman] [--apikeys] [--env FILE]"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--podman] [--apikeys] [--env FILE]"
       exit 1
       ;;
   esac
@@ -68,25 +74,34 @@ if [ "$USE_PODMAN" = true ]; then
   PODMAN_FLAG="--ek use_podman=true"
 fi
 
+GPU_FLAG=""
+if [ -n "$GPUIDS" ]; then
+  GPU_FLAG="--ek gpu_ids=$GPUIDS"
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HARBOR_TASKS="$(cd "$SCRIPT_DIR/../harbor-tasks" && pwd)"
 
-case "$AGENT" in
-  claude)
-    harbor run -p "$HARBOR_TASKS" -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG $PODMAN_FLAG
-    ;;
-  codex)
-    harbor run -p "$HARBOR_TASKS" -a "codex" -m "gpt-5.4" -o "$JOBS_DIR" -k "$NTRIALS" -n 1 $TASK_FLAG $PODMAN_FLAG
-    ;;
-  oracle)
-    harbor run -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n 1 $TASK_FLAG $PODMAN_FLAG
-    ;;
-  *)
-    echo "Unknown agent: $AGENT"
-    echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman]"
-    exit 1
-    ;;
-esac
+if [ -n "$CONFIG_FILE" ]; then
+  harbor run -c "$CONFIG_FILE" -o "$JOBS_DIR" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+else
+  case "$AGENT" in
+    claude)
+      harbor run -p "$HARBOR_TASKS" -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+      ;;
+    codex)
+      harbor run -p "$HARBOR_TASKS" -a "codex" -m "gpt-5.4" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+      ;;
+    oracle)
+      harbor run -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+      ;;
+    *)
+      echo "Unknown agent: $AGENT"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman]"
+      exit 1
+      ;;
+  esac
+fi
 
 # Fix permissions on agent logs — Claude Code creates session files with restrictive
 # permissions (0604) that block Harbor's post-processing trajectory conversion.
@@ -101,8 +116,18 @@ if [ -n "$LATEST_JOB" ]; then
   for trial_dir in "$LATEST_JOB"/*__*/; do
     [ -d "$trial_dir" ] || continue
     task_name=$(basename "$trial_dir" | sed 's/__[^_]*$//')
-    task_trial_num[$task_name]=$(( ${task_trial_num[$task_name]:-0} + 1 ))
-    dest="$REORG_BASE/$task_name/$AGENT/${TIMESTAMP}_trial${task_trial_num[$task_name]}"
+    # Infer agent name: config.json (most reliable) > trajectory.json > $AGENT
+    trial_agent=""
+    if [ -f "$trial_dir/config.json" ]; then
+      trial_agent=$(python3 -c "import json; d=json.load(open('$trial_dir/config.json')); print(d.get('agent',{}).get('name',''))" 2>/dev/null)
+    fi
+    if [ -z "$trial_agent" ] && [ -f "$trial_dir/agent/trajectory.json" ]; then
+      trial_agent=$(python3 -c "import json; d=json.load(open('$trial_dir/agent/trajectory.json')); print(d.get('agent',{}).get('name',''))" 2>/dev/null)
+    fi
+    [ -z "$trial_agent" ] && trial_agent="$AGENT"
+    task_trial_key="${task_name}__${trial_agent}"
+    task_trial_num[$task_trial_key]=$(( ${task_trial_num[$task_trial_key]:-0} + 1 ))
+    dest="$REORG_BASE/$task_name/$trial_agent/${TIMESTAMP}_trial${task_trial_num[$task_trial_key]}"
     mkdir -p "$(dirname "$dest")"
     mv "$trial_dir" "$dest"
     echo "Results moved to $dest"

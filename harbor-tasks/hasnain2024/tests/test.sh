@@ -64,13 +64,16 @@ echo "=== [6/6] Codex judge ==="
 CODEX_DIR="$JUDGE_DIR/codex"
 mkdir -p "$CODEX_DIR"
 
-# Codex auth: use OAuth auth.json if available, otherwise OPENAI_API_KEY
+# Codex auth: use OAuth auth.json if available, otherwise create auth.json from OPENAI_API_KEY
+mkdir -p /root/.codex
 if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
-  mkdir -p /root/.codex
   echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
-fi
-if [ -n "${OPENAI_API_KEY:-}" ]; then
-  export OPENAI_API_KEY
+elif [ -n "${OPENAI_API_KEY:-}" ]; then
+  cat > /root/.codex/auth.json <<EOF
+{
+  "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+}
+EOF
 fi
 
 cd "$CODEX_DIR"

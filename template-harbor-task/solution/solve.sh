@@ -25,20 +25,20 @@ if [ -f "$SCRIPT_DIR/convert_data.py" ]; then
     cp "$SCRIPT_DIR/convert_data.py" "$OUTDIR/convert_data.py"
 
     # convert sample
-    python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt"
+    python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt" 2>&1
     # verify sample
-    python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt"
+    python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt" 2>&1
     # train on sample
-    python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt"
+    python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt" 2>&1
     # convert full data
-    python3 "$SCRIPT_DIR/convert_data.py" --datadir /app/data "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
+    python3 "$SCRIPT_DIR/convert_data.py" --datadir /app/data "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt" 2>&1
     # verify full data
-    python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
+    python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt" 2>&1
     # train on full data
-    python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt"
+    python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt" 2>&1
 
 else
-    echo "convert_data.py not found in $SCRIPT_DIR, skipping data conversion steps." > "$OUTDIR/conversion_full_out.txt"
+    echo "convert_data.py not found in $SCRIPT_DIR, skipping data conversion steps." > "$OUTDIR/conversion_full_out.txt" 2>&1
 fi
 
 # Persist outputs to mounted volume so they survive even with --disable-verification

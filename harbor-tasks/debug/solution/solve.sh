@@ -20,17 +20,17 @@ EOF
 cp "$SCRIPT_DIR/convert_data.py" "$OUTDIR/convert_data.py"
 
 # Convert sample
-python3 "$SCRIPT_DIR/convert_data.py" --sample "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt"
+python3 "$SCRIPT_DIR/convert_data.py" --sample "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt" 2>&1
 # Verify sample
-python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt"
+python3 /app/train_decoder.py --verify-only "$OUTDIR/sample_data.pkl" > "$OUTDIR/verification_sample_out.txt" 2>&1
 # Train on sample
-python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt"
+python3 /app/train_decoder.py "$OUTDIR/sample_data.pkl" > "$OUTDIR/train_decoder_sample_out.txt" 2>&1
 # Convert full data
-python3 "$SCRIPT_DIR/convert_data.py" --full "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt"
+python3 "$SCRIPT_DIR/convert_data.py" --full "$OUTDIR/converted_data.pkl" > "$OUTDIR/conversion_full_out.txt" 2>&1
 # Verify full data
-python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt"
+python3 /app/train_decoder.py --verify-only "$OUTDIR/converted_data.pkl" > "$OUTDIR/verification_full_out.txt" 2>&1
 # Train on full data
-python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt"
+python3 /app/train_decoder.py --stats-json "$OUTDIR/stats_full.json" "$OUTDIR/converted_data.pkl" > "$OUTDIR/train_decoder_full_out.txt" 2>&1
 
 # Persist outputs to mounted volume so they survive even with --disable-verification
 mkdir -p /logs/verifier/snapshot
