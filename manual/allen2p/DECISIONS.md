@@ -310,20 +310,21 @@ iii. The image identity at each frame is determined by whether that frame falls 
 
 ## 6-a. What variables in the raw data is `output` *Image change* derived from?
 
-i. Image change is a binary time-varying variable derived from `change_time` in the trials table. It is 0 before the stimulus change and 1 at/after the change.
+i. Image change is a binary time-varying variable derived from `change_time` and the `go` column in the trials table. It is 1 only during the first image flash and following grey period (750ms window starting at `change_time`), and only for **go trials** where an actual image change occurs. For catch trials (sham change), `image_change` is 0 throughout.
 
 ii.
 ```python
-change_idx = np.searchsorted(ophys_ts[idx], row['change_time'])
 image_change = np.zeros(n_frames, dtype=np.int8)
-image_change[change_idx:] = 1
+if row['go']:
+    change_end_idx = np.searchsorted(ophys_ts[idx], row['change_time'] + 0.75)
+    image_change[change_idx:change_end_idx] = 1
 ```
 
-iii. This variable marks the change point within each trial, allowing the decoder to learn when the stimulus change occurred. For catch trials, the change point corresponds to the sham change time (no actual image change, but the timing is still meaningful for behavioral response).
+iii. The 750ms window corresponds to one stimulus flash (250ms) plus the following grey inter-stimulus interval (500ms). This marks only the transient change event rather than the entire post-change period. Catch trials are excluded because no actual image change occurs — the `go` column distinguishes real changes from sham changes.
 
 ## 6-b. What processing is involved in computing `output` *Image change*?
 
-i. No processing beyond computing the binary indicator from `change_time` via `np.searchsorted`.
+i. No processing beyond computing the binary indicator from `change_time` and `go` via `np.searchsorted`.
 
 ii. See 6-a.
 
