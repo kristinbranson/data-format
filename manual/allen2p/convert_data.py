@@ -133,9 +133,11 @@ def segment_trials(session_data):
         image_names[:change_idx] = row['initial_image_name']
         image_names[change_idx:] = row['change_image_name']
 
-        # Binary image change indicator: 0 before change, 1 at/after
+        # Binary image change indicator: 1 only during first flash + grey (750ms), go trials only
         image_change = np.zeros(n_frames, dtype=np.int8)
-        image_change[change_idx:] = 1
+        if row['go']:
+            change_end_idx = np.searchsorted(ophys_ts[idx], row['change_time'] + 0.75)
+            image_change[change_idx:change_end_idx] = 1
 
         trials.append({
             'image_names': image_names,              # (n_frames,) object array

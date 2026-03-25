@@ -39,7 +39,7 @@ No inputs for this task.
 ### Decoder Outputs
 
 - Image identity (of the image presented during the non-grey screen), categorical variable. Time-varying.
-- Image change, binary variable of value 0/1 before/after image identity change. Time-varying.
+- Image change, binary variable. Have value of 1 right after a change in image identity, otherwise 0. Time-varying.
 - Running speed, discretized into five equal percentile bins. Time-varying.
 - Pupil diameter, discretized into five equal percentile bins.  Time-varying.
 - Trial outcome. Static per-trial.
