@@ -31,7 +31,6 @@ SHARED_FILES = [
     "task.toml",
     "tests/compute_reward.py",
     "tests/decoder.py",
-    "tests/eval_instructions.md",
     "tests/test_outputs.py",
     "tests/test.sh",
     "tests/train_decoder.py",
@@ -42,7 +41,6 @@ SHARED_FILES = [
 
 # Files in the debug task that intentionally differ from the template.
 DEBUG_EXCLUDED = {
-    "tests/eval_instructions.md",
     "tests/test_outputs.py",
     "tests/train_decoder.py",
     "environment/train_decoder.py",
@@ -60,6 +58,8 @@ def main():
                         help="Copy template files to all task directories")
     parser.add_argument("--diff", action="store_true",
                         help="Show full diffs for changed files")
+    parser.add_argument("--override", action="store_true",
+                        help="Overwrite destination files even if they are newer than the template")
     args = parser.parse_args()
 
     any_changes = False
@@ -89,7 +89,12 @@ def main():
                 continue
 
             any_changes = True
-            print(f"CHANGED: {task_name}/{rel_path}")
+            dest_is_newer = dest_file.stat().st_mtime > template_file.stat().st_mtime
+            newer_tag = " (destination is NEWER)" if dest_is_newer else ""
+            if args.override or (not dest_is_newer):
+                print(f"CHANGED: {task_name}/{rel_path}{newer_tag}")
+            elif dest_is_newer:
+                print(f"IGNORING: {task_name}/{rel_path}{newer_tag}")
 
             if args.diff:
                 template_lines = template_file.read_text().splitlines(keepends=True)
@@ -102,8 +107,11 @@ def main():
                 print("".join(diff))
 
             if args.apply:
-                shutil.copy2(template_file, dest_file)
-                print(f"  -> copied from template")
+                if not args.override and dest_is_newer:
+                    print(f"  -> SKIPPED (destination is newer; use --override to overwrite)")
+                else:
+                    shutil.copy2(template_file, dest_file)
+                    print(f"  -> copied from template")
 
     if not any_changes:
         print("All shared files are in sync with the template.")

@@ -27,6 +27,11 @@ ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 
+COPY data/_downloaded_data.json /app/data/_downloaded_data.json
+COPY data/_manifest_last_used.txt /app/data/_manifest_last_used.txt
+COPY data/visual-behavior-ophys_project_manifest_v1.1.0.json /app/data/visual-behavior-ophys_project_manifest_v1.1.0.json
+RUN mkdir -p /app/data/resources
+
 COPY . .
 
 # Create manifest of original files for snapshot diffing
