@@ -187,7 +187,7 @@ def test_verify_data_format(metrics, submitted_data_sample, submitted_data_full)
     assert valid, f"Sample data format is invalid. Errors: {errors}"
     if warnings:
         print(f"Sample data format warnings: {warnings}")
-
+        
     valid, errors, warnings = verify_data_format(submitted_data_full)
     metrics["full_data_format_valid"] = valid
     metrics["full_data_format_errors"] = errors
@@ -244,8 +244,11 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
     if not hasattr(match_variables_by_hungarian, 'SemanticMatchModel'):
         match_variables_by_hungarian.SemanticMatchModel = SentenceTransformer('all-MiniLM-L6-v2')  # fast, good quality, 80MB
     model = match_variables_by_hungarian.SemanticMatchModel
-    ref_emb = model.encode(ref_names)  # (N, 384)
-    sub_emb = model.encode(sub_names)  # (M, 384)
+    # replace _ and - with spaces
+    ref_sentences = [rn.replace('_', ' ').replace('-', ' ') for rn in ref_names]
+    sub_sentences = [sn.replace('_', ' ').replace('-', ' ') for sn in sub_names]
+    ref_emb = model.encode(ref_sentences)  # (N, 384)
+    sub_emb = model.encode(sub_sentences)  # (M, 384)
 
     cost = np.full((n, n), np.inf) if exact_range else np.zeros((n, n))
     for i, rn in enumerate(ref_names):
@@ -266,7 +269,7 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
                     if len(ref_fracs) != len(sub_fracs):
                         continue
                     cost_fracs = np.sum(np.abs(np.array(ref_fracs) - np.array(sub_fracs)))
-
+                    
                     cost[i, j] = cost_fracs*(1-weight_semantic) + cost_semantic*weight_semantic
                 else:
                     ref_lo, ref_hi = reference_ranges[rn]
@@ -282,6 +285,7 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
         matches.append((ref_names[i], sub_names[j], float(cost[i, j])))
         match_costs.append(float(cost[i, j]))
     return matches, match_costs
+
 
 
 # def old_match_variables_by_hungarian(submitted_ranges, reference_ranges,
@@ -374,7 +378,7 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
         'nsubjects',
         'nneurons_total',
     ]
-
+    
     for field in fields_check:
         metrics[field+'_ratio'] = submitted_data_stats[field] / reference_data_stats['data_summary'][field]
 
@@ -481,7 +485,7 @@ def test_decoder_accuracy(metrics, submitted_data_full, submitted_data_stats, re
             train_validate_decoder(submitted_data_full['neural'], submitted_data_full['input'],
                                 submitted_data_full['output'], state=rng_state, **train_params)
 
-    # evaluate accuracy on test set
+    # evaluate accuracy on test set    
     test_predictions_only = get_trial_indices(predictions, test_idx)
     test_output_only = get_trial_indices(output, test_idx)
     balanced_accuracy = accuracy_all_sessions(test_predictions_only, test_output_only, balanced=True)
@@ -491,7 +495,7 @@ def test_decoder_accuracy(metrics, submitted_data_full, submitted_data_stats, re
         for i in range(len(balanced_accuracy))
     }
     metrics['validation_balanced_accuracy'] = sub_accuracy
-
+    
     # find a match between output dimensions
     output_matches, output_match_costs = match_variables_by_hungarian(
         submitted_data_stats['output_range'],
@@ -500,18 +504,18 @@ def test_decoder_accuracy(metrics, submitted_data_full, submitted_data_stats, re
         reference_data_stats['data_summary']['output_fractions'],
         exact_range=True,
     )
-
+    
     metrics['output_match_cost'] = float(np.mean(output_match_costs))
 
     metrics['validation_balanced_accuracy_ratio'] = {
         ref_name: sub_accuracy[sub_name] / ref_accuracy[ref_name]
         for ref_name, sub_name, _ in output_matches
     }
-
+    
     for ref_name, sub_name, _ in output_matches:
         ref_acc = ref_accuracy[ref_name]
         sub_acc = sub_accuracy[sub_name]
         assert sub_acc >= MIN_ACCURACY_FRAC * ref_acc, f'Accuracy for output {sub_name} ({sub_acc:.3f}) is below {MIN_ACCURACY_FRAC*100:.1f}% of reference accuracy ({ref_acc:.3f})'
 
 
-
+    

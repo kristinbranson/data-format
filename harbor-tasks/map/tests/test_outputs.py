@@ -227,8 +227,11 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
     if not hasattr(match_variables_by_hungarian, 'SemanticMatchModel'):
         match_variables_by_hungarian.SemanticMatchModel = SentenceTransformer('all-MiniLM-L6-v2')  # fast, good quality, 80MB
     model = match_variables_by_hungarian.SemanticMatchModel
-    ref_emb = model.encode(ref_names)  # (N, 384)
-    sub_emb = model.encode(sub_names)  # (M, 384)
+    # replace _ and - with spaces
+    ref_sentences = [rn.replace('_', ' ').replace('-', ' ') for rn in ref_names]
+    sub_sentences = [sn.replace('_', ' ').replace('-', ' ') for sn in sub_names]
+    ref_emb = model.encode(ref_sentences)  # (N, 384)
+    sub_emb = model.encode(sub_sentences)  # (M, 384)
 
     cost = np.full((n, n), np.inf) if exact_range else np.zeros((n, n))
     for i, rn in enumerate(ref_names):

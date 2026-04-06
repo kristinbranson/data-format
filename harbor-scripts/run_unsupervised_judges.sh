@@ -2,10 +2,9 @@
 #
 # Run LLM judges with unsupervised instructions against an existing trial.
 #
-# This renames existing (supervised) judge results in metrics.json to
-# llm_judge_{model}_supervised_* and then runs the judges with the
-# unsupervised judge_instructions.md, writing results under the original
-# llm_judge_{model}_* keys.
+# Runs the judges with unsupervised judge_instructions.md, writing results
+# under llm_judge_{model}_unsupervised_* keys in metrics.json. Existing
+# (supervised) judge keys are left untouched.
 #
 # Usage:
 #   ./run_unsupervised_judges.sh [OPTIONS] <trial_dir> [<trial_dir> ...]
@@ -107,23 +106,6 @@ if [ "$DRY_RUN" = true ]; then
     echo "[dry run] Judges:  $JUDGES"
     echo ""
 
-    echo "[dry run] Rename metrics.json keys:"
-    python3 -c "
-import json, re
-metrics_path = '$VERIFIER_OUT/metrics.json'
-with open(metrics_path) as f:
-    metrics = json.load(f)
-for key in sorted(metrics.keys()):
-    m = re.match(r'^(llm_judge_(?:claude|codex))_(?!supervised_)(.*)', key)
-    if m:
-        new_key = f'{m.group(1)}_supervised_{m.group(2)}'
-        print(f'  {key} -> {new_key}')
-n = sum(1 for k in metrics if re.match(r'^llm_judge_(?:claude|codex)_(?!supervised_)', k))
-if n == 0:
-    print('  (no keys to rename — already renamed?)')
-"
-    echo ""
-
     echo "[dry run] Prepare test files:"
     echo "  Copy $TASK_DIR/tests/ to tmpdir"
     echo "  Copy tests/judge_instructions_unsupervised.md -> tests/judge_instructions.md"
@@ -141,11 +123,11 @@ if n == 0:
     echo "  -v $TRIAL_DIR/agent:/logs/agent"
     if [ "$RUN_CLAUDE_JUDGE" = true ]; then
         echo "  Run Claude judge -> /logs/verifier/judge_unsupervised/claude/"
-        echo "  compute_reward.py --model-name claude -> metrics.json llm_judge_claude_*"
+        echo "  compute_reward.py --model-name claude_unsupervised -> metrics.json llm_judge_claude_unsupervised_*"
     fi
     if [ "$RUN_CODEX_JUDGE" = true ]; then
         echo "  Run Codex judge -> /logs/verifier/judge_unsupervised/codex/"
-        echo "  compute_reward.py --model-name codex -> metrics.json llm_judge_codex_*"
+        echo "  compute_reward.py --model-name codex_unsupervised -> metrics.json llm_judge_codex_unsupervised_*"
     fi
     continue
 fi
@@ -168,33 +150,6 @@ fi
 if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
     echo "Warning: Codex auth not available. Codex judge will be skipped."
 fi
-
-# --- Rename supervised keys in metrics.json ---
-echo "Renaming existing judge keys to *_supervised_* in metrics.json..."
-python3 -c "
-import json, re, sys
-
-metrics_path = '$VERIFIER_OUT/metrics.json'
-with open(metrics_path) as f:
-    metrics = json.load(f)
-
-updated = {}
-for key, val in metrics.items():
-    # Match llm_judge_{model}_{field} but not already renamed to supervised
-    m = re.match(r'^(llm_judge_(?:claude|codex))_(?!supervised_)(.*)', key)
-    if m:
-        new_key = f'{m.group(1)}_supervised_{m.group(2)}'
-        updated[new_key] = val
-    else:
-        updated[key] = val
-
-with open(metrics_path, 'w') as f:
-    json.dump(updated, f, indent=2)
-
-# Report renames
-n = sum(1 for k in metrics if re.match(r'^llm_judge_(?:claude|codex)_(?!supervised_)', k))
-print(f'  Renamed {n} keys')
-"
 
 # --- Prepare test files with unsupervised instructions ---
 # Copy tests to tmpdir, swapping in unsupervised judge_instructions.md
@@ -242,7 +197,7 @@ IS_SANDBOX=1 \
 cd /
 python3 /tests/compute_reward.py \
   --eval-json "$CLAUDE_DIR/llm_judge_eval.json" \
-  --model-name claude \
+  --model-name claude_unsupervised \
   --metrics-json /logs/verifier/metrics.json 2>&1 || true
 '
 fi
@@ -271,7 +226,7 @@ codex exec "$(cat /tests/judge_instructions.md)" \
 cd /
 python3 /tests/compute_reward.py \
   --eval-json "$CODEX_DIR/llm_judge_eval.json" \
-  --model-name codex \
+  --model-name codex_unsupervised \
   --metrics-json /logs/verifier/metrics.json 2>&1 || true
 '
 fi
@@ -329,13 +284,14 @@ d = json.load(open('$VERIFIER_OUT/metrics.json'))
 for mode in ['supervised', 'unsupervised']:
     for model in ['claude', 'codex']:
         if mode == 'supervised':
-            key = f'llm_judge_{model}_supervised_reward'
-        else:
             key = f'llm_judge_{model}_reward'
+        else:
+            key = f'llm_judge_{model}_unsupervised_reward'
         r = d.get(key)
+        err_key = key.replace('_reward', '_error')
         if r is not None:
             print(f'  {model} {mode}: {r:.3f}')
-        elif f'llm_judge_{model}_{\"supervised_\" if mode==\"supervised\" else \"\"}error' in d:
+        elif err_key in d:
             print(f'  {model} {mode}: ERR')
 " 2>/dev/null || true
 fi
