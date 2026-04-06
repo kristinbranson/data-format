@@ -13,6 +13,7 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 import torch
 import pytest
+from sentence_transformers import SentenceTransformer, util
 from decoder import (
     get_trial_indices,
     verify_data_format,
@@ -178,10 +179,9 @@ def test_verify_data_format(metrics, submitted_data_sample, submitted_data_full)
     if warnings:
         print(f"Full data format warnings: {warnings}")
 
-
 def match_variables_by_hungarian(submitted_ranges, reference_ranges,
-                                  submitted_fractions=None, reference_fractions=None,
-                                  exact_range=False):
+                                submitted_fractions=None, reference_fractions=None,
+                                exact_range=False, weight_semantic=.95):
     """Find 1-1 matching between variables using the Hungarian algorithm.
 
     If a submitted name exactly matches a reference name, they are forced to match
@@ -207,6 +207,13 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
     ref_names = list(reference_ranges.keys())
     sub_names = list(submitted_ranges.keys())
     n = len(ref_names)
+    m = len(sub_names)
+
+    if n != m:
+        # Cannot match — return all-inf matches
+        matches = [(rn, None, float('inf')) for rn in ref_names]
+        match_costs = [float('inf')] * n
+        return matches, match_costs
 
     # Find exact name matches
     matched_ref = set()
@@ -217,6 +224,12 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
                 matched_ref.add(i)
                 matched_sub.add(j)
 
+    if not hasattr(match_variables_by_hungarian, 'SemanticMatchModel'):
+        match_variables_by_hungarian.SemanticMatchModel = SentenceTransformer('all-MiniLM-L6-v2')  # fast, good quality, 80MB
+    model = match_variables_by_hungarian.SemanticMatchModel
+    ref_emb = model.encode(ref_names)  # (N, 384)
+    sub_emb = model.encode(sub_names)  # (M, 384)
+
     cost = np.full((n, n), np.inf) if exact_range else np.zeros((n, n))
     for i, rn in enumerate(ref_names):
         for j, sn in enumerate(sub_names):
@@ -224,21 +237,26 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
                 cost[i, j] = 0.0
             elif i in matched_ref or j in matched_sub:
                 cost[i, j] = np.inf
-            elif exact_range:
-                ref_lo, ref_hi = reference_ranges[rn]
-                sub_lo, sub_hi = submitted_ranges[sn]
-                if ref_lo != sub_lo or ref_hi != sub_hi:
-                    continue
-                ref_fracs = sorted(reference_fractions[rn].values())
-                sub_fracs = sorted(submitted_fractions[sn].values())
-                if len(ref_fracs) != len(sub_fracs):
-                    continue
-                cost[i, j] = np.sum(np.abs(np.array(ref_fracs) - np.array(sub_fracs)))
             else:
-                ref_lo, ref_hi = reference_ranges[rn]
-                sub_lo, sub_hi = submitted_ranges[sn]
-                scale = max(abs(ref_hi - ref_lo), 1e-6)
-                cost[i, j] = np.maximum(abs(ref_lo - sub_lo)/scale, abs(ref_hi - sub_hi)/scale)
+                cost_semantic = 1 - util.cos_sim(ref_emb[i], sub_emb[j]).item()
+                if exact_range:
+                    ref_lo, ref_hi = reference_ranges[rn]
+                    sub_lo, sub_hi = submitted_ranges[sn]
+                    if ref_lo != sub_lo or ref_hi != sub_hi:
+                        continue
+                    ref_fracs = sorted(reference_fractions[rn].values())
+                    sub_fracs = sorted(submitted_fractions[sn].values())
+                    if len(ref_fracs) != len(sub_fracs):
+                        continue
+                    cost_fracs = np.sum(np.abs(np.array(ref_fracs) - np.array(sub_fracs)))
+                    
+                    cost[i, j] = cost_fracs*(1-weight_semantic) + cost_semantic*weight_semantic
+                else:
+                    ref_lo, ref_hi = reference_ranges[rn]
+                    sub_lo, sub_hi = submitted_ranges[sn]
+                    scale = max(abs(ref_hi - ref_lo), 1e-6)
+                    cost_range = np.maximum(abs(ref_lo - sub_lo)/scale, abs(ref_hi - sub_hi)/scale)
+                    cost[i, j] = cost_range*(1-weight_semantic) + cost_semantic*weight_semantic
 
     row_ind, col_ind = linear_sum_assignment(cost)
     matches = []
@@ -247,6 +265,77 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
         matches.append((ref_names[i], sub_names[j], float(cost[i, j])))
         match_costs.append(float(cost[i, j]))
     return matches, match_costs
+
+
+
+# def old_match_variables_by_hungarian(submitted_ranges, reference_ranges,
+#                                 submitted_fractions=None, reference_fractions=None,
+#                                 exact_range=False):
+#     """Find 1-1 matching between variables using the Hungarian algorithm.
+#
+#     If a submitted name exactly matches a reference name, they are forced to match
+#     with cost 0 (and all other pairings involving those names get cost inf).
+#
+#     For unmatched names, cost depends on mode:
+#     - exact_range=False: scaled range distance (max of normalized endpoint differences)
+#     - exact_range=True: requires exact range match (inf if not), then uses mean absolute
+#       difference of sorted fractions as cost. Requires submitted_fractions and
+#       reference_fractions.
+#
+#     Args:
+#         submitted_ranges: dict of {name: [min, max]}
+#         reference_ranges: dict of {name: [min, max]}
+#         submitted_fractions: dict of {name: {val: frac, ...}} (required if exact_range=True)
+#         reference_fractions: dict of {name: {val: frac, ...}} (required if exact_range=True)
+#         exact_range: if True, ranges must match exactly and fractions are used for cost
+#
+#     Returns:
+#         matches: list of (ref_name, sub_name, cost) tuples
+#         match_costs: list of costs for each chosen assignment
+#     """
+#     ref_names = list(reference_ranges.keys())
+#     sub_names = list(submitted_ranges.keys())
+#     n = len(ref_names)
+#
+#     # Find exact name matches
+#     matched_ref = set()
+#     matched_sub = set()
+#     for i, rn in enumerate(ref_names):
+#         for j, sn in enumerate(sub_names):
+#             if rn == sn:
+#                 matched_ref.add(i)
+#                 matched_sub.add(j)
+#
+#     cost = np.full((n, n), np.inf) if exact_range else np.zeros((n, n))
+#     for i, rn in enumerate(ref_names):
+#         for j, sn in enumerate(sub_names):
+#             if rn == sn:
+#                 cost[i, j] = 0.0
+#             elif i in matched_ref or j in matched_sub:
+#                 cost[i, j] = np.inf
+#             elif exact_range:
+#                 ref_lo, ref_hi = reference_ranges[rn]
+#                 sub_lo, sub_hi = submitted_ranges[sn]
+#                 if ref_lo != sub_lo or ref_hi != sub_hi:
+#                     continue
+#                 ref_fracs = sorted(reference_fractions[rn].values())
+#                 sub_fracs = sorted(submitted_fractions[sn].values())
+#                 if len(ref_fracs) != len(sub_fracs):
+#                     continue
+#                 cost[i, j] = np.sum(np.abs(np.array(ref_fracs) - np.array(sub_fracs)))
+#             else:
+#                 ref_lo, ref_hi = reference_ranges[rn]
+#                 sub_lo, sub_hi = submitted_ranges[sn]
+#                 scale = max(abs(ref_hi - ref_lo), 1e-6)
+#                 cost[i, j] = np.maximum(abs(ref_lo - sub_lo)/scale, abs(ref_hi - sub_hi)/scale)
+#
+#     row_ind, col_ind = linear_sum_assignment(cost)
+#     matches = []
+#     match_costs = []
+#     for i, j in zip(row_ind, col_ind):
+#         matches.append((ref_names[i], sub_names[j], float(cost[i, j])))
+#         match_costs.append(float(cost[i, j]))
+#     return matches, match_costs
 
 
 STATLIMITS = {
@@ -304,8 +393,6 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
         {'reference': ref, 'submitted': sub, 'cost': cost}
         for ref, sub, cost in output_matches
     ]
-    # check that all outputs had an exact range match (no inf costs)
-    inf_matches = [(r, s) for r, s, c in output_matches if np.isinf(c)]
 
     mean_output_fraction_cost = np.mean(output_match_costs)
     metrics['output_fraction_mean_cost'] = float(mean_output_fraction_cost)
@@ -337,6 +424,7 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
     )
 
     # check that output ranges match
+    inf_matches = [(r, s) for r, s, c in output_matches if np.isinf(c)]
     assert not inf_matches, (
         f"Output ranges do not match exactly for: {inf_matches}. "
         f"All matches: {[(r, s, f'{c:.3f}') for r, s, c in output_matches]}"

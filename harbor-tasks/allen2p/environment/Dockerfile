@@ -16,7 +16,8 @@ RUN pip install --no-cache-dir torch==2.6.0 torchvision==0.21.0 \
     --index-url https://download.pytorch.org/whl/cu124
 RUN pip install --no-cache-dir numpy scipy matplotlib tqdm opencv-python \
     scikit-learn h5py pandas pynwb dandi ONE-api suite2p \
-    allensdk@git+https://github.com/AllenInstitute/AllenSDK.git
+    allensdk@git+https://github.com/AllenInstitute/AllenSDK.git \
+    sentence-transformers
 
 # Install Claude CLI and Codex CLI for LLM judge (verifier)
 RUN curl -fsSL https://claude.ai/install.sh | bash
