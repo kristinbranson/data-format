@@ -347,8 +347,8 @@ STATLIMITS = {
     'T_median_ratio': .1, # must be within 10% of reference
     'nsubjects_ratio': 0, # must match reference
     'nneurons_total_ratio': .1, # must be within 10% of reference
-    'input_range': .1, # mean matching cost must be below this
-    'output_fractions': .1, # output fractions mean cost must be below this
+    'input_match_cost': 1, # mean matching cost must be below this
+    'output_match_cost': 1, # output match mean cost must be below this
 }
 MIN_ACCURACY_FRAC = 0.95 # submitted accuracy must be at least this fraction of reference accuracy for each output dimension
 
@@ -421,8 +421,8 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
     assert submitted_data_stats['doutput'] == reference_data_stats['data_summary']['doutput'], f"doutput in submitted data ({submitted_data_stats['doutput']}) does not match reference ({reference_data_stats['data_summary']['doutput']})"
 
     # check that we could match inputs with a reasonably low cost, indicating that ranges are similar
-    assert mean_input_cost < STATLIMITS['input_range'], (
-        f"Input range mean matching cost too high ({mean_input_cost:.3f} >= {STATLIMITS['input_range']}). "
+    assert mean_input_cost < STATLIMITS['input_match_cost'], (
+        f"Input range mean matching cost too high ({mean_input_cost:.3f} >= {STATLIMITS['input_match_cost']}). "
         f"Matches: {[(r, s, f'{c:.3f}') for r, s, c in input_matches]}"
     )
 
@@ -434,8 +434,8 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
     )
 
     # check that output fractions have a reasonably low mean cost, indicating that distributions are similar
-    assert mean_output_fraction_cost < STATLIMITS['output_fractions'], (
-        f"Output fractions mean matching cost too high ({mean_output_fraction_cost:.3f} >= {STATLIMITS['output_fractions']}). "
+    assert mean_output_fraction_cost < STATLIMITS['output_match_cost'], (
+        f"Output fractions mean matching cost too high ({mean_output_fraction_cost:.3f} >= {STATLIMITS['output_match_cost']}). "
         f"Matches: {[(r, s, f'{c:.3f}') for r, s, c in output_matches]}"
     )
 

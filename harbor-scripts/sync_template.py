@@ -39,11 +39,20 @@ SHARED_FILES = [
     "environment/Dockerfile",
 ]
 
-# Files in the debug task that intentionally differ from the template.
-DEBUG_EXCLUDED = {
-    "tests/test_outputs.py",
-    "tests/train_decoder.py",
-    "environment/train_decoder.py",
+# Files that intentionally differ from the template for specific tasks.
+# Maps task name -> set of relative paths to skip.
+TASK_EXCLUDED = {
+    "debug": {
+        "tests/test_outputs.py",
+        "tests/train_decoder.py",
+        "environment/train_decoder.py",
+    },
+    "allen2p": {
+        "environment/Dockerfile",
+    },
+    "mouseland": {
+        "task.toml",
+    },
 }
 
 
@@ -80,8 +89,8 @@ def main():
                 # File doesn't exist in this task — skip (may be intentional)
                 continue
 
-            # Skip files that intentionally differ in debug task
-            if dest_dir.name == "debug" and rel_path in DEBUG_EXCLUDED:
+            # Skip files that intentionally differ for specific tasks
+            if rel_path in TASK_EXCLUDED.get(dest_dir.name, set()):
                 continue
 
             dest_hash = file_hash(dest_file)

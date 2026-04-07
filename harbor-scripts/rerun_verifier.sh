@@ -97,8 +97,8 @@ if [ "$JUDGE_ONLY" = true ]; then
     if [ -n "$VERIFIER_DIR_OVERRIDE" ]; then
         VERIFIER_OUT="$VERIFIER_DIR_OVERRIDE"
     else
-        # Default: newest verifier_rerun_* if one exists, otherwise verifier/
-        NEWEST_RERUN=$(ls -dt "$TRIAL_DIR"/verifier_rerun_*/ 2>/dev/null | head -1)
+        # Default: newest unmerged verifier_rerun_* if one exists, otherwise verifier/
+        NEWEST_RERUN=$(ls -dt "$TRIAL_DIR"/verifier_rerun_*/ 2>/dev/null | grep -v '_merged/$' | head -1)
         if [ -n "$NEWEST_RERUN" ]; then
             VERIFIER_OUT="${NEWEST_RERUN%/}"
             echo "Found unmerged rerun: $VERIFIER_OUT"
