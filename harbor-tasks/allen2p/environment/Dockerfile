@@ -16,7 +16,8 @@ RUN pip install --no-cache-dir torch==2.6.0 torchvision==0.21.0 \
     --index-url https://download.pytorch.org/whl/cu124
 RUN pip install --no-cache-dir numpy scipy matplotlib tqdm opencv-python \
     scikit-learn h5py pandas pynwb dandi ONE-api suite2p \
-    allensdk@git+https://github.com/AllenInstitute/AllenSDK.git
+    allensdk@git+https://github.com/AllenInstitute/AllenSDK.git \
+    sentence-transformers
 
 # Install Claude CLI and Codex CLI for LLM judge (verifier)
 RUN curl -fsSL https://claude.ai/install.sh | bash
@@ -26,6 +27,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
+
+COPY data/_downloaded_data.json /app/data/_downloaded_data.json
+COPY data/_manifest_last_used.txt /app/data/_manifest_last_used.txt
+COPY data/visual-behavior-ophys_project_manifest_v1.1.0.json /app/data/visual-behavior-ophys_project_manifest_v1.1.0.json
+RUN mkdir -p /app/data/resources
 
 COPY . .
 

@@ -80,6 +80,22 @@ def main():
         pickle.dump(data, f)
     print(f"Wrote {args.output}")
 
+    # GPU diagnostics
+    print(f"\n--- GPU Diagnostics ---")
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        n = torch.cuda.device_count()
+        print(f"Number of GPUs visible: {n}")
+        for i in range(n):
+            name = torch.cuda.get_device_name(i)
+            total = torch.cuda.mem_get_info(i)[1] / 1e9
+            free = torch.cuda.mem_get_info(i)[0] / 1e9
+            print(f"  GPU {i}: {name}, {total:.1f} GB total, {free:.1f} GB free")
+        default_dev = torch.device('cuda')
+        print(f"Default cuda device: cuda:{torch.cuda.current_device()} ({torch.cuda.get_device_name()})")
+    else:
+        print("No CUDA GPUs available")
+
 
 if __name__ == '__main__':
     main()

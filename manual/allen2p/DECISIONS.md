@@ -163,7 +163,80 @@ idx = np.arange(start_idx, end_idx)
 
 iii. `np.searchsorted` finds the first ophys frame at or after each boundary time. Since the frame rate is ~11 Hz, the maximum alignment error is ~45 ms (half a frame). The full trial window is used so that time-varying output variables (image identity, image change) can capture the pre- and post-change periods.
 
-## 3-a. What variables in the raw data is `output` *Running speed* derived from?
+## 3-a. What variables in the raw data is `output` *Image identity* derived from?
+
+i. Image name is a time-varying variable derived from both `initial_image_name` and `change_image_name` columns in the trials table, combined with `change_time` to determine when the image switches.
+
+ii.
+```python
+change_idx = np.searchsorted(ophys_ts[idx], row['change_time'])
+image_names = np.empty(n_frames, dtype=object)
+image_names[:change_idx] = row['initial_image_name']
+image_names[change_idx:] = row['change_image_name']
+```
+
+iii. Since the trial window now spans both pre- and post-change periods, image identity varies within a trial. Before `change_time`, the initial image is on screen; after, the change image is displayed. For catch trials (sham change), `initial_image_name` and `change_image_name` are the same, so the image identity is constant throughout.
+
+## 3-b. What processing is involved in computing `output` *Image identity*?
+
+i. Image names are mapped to integer codes via a global mapping built from all unique image names across all sessions. The integer code varies within a trial (initial image code before change, change image code after).
+
+ii.
+```python
+all_image_names = sorted(all_image_names)
+image_to_code = {name: i for i, name in enumerate(all_image_names)}
+...
+image_row = np.array(
+    [image_to_code[name] for name in t['image_names']],
+    dtype=np.int8)
+```
+
+iii. A global mapping ensures consistent integer codes across sessions. Sorting the image names makes the mapping deterministic. The mapping is stored in `metadata['image_to_code']` so it can be recovered for interpretation.
+
+## 3-c. How is `output` *Image identity* aligned with the neural data?
+
+i. Image name is computed per ophys frame within the trial window, using the same `idx` array as the neural data. The switch point is determined by `np.searchsorted` on `change_time`.
+
+ii.
+```python
+change_idx = np.searchsorted(ophys_ts[idx], row['change_time'])
+image_names[:change_idx] = row['initial_image_name']
+image_names[change_idx:] = row['change_image_name']
+```
+
+iii. The image identity at each frame is determined by whether that frame falls before or after `change_time`. This is aligned to the neural data because both use the same ophys frame indices.
+
+## 4-a. What variables in the raw data is `output` *Image change* derived from?
+
+i. Image change is a binary time-varying variable derived from `change_time` and the `go` column in the trials table. It is 1 only during the first image flash and following grey period (750ms window starting at `change_time`), and only for **go trials** where an actual image change occurs. For catch trials (sham change), `image_change` is 0 throughout.
+
+ii.
+```python
+image_change = np.zeros(n_frames, dtype=np.int8)
+if row['go']:
+    change_end_idx = np.searchsorted(ophys_ts[idx], row['change_time'] + 0.75)
+    image_change[change_idx:change_end_idx] = 1
+```
+
+iii. The 750ms window corresponds to one stimulus flash (250ms) plus the following grey inter-stimulus interval (500ms). This marks only the transient change event rather than the entire post-change period. Catch trials are excluded because no actual image change occurs — the `go` column distinguishes real changes from sham changes.
+
+## 4-b. What processing is involved in computing `output` *Image change*?
+
+i. No processing beyond computing the binary indicator from `change_time` and `go` via `np.searchsorted`.
+
+ii. See 3-a.
+
+iii. N/A
+
+## 4-c. How is `output` *Image change* aligned with the neural data?
+
+i. Same as image name — computed per ophys frame using the same `idx` array and `change_time` alignment.
+
+ii. See 3-a.
+
+iii. Same frame-level alignment as image name and neural data.
+
+## 5-a. What variables in the raw data is `output` *Running speed* derived from?
 
 i. Running speed is derived from `dataset.running_speed`, which provides speed and timestamps from the running wheel encoder.
 
@@ -174,7 +247,7 @@ run = ref_ds.running_speed
 
 iii. The `running_speed` attribute is the SDK's standard interface for locomotion data.
 
-## 3-b. What processing is involved in computing `output` *Running speed*?
+## 5-b. What processing is involved in computing `output` *Running speed*?
 
 i. Running speed is linearly interpolated from its native timestamps to the ophys timebase, then discretized into 5 percentile-based bins computed across all sessions. NaN values (from extrapolation) are mapped to bin 0.
 
@@ -195,7 +268,7 @@ run_disc = apply_discretize(t['running'], run_edges)
 
 iii. Linear interpolation preserves the signal shape while resampling to the ophys timebase. Percentile-based binning ensures roughly equal class counts across bins, which is important for balanced decoding. Bin edges are computed globally across all sessions to maintain consistent categories.
 
-## 3-c. How is `output` *Running speed* aligned with the neural data?
+## 5-c. How is `output` *Running speed* aligned with the neural data?
 
 i. Running speed is interpolated to the ophys timebase before trial segmentation, so it shares the same time indices as the neural data. The same `idx` array is used to extract both.
 
@@ -212,7 +285,7 @@ running_speed = f_run(ophys_ts)
 
 iii. By interpolating running speed onto `ophys_ts` upfront, alignment is guaranteed — both neural and running data are indexed by the same ophys frame indices. Based on the AllenSDK code, the clock used for different data stream are synced at the hardware level, so we can safely interpolate.
 
-## 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+## 6-a. What variables in the raw data is `output` *Pupil diameter* derived from?
 
 i. Pupil diameter is derived from `dataset.eye_tracking`, using the `pupil_width` column. Blink frames (where `likely_blink` is True) are excluded before interpolation.
 
@@ -224,7 +297,7 @@ eye_clean = eye[~eye['likely_blink']]
 
 iii. `pupil_width` was used as the measure of pupil diameter. Blink frames were removed prior to interpolation to avoid corrupting the signal with blink artifacts. The SDK's `likely_blink` flag provides a pre-computed blink detector.
 
-## 4-b. What processing is involved in computing `output` *Pupil diameter*?
+## 6-b. What processing is involved in computing `output` *Pupil diameter*?
 
 i. Pupil diameter is linearly interpolated (after blink removal) from its native timestamps to the ophys timebase, then discretized into 5 percentile-based bins computed across all sessions. NaN values are mapped to bin 0.
 
@@ -246,7 +319,7 @@ pup_disc = apply_discretize(t['pupil'], pupil_edges)
 
 iii. Same approach as running speed: linear interpolation to the ophys timebase, then global percentile-based discretization. Blink removal before interpolation prevents blink artifacts from propagating into neighboring timepoints.
 
-## 4-c. How is `output` *Pupil diameter* aligned with the neural data?
+## 6-c. How is `output` *Pupil diameter* aligned with the neural data?
 
 i. Same approach as running speed — pupil diameter is interpolated to the ophys timebase before trial segmentation, so it shares the same time indices as the neural data.
 
@@ -264,79 +337,6 @@ pupil_diameter = f_pupil(ophys_ts)
 ```
 
 iii. Same as running speed — the eye tracking timestamps are hardware-synced with the ophys clock, so interpolation is valid. Using the same `idx` array guarantees alignment.
-
-## 5-a. What variables in the raw data is `output` *Image name* derived from?
-
-i. Image name is a time-varying variable derived from both `initial_image_name` and `change_image_name` columns in the trials table, combined with `change_time` to determine when the image switches.
-
-ii.
-```python
-change_idx = np.searchsorted(ophys_ts[idx], row['change_time'])
-image_names = np.empty(n_frames, dtype=object)
-image_names[:change_idx] = row['initial_image_name']
-image_names[change_idx:] = row['change_image_name']
-```
-
-iii. Since the trial window now spans both pre- and post-change periods, image identity varies within a trial. Before `change_time`, the initial image is on screen; after, the change image is displayed. For catch trials (sham change), `initial_image_name` and `change_image_name` are the same, so the image identity is constant throughout.
-
-## 5-b. What processing is involved in computing `output` *Image name*?
-
-i. Image names are mapped to integer codes via a global mapping built from all unique image names across all sessions. The integer code varies within a trial (initial image code before change, change image code after).
-
-ii.
-```python
-all_image_names = sorted(all_image_names)
-image_to_code = {name: i for i, name in enumerate(all_image_names)}
-...
-image_row = np.array(
-    [image_to_code[name] for name in t['image_names']],
-    dtype=np.int8)
-```
-
-iii. A global mapping ensures consistent integer codes across sessions. Sorting the image names makes the mapping deterministic. The mapping is stored in `metadata['image_to_code']` so it can be recovered for interpretation.
-
-## 5-c. How is `output` *Image name* aligned with the neural data?
-
-i. Image name is computed per ophys frame within the trial window, using the same `idx` array as the neural data. The switch point is determined by `np.searchsorted` on `change_time`.
-
-ii.
-```python
-change_idx = np.searchsorted(ophys_ts[idx], row['change_time'])
-image_names[:change_idx] = row['initial_image_name']
-image_names[change_idx:] = row['change_image_name']
-```
-
-iii. The image identity at each frame is determined by whether that frame falls before or after `change_time`. This is aligned to the neural data because both use the same ophys frame indices.
-
-## 6-a. What variables in the raw data is `output` *Image change* derived from?
-
-i. Image change is a binary time-varying variable derived from `change_time` and the `go` column in the trials table. It is 1 only during the first image flash and following grey period (750ms window starting at `change_time`), and only for **go trials** where an actual image change occurs. For catch trials (sham change), `image_change` is 0 throughout.
-
-ii.
-```python
-image_change = np.zeros(n_frames, dtype=np.int8)
-if row['go']:
-    change_end_idx = np.searchsorted(ophys_ts[idx], row['change_time'] + 0.75)
-    image_change[change_idx:change_end_idx] = 1
-```
-
-iii. The 750ms window corresponds to one stimulus flash (250ms) plus the following grey inter-stimulus interval (500ms). This marks only the transient change event rather than the entire post-change period. Catch trials are excluded because no actual image change occurs — the `go` column distinguishes real changes from sham changes.
-
-## 6-b. What processing is involved in computing `output` *Image change*?
-
-i. No processing beyond computing the binary indicator from `change_time` and `go` via `np.searchsorted`.
-
-ii. See 6-a.
-
-iii. N/A
-
-## 6-c. How is `output` *Image change* aligned with the neural data?
-
-i. Same as image name — computed per ophys frame using the same `idx` array and `change_time` alignment.
-
-ii. See 6-a.
-
-iii. Same frame-level alignment as image name and neural data.
 
 ## 7-a. What variables in the raw data is `output` *Trial outcome* derived from?
 

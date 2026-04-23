@@ -9,6 +9,8 @@
 #   --claude-judge-only   Only rerun the Claude judge and update metrics.json
 #   --codex-judge-only    Only rerun the Codex judge and update metrics.json
 #   --judges-only         Rerun both judges and update metrics.json
+#   --verifier-dir DIR    Use DIR as the verifier directory (default: newest
+#                         verifier_rerun_* if one exists, otherwise verifier/)
 #
 # The task name is inferred from the trial path: jobs/<task>/<agent>/<timestamp>/
 #
@@ -26,11 +28,13 @@ set -euo pipefail
 RUN_CLAUDE_JUDGE=false
 RUN_CODEX_JUDGE=false
 JUDGE_ONLY=false
+VERIFIER_DIR_OVERRIDE=""
 while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --claude-judge-only) RUN_CLAUDE_JUDGE=true; JUDGE_ONLY=true; shift ;;
         --codex-judge-only)  RUN_CODEX_JUDGE=true;  JUDGE_ONLY=true; shift ;;
         --judges-only)       RUN_CLAUDE_JUDGE=true; RUN_CODEX_JUDGE=true; JUDGE_ONLY=true; shift ;;
+        --verifier-dir)      VERIFIER_DIR_OVERRIDE="$2"; shift 2 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -59,16 +63,8 @@ if [ ! -d "$DATA_DIR" ]; then
     exit 1
 fi
 
-# Validate trial directory
-SNAPSHOT_DIR="$TRIAL_DIR/verifier/snapshot"
-if [ ! -d "$SNAPSHOT_DIR" ]; then
-    echo "Error: No snapshot directory at $SNAPSHOT_DIR"
-    exit 1
-fi
-
-if [ ! -f "$SNAPSHOT_DIR/converted_data.pkl" ]; then
-    echo "Warning: No converted_data.pkl in snapshot. Tests requiring it will be skipped."
-fi
+# Snapshot dir is resolved after we know which verifier dir to use (see below).
+# Default to verifier/snapshot; overridden for judge-only mode targeting a rerun dir.
 
 # Build Docker image if it doesn't exist
 if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
@@ -98,9 +94,30 @@ chmod -R a+rX "$TESTS_TMPDIR"
 trap 'rm -rf "$TESTS_TMPDIR"' EXIT
 
 if [ "$JUDGE_ONLY" = true ]; then
-    VERIFIER_OUT="$TRIAL_DIR/verifier"
+    if [ -n "$VERIFIER_DIR_OVERRIDE" ]; then
+        VERIFIER_OUT="$VERIFIER_DIR_OVERRIDE"
+    else
+        # Default: newest unmerged verifier_rerun_* if one exists, otherwise verifier/
+        NEWEST_RERUN=$(ls -dt "$TRIAL_DIR"/verifier_rerun_*/ 2>/dev/null | grep -v '_merged/$' | head -1)
+        if [ -n "$NEWEST_RERUN" ]; then
+            VERIFIER_OUT="${NEWEST_RERUN%/}"
+            echo "Found unmerged rerun: $VERIFIER_OUT"
+        else
+            VERIFIER_OUT="$TRIAL_DIR/verifier"
+        fi
+    fi
     if [ ! -d "$VERIFIER_OUT" ]; then
         echo "Error: No verifier directory at $VERIFIER_OUT"
+        exit 1
+    fi
+
+    # Resolve snapshot dir: use the target verifier's snapshot, fall back to verifier/snapshot
+    SNAPSHOT_DIR="$VERIFIER_OUT/snapshot"
+    if [ ! -d "$SNAPSHOT_DIR" ]; then
+        SNAPSHOT_DIR="$TRIAL_DIR/verifier/snapshot"
+    fi
+    if [ ! -d "$SNAPSHOT_DIR" ]; then
+        echo "Error: No snapshot directory found"
         exit 1
     fi
 
@@ -197,6 +214,14 @@ echo "=== Judge rerun complete ==="
         bash -c "$JUDGE_SCRIPT"
 else
     # Full verifier rerun
+    SNAPSHOT_DIR="$TRIAL_DIR/verifier/snapshot"
+    if [ ! -d "$SNAPSHOT_DIR" ]; then
+        echo "Error: No snapshot directory at $SNAPSHOT_DIR"
+        exit 1
+    fi
+    if [ ! -f "$SNAPSHOT_DIR/converted_data.pkl" ]; then
+        echo "Warning: No converted_data.pkl in snapshot. Tests requiring it will be skipped."
+    fi
     VERIFIER_OUT="$TRIAL_DIR/verifier_rerun_$(date +%Y%m%d_%H%M%S)"
     mkdir -p "$VERIFIER_OUT"
 
