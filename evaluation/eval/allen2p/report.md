@@ -8,14 +8,16 @@
 - Evaluators: Human, Claude judge, Codex judge
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed better than the human.
+A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than the human.
 
 ## Comments
 
 #### Agent Performance
 - The agents did a good job overall on this task.
 - The agents tend to avoid the AllenSDK interface available to them and prefer to "write their own code" with the NWB files. This is consistent with my impression that agents are prone to dig into code rabbit holes — it just makes the code a bit messy.
-- See 1-c, 2-a–d, 4-a, and 9-c for interesting failure cases. There's a recurring theme of agents making strange choices on resampling, time resolution, and time bin size (out of 6 runs, 2 are really bad decisions, 3 are ok choices, and 1 matches the human solution).
+- See 1-c, 2-a–d, 4-a, and 9-c for interesting failure cases.
+    - Agent will make strong assumption based on the variable names, which can lead to mistakes if the naming scheme is confusing.
+    - There's a recurring theme of agents making strange choices on resampling, time resolution, and time bin size (for the neural data, out of 6 runs, 2 are really bad decisions, 3 are ok choices, and only 1 matches the human solution).
 
 #### LLM as Judge
 - In general, the LLM judges evaluate the code in a more literal sense — whether it matches the reference solution. Most of the disagreements are cases where I (human) accepted solutions that were different but valid. The Codex judge in this case is close to unusable for being quite extreme on this axis.
