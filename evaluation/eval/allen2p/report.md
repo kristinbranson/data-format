@@ -27,7 +27,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
 |---|---|---|---|---|---|---|
 | 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🟨 | 🔴🔴🔴 🔴🔴🔴 | Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface. | The Claude judge caught a minor mistake that I overlooked: one of the solutions was not properly filtering the data based on `project_code`. |
-| 1-b | How are the data split into subjects? | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
+| 1-b | How are the data split into subjects? | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Used correct information |  |
 | 1-c | How are the data split into sessions? | 🔴🔴🔴 🔴🔴🔴 | 🟡🟡🟡 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 | The Allen dataset has an unusual setup where each session, identified by `ophys_session_id`, is split into multiple `ophys_experiment_id`s for different imaging planes in the same session. This seems to have thrown off all the agents — none of them recombined the data based on the session ID. This is explicitly shown in the tutorial code, which the agents had been instructed to read. |  |
 | 1-d | Are the data correctly split into trials? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 | 🔴🔴🟢 🟢🔵🟢 |  |  |
 | 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟡 | 🔴🔵🟡 🟡🟡🟡 | All agents followed the main instruction; some introduced additional filtering that is reasonable. |  |
@@ -45,7 +45,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 5-a | What variables in the raw data is `output` *Image name* derived from? | 🟢🟢🟢 🔵🔵🔵 | 🔵🔵🔵 🟡🔵🟡 | 🔴🔵🔴 🔴🟡🔴 | Codex agents dig deep into the data structure to find the image ID info instead of using the data table. |  |
 | 5-b | What processing is involved in computing `output` *Image name*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟨🟢 🟡🔵🟡 | 🔴🟡🟡 ⚫🟡🔴 |  |  |
 | 5-c | How is `output` *Image name* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔴 |  |  |
-| 6-a | What variables in the raw data is `output` *Image change* derived from? | 🔵🔵🟢 🔵🔵🔵 | 🔵🔵🔵 🔵🟡🟡 | 🔴🔵🟡 🔴🔴🟡 |  |  |
+| 6-a | What variables in the raw data is `output` *Image change* derived from? | 🔵🔵🟢 🔵🔵🔵 | 🔵🔵🔵 🔵🟡🟡 | 🔴🔵🟡 🔴🔴🟡 | Some solutions included the grey screen as an extra image category. |  |
 | 6-b | What processing is involved in computing `output` *Image change*? | 🟢🟢🟢 🟢🟢🟢 | 🟨🔵🟢 🟡🟡🟡 | 🔴🔵🟡 ⚫🔴🟡 |  |  |
 | 6-c | How is `output` *Image change* aligned with the neural data? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔴 |  |  |
 | 7-a | What variables in the raw data is `output` *Trial outcome* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |

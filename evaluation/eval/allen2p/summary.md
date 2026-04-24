@@ -98,7 +98,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** Only one agent produced the "really" correct solution — since the experiment timestamps are already aligned, there is no need to resample. Two agents made very wrong choices on time bin size.
+**Overall comment:** Only one agent produced the "really" correct solution — since the experiment timestamps are already aligned, there is no need to resample. Two agents made some very wrong choices on time bin size.
 
 ---
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
@@ -126,7 +126,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices though…
+**Overall comment:** The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices (2-b).
 
 ---
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
@@ -196,7 +196,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** Agents really like to compute pupil size from area…
+**Overall comment:** Agents really like to compute pupil size from area.
 
 ---
 ## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
@@ -281,7 +281,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** Some solutions included the grey screen as an extra image category.
 
 ---
 ## Q 6-b. What processing is involved in computing `output` *Image change*?
@@ -409,7 +409,7 @@
 | codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** 5/6 did a two-pass approach which is inefficient; 1/6 did a three-pass approach which is just wrong…
+**Overall comment:** 5/6 did a two-pass approach which is inefficient; 1/6 did a three-pass approach which is just wrong.
 
 ---
 ## Q 9-d. What unnecessary processing does the code do that is discarded in downstream analyses?

@@ -13,6 +13,8 @@
 | codex / trial2 | ok | ok | incorrect | Human |  |
 | codex / trial3 | ok | concerning | incorrect | Claude judge | Claude caught a small bug with data filtering using project_code |
 
+**Overall comment:** The Claude judge caught a minor mistake that I overlooked: one of the solutions was not properly filtering the data based on `project_code`.
+
 ---
 
 ## Q 1-b. How are the data split into subjects?
@@ -77,6 +79,8 @@
 | codex / trial1 | ok | concerning | incorrect | Human |  |
 | codex / trial2 | ok | incorrect | incorrect | Human |  |
 | codex / trial3 | ok | concerning | incorrect | Human |  |
+
+**Overall comment:** It is hard for the LLM judges to tell whether using event data instead of dF/F is reasonable here (additional context and domain knowledge required).
 
 ---
 
@@ -376,6 +380,8 @@
 | codex / trial1 | concerning | match | concerning | Human |  |
 | codex / trial2 | concerning | match | incorrect | Human |  |
 | codex / trial3 | concerning | concerning | concerning | — |  |
+
+**Overall comment:** The LLM judge seems to have completely misunderstood this question.
 
 ---
 
