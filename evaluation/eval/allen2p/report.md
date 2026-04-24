@@ -8,7 +8,7 @@
 - Evaluators: Human, Claude judge, Codex judge
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than the human.
+A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed better than the human.
 
 ## Comments
 
