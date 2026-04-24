@@ -13,7 +13,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** The solution from every agent read the data directory directly, using h5py to read the nwb file. The agent has access to both the notebook example code and data directory, but didn't follow the notebook to use the AllenSDK interface.
+**Overall comment:** Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface.
 
 ---
 
@@ -42,7 +42,7 @@
 | codex / trial2 | incorrect | _(no note)_ |
 | codex / trial3 | incorrect | _(no note)_ |
 
-**Overall comment:** The Allen Dataset has a unusual setup where each experiment, identified by "ophys_session_id", is split into different "ophys_experiment_id" for different image plane in the same session. This seems to have thrown off all the agents, all of them did not recombine the data based on the session id. These are explicitly shown  in the tutorial code, which the agents has been instructed to read.
+**Overall comment:** The Allen dataset has an unusual setup where each session, identified by `ophys_session_id`, is split into multiple `ophys_experiment_id`s for different imaging planes in the same session. This seems to have thrown off all the agents — none of them recombined the data based on the session ID. This is explicitly shown in the tutorial code, which the agents had been instructed to read.
 
 ---
 ## Q 1-d. Are the data correctly split into trials?
@@ -70,7 +70,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** agent all followed the main instruction, some introduced additional filtering that are reasonable
+**Overall comment:** All agents followed the main instruction; some introduced additional filtering that is reasonable.
 
 ---
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
@@ -84,7 +84,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** agent seems to prefer the event data (which is technically ok), but the code/paper example use dff instead
+**Overall comment:** Agents seem to prefer the event data (which is technically ok), but the code and paper example use dF/F instead.
 
 ---
 ## Q 2-b. How is the `neural` data processed?
@@ -98,7 +98,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** only one agent did the "really" correct solution - since the experiment timestamps are aligned, there are no need to do any resampling. two agents did very wrong choice for time bin etc.
+**Overall comment:** Only one agent produced the "really" correct solution — since the experiment timestamps are already aligned, there is no need to resample. Two agents made very wrong choices on time bin size.
 
 ---
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
@@ -112,7 +112,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** some agent used additional roi filter based on the valid_roi flag
+**Overall comment:** Some agents used an additional ROI filter based on the `valid_roi` flag.
 
 ---
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
@@ -126,7 +126,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** the data is ~11 Hz, so some agents resampled to 30 ms time bin is ok, but in principle no resample is needed. two agents did some really bad choice though...
+**Overall comment:** The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices though…
 
 ---
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
@@ -196,7 +196,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** agent really like to compute pupil size from area...
+**Overall comment:** Agents really like to compute pupil size from area…
 
 ---
 ## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
@@ -238,7 +238,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** codex agent goes deep into the data structure to try to find the image id info instead of using the data table
+**Overall comment:** Codex agents dig deep into the data structure to find the image ID info instead of using the data table.
 
 ---
 
@@ -366,7 +366,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** some script are missing explict error handling
+**Overall comment:** Some scripts are missing explicit error handling.
 
 ---
 ## Q 9-a. What are the most time-consuming steps of the code?
@@ -409,7 +409,7 @@
 | codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** 5/6 did a two pass approch which is inefficient, 1/6 did three pass which is just wrong...
+**Overall comment:** 5/6 did a two-pass approach which is inefficient; 1/6 did a three-pass approach which is just wrong…
 
 ---
 ## Q 9-d. What unnecessary processing does the code do that is discarded in downstream analyses?
