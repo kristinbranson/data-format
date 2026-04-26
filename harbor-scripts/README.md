@@ -89,9 +89,42 @@ merge_rerun_verifier.sh --jobdir <trial_dir>                    # merge newest r
 merge_rerun_verifier.sh --jobdir <trial_dir> --newdir <dir>     # merge specific rerun
 merge_rerun_verifier.sh --jobdir <trial_dir> --dry-run          # preview
 ```
-Replaces top-level files (metrics.json, ctrf.json, reward.txt, test-stdout.txt) and
-judge dirs that have `llm_judge_eval.json`. Never touches `snapshot/`. Renames the
-merged rerun dir with a `_merged` suffix so it won't be picked up again.
+Replaces top-level files (ctrf.json, reward.txt, test-stdout.txt) and judge dirs
+that have `llm_judge_eval.json`. **Merges** `metrics.json` (preserves base keys
+not in rerun) so that judge-only reruns don't wipe out pytest-produced ratios /
+matches / decoder accuracy. Never touches `snapshot/`. Renames the merged rerun
+dir with a `_merged` suffix so it won't be picked up again.
+
+**rerun_decoder_accuracy.py** — Recompute `validation_balanced_accuracy` (and
+the data-stats metrics that go with it) for trials where those fields are
+missing or stale. Loads `verifier/snapshot/converted_data.pkl` and calls
+`test_outputs.test_data_stats` + `test_outputs.test_decoder_accuracy` directly
+as Python functions, then merges the new keys into the trial's metrics.json
+without touching judge keys.
+
+```
+# dry-run (lists missing trials, no work):
+python rerun_decoder_accuracy.py
+python rerun_decoder_accuracy.py --harbor-jobs ~/harbor-tasks/data-format/jobs
+
+# rerun one trial locally (slow + RAM-heavy on big pkls):
+python rerun_decoder_accuracy.py --trial allen2p/claude-code/<ts>_trial1 --write
+
+# rerun all missing trials locally:
+python rerun_decoder_accuracy.py --all --write
+
+# submit each missing trial as a separate bsub job to gpu_a100 (recommended
+# for the bigger pkls — automatically picks slot/GPU count from pkl size):
+python rerun_decoder_accuracy.py --all --cluster        # preview bsub commands
+python rerun_decoder_accuracy.py --all --cluster --write  # actually submit
+```
+
+Cluster mode requires the `test-decoder-data-format` conda env on the cluster
+(see `data-format/test-decoder-data-format.yml`); slot count scales with pkl
+size via `PKL_RAM_FACTOR * pkl_gb + BASE_OVERHEAD_GB`, and GPU count scales
+with slots so `gpu_a100`'s 12-slots/GPU ratio is never exceeded (extra GPUs
+are reserved-but-unused). Logs are written to
+`/groups/branson/home/bransonk/cluster_logs/rerun_decoder/`.
 
 ### Unsupervised judges
 
@@ -110,9 +143,10 @@ to `judge_unsupervised/`. Does not modify existing supervised judge results.
 
 **sync_template.py** — Sync shared files from `template-harbor-task/` to all task directories.
 ```
-python sync_template.py          # dry-run
-python sync_template.py --apply  # copy files
-python sync_template.py --diff   # show full diffs
+python sync_template.py                     # dry-run
+python sync_template.py --apply             # do it
+python sync_template.py --update --apply    # update new files
+python sync_template.py --diff              # show full diffs
 ```
 
 Syncs the following files:
@@ -154,18 +188,25 @@ python generate_unsupervised_task.py sosa2024
 
 ### Syncing
 
-**sync_jobs.sh** — Sync job results to the repo's `harbor-jobs/` directory (backup).
+**sync_jobs.sh** — Sync job results between `~/harbor-tasks/data-format/jobs/`
+(HOME) and the repo's `harbor-jobs/` directory.
 ```
-sync_jobs.sh            # dry-run
-sync_jobs.sh --apply    # sync
+sync_jobs.sh                                         # dry-run, HOME -> REPO, new files only
+sync_jobs.sh --apply                                 # actually sync
+sync_jobs.sh --update                                # also include files newer in source
+sync_jobs.sh --reverse                               # REPO -> HOME instead
+sync_jobs.sh --metrics-only                          # only sync metrics.json files
+sync_jobs.sh --reverse --update --metrics-only --apply   # one-liner: pull metrics.json
+                                                          # updates from REPO into HOME
 ```
 
-Prefixes:
+Itemize-changes prefixes (rsync's `YXcstpoguax` format):
 ```
-  - cd+++++++++ — creating a directory (new directory that doesn't exist in destination)
-  - >f+++++++++ — transferring a file (new file being sent to destination)
-  - >f.st...... — File exists but size and timestamp differ. 
-  - >f..t...... — File exists, same size, but timestamp differs.
+  - cd+++++++++ — creating a directory in destination
+  - >f+++++++++ — new file being transferred
+  - >f.st...... — file exists but size + timestamp differ (real content change)
+  - >f..t...... — file exists, content same, but timestamp differs (cosmetic)
+  - >f..tp..... — timestamp + permissions differ, content same
 ```
 
 ### Utilities

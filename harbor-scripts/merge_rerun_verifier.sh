@@ -71,11 +71,34 @@ echo "  New  (source): $NEWDIR"
 echo "  Dry run:       $DRY_RUN"
 echo ""
 
-# 1. Replace top-level files (skip snapshot/ and judge/)
+# 1. Replace top-level files (skip snapshot/ and judge/).
+# metrics.json is MERGED instead of replaced, because --judges-only reruns only
+# populate judge keys — a wholesale copy would wipe out the pytest-produced
+# fields (ratios, matches, decoder accuracy, etc.) from the original run.
 for f in "$NEWDIR"/*; do
     name=$(basename "$f")
     case "$name" in
         snapshot|judge) continue ;;
+        metrics.json)
+            echo "Merge metrics.json (base + rerun, rerun keys win on overlap)"
+            if [ "$DRY_RUN" = false ]; then
+                python3 - "$BASEDIR/metrics.json" "$f" <<'PY'
+import json, sys
+base_path, new_path = sys.argv[1], sys.argv[2]
+def load(p):
+    try:
+        with open(p) as fh:
+            return json.load(fh)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+merged = load(base_path)
+merged.update(load(new_path))
+with open(base_path, "w") as fh:
+    json.dump(merged, fh, indent=2)
+PY
+            fi
+            continue
+            ;;
     esac
     if [ -f "$f" ]; then
         echo "Replace $name"
