@@ -14,7 +14,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 #### Agent Performance
 - The agents completed all required tasks without issue.
-- 🟣 In two trials, the agents used a preprocessing pipeline that follows the paper more closely.
+- 🟣 In two trials, the agents used a preprocessing pipeline that follows the paper more closely. In general, we have found the agents are better at details within the code.
 - Potential concerns:
     - 2-b: large variability in the preprocessing pipeline across runs.
     - 2-c: only the first frame is used to check for NaN — not robust.
