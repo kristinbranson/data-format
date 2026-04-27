@@ -28,7 +28,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Used correct information
+**Overall comment:** All agents used the correct information.
 
 ---
 ## Q 1-c. How are the data split into sessions?

@@ -16,7 +16,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 - The agents did a good job overall on this task.
 - The agents tend to avoid the AllenSDK interface available to them and prefer to "write their own code" with the NWB files. This is consistent with my impression that agents are prone to dig into code rabbit holes — it just makes the code a bit messy.
 - See 1-c, 2-a–d, 4-a, and 9-c for interesting failure cases.
-    - Agent will make strong assumption based on the variable names, which can lead to mistakes if the naming scheme is confusing.
+    - Agents make strong assumptions based on variable names, which can lead to mistakes when the naming scheme is confusing.
     - There's a recurring theme of agents making strange choices on resampling, time resolution, and time bin size (for the neural data, out of 6 runs, 2 are really bad decisions, 3 are ok choices, and only 1 matches the human solution).
 
 #### LLM as Judge
@@ -29,7 +29,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
 |---|---|---|---|---|---|---|
 | 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🟨 | 🔴🔴🔴 🔴🔴🔴 | Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface. | The Claude judge caught a minor mistake that I overlooked: one of the solutions was not properly filtering the data based on `project_code`. |
-| 1-b | How are the data split into subjects? | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Used correct information |  |
+| 1-b | How are the data split into subjects? | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | All agents used the correct information. |  |
 | 1-c | How are the data split into sessions? | 🔴🔴🔴 🔴🔴🔴 | 🟡🟡🟡 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 | The Allen dataset has an unusual setup where each session, identified by `ophys_session_id`, is split into multiple `ophys_experiment_id`s for different imaging planes in the same session. This seems to have thrown off all the agents — none of them recombined the data based on the session ID. This is explicitly shown in the tutorial code, which the agents had been instructed to read. |  |
 | 1-d | Are the data correctly split into trials? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 | 🔴🔴🟢 🟢🔵🟢 |  |  |
 | 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟡 | 🔴🔵🟡 🟡🟡🟡 | All agents followed the main instruction; some introduced additional filtering that is reasonable. |  |

@@ -13,7 +13,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** All agent solution used the joblib files instead of the .mat files, but are correct.
+**Overall comment:** All agent solutions used the joblib files instead of the .mat files, but this is correct.
 
 ---
 ## Q 1-b. How are the data split into subjects?
@@ -56,7 +56,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** 1/6 implementations were not robust because they followed the paper description too literally (40-min recording session).
 
 ---
 ## Q 1-e. How are trials filtered based on quality controls?
@@ -98,7 +98,7 @@
 | codex / trial2 | better | The agent used additional processing steps used in the paper |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Largest varability among runs/agents, some did additional processing steps following the paper
+**Overall comment:** Largest variability across runs/agents — some performed additional processing steps following the paper.
 
 ---
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
@@ -112,7 +112,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** One-frame NaN check is not robust (4/6).
 
 ---
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
@@ -155,7 +155,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** claude agent all used the environment geotmery to name mapping, which is a bit more complicted but correct
+**Overall comment:** All claude agents used the environment-geometry-to-name mapping, which is a bit more complicated but correct.
 
 ---
 ## Q 3-b. What processing is involved in computing `input` *Blocked positions*?
@@ -169,7 +169,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Some used different convention but same information is represented
+**Overall comment:** Some used different conventions, but the same information is represented.
 
 ---
 ## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
@@ -211,7 +211,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** The grid / bin convetion are different in some solution but are all valid
+**Overall comment:** The grid/bin conventions differ across some solutions but are all valid.
 
 ---
 ## Q 4-c. How is `output` *Position* aligned with the neural data?
@@ -239,7 +239,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** One agent's solution is more robust.
 
 ---
 ## Q 8-a. What are the most time-consuming steps of the code?
@@ -281,7 +281,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | incorrect | two pass is very uncessary for this dataset |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** One inefficient "two-pass" solution.
 
 ---
 ## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
