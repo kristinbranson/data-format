@@ -538,7 +538,7 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
                         "why": "",
                         "title": title,
                     }
-                    write_summary(summary_path, entries, titles)
+                    write_summary(summary_path, entries, titles, overalls)
                 seen_consistent += 1
                 continue
 
