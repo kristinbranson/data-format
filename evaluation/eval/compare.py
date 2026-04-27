@@ -440,18 +440,20 @@ def _qid_sort_key(q: str):
 
 
 def _is_consistent(h: str | None, jc: str | None, jx: str | None) -> bool:
-    """Consistent if every present LLM rating is in the same bucket as human."""
+    """Consistent if Claude judge is in the same bucket as human, OR Claude has
+    no rating. Also flagged as inconsistent if Claude specifically rated "better"
+    while human did not. Codex judge is ignored (deemed unreliable)."""
     if not h:
         return False
-    for r in (jc, jx):
-        if not r:
-            continue
-        if r == h:
-            continue
-        if (h in POSITIVE) and (r in POSITIVE):
-            continue
-        if (h in NEGATIVE) and (r in NEGATIVE):
-            continue
+    if not jc:
+        return True
+    if jc == h:
+        return True
+    # Cross-bucket disagreement → inconsistent
+    if (h in POSITIVE) != (jc in POSITIVE):
+        return False
+    # Claude said "better" while human did not → flag for review
+    if jc == "better" and h != "better":
         return False
     return True
 
