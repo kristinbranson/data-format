@@ -21,8 +21,40 @@ import os
 import glob
 import re
 import sys
+import textwrap
 from collections import defaultdict
 from pathlib import Path
+
+
+def print_wrapped_row(columns, widths, aligns=None, sep="  "):
+    """Print a row with optional wrapping in any column.
+
+    columns: list of strings (cell values)
+    widths: list of column widths (max chars per cell)
+    aligns: list of '<' or '>' (default '<')
+    sep: separator between columns
+    """
+    if aligns is None:
+        aligns = ["<"] * len(columns)
+    # Wrap each cell to its width
+    wrapped = []
+    for col, w in zip(columns, widths):
+        if not col:
+            wrapped.append([""])
+        else:
+            lines = textwrap.wrap(str(col), width=w, break_long_words=False, break_on_hyphens=False) or [""]
+            wrapped.append(lines)
+    # Pad each cell to the same number of lines
+    n_lines = max(len(c) for c in wrapped)
+    for c in wrapped:
+        while len(c) < n_lines:
+            c.append("")
+    # Print row by row
+    for row_idx in range(n_lines):
+        parts = []
+        for cell, w, align in zip(wrapped, widths, aligns):
+            parts.append(f"{cell[row_idx]:{align}{w}s}")
+        print(sep.join(parts))
 
 
 def parse_metrics_json(path):
@@ -72,11 +104,181 @@ def check_verifier_dir(verifier_dir, verbose=False, label=None):
     return len(issues) == 0, issues
 
 
+def find_trajectory_step_numbers(trial_path, patterns):
+    """Find step numbers in trajectory.json containing each pattern.
+    Returns dict {pattern: [step_numbers]}.
+    """
+    traj_path = os.path.join(trial_path, "agent", "trajectory.json")
+    result = {p: [] for p in patterns}
+    if not os.path.exists(traj_path):
+        return result
+    try:
+        with open(traj_path) as f:
+            d = json.load(f)
+    except Exception:
+        return result
+    steps = d.get("steps", [])
+    for i, s in enumerate(steps):
+        msg = s.get("message", "")
+        if not isinstance(msg, str):
+            continue
+        for p in patterns:
+            if p in msg:
+                result[p].append(i)
+    return result
+
+
+def find_claude_event_step(trial_path, event_type, predicate=None):
+    """For events in claude-code.txt that don't appear in trajectory.json
+    (e.g. rate_limit_event), find the trajectory step that immediately
+    precedes them by looking up the most recent tool_use id.
+
+    predicate: optional callable taking the parsed event dict; only events
+    where predicate(event) is True are returned.
+
+    Returns a list of (trajectory_step_number, total_steps, event_dict) for each occurrence.
+    """
+    claude_path = os.path.join(trial_path, "agent", "claude-code.txt")
+    traj_path = os.path.join(trial_path, "agent", "trajectory.json")
+    if not os.path.exists(claude_path) or not os.path.exists(traj_path):
+        return []
+    try:
+        traj = json.load(open(traj_path))
+    except Exception:
+        return []
+    total_steps = len(traj.get("steps", []))
+
+    # Build a map from tool_use_id -> trajectory step number
+    tool_to_step = {}
+    for i, s in enumerate(traj.get("steps", [])):
+        tool_calls = s.get("tool_calls")
+        if not tool_calls:
+            continue
+        for m in re.finditer(r"toolu_[A-Za-z0-9]+", str(tool_calls)):
+            tool_to_step[m.group()] = i
+
+    # Walk through claude-code.txt; track most recent tool_use id;
+    # when we hit the target event, record the step
+    results = []
+    last_tool_id = None
+    try:
+        with open(claude_path, errors="ignore") as f:
+            for line in f:
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                t = d.get("type")
+                if t == "assistant":
+                    msg = d.get("message", {})
+                    if isinstance(msg, dict):
+                        for c in msg.get("content", []):
+                            if isinstance(c, dict) and c.get("type") == "tool_use":
+                                last_tool_id = c.get("id")
+                elif t == event_type:
+                    if predicate and not predicate(d):
+                        continue
+                    step = tool_to_step.get(last_tool_id) if last_tool_id else None
+                    results.append((step, total_steps, d))
+    except Exception:
+        pass
+    return results
+
+
+def check_agent_usage_limit(trial_path, verbose=False):
+    """Check the agent log for API usage/auth limit hits.
+    Returns a list of issues found (each a string), empty list if none.
+    """
+    agent_dir = os.path.join(trial_path, "agent")
+    if not os.path.isdir(agent_dir):
+        return []
+
+    issues = []
+
+    # codex.txt
+    codex_path = os.path.join(agent_dir, "codex.txt")
+    if os.path.exists(codex_path):
+        try:
+            with open(codex_path, errors="ignore") as f:
+                content = f.read()
+        except Exception:
+            content = ""
+        if '"type":"turn.failed"' in content and "usage limit" in content:
+            issues.append("codex: usage limit (fatal)")
+            if verbose:
+                steps = find_trajectory_step_numbers(trial_path, ["usage limit"])
+                step_str = ""
+                if steps["usage limit"]:
+                    step_str = f" at step(s) {steps['usage limit']}"
+                print(f"Trial {trial_path} codex hit fatal usage limit{step_str}")
+        elif "usage limit" in content:
+            issues.append("codex: usage limit warning")
+            if verbose:
+                steps = find_trajectory_step_numbers(trial_path, ["usage limit"])
+                step_str = ""
+                if steps["usage limit"]:
+                    step_str = f" at step(s) {steps['usage limit']}"
+                print(f"Trial {trial_path} codex usage limit warning{step_str}")
+
+    # claude-code.txt
+    claude_path = os.path.join(agent_dir, "claude-code.txt")
+    if os.path.exists(claude_path):
+        try:
+            with open(claude_path, errors="ignore") as f:
+                content = f.read()
+        except Exception:
+            content = ""
+        n_401 = content.count("Failed to authenticate. API Error: 401")
+        if n_401 > 0:
+            traj_steps = find_trajectory_step_numbers(
+                trial_path,
+                ["Failed to authenticate. API Error: 401"],
+            )
+            traj = json.load(open(os.path.join(trial_path, "agent", "trajectory.json"))) \
+                if os.path.exists(os.path.join(trial_path, "agent", "trajectory.json")) else {"steps": []}
+            total_steps = len(traj.get("steps", []))
+            issues.append(f"claude: auth failed 401 ({n_401}x)")
+            if verbose:
+                s = traj_steps["Failed to authenticate. API Error: 401"]
+                step_str = f" at step(s) {s}/{total_steps}" if s else ""
+                print(f"Trial {trial_path} claude hit {n_401} auth failures{step_str}")
+
+        # Check for actual rate-limit blocks: status="rejected" means the API
+        # refused the request. status="allowed_warning" is suppressed because
+        # the agent itself is never told about it (it only goes to the SDK
+        # output stream / REPL UI), so it can't affect agent behavior.
+        # status="allowed" with overageStatus="rejected" is also suppressed
+        # (purely informational about extra-usage funding).
+        real_blocks = find_claude_event_step(
+            trial_path,
+            "rate_limit_event",
+            predicate=lambda d: d.get("rate_limit_info", {}).get("status") == "rejected",
+        )
+        if real_blocks:
+            issues.append(f"claude: rate limit rejected ({len(real_blocks)}x)")
+            if verbose:
+                print(f"Trial {trial_path} claude was rate-limit rejected {len(real_blocks)} times:")
+                for step, total, ev in real_blocks:
+                    loc = f"~step {step+1}/{total}" if step is not None else f"~start/{total}"
+                    print(f"  {loc}:")
+                    for line in json.dumps(ev, indent=2).split("\n"):
+                        print(f"    {line}")
+
+    return issues
+
+
 def check_unsupervised_judges(verifier_dir, verbose=False, label=None):
     """Check unsupervised judge results in metrics.json.
     Returns (ok: bool, issues: list[str])."""
     label = label or verifier_dir
     issues = []
+
+    # If judge_unsupervised dir doesn't exist, the unsupervised judges were
+    # never run for this trial — return "not run" rather than flagging missing
+    # files as errors.
+    judge_unsup_dir = os.path.join(verifier_dir, "judge_unsupervised")
+    if not os.path.isdir(judge_unsup_dir):
+        return False, ["not run"]
 
     metrics_path = os.path.join(verifier_dir, "metrics.json")
     if not os.path.exists(metrics_path):
@@ -90,28 +292,17 @@ def check_unsupervised_judges(verifier_dir, verbose=False, label=None):
         return False, issues
 
     # Check for unsupervised judge keys
-    has_any = False
     for model in ["claude", "codex"]:
         err = metrics.get(f"llm_judge_{model}_unsupervised_error", "")
-        reward = metrics.get(f"llm_judge_{model}_unsupervised_reward")
         eval_path = os.path.join(verifier_dir, "judge_unsupervised", model, "llm_judge_eval.json")
         if err:
-            has_any = True
             issues.append(f"{model} unsupervised error")
             if verbose:
                 print(f"{label} has {model} unsupervised judge error: {err}")
-        elif reward is not None:
-            has_any = True
         if not os.path.exists(eval_path):
             issues.append(f"{model} unsupervised no llm_judge_eval.json")
             if verbose:
                 print(f"{label} missing {model} unsupervised llm_judge_eval.json")
-        else:
-            has_any = True
-
-    if not has_any:
-        issues.append("no unsupervised results")
-        return False, issues
 
     return len(issues) == 0, issues
 
@@ -122,6 +313,7 @@ def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
         "path": trial_path,
         "agent_ran": False,
         "agent_issue": None,
+        "agent_warnings": [],  # non-fatal warnings (rate limits, transient auth errors)
         "verifier_ran": False,
         "verifier_issues": [],
         "unsupervised_ran": None,  # None = not applicable
@@ -144,6 +336,20 @@ def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
         if verbose:
             print(f"Trial {trial_path} missing converted_data.pkl")
         result["agent_issue"] = "no converted_data.pkl"
+
+    # Check for usage/auth limit hits in agent log
+    limit_issues = check_agent_usage_limit(trial_path, verbose=verbose)
+    if limit_issues:
+        if not result["agent_ran"]:
+            # Agent failed AND had limit issues — those are likely the cause
+            extra = "; ".join(limit_issues)
+            if result["agent_issue"]:
+                result["agent_issue"] = f"{result['agent_issue']}; {extra}"
+            else:
+                result["agent_issue"] = extra
+        else:
+            # Agent ran successfully but had limit warnings — surface as warnings
+            result["agent_warnings"] = limit_issues
 
     ok, issues = check_verifier_dir(verifier_dir, verbose=verbose, label=f"Trial {trial_path}")
     result["verifier_ran"] = ok
@@ -183,8 +389,8 @@ def check_rerun(rerun_path, verbose=False):
 
 def discover_trials(job_dirs, skip_oracle=False):
     """Find all trial directories across job_dirs. Returns dict keyed by
-    (task, agent_normalized, trial_num) -> (trial_path, source_label).
-    Prefers earlier directories in the list (first one wins)."""
+    (task, agent_normalized, timestamp, trial_num) -> (trial_path, source_label).
+    Prefers earlier directories in the list (first one wins for duplicate keys)."""
     trials = {}
     for jobdir in job_dirs:
         jobdir = os.path.expanduser(jobdir)
@@ -201,10 +407,11 @@ def discover_trials(job_dirs, skip_oracle=False):
                 continue
             # Normalize agent name
             agent_norm = "claude" if agent in ("claude", "claude-code") else agent
-            # Extract trial number
+            # Extract trial number and timestamp
             m = re.search(r"trial(\d+)", ts)
             trial_num = m.group(1) if m else "?"
-            key = (task, agent_norm, trial_num)
+            timestamp = ts.split("_trial")[0] if "_trial" in ts else ts
+            key = (task, agent_norm, timestamp, trial_num)
             if key not in trials:
                 source_label = os.path.basename(jobdir)
                 trials[key] = (trial_path, source_label)
@@ -286,24 +493,52 @@ def main():
                 rh["is_merged"] = is_merged
                 rerun_results[key].append((rerun_path, rh))
 
+    # Detect duplicate (task, agent, trial_num) combinations across timestamps,
+    # so we can disambiguate them in the per-trial label.
+    label_counts = {}
+    for k in results:
+        task, agent, _ts, trial_num = k
+        label_counts[(task, agent, trial_num)] = label_counts.get((task, agent, trial_num), 0) + 1
+
     # Per-trial output
     if not args.summary_only:
-        print("=" * 140)
-        print(f"{'Trial':<45s}  {'Agent':>7s}  {'Verifier':<25s}  {'Unsupervised':<25s}  {'Source'}")
-        print("-" * 140)
+        col_widths = [42, 25, 30, 30, 12]
+        col_aligns = ["<", "<", "<", "<", "<"]
+        total_width = sum(col_widths) + 2 * (len(col_widths) - 1)
+        print("=" * total_width)
+        print_wrapped_row(
+            ["Trial", "Agent", "Verifier", "Unsupervised", "Source"],
+            col_widths, col_aligns,
+        )
+        print("-" * total_width)
         for key in sorted(results.keys()):
-            task, agent, trial_num = key
+            task, agent, ts, trial_num = key
             h = results[key]
-            label = f"{task}/{agent}/trial{trial_num}"
-            agent_str = "OK" if h["agent_ran"] else h["agent_issue"]
+            if label_counts.get((task, agent, trial_num), 0) > 1:
+                # Disambiguate with timestamp
+                label = f"{task}/{agent}/{ts}_trial{trial_num}"
+            else:
+                label = f"{task}/{agent}/trial{trial_num}"
+            if h["agent_ran"]:
+                if h["agent_warnings"]:
+                    agent_str = "OK* — " + "; ".join(h["agent_warnings"])
+                else:
+                    agent_str = "OK"
+            else:
+                agent_str = h["agent_issue"]
             verifier_str = "OK" if h["verifier_ran"] else "; ".join(h["verifier_issues"])
             if h["unsupervised_ran"] is None:
                 unsup_str = "—"
             elif h["unsupervised_ran"]:
                 unsup_str = "OK"
+            elif h["unsupervised_issues"] == ["not run"]:
+                unsup_str = "not run"
             else:
                 unsup_str = "; ".join(h["unsupervised_issues"])
-            print(f"{label:<45s}  {agent_str:>7s}  {verifier_str:<25s}  {unsup_str:<25s}  {h['source']}")
+            print_wrapped_row(
+                [label, agent_str, verifier_str, unsup_str, h["source"]],
+                col_widths, col_aligns,
+            )
             # Show unmerged reruns only
             if key in rerun_results:
                 for rerun_path, rh in rerun_results[key]:
@@ -311,7 +546,10 @@ def main():
                         continue
                     rerun_name = os.path.basename(rerun_path)
                     rv_str = "OK" if rh["verifier_ran"] else "; ".join(rh["verifier_issues"])
-                    print(f"  └ {rerun_name:<52s}  {rv_str}")
+                    print_wrapped_row(
+                        [f"  └ {rerun_name}", "", rv_str, "", ""],
+                        col_widths, col_aligns,
+                    )
         print()
 
     # Summary table: by task, show claude and codex columns
@@ -321,7 +559,7 @@ def main():
     # Gather counts
     counts = {}  # (task, agent) -> {n, agent_ok, verifier_ok, ...}
     for key, h in results.items():
-        task, agent, trial_num = key
+        task, agent, ts, trial_num = key
         ta = (task, agent)
         if ta not in counts:
             counts[ta] = {
@@ -341,19 +579,27 @@ def main():
             c["agent_ok"] += 1
         else:
             c["agent_issues"].append(f"trial{trial_num}: {h['agent_issue']}")
+        if h["agent_warnings"]:
+            c["agent_issues"].append(
+                f"trial{trial_num} warning: {'; '.join(h['agent_warnings'])}"
+            )
         if h["verifier_ran"]:
             c["verifier_ok"] += 1
         else:
             c["verifier_issues"].append(f"trial{trial_num} verifier: {'; '.join(h['verifier_issues'])}")
         # Unsupervised
         if h["unsupervised_ran"] is not None:
-            c["unsupervised_applicable"] += 1
-            if h["unsupervised_ran"]:
-                c["unsupervised_ok"] += 1
+            # Skip "not run" — task supports unsupervised but this trial hasn't been processed
+            if h["unsupervised_issues"] == ["not run"]:
+                pass
             else:
-                c["verifier_issues"].append(
-                    f"trial{trial_num} unsupervised: {'; '.join(h['unsupervised_issues'])}"
-                )
+                c["unsupervised_applicable"] += 1
+                if h["unsupervised_ran"]:
+                    c["unsupervised_ok"] += 1
+                else:
+                    c["verifier_issues"].append(
+                        f"trial{trial_num} unsupervised: {'; '.join(h['unsupervised_issues'])}"
+                    )
         # Count unmerged reruns
         if key in rerun_results:
             for rerun_path, rh in rerun_results[key]:
@@ -367,23 +613,29 @@ def main():
                             f"trial{trial_num} rerun({rerun_name}): {'; '.join(rh['verifier_issues'])}"
                         )
 
-    print("=" * 140)
+    sum_widths = [12, 8, 9, 12, 12, 8, 60]
+    sum_aligns = ["<", "<", ">", ">", ">", ">", "<"]
+    sum_total = sum(sum_widths) + 2 * (len(sum_widths) - 1)
+    print("=" * sum_total)
     print("Summary")
-    print("=" * 140)
-    print(
-        f"{'Task':<15s}  {'Agent':<10s}  {'Agent ran':>12s}  {'Verifier ran':>14s}  {'Unsupervised':>14s}  {'Reruns':>10s}  Notes"
+    print("=" * sum_total)
+    print_wrapped_row(
+        ["Task", "Agent", "Agent ran", "Verifier ran", "Unsupervised", "Reruns", "Notes"],
+        sum_widths, sum_aligns,
     )
-    print("-" * 140)
+    print("-" * sum_total)
     for task in tasks:
         first = True
         for agent in agents:
             ta = (task, agent)
+            task_col = task if first else ""
             if ta not in counts:
-                task_col = task if first else ""
-                print(f"{task_col:<15s}  {agent:<10s}  {'—':>12s}  {'—':>14s}  {'—':>14s}  {'—':>10s}")
+                print_wrapped_row(
+                    [task_col, agent, "—", "—", "—", "—", ""],
+                    sum_widths, sum_aligns,
+                )
             else:
                 c = counts[ta]
-                task_col = task if first else ""
                 agent_str = f"{c['agent_ok']}/{c['n']}"
                 verifier_str = f"{c['verifier_ok']}/{c['n']}"
                 if c["unsupervised_applicable"] > 0:
@@ -398,8 +650,9 @@ def main():
                 notes.extend(c["agent_issues"])
                 notes.extend(c["verifier_issues"])
                 notes_str = "; ".join(notes) if notes else ""
-                print(
-                    f"{task_col:<15s}  {agent:<10s}  {agent_str:>12s}  {verifier_str:>14s}  {unsup_str:>14s}  {rerun_str:>10s}  {notes_str}"
+                print_wrapped_row(
+                    [task_col, agent, agent_str, verifier_str, unsup_str, rerun_str, notes_str],
+                    sum_widths, sum_aligns,
                 )
             first = False
     print()
