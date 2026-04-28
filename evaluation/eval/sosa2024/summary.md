@@ -13,7 +13,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** All agents used h5py instead of the pynwb interface
+**Overall comment:** All agents used `h5py` directly instead of the `pynwb` interface to read the data.
 
 ---
 ## Q 1-b. How are the data split into subjects?
@@ -55,7 +55,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** slightly different handling of potential mismatch of trial_start with teleports
+**Overall comment:** Slightly different handling of potential mismatches between `trial_start` and teleport events.
 
 ---
 ## Q 1-e. How are trials filtered based on quality controls?
@@ -69,7 +69,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | better | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** Some agents implemented additional filtering based on a detail in the paper's methods.
 
 ---
 
@@ -126,7 +126,7 @@
 | codex / trial2 | incorrect | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing.
 
 ---
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
@@ -140,7 +140,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** no time stamp provided, no additional alignment needed
+**Overall comment:** No timestamp is provided, so no additional alignment is needed.
 
 ---
 ## Q 3-a. What variables in the raw data is `input` *Time from start of trial in seconds* derived from?
@@ -239,7 +239,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** cast to float32 is not necessary
+**Overall comment:** Some agents cast between `float64` and `float32` for no apparent reason.
 
 ---
 ## Q 6-a. What variables in the raw data is `input` *Previous trial outcome* derived from?
@@ -281,7 +281,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** Agent didn't check the "30-trial switch rule" against data
+**Overall comment:** Agents didn't verify the "30-trial switch rule" against the data — the correct approach is to identify the reward zone from the data rather than using a hard-coded switch time.
 
 ---
 ## Q 7-b. What processing is involved in computing `output` *Distance to reward zone*?
@@ -435,7 +435,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** Same issue as 7-a.
 
 ---
 ## Q 10-b. What processing is involved in computing `output` *Reward zone location*?
@@ -491,7 +491,7 @@
 | codex / trial2 | better | _(no note)_ |
 | codex / trial3 | better | _(no note)_ |
 
-**Overall comment:** additional lick quality filter implemented by some agents
+**Overall comment:** Some agents implemented an additional lick-quality filter.
 
 ---
 ## Q 13-a. What are the most time-consuming steps of the code?
@@ -519,7 +519,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Some per-trial loop is not necessary
+**Overall comment:** Some per-trial loops are unnecessary.
 
 ---
 ## Q 13-c. What processing does the code repeat multiple times?

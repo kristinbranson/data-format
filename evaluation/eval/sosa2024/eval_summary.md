@@ -52,7 +52,7 @@
 | codex / trial2 | match | ok | incorrect | — |  |
 | codex / trial3 | match | match | match | — |  |
 
-**Overall comment:** Claude identified some implementation that is less robust
+**Overall comment:** Claude correctly flagged some implementations as less robust.
 
 ---
 
@@ -106,7 +106,7 @@
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | concerning | — |  |
 
-**Overall comment:** AI judege being very inconsistent
+**Overall comment:** Claude judge gave inconsistent ratings for the same solution.
 
 ---
 
@@ -121,7 +121,7 @@
 | codex / trial2 | incorrect | incorrect | incorrect | — |  |
 | codex / trial3 | match | match | better | — |  |
 
-**Overall comment:** Both judges caught the mistake
+**Overall comment:** Both judges caught the mistake.
 
 ---
 
@@ -149,7 +149,7 @@
 | codex / trial2 | match | match | incorrect | — |  |
 | codex / trial3 | match | match | ok | — |  |
 
-**Overall comment:** inconsistent rating from AI judges
+**Overall comment:** Inconsistent ratings from the LLM judges for the same solution.
 
 ---
 
@@ -268,7 +268,7 @@
 | codex / trial2 | match | match | concerning | — |  |
 | codex / trial3 | concerning | concerning | better | — |  |
 
-**Overall comment:** Claude caught some potential problems but not others
+**Overall comment:** Claude caught some of the potential problems but missed others.
 
 ---
 
@@ -348,7 +348,7 @@
 | codex / trial2 | match | incorrect | better | Human |  |
 | codex / trial3 | match | concerning | incorrect | Human |  |
 
-**Overall comment:** Different choices in choosing bin edges but are all valid solution
+**Overall comment:** Different choices of bin edges, but all are valid; the Claude judge is being too literal.
 
 ---
 
