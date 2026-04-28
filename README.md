@@ -1,10 +1,9 @@
-# Data Organization with Claude Code
+# Data Organization with Coding Agents
 
 ## Overview
 
-This project explores the use of Claude Code to help reorganize and reformat different neuroscience datasets into a desired format. The goals are:
-1. Test how well Claude Code can help with the process of working with heterogeneous datasets by converting them into a common structure suitable for downstream analysis.
-2. (More ambitious) See how well we can train a decoder that generalizes across tasks and brain regions to decode behavioral output (decision) from neural recordings.
+This project explores the use of Coding Agents to help reorganize and reformat different neuroscience datasets into a desired format. 
+The goal is to test how well Coding Agents can help with the process of working with heterogeneous datasets by converting them into a common structure suitable for downstream analysis.
 
 ## Target Data Format
 

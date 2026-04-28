@@ -12,6 +12,14 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 ## Comments
 
+#### Agent Performance
+- The agents did a good job overall on this relatively simple dataset.
+- The one tricky problem is missing frames in the motion-energy data. The correct approach is to identify the missing frames from the timestamps and interpolate at the correct positions. Agents implemented this correctly in 4/6 runs and incorrectly in 2/6 runs.
+- In 5/6 runs the agents used the `suite2p` package for the calcium-data preprocessing (1/6 wrote the code from scratch instead), but only 2/6 used CUDA to speed up the computation.
+
+#### LLM as Judge
+- The Claude judge is quite inconsistent on this dataset, sometimes giving very different ratings (ranging from "better" to "incorrect") for the exact same solution across trials.
+
 ## Per-question evaluations
 
 | Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
