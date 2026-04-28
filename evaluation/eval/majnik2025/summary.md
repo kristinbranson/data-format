@@ -55,7 +55,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Trial structure underspecified, all agents used the definition from the paper
+**Overall comment:** The trial length is underspecified in the instructions; all agents adopted the paper's two-minute trial length.
 
 ---
 ## Q 1-e. How are trials filtered based on quality controls?
@@ -97,7 +97,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** only one trial failed to use suite2p preprocessing
+**Overall comment:** One agent skipped `suite2p` preprocessing and wrote its own code instead.
 
 ---
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
@@ -125,7 +125,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** all agents implemented the paper's 10 frame binning strategy consistently
+**Overall comment:** All agents implemented the paper's 10-frame binning strategy, which is acceptable.
 
 ---
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
@@ -209,7 +209,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** missing normalization steps in Claude Agent
+**Overall comment:** Claude agents skipped normalization steps; Codex agents used min-max normalization.
 
 ---
 ## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
@@ -223,7 +223,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** 2/6 incorrect solutions (did not attempt to identify missing frames); 4/6 correct solutions using a different approach to detect missing frames.
 
 ---
 ## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
@@ -251,7 +251,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** Only two solution used GPU/CUDA through suite2p
+**Overall comment:** Only two solutions used GPU/CUDA via `suite2p`.
 
 ---
 ## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
