@@ -2,8 +2,7 @@
 
 ## Overview
 
-This project explores the use of Coding Agents to help reorganize and reformat different neuroscience datasets into a desired format. 
-The goal is to test how well Coding Agents can help with the process of working with heterogeneous datasets by converting them into a common structure suitable for downstream analysis.
+This project explores the use of coding agents (Claude Code and Codex) to reorganize and reformat diverse neuroscience datasets into a standardized format. The goal is to evaluate how effectively coding agents can handle heterogeneous and messy biological research data by converting them into a common structure suitable for downstream analysis.
 
 ## Target Data Format
 
