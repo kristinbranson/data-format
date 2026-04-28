@@ -12,6 +12,14 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 ## Comments
 
+#### Agent Performance
+- 🟣 Some agents implemented more detailed data filtering (e.g., lick-detection failure and interneuron exclusion) based on the descriptions in the paper and the reference code. (The agents are detail-oriented when the associated code and text are available.)
+- A key issue in this dataset was that most agents adopted a hard-coded "30-trial switch" rule for the reward zone, based on the paper description. In general, agents are less inclined than an experienced researcher to verify such assumptions against the data and write defensive code.
+
+#### LLM as Judge
+- There is substantial inconsistency in the ratings for nearly identical solutions across runs (e.g., 2-c, 3-a, 7-a).
+- The judges can be good at catching detailed mistakes, but sometimes miss things as well.
+
 ## Per-question evaluations
 
 | Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
