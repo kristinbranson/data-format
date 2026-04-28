@@ -166,3 +166,355 @@
 
 ---
 
+## Q 3-c. How is the `input` *Time from start of trial in seconds* aligned with the neural data?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | ok | — |  |
+| codex / trial1 | match | match | concerning | — |  |
+| codex / trial2 | match | match | ok | — |  |
+| codex / trial3 | match | concerning | ok | Human |  |
+
+---
+
+## Q 4-a. What variables in the raw data is `input` *Environment type* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | concerning | incorrect | Human |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | incorrect | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 4-b. What processing is involved in computing `input` *Environment type*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | ok | — |  |
+| claude-code / trial2 | match | concerning | incorrect | Human |  |
+| claude-code / trial3 | match | ok | ok | — |  |
+| codex / trial1 | match | match | incorrect | — |  |
+| codex / trial2 | match | match | ok | — |  |
+| codex / trial3 | match | ok | ok | — |  |
+
+---
+
+## Q 5-a. What variables in the raw data is `input` *Trial number* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | concerning | concerning | Human |  |
+
+---
+
+## Q 5-b. What processing is involved in computing `input` *Trial number*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | concerning | concerning | Human |  |
+
+---
+
+## Q 6-a. What variables in the raw data is `input` *Previous trial outcome* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | ok | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | ok | — |  |
+| codex / trial3 | match | match | concerning | — |  |
+
+---
+
+## Q 6-b. What processing is involved in computing `input` *Previous trial outcome*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | better | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | ok | concerning | — |  |
+
+---
+
+## Q 7-a. What variables in the raw data is `output` *Distance to reward zone* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | concerning | ok | incorrect | Human |  |
+| claude-code / trial2 | concerning | concerning | incorrect | — |  |
+| claude-code / trial3 | match | concerning | incorrect | Human |  |
+| codex / trial1 | concerning | concerning | ok | — |  |
+| codex / trial2 | match | match | concerning | — |  |
+| codex / trial3 | concerning | concerning | better | — |  |
+
+**Overall comment:** Claude caught some potential problems but not others
+
+---
+
+## Q 7-b. What processing is involved in computing `output` *Distance to reward zone*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | incorrect | match | match | Human |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 8-a. What variables in the raw data is `output` *Absolute position* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 8-b. What processing is involved in computing `output` *Absolute position*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | incorrect | — |  |
+| codex / trial2 | match | concerning | ok | Human |  |
+| codex / trial3 | match | match | incorrect | — |  |
+
+---
+
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | concerning | better | Human |  |
+| claude-code / trial2 | match | incorrect | incorrect | Human |  |
+| claude-code / trial3 | match | concerning | better | Human |  |
+| codex / trial1 | match | concerning | incorrect | Human |  |
+| codex / trial2 | match | incorrect | better | Human |  |
+| codex / trial3 | match | concerning | incorrect | Human |  |
+
+**Overall comment:** Different choices in choosing bin edges but are all valid solution
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | concerning | match | match | Human |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 9-a. What variables in the raw data is `output` *Lick* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 9-b. What processing is involved in computing `output` *Lick*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | better | concerning | Human |  |
+| claude-code / trial2 | match | concerning | concerning | Human |  |
+| claude-code / trial3 | match | concerning | concerning | Human |  |
+| codex / trial1 | match | match | ok | — |  |
+| codex / trial2 | concerning | match | ok | Human |  |
+| codex / trial3 | match | match | ok | — |  |
+
+---
+
+## Q 9-c. How is `output` *Lick* aligned with the neural data?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | ok | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 10-a. What variables in the raw data is `output` *Reward zone location* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | concerning | ok | incorrect | Human |  |
+| claude-code / trial2 | concerning | concerning | incorrect | — |  |
+| claude-code / trial3 | match | concerning | incorrect | Human |  |
+| codex / trial1 | concerning | concerning | ok | — |  |
+| codex / trial2 | match | match | concerning | — |  |
+| codex / trial3 | concerning | concerning | better | — |  |
+
+---
+
+## Q 10-b. What processing is involved in computing `output` *Reward zone location*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | incorrect | — |  |
+| claude-code / trial2 | match | concerning | incorrect | Human |  |
+| claude-code / trial3 | match | concerning | incorrect | Human |  |
+| codex / trial1 | match | concerning | ok | Human |  |
+| codex / trial2 | match | ok | concerning | — |  |
+| codex / trial3 | match | concerning | better | Human |  |
+
+---
+
+## Q 11-a. What variables in the raw data is `output` *Reward outcome* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | ok | — |  |
+| codex / trial3 | match | concerning | concerning | Human |  |
+
+---
+
+## Q 11-b. What processing is involved in computing `output` *Reward outcome*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | ok | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | better | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | concerning | concerning | Human |  |
+
+---
+
+## Q 12. How are minor mistakes in the data, e.g. missing data, handled?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | concerning | — |  |
+| claude-code / trial2 | better | ok | concerning | — |  |
+| claude-code / trial3 | match | ok | concerning | — |  |
+| codex / trial1 | better | ok | concerning | — |  |
+| codex / trial2 | better | concerning | ok | Human |  |
+| codex / trial3 | better | incorrect | concerning | Human |  |
+
+---
+
+## Q 13-a. What are the most time-consuming steps of the code?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | match | — |  |
+| claude-code / trial2 | match | match | ok | — |  |
+| claude-code / trial3 | match | match | incorrect | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 13-b. What loops in the code could have been vectorized to improve efficiency?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | ok | match | ok | — |  |
+| claude-code / trial3 | ok | match | ok | — |  |
+| codex / trial1 | ok | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 13-c. What processing does the code repeat multiple times?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | match | — |  |
+| claude-code / trial2 | match | ok | ok | — |  |
+| claude-code / trial3 | ok | match | ok | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+---
+
+## Q 13-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | ok | ok | — |  |
+| claude-code / trial3 | match | better | incorrect | Human |  |
+| codex / trial1 | match | ok | match | — |  |
+| codex / trial2 | match | match | ok | — |  |
+| codex / trial3 | match | match | match | — |  |

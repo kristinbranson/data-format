@@ -337,7 +337,12 @@ def parse_summary(path: Path) -> tuple[dict[tuple[str, str, int], dict], dict[st
 
 def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
                   titles: dict[str, str], overalls: dict[str, str] | None = None):
-    """Render the full eval_summary.md from `entries` + `overalls` (grouped by qid)."""
+    """Render the full eval_summary.md from `entries` + `overalls` (grouped by qid).
+
+    Writes atomically via a sibling tempfile + os.replace so a crash mid-write
+    cannot leave a truncated file.
+    """
+    import os
     overalls = overalls or {}
     # Safety: never wipe a populated file by writing empty entries+overalls.
     if not entries and not overalls and path.exists() and path.stat().st_size > 0:
@@ -376,7 +381,25 @@ def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
         if qid in overalls and overalls[qid]:
             lines.append(f"**Overall comment:** {overalls[qid]}")
             lines.append("")
-    path.write_text("\n".join(lines))
+
+    new_text = "\n".join(lines)
+
+    # Sanity check: never let a write strictly shrink the count of qids
+    # represented in the file. parse_summary→write_summary→ours should be
+    # monotonic in coverage. If it isn't, something bad happened upstream.
+    if path.exists():
+        prev_entries, prev_overalls = parse_summary(path)
+        prev_qids = {q for (q, _, _) in prev_entries} | set(prev_overalls)
+        new_qids = set(by_qid) | set(overalls)
+        lost = prev_qids - new_qids
+        if lost:
+            print(f"WARN: refusing to write {path}: would drop qids {sorted(lost)}.",
+                  file=sys.stderr)
+            return
+
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(new_text)
+    os.replace(tmp, path)
 
 
 def prompt_best() -> str | None:
@@ -484,16 +507,18 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
         qids_seen = [only_qid]
 
     summary_path = EVAL_DIR / dataset / "eval_summary.md"
-    if overwrite:
-        entries, overalls = {}, {}
-    else:
-        entries, overalls = parse_summary(summary_path)
-        if summary_path.exists():
-            _CONSOLE.print(
-                f"[dim]Loaded {len(entries)} entries and {len(overalls)} overall comments "
-                f"from {summary_path.name}[/dim]"
-            )
-    already = set(entries.keys())
+    # Always load existing file as a starting point — we never wipe untouched qids.
+    entries, overalls = parse_summary(summary_path)
+    if summary_path.exists():
+        _CONSOLE.print(
+            f"[dim]Loaded {len(entries)} entries and {len(overalls)} overall comments "
+            f"from {summary_path.name}[/dim]"
+        )
+    # qid-level resume: any qid already present in eval_summary.md is "done"
+    # and is skipped, unless --overwrite was passed (then re-walk it; old data
+    # for that qid stays in `entries` until the new walk completes successfully,
+    # at which point it is replaced atomically).
+    done_qids = {q for (q, _, _) in entries.keys()}
     titles = {qid: entries[(qid, a, n)]["title"]
               for (qid, a, n) in entries
               if entries[(qid, a, n)].get("title")}
@@ -504,7 +529,12 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
     for qid in qids_seen:
         if aborted:
             break
+        if qid in done_qids and not overwrite:
+            continue
         title = next((b[2][qid]["title"] for b in bundles if b[2].get(qid)), qid)
+        # Buffer per-qid: only flush to disk after the whole qid completes.
+        qid_entries: dict[tuple[str, str, int], dict] = {}
+        qid_incomplete = False  # any rated trial the user explicitly skipped
         for agent, n, meta, body, jc, jx, mc, mx, jc_dec, jx_dec in bundles:
             sec = meta.get(qid)
             if not sec or not sec.get("rating"):
@@ -527,24 +557,17 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
             key = (qid, agent, n)
             titles[qid] = title
 
-            # CONSISTENT: silently record and move on
+            # CONSISTENT: buffer and move on
             if consistent:
-                if key not in already:
-                    entries[key] = {
-                        "human": h_rating or "—",
-                        "claude": jc_rating or "—",
-                        "codex": jx_rating or "—",
-                        "best": "—",
-                        "why": "",
-                        "title": title,
-                    }
-                    write_summary(summary_path, entries, titles, overalls)
+                qid_entries[key] = {
+                    "human": h_rating or "—",
+                    "claude": jc_rating or "—",
+                    "codex": jx_rating or "—",
+                    "best": "—",
+                    "why": "",
+                    "title": title,
+                }
                 seen_consistent += 1
-                continue
-
-            # INCONSISTENT: skip if already recorded (resume), unless overwrite
-            if key in already:
-                seen_inconsistent += 1
                 continue
 
             seen_inconsistent += 1
@@ -612,15 +635,18 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
                 aborted = True
                 break
             if best is None:
-                # User pressed Enter to skip — don't persist; will re-prompt next run.
-                _CONSOLE.print("[dim]→ skipped (not written)[/dim]")
+                # User pressed Enter to skip — mark the qid incomplete so the
+                # whole qid is NOT flushed; the user will be re-prompted on the
+                # next run from the start of this qid.
+                qid_incomplete = True
+                _CONSOLE.print("[dim]→ skipped (qid will not be flushed)[/dim]")
                 continue
             try:
                 best_just = prompt_best_justification()
             except (EOFError, KeyboardInterrupt):
                 best_just = None
 
-            entries[key] = {
+            qid_entries[key] = {
                 "human": h_rating or "—",
                 "claude": jc_rating or "—",
                 "codex": jx_rating or "—",
@@ -628,26 +654,38 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
                 "why": best_just or "",
                 "title": title,
             }
-            write_summary(summary_path, entries, titles, overalls)
-            _CONSOLE.print(f"[dim]→ written to {summary_path}[/dim]")
+            _CONSOLE.print(f"[dim]→ buffered (will flush when Q {qid} completes)[/dim]")
 
         # End of trial loop for this qid — show recap + prompt for overall comment
         if aborted:
+            # Don't flush a partial qid; user can re-run to redo it cleanly.
             break
-        # Only prompt if there's actually some data for this qid AND
-        # either no overall comment exists yet OR --overwrite was requested
-        has_data = any(k[0] == qid for k in entries)
-        if has_data and (qid not in overalls or overwrite):
-            render_qid_recap(qid, title, entries)
-            try:
-                overall = prompt_overall(qid)
-            except (EOFError, KeyboardInterrupt):
-                aborted = True
-                break
-            if overall is not None:
-                overalls[qid] = overall
-                write_summary(summary_path, entries, titles, overalls)
-                _CONSOLE.print(f"[dim]→ overall comment saved[/dim]")
+        if qid_incomplete:
+            _CONSOLE.print(
+                f"[yellow]Q {qid} has skipped trials — NOT flushing. "
+                f"Re-run to retry this qid from the start.[/yellow]"
+            )
+            continue
+        if not qid_entries:
+            continue
+        # In --overwrite mode, prior entries for this qid are present in
+        # `entries`; merge with new for the recap so all 6 trials show up
+        # using the freshly-rated rows.
+        render_qid_recap(qid, title, {**entries, **qid_entries})
+        try:
+            overall = prompt_overall(qid)
+        except (EOFError, KeyboardInterrupt):
+            aborted = True
+            break
+        # Atomic flush: replace any prior entries for this qid, then write.
+        entries = {k: v for k, v in entries.items() if k[0] != qid}
+        entries.update(qid_entries)
+        if overall:
+            overalls[qid] = overall
+        # In --overwrite, blank input keeps the prior overall; user can edit
+        # the .md file directly to clear it.
+        write_summary(summary_path, entries, titles, overalls)
+        _CONSOLE.print(f"[dim]→ Q {qid} flushed to {summary_path.name}[/dim]")
 
     if aborted:
         _CONSOLE.print(f"\n[dim]Stopped. consistent={seen_consistent}  "
