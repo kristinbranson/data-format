@@ -202,9 +202,9 @@
 
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | ok | _(no note)_ |
-| claude-code / trial2 | ok | missing normalization |
-| claude-code / trial3 | ok | missing normalization |
+| claude-code / trial1 | concerning | missing normalization |
+| claude-code / trial2 | concerning | missing normalization |
+| claude-code / trial3 | concerning | missing normalization |
 | codex / trial1 | match | _(no note)_ |
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
