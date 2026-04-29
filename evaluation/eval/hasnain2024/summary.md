@@ -198,3 +198,115 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+## Q 5-a. What variables in the raw data is `output` *outcome* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 5-b. What processing is involved in computing `output` *outcome*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 6-a. What variables in the raw data is `output` *tongue_velocity* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** The paper used a sophisticated procedure to estimate tongue velocity. None of the agents came close to that. Only one agent tried to combine information from multiple cameras.
+
+---
+## Q 6-b. What processing is involved in computing `output` *tongue_velocity*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** Highly variable choices across the agents, but there is no definitive correct / incorrect solution
+
+---
+## Q 6-c. How is `output` *tongue_velocity* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 7-a. What variables in the raw data is `output` *paw_velocity* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** 4/6 solution used both top and bottom tracking features, and only 1/6 solution scaled the velocity to physical unit
+
+---
+## Q 7-b. What processing is involved in computing `output` *paw_velocity*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | incorrect | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** There is a bug in the paper's code re baseline subtraction. One agent reimplemented the bug, 3/6 agents corrected it, and 2/6 agent didn't perform the baseline subtraction
+
+---
+## Q 7-c. How is `output` *paw_velocity* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
