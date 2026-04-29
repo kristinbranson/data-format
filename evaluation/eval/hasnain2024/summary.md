@@ -310,3 +310,129 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+## Q 8-a. What variables in the raw data is `output` *motion_energy* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 8-b. What processing is involved in computing `output` *motion_energy*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 8-c. How is `output` *motion_energy* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** Use the time stamp for alignment, otherwise a magic 0.5s timeshift is used
+
+---
+## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-a. What are the most time-consuming steps of the code?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** Heavy use of per-trial based loops instead of using vectorized solution
+
+---
+## Q 10-c. What processing does the code repeat multiple times?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-e. How is memory usage optimized?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---

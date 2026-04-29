@@ -310,3 +310,129 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+## Q 8-a. What variables in the raw data is `output` *motion_energy* derived from?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 8-b. What processing is involved in computing `output` *motion_energy*?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | — | match | — |  |
+| codex / trial2 | match | match | — | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 8-c. How is `output` *motion_energy* aligned with the neural data?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | concerning | — |  |
+| claude-code / trial2 | match | match | concerning | — |  |
+| claude-code / trial3 | match | match | concerning | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-a. What are the most time-consuming steps of the code?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | ok | match | match | — |  |
+| claude-code / trial2 | ok | match | match | — |  |
+| claude-code / trial3 | ok | match | match | — |  |
+| codex / trial1 | ok | match | match | — |  |
+| codex / trial2 | ok | match | match | — |  |
+| codex / trial3 | ok | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | concerning | match | match | — |  |
+| claude-code / trial2 | concerning | match | match | — |  |
+| claude-code / trial3 | concerning | match | match | — |  |
+| codex / trial1 | ok | — | — | — |  |
+| codex / trial2 | concerning | match | match | — |  |
+| codex / trial3 | ok | — | — | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-c. What processing does the code repeat multiple times?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | ok | match | match | — |  |
+| claude-code / trial2 | ok | match | match | — |  |
+| claude-code / trial3 | ok | match | match | — |  |
+| codex / trial1 | ok | — | — | — |  |
+| codex / trial2 | ok | match | match | — |  |
+| codex / trial3 | ok | — | — | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | ok | match | match | — |  |
+| claude-code / trial2 | ok | match | match | — |  |
+| claude-code / trial3 | ok | match | match | — |  |
+| codex / trial1 | ok | — | — | — |  |
+| codex / trial2 | ok | match | match | — |  |
+| codex / trial3 | ok | — | — | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 10-e. How is memory usage optimized?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | — | — | — |  |
+| claude-code / trial2 | match | — | — | — |  |
+| claude-code / trial3 | match | — | — | — |  |
+| codex / trial1 | match | — | — | — |  |
+| codex / trial2 | match | — | — | — |  |
+| codex / trial3 | match | — | — | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
