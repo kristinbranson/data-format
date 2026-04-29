@@ -12,6 +12,14 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 ## Comments
 
+#### Agent Performance
+A few interesting concern / failure cases in this dataset are worth noting:
+- Lick direction: the most accessible data source is the *instructed* (correct) lick direction for each trial — atypical, since usually the behavioral response itself is directly available. One agent derived the actual response direction by combining instructed direction with trial correctness (e.g., hit vs. miss); another used lick event data to derive the first lick direction. 4/6 agents got it wrong.
+- Variability in the preprocessing pipeline:
+    - Velocity outputs (tongue and paw): deriving these requires several intermediate preprocessing steps. The agents were quite variable here (this question is more open-ended, despite the availability of reference code). None of the agents implemented the sophisticated PCA-based procedure from the original paper, and each run used slightly different solutions and parameter choices.
+    - Spike preprocessing (probe → spike train): similarly involves several preprocessing steps, which vary across agents. This variability doesn't show up obviously in the ratings, since the choices are all equally valid.
+- Reference code bug: there is a minor bug in the paper's code (7-b, baseline subtraction). It was *replicated* by 1/6 runs, corrected in 3/6 runs, and skipped entirely in 2/6 runs.
+
 ## Per-question evaluations
 
 | Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
