@@ -8,7 +8,7 @@
 - Evaluators: Human, Claude judge, Codex judge
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed better than the human.
+A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than the human.
 
 ## Comments
 
@@ -57,5 +57,5 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 9-a | What are the most time-consuming steps of the code? | 🟡🟡🟡 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔵 🔵🔵🟡 |  |  |
 | 9-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔵 🔵🟢🔵 |  |  |
 | 9-c | What processing does the code repeat multiple times? | 🟡🟡🔴 🟡🟡🟡 | 🟢🟣🔴 🟢🟢🟡 | 🔴🔴🔴 🟡🔴🟡 | 5/6 did a two-pass approach which is inefficient; 1/6 did a three-pass approach which is just wrong. | The LLM judge seems to have completely misunderstood this question. |
-| 9-d | What unnecessary processing does the code do that is discarded in downstream analyses? | ⚪⚪⚪ ⚪⚪⚪ | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |
+| 9-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟣🟢 🟢🟢🟢 | 🔴🔴🔴 🟡🟡🟡 |  |  |
 | 9-e | How is memory usage optimized? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |
