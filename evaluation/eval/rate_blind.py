@@ -354,6 +354,23 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
             break
         title = next((b[3][qid]["title"] for b in bundles if b[3].get(qid)), qid)
 
+        # Skip alignment qids for per-trial scalars: if fewer than half of the
+        # 12 judge cells (6 trials × 2 judges) ask the alignment question for
+        # this variable, treat it as a scalar (choice/outcome/prior/etc.) and
+        # skip the qid entirely. True time-series vars consistently get 12/12.
+        if "aligned" in title.lower() or "alignment" in title.lower():
+            mapped = sum(
+                int(b[7].get(qid) is not None) + int(b[8].get(qid) is not None)
+                for b in bundles
+            )
+            if mapped < 6:
+                _CONSOLE.print(
+                    f"[dim]Q {qid}: only {mapped}/12 judges ask the alignment "
+                    f"question for this variable — skipping[/dim]"
+                )
+                skipped_qids += 1
+                continue
+
         # Quick fast-path: fully rated and notes already in summary → skip qid
         all_rated = all(
             (b[3].get(qid, {}).get("rating") not in (None, ""))

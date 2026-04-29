@@ -142,3 +142,59 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+## Q 3-a. What variables in the raw data is `output` *lick_direction* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | incorrect | _(no note)_ |
+| claude-code / trial3 | incorrect | _(no note)_ |
+| codex / trial1 | incorrect | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | incorrect | _(no note)_ |
+
+**Overall comment:** The lick direction avialible in the data is the correct direction. One agent derived the actual response direction by looking up the trial correctness info, another agent used bp.ev.Lick to derive the first lick direction. 4/6 agent got it incorrectly.
+
+---
+## Q 3-b. What processing is involved in computing `output` *lick_direction*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 4-a. What variables in the raw data is `output` *context* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 4-b. What processing is involved in computing `output` *context*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
