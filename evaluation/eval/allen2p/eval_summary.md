@@ -385,6 +385,19 @@
 
 ---
 
+## Q 9-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | incorrect | — |  |
+| claude-code / trial2 | concerning | better | incorrect | Human |  |
+| claude-code / trial3 | match | match | incorrect | — |  |
+| codex / trial1 | match | match | concerning | — |  |
+| codex / trial2 | match | match | concerning | — |  |
+| codex / trial3 | match | match | concerning | — |  |
+
+---
+
 ## Q 9-e. How is memory usage optimized?
 
 | Agent / trial | Human | Claude judge | Codex judge | Best | Why |
