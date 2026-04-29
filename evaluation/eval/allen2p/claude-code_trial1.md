@@ -893,7 +893,7 @@ for key in ['start_time', 'stop_time', 'go', 'catch', 'aborted', 'auto_rewarded'
 
 **What this does:** `cell_roi_ids` is loaded but never used downstream. Trial columns `change_time`, `initial_image_name`, `change_image_name`, and `is_change` are loaded but never read after loading (image identity/change come from the stimulus presentations table instead).
 
-**Rating:** missing
+**Rating:** match
 
 **Note:** _(no note)_
 

@@ -806,7 +806,7 @@ def make_processing_plot(...):  # only when --show-processing
 
 **What this does:** Pass 1 computes per-session `native_dt` and `valid_trial_counts` that are only printed (not stored in the output pickle). Optional processing-plot rendering and the running/pupil arrays accumulated in pass 1 (used only to fit edges) are discarded after edges are derived.
 
-**Rating:** missing
+**Rating:** match
 
 **Note:** _(no note)_
 

@@ -832,7 +832,7 @@ input_trials = [np.zeros((0, trial.shape[1]), dtype=np.float32) for trial in neu
 
 **What this does:** Decoder `input` arrays are built as empty `(0, T)` placeholders for every trial since the task specifies no decoder inputs; the diagnostic `--show-processing` plot rendering is also performed only when explicitly requested. No other clearly unused intermediate is computed.
 
-**Rating:** missing
+**Rating:** match
 
 **Note:** _(no note)_
 

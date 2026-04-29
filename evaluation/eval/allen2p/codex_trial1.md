@@ -886,7 +886,7 @@ def plot_processing_summary(...):
 
 **What this does:** `read_task_presentations` reads `is_sham_change`, `trials_id`, and `active` columns that are not used downstream (only `image_name`, `start_time`, `stop_time`, `omitted`, `is_change` are consumed). Empty `(0, T)` `input_trial` arrays are created per trial (no inputs requested). Diagnostic plotting (`--show-processing`) generates PNGs that are not part of the converted pickle.
 
-**Rating:** missing
+**Rating:** match
 
 **Note:** _(no note)_
 

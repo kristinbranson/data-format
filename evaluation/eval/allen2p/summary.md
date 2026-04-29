@@ -416,12 +416,12 @@
 
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | missing | _(no note)_ |
-| claude-code / trial2 | missing | _(no note)_ |
-| claude-code / trial3 | missing | _(no note)_ |
-| codex / trial1 | missing | _(no note)_ |
-| codex / trial2 | missing | _(no note)_ |
-| codex / trial3 | missing | _(no note)_ |
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
 
 **Overall comment:** N/A
 

@@ -890,7 +890,7 @@ if collect_stats_only:
 
 **What this does:** During Pass 1 (`collect_stats_only=True`), the code still computes `neural_matrix`, image indices, change flags, pupil binning, and outcome — only the per-trial append is skipped. These computations are discarded each Pass 1 trial.
 
-**Rating:** missing
+**Rating:** concerning
 
 **Note:** _(no note)_
 

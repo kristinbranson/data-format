@@ -933,7 +933,7 @@ return {
 
 **What this does:** A few raw fields are loaded but never used downstream: `cell_specimen_ids` are returned in `raw_data` but never written into the output pickle; `change_time`, `is_change`, `initial_image_name`, and `change_image_name` from the trials table are loaded but the image-change signal is computed from the stim_presentations table instead, so these per-trial fields go unused.
 
-**Rating:** missing
+**Rating:** match
 
 **Note:** _(no note)_
 
