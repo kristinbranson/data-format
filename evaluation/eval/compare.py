@@ -38,9 +38,20 @@ AGENT_FOLDER = {
     "majnik2025":  "claude",
     "sosa2024":    "claude",
     "hasnain2024": "claude",
-    "map":         "claude",
-    "mouseland":   "claude-code",
+    "map":         "claude",         # legacy harbor-jobs folder name (eval/ renamed to chen2024)
+    "chen2024":    "claude",
+    "mouseland":   "claude-code",    # legacy harbor-jobs folder name (eval/ renamed to zhong2025)
+    "zhong2025":   "claude-code",
     "zhang2025":   "claude-code",
+}
+
+# Some datasets were renamed under `evaluation/eval/` for naming consistency,
+# but their `evaluation/harbor-jobs/<...>/` folders still use the legacy name.
+# Map the new (eval) name → the legacy (harbor-jobs) name so trial-path lookups
+# keep working from either side.
+HARBOR_DATASET_ALIAS = {
+    "chen2024":  "map",
+    "zhong2025": "mouseland",
 }
 
 TRIAL_KEYS = [("claude-code", n) for n in (1, 2, 3)] + [("codex", n) for n in (1, 2, 3)]
@@ -75,7 +86,8 @@ def find_trial_path(dataset: str, agent_label: str, n: int) -> Path | None:
     folder = AGENT_FOLDER.get(dataset, agent_label)
     if agent_label == "codex":
         folder = "codex"
-    pattern = str(HARBOR_DIR / dataset / folder / f"*_trial{n}")
+    harbor_dataset = HARBOR_DATASET_ALIAS.get(dataset, dataset)
+    pattern = str(HARBOR_DIR / harbor_dataset / folder / f"*_trial{n}")
     matches = [m for m in glob.glob(pattern) if "_badtrial" not in m]
     return Path(sorted(matches)[-1]) if matches else None
 
@@ -231,6 +243,13 @@ def fingerprint(qid: str, title: str, dataset: str | None = None) -> tuple:
         r"`(?:output|input)`\s+([A-Z][A-Za-z _\-]+?)\s+(?:derived from|thresholded|aligned|is involved|with the neural)",
         r"`(?:output|input)`\s+([A-Z][A-Za-z _\-]+?)\?",
         r"(?:output|input)\s+([A-Z][A-Za-z _\-]+?)\s+(?:derived from|thresholded|aligned|is involved|with the neural)",
+        # Dossier formats without `output`/`input` prefix:
+        # "final `lick_direction` data derived from" / "How is the `lick_direction` data processed"
+        r"(?:final\s+)?`([a-z_][a-z0-9_]*)`\s+(?:data\s+)?(?:derived|processed|aligned|filtered|thresholded|is\b)",
+        # "How is `lick_direction` derived from" / "How is `lick_direction` processed/discretized?"
+        r"How is\s+`([a-z_][a-z0-9_]*)`",
+        # Em-dash format: "lick_direction — derivation source"
+        r"^([a-z_][a-z0-9_]*)\s+(?:—|--|-)",
     ):
         m = re.search(pat, t)
         if m:
@@ -240,10 +259,11 @@ def fingerprint(qid: str, title: str, dataset: str | None = None) -> tuple:
         return ("unknown", qid)
     var_name = norm_var(var_name, dataset=dataset)
     io = "input" if "input" in tl[:60] else "output"
-    if "derived from" in tl: role = "source"
-    elif "processing is involved" in tl or "computing" in tl: role = "processing"
-    elif "threshold" in tl or "discretiz" in tl or "binned" in tl: role = "threshold"
+    if "derived from" in tl or "derivation" in tl: role = "source"
+    elif "processing is involved" in tl or "computing" in tl or "processed" in tl or "processing" in tl: role = "processing"
     elif "aligned" in tl or "alignment" in tl: role = "align"
+    elif "threshold" in tl or "discretiz" in tl or "binned" in tl: role = "threshold"
+    elif "filtered" in tl or "quality control" in tl: role = "filtered"
     else: role = sub or "?"
     return ("var", io, var_name, role)
 
