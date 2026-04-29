@@ -27,7 +27,7 @@
 | codex / trial2 | match | match | concerning | — |  |
 | codex / trial3 | match | match | match | — |  |
 
-**Overall comment:** LLM judge flagged the extra subject found by the code, but is not consistent
+**Overall comment:** LLM judge flagged the extra subject found by the code, but was inconsistent across runs.
 
 ---
 ## Q 1-c. How are the data split into sessions?
@@ -97,7 +97,7 @@
 | codex / trial2 | match | concerning | match | — |  |
 | codex / trial3 | match | match | match | — |  |
 
-**Overall comment:** Judge decisions are inconsistent
+**Overall comment:** Judge decisions are inconsistent across runs.
 
 ---
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
@@ -125,7 +125,7 @@
 | codex / trial2 | match | concerning | incorrect | — |  |
 | codex / trial3 | match | match | match | — |  |
 
-**Overall comment:** LLM judges are very inconsistent regarding the time bin choice
+**Overall comment:** LLM judges are very inconsistent regarding the time-bin choice.
 
 ---
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
@@ -153,7 +153,7 @@
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | incorrect | match | match | — |  |
 
-**Overall comment:** LLM judge only flagged one of the incorrect solution but not the others.
+**Overall comment:** The LLM judge only flagged one of the incorrect solutions, missing the others.
 
 ---
 ## Q 3-b. What processing is involved in computing `output` *lick_direction*?
@@ -279,7 +279,7 @@
 | codex / trial2 | ok | match | concerning | — |  |
 | codex / trial3 | ok | match | concerning | — |  |
 
-**Overall comment:** Claude rate all solution as match and provided justification for using single or both features, seems quite bad at making consistent judgement.
+**Overall comment:** Claude judge rated all solutions as match and provided justifications for using either single or both features, suggesting it is poor at making consistent judgments here.
 
 ---
 ## Q 7-b. What processing is involved in computing `output` *paw_velocity*?

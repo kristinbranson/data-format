@@ -13,7 +13,7 @@
 | codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** All solution handled the mix of data format correctly. 1/6 didn't load the full dataset
+**Overall comment:** All solutions handled the mix of data formats correctly; 1/6 didn't load the full dataset.
 
 ---
 ## Q 1-b. How are the data split into subjects?
@@ -41,7 +41,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Very simple session structure
+**Overall comment:** Session structure is very simple.
 
 ---
 ## Q 1-d. Are the data correctly split into trials?
@@ -55,7 +55,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Sightly different exclusion procedure across agents
+**Overall comment:** Slightly different exclusion procedures across agents.
 
 ---
 ## Q 1-e. How are trials filtered based on quality controls?
@@ -69,7 +69,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Some minor differences in filtering decisions
+**Overall comment:** Some minor differences in filtering decisions.
 
 ---
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
@@ -83,7 +83,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** Overall correct solutions, but most of them didn't deal with the dual probe correctly
+**Overall comment:** Overall correct solutions, but most didn't handle the dual-probe sessions correctly.
 
 ---
 ## Q 2-b. How is the `neural` data processed?
@@ -97,7 +97,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Small differences in preprocessing parameters, but are all valid. Agents were able to follow the correct solution using the paper's preprocessing code.
+**Overall comment:** Small differences in preprocessing parameters, but all are valid. Agents were able to follow the reference solution using the paper's preprocessing code.
 
 ---
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
@@ -125,7 +125,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Two different binning choice in the paper, both are valid.
+**Overall comment:** Two different binning choices appear in the paper; both are valid.
 
 ---
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
@@ -153,7 +153,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | incorrect | _(no note)_ |
 
-**Overall comment:** The lick direction avialible in the data is the correct direction. One agent derived the actual response direction by looking up the trial correctness info, another agent used bp.ev.Lick to derive the first lick direction. 4/6 agent got it incorrectly.
+**Overall comment:** The lick direction available in the data is the correct/instructed direction. One agent derived the actual response direction by combining instructed direction with trial correctness; another used `bp.ev.Lick` to derive the first lick direction. 4/6 agents got it wrong.
 
 ---
 ## Q 3-b. What processing is involved in computing `output` *lick_direction*?
@@ -237,7 +237,7 @@
 | codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** The paper used a sophisticated procedure to estimate tongue velocity. None of the agents came close to that. Only one agent tried to combine information from multiple cameras.
+**Overall comment:** The paper used a sophisticated PCA-based procedure to estimate tongue velocity from multiple markers across both cameras. None of the agents came close; only one agent attempted to combine information from multiple cameras.
 
 ---
 ## Q 6-b. What processing is involved in computing `output` *tongue_velocity*?
@@ -251,7 +251,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** Highly variable choices across the agents, but there is no definitive correct / incorrect solution
+**Overall comment:** Highly variable choices across agents, but there is no single definitive correct/incorrect solution.
 
 ---
 ## Q 6-c. How is `output` *tongue_velocity* aligned with the neural data?
@@ -279,7 +279,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** 4/6 solution used both top and bottom tracking features, and only 1/6 solution scaled the velocity to physical unit
+**Overall comment:** 4/6 solutions used both top and bottom paw tracking features; only 1/6 scaled the velocity to physical units.
 
 ---
 ## Q 7-b. What processing is involved in computing `output` *paw_velocity*?
@@ -293,7 +293,7 @@
 | codex / trial2 | incorrect | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** There is a bug in the paper's code re baseline subtraction. One agent reimplemented the bug, 3/6 agents corrected it, and 2/6 agent didn't perform the baseline subtraction
+**Overall comment:** The paper's code has a bug in the baseline subtraction (x-axis baseline subtracted from both x and y velocity). One agent faithfully reimplemented the bug, 3/6 agents corrected it, and 2/6 agents skipped baseline subtraction altogether.
 
 ---
 ## Q 7-c. How is `output` *paw_velocity* aligned with the neural data?
@@ -349,7 +349,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Use the time stamp for alignment, otherwise a magic 0.5s timeshift is used
+**Overall comment:** Most agents use the bitcode-derived timestamp for alignment, falling back to a hardcoded 0.5s shift (taken from the reference's tutorial code) when bitcode metadata is unavailable.
 
 ---
 ## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
@@ -391,7 +391,7 @@
 | codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** Heavy use of per-trial based loops instead of using vectorized solution
+**Overall comment:** Heavy use of per-trial loops instead of vectorized solutions.
 
 ---
 ## Q 10-c. What processing does the code repeat multiple times?
