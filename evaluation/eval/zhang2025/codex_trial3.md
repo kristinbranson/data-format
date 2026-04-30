@@ -35,11 +35,9 @@ def load_release_sessions() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 **What this does:** Loads the canonical 459-session release roster from `bwm_release.csv` and builds a per-eid probe insertion map. In `--full` mode, sessions are dispatched to a `ProcessPoolExecutor` worker pool that calls `process_one_session` per session; in `--sample` mode they are processed sequentially until 2 successes.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** ok
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -56,11 +54,9 @@ subject_idx.append(subject_to_idx[session.subject])
 
 **What this does:** After processing, builds the unique-ordered subject list from per-session `subject` strings (sourced from `bwm_release.csv`), and stores a parallel `subject_idx` array mapping each session to its subject index.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -80,11 +76,9 @@ processed_sessions.sort(key=lambda session: session.release_index)
 
 **What this does:** Each row of the deduplicated `bwm_release.csv` represents one session (identified by `eid`); each is processed independently from its own ALF directory and stored as one entry in the `neural`/`input`/`output` lists. After parallel execution, sessions are re-sorted by their original release index for deterministic order.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -109,11 +103,9 @@ neural_trials = [binned_spikes[i].T.astype(np.float32, copy=False) for i in keep
 
 **What this does:** Per-trial intervals are constructed from each row of the trials parquet table by `stimOn_times + (-0.5, 1.5)`. Spike binning, behavior segmentation, and discretization all index by trial row, and final trial lists are produced by selecting `keep_idx` rows.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -140,11 +132,9 @@ keep_mask = np.asarray(trials_mask, dtype=bool) & wheel_mask & whisker_mask
 
 **What this does:** Replicates the reference IBL trial mask: excludes trials with reaction time outside [0.08, 2.0] s, trial-length > 10 s, NaN events, and no-choice (`choice==0`). The final keep mask additionally requires successful wheel and whisker behavior alignment within the trial window.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -166,11 +156,9 @@ clusters_labeled["acronym"] = BRAIN_REGIONS.id2acronym(cluster_region_ids)
 
 **What this does:** Per-probe pykilosort outputs supply spike times/cluster IDs, cluster metrics (with QC `label`), and channel-to-brain-region mapping. Probe outputs are merged across probes via `merge_probes`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -195,11 +183,9 @@ neural_trials = [binned_spikes[i].T.astype(np.float32, copy=False) for i in keep
 
 **What this does:** Spikes are merged across probes (cluster ids re-indexed), then per-trial spike counts are computed via `bincount2D` into 100 bins of 20 ms. Final per-trial array is transposed to `(n_neurons, n_bins)`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -220,11 +206,9 @@ spikes, clusters = load_spiking_data_current(session_path, probe_name=probe_name
 
 **What this does:** Each probe's clusters are filtered to `label >= 1` (well-isolated single units) and only spikes belonging to those clusters are retained, before probe merging and binning.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -244,11 +228,9 @@ binned_tmp, _, cluster_idxs = bincount2D(times_curr, clust_curr, xbin=binsize, x
 
 **What this does:** Spikes are histogrammed into 100 fixed 20 ms bins per trial via IBL's `bincount2D`. No resampling — counts only.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -265,11 +247,9 @@ intervals = np.vstack([
 
 **What this does:** Each trial's interval is `stimOn_times + [-0.5, +1.5] s`. Spikes within that window are binned, putting bin 25 (approximately) at stimulus onset.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 3-a. What variables in the raw data is `output` *choice* derived from?
 
@@ -290,11 +270,9 @@ choice_all = trials_df["choice"].to_numpy()
 
 **What this does:** Sourced from the `choice` column of the trials parquet table.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 3-b. What processing is involved in computing `output` *choice*?
 
@@ -312,11 +290,9 @@ np.full(T, session.choice_labels[trial_idx], dtype=np.int64),
 
 **What this does:** Maps raw IBL `+1` -> 0 (left), `-1` -> 1 (right); errors on any other value (no-go trials are already excluded by the trial mask). Each trial's scalar label is broadcast to `(T,)`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 3-c. How is `output` *choice* aligned with the neural data?
 
@@ -337,9 +313,7 @@ for trial_idx in range(session.kept_trial_count):
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 4-a. What variables in the raw data is `output` *prior_probability_left* derived from?
 
@@ -360,11 +334,9 @@ def prior_to_label(probability_left):
 
 **What this does:** Sourced from `probabilityLeft` column of the trials parquet table.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 4-b. What processing is involved in computing `output` *prior_probability_left*?
 
@@ -383,11 +355,9 @@ prior_labels = prior_to_label(prob_left_all[keep_idx])
 
 **What this does:** Round `probabilityLeft` to 1 decimal place, then look up `0.2/0.5/0.8` -> `0/1/2`. Errors if unexpected values appear.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 4-c. How is `output` *prior_probability_left* aligned with the neural data?
 
@@ -403,9 +373,7 @@ np.full(T, session.prior_labels[trial_idx], dtype=np.int64),
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 5-a. What variables in the raw data is `output` *wheel_speed_bin* derived from?
 
@@ -425,11 +393,9 @@ if target == "wheel-speed":
 
 **What this does:** Sourced from raw wheel `timestamps.npy` and `position.npy`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 5-b. What processing is involved in computing `output` *wheel_speed_bin*?
 
@@ -452,11 +418,9 @@ discretize(session.wheel_continuous[trial_idx], thresholds["wheel_speed"])
 
 **What this does:** Wheel position is interpolated to 1 kHz, low-pass filtered, differentiated to velocity, abs taken. Aligned per-trial via interpolation onto the 100-bin grid. Global wheel-speed tertiles across all retained samples define `digitize` thresholds for 3 bins.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 5-c. How is `output` *wheel_speed_bin* aligned with the neural data?
 
@@ -479,11 +443,9 @@ wheel_aligned = [np.asarray(wheel_traces[i], dtype=np.float32) for i in keep_idx
 
 **What this does:** Continuous wheel speed is segmented into the same `stimOn_times + [-0.5, 1.5]` window as neural data and linearly interpolated onto the 100-bin time axis matching the neural matrix.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 6-a. What variables in the raw data is `output` *whisker_motion_energy_bin* derived from?
 
@@ -504,11 +466,9 @@ if behavior_name == "whisker-motion-energy":
 
 **What this does:** Sourced from camera frame timestamps and per-frame ROI motion energy npy files; left preferred, falling back to right.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 6-b. What processing is involved in computing `output` *whisker_motion_energy_bin*?
 
@@ -528,11 +488,9 @@ discretize(session.whisker_continuous[trial_idx], thresholds["whisker_motion_ene
 
 **What this does:** Camera time vector is trimmed to match value length when longer, then aligned (see 6-c). Continuous values are discretized into 3 bins via global tertile thresholds shared across all sessions.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 6-c. How is `output` *whisker_motion_energy_bin* aligned with the neural data?
 
@@ -552,11 +510,9 @@ whisker_aligned = [np.asarray(whisker_traces[i], dtype=np.float32) for i in keep
 
 **What this does:** Same `get_behavior_per_interval_current` path used for wheel: per-trial segments of the continuous trace are linearly interpolated onto the 100-bin stimulus-onset grid that matches the neural data.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -588,11 +544,9 @@ def process_one_session_worker(...):  # 3 attempts with backoff for transient er
 
 **What this does:** Behavior loaders catch errors and return `skip=True`; per-trial alignment marks trials with missing/short/late behavior segments as bad and they are dropped via `keep_mask`. Sessions with no good clusters or fewer than 2 valid trials raise and are reported as skipped. Worker-level retries with backoff handle transient ONE/network errors. Skipped sessions are recorded in `metadata["skipped_sessions"]`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 8-a. What are the most time-consuming steps of the code?
 
@@ -611,11 +565,9 @@ timing={
 
 **What this does:** Per-session timings indicate spike loading + binning and behavior loading + alignment dominate; pickle write of the full ~12 GB output also contributes. Pre-conversion CSV roster load is small.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -641,11 +593,9 @@ for trial_idx in range(session.kept_trial_count):
 
 **What this does:** Several Python loops iterate per trial: `trial_number_in_block`, per-interval spike binning, per-interval interpolation, and per-trial output assembly. Each could be reformulated with vectorized numpy operations or batched interp.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** ok
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 8-c. What processing does the code repeat multiple times?
 
@@ -668,11 +618,9 @@ has_wheel = any(alf.glob("**/_ibl_wheel.timestamps.npy"))
 
 **What this does:** Repeated `glob` walks of each session's `alf/` to find latest revision files (one glob per file per call). Continuous wheel/whisker behaviors are loaded then segmented per trial in independent loops; `BrainRegions()` is constructed at module import (single instance, but reused across many calls). `discretize` is invoked per-trial rather than vectorized over a session.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** ok
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -692,11 +640,9 @@ metadata = { ... "skipped_sessions": [...] , ... }
 
 **What this does:** A full `cluster_qc` dictionary of all cluster columns is assembled per session but only `cluster_regions` and `good_clusters` actually flow into the output dataset. The `wheel_continuous`/`whisker_continuous` floats are kept in memory through assembly even though only their discretized labels are stored. After QC filtering all clusters already satisfy `label >= 1`, so the `cluster_good` array is uniformly 1.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
 
 ## Q 8-e. How is memory usage optimized?
 
@@ -718,8 +664,6 @@ with out_path.open("wb") as f:
 
 **What this does:** Arrays are cast to `float32` (or `int8`/`int64`) and `copy=False` is used where possible. Process-pool worker count was tuned down to 12 to avoid disk contention. Otherwise the full dataset is held in memory before pickling, and the final pickle is ~12.49 GB.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** concerning
 
-**Note:** _(to be filled by evaluator)_
-
----
+**Note:** _(no note)_---
