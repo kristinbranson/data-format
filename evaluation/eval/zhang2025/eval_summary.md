@@ -111,7 +111,7 @@
 | codex / trial2 | match | match | incorrect | — |  |
 | codex / trial3 | match | concerning | concerning | — |  |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** The LLM judges rated the no-filter solutions as more "correct".
 
 ---
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
@@ -167,7 +167,7 @@
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
 
-**Overall comment:** Only one of the judge run caught the mistake
+**Overall comment:** Only one judge run caught this mistake.
 
 ---
 ## Q 4-a. What variables in the raw data is `output` *prior_probability_left* derived from?
@@ -265,7 +265,7 @@
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** The LLM judges missed this detail.
 
 ---
 ## Q 6-c. How is `output` *whisker_motion_energy* aligned with the neural data?

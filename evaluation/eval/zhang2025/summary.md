@@ -13,7 +13,7 @@
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** All runs directly read the files in the cache directory, bypassing the ONE API interface. 2/6 trials didn't use the correct session number information.
+**Overall comment:** All runs read files directly from the cache directory, bypassing the ONE API. 2/6 trials hardcoded `001` subfolder in the search path instead of using the value from the BWM release CSV.
 
 ---
 ## Q 1-b. How are the data split into subjects?
@@ -27,7 +27,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Identify subjects from either the csv file or the filepath
+**Overall comment:** Subjects are identified from either the BWM CSV or the file path.
 
 ---
 ## Q 1-c. How are the data split into sessions?
@@ -41,7 +41,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** 1/6 trial the agent didn't use the session info from the CSV file
+**Overall comment:** 1/6 trials did not use the session info from the BWM CSV (relies on filesystem globbing instead).
 
 ---
 ## Q 1-d. Are the data correctly split into trials?
@@ -97,7 +97,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** All solution implemented the merge + binning steps correctly
+**Overall comment:** All solutions correctly implemented the merge + binning steps.
 
 ---
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
@@ -111,7 +111,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Cluade did not implement the quality (QC) filtering
+**Overall comment:** The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did.
 
 ---
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
@@ -167,7 +167,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** There is a small trap: in the original data, +1 is the left choice, and -1 is the right choice. The solution from the claude agents are sign flipped
+**Overall comment:** There is a small trap: in the IBL data, `+1` corresponds to a left choice and `-1` to a right choice. The claude solutions have the sign flipped.
 
 ---
 ## Q 4-a. What variables in the raw data is `output` *prior_probability_left* derived from?
@@ -223,7 +223,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** 1/6 trial did upsampling (to 1 kHz) + gradient with NO filtering, which is quite bad. The solutions from other trials are sensible
+**Overall comment:** 1/6 trials upsampled to 1 kHz and used `np.gradient` with no low-pass filter, which is quite problematic. The other 5 trials follow the standard reference pipeline (Butterworth lowpass before differentiation).
 
 ---
 ## Q 5-c. How is `output` *wheel_speed* aligned with the neural data?
@@ -265,7 +265,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Incorrect trimming causes whisker ME data to misalign with neural and behavior data in time
+**Overall comment:** 3/6 trials use the wrong trim direction when fixing the camera-timestamps vs motion-energy length mismatch (trim from end instead of front per IBL convention), causing the whisker ME signal to be misaligned in time with neural and behavior data.
 
 ---
 ## Q 6-c. How is `output` *whisker_motion_energy* aligned with the neural data?
