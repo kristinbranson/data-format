@@ -12,6 +12,12 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 ## Comments
 
+#### Agent Performance
+- Similar to the allen2p dataset, all of the agents bypassed the ONE API and read the data directly from the local cache folder structure.
+- The agents did quite well preprocessing the neural data — all 6 correctly implement the core pipeline (merge probes, align to stimulus onset, and compute binned spike counts).
+- 2/6 trials made a critical mistake when converting the choice variable, assuming a `+1 = right`, `-1 = left` convention when IBL's is flipped (`+1 = left`, `-1 = right`). We have seen similar patterns multiple times — agents make assumptions without empirically checking against the data.
+- The largest variation appears in the wheel and whisker preprocessing — including one trial where the agent upsampled wheel position and applied `np.gradient` to compute speed without any filtering, and 3/6 trials that applied the wrong alignment when fixing the camera-timestamps vs motion-energy length mismatch.
+
 ## Per-question evaluations
 
 | Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
