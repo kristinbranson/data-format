@@ -12,6 +12,11 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 ## Comments
 
+#### Agent Performance
+- This dataset has a custom format with most of the information contained in nested Python dictionaries and key-value pairs. The agents were generally very good at figuring out the data structure and where to find the relevant information.
+- The agents made a few (strange?) mistakes on a subset of trials for which I could not find an obvious explanation — e.g., dropping V1 from the analysis, applying a very strict d-prime filter to select neurons, and merging stimulus categories that are not visually similar (rock and circle).
+- Another problem is setting the bin edges incorrectly for running speed (due to a large number of stationary frames), despite the agents themselves explicitly reporting that the resulting bins contain a heavily skewed proportion of the data.
+
 ## Per-question evaluations
 
 | Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
