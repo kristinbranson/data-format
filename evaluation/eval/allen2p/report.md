@@ -52,7 +52,6 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 6-c | How is `output` *Image change* aligned with the neural data? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔴 |  |  |
 | 7-a | What variables in the raw data is `output` *Trial outcome* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 7-b | What processing is involved in computing `output` *Trial outcome*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 ⚫🟢🟢 |  |  |
-| 7-c | How is `output` *Trial outcome* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |
 | 8 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟡🟢🟡 | 🔴🟡🔵 🟡🟡🟡 | Some scripts are missing explicit error handling. |  |
 | 9-a | What are the most time-consuming steps of the code? | 🟡🟡🟡 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔵 🔵🔵🟡 |  |  |
 | 9-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔵 🔵🟢🔵 |  |  |

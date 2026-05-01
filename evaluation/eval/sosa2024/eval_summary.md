@@ -285,20 +285,7 @@
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | — |  |
-| claude-code / trial2 | match | match | match | — |  |
-| claude-code / trial3 | match | match | match | — |  |
-| codex / trial1 | match | match | match | — |  |
-| codex / trial2 | match | match | match | — |  |
-| codex / trial3 | match | match | match | — |  |
-
----
-
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 | Agent / trial | Human | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -337,22 +324,7 @@
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|
-| claude-code / trial1 | match | concerning | better | Human |  |
-| claude-code / trial2 | match | incorrect | incorrect | Human |  |
-| claude-code / trial3 | match | concerning | better | Human |  |
-| codex / trial1 | match | concerning | incorrect | Human |  |
-| codex / trial2 | match | incorrect | better | Human |  |
-| codex / trial3 | match | concerning | incorrect | Human |  |
-
-**Overall comment:** Different choices of bin edges, but all are valid; the Claude judge is being too literal.
-
----
-
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 | Agent / trial | Human | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|

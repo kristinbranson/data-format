@@ -318,19 +318,6 @@
 
 ---
 
-## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|
-| claude-code / trial1 | match | — | — | — |  |
-| claude-code / trial2 | match | — | — | — |  |
-| claude-code / trial3 | match | — | — | — |  |
-| codex / trial1 | match | — | — | — |  |
-| codex / trial2 | match | — | — | — |  |
-| codex / trial3 | match | — | — | — |  |
-
----
-
 ## Q 8. How are minor mistakes in the data, e.g. missing data, handled?
 
 | Agent / trial | Human | Claude judge | Codex judge | Best | Why |
