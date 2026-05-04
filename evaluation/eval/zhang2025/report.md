@@ -20,27 +20,27 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 ## Per-question evaluations
 
-| Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |
-|---|---|---|---|---|---|---|
-| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔴🔴🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔴🟢 🟢🟢🟢 | All runs read files directly from the cache directory, bypassing the ONE API. 2/6 trials hardcoded `001` subfolder in the search path instead of using the value from the BWM release CSV. |  |
+| Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment | Difference categories |
+|---|---|---|---|---|---|---|---|
+| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔴🔴🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔴🟢 🟢🟢🟢 | All runs read files directly from the cache directory, bypassing the ONE API. 2/6 trials hardcoded `001` subfolder in the search path instead of using the value from the BWM release CSV. |  | `SDK` |
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Subjects are identified from either the BWM CSV or the file path. |  |
 | 1-c | How are the data split into sessions? | 🟢🔵🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 1/6 trials did not use the session info from the BWM CSV (relies on filesystem globbing instead). |  |
 | 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟢 |  |  |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | All solutions correctly implemented the merge + binning steps. |  |
-| 2-c | How is the `neural` data filtered based on quality controls? | 🟡🟡🟡 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟡 | 🟢🟢🟢 🟡🔴🟡 | The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did. | The LLM judges rated the no-filter solutions as more "correct". |
+| 2-c | How is the `neural` data filtered based on quality controls? | 🟡🟡🟡 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟡 | 🟢🟢🟢 🟡🔴🟡 | The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did. | The LLM judges rated the no-filter solutions as more "correct". | `UNDERFILTER` |
 | 2-d | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |
 | 2-e | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 |  |  |
 | 3-a | What variables in the raw data is `output` *choice* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
-| 3-b | What processing is involved in computing `output` *choice*? | 🔴🔴🔴 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟢 🟢🟢🟢 | There is a small trap: in the IBL data, `+1` corresponds to a left choice and `-1` to a right choice. The claude solutions have the sign flipped. | Only one judge run caught this mistake. |
+| 3-b | What processing is involved in computing `output` *choice*? | 🔴🔴🔴 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟢 🟢🟢🟢 | There is a small trap: in the IBL data, `+1` corresponds to a left choice and `-1` to a right choice. The claude solutions have the sign flipped. | Only one judge run caught this mistake. | `VARNAME` |
 | 4-a | What variables in the raw data is `output` *prior_probability_left* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 4-b | What processing is involved in computing `output` *prior_probability_left*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 5-a | What variables in the raw data is `output` *wheel_speed* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
-| 5-b | What processing is involved in computing `output` *wheel_speed*? | 🟢🔴🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 | 🟢🔴🟢 🟢🟢🟢 | 1/6 trials upsampled to 1 kHz and used `np.gradient` with no low-pass filter, which is quite problematic. The other 5 trials follow the standard reference pipeline (Butterworth lowpass before differentiation). |  |
+| 5-b | What processing is involved in computing `output` *wheel_speed*? | 🟢🔴🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 | 🟢🔴🟢 🟢🟢🟢 | 1/6 trials upsampled to 1 kHz and used `np.gradient` with no low-pass filter, which is quite problematic. The other 5 trials follow the standard reference pipeline (Butterworth lowpass before differentiation). |  | `MISC` |
 | 5-c | How is `output` *wheel_speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |
 | 6-a | What variables in the raw data is `output` *whisker_motion_energy* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
-| 6-b | What processing is involved in computing `output` *whisker_motion_energy*? | 🟡🟡🔵 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 3/6 trials use the wrong trim direction when fixing the camera-timestamps vs motion-energy length mismatch (trim from end instead of front per IBL convention), causing the whisker ME signal to be misaligned in time with neural and behavior data. | The LLM judges missed this detail. |
+| 6-b | What processing is involved in computing `output` *whisker_motion_energy*? | 🟡🟡🔵 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 3/6 trials use the wrong trim direction when fixing the camera-timestamps vs motion-energy length mismatch (trim from end instead of front per IBL convention), causing the whisker ME signal to be misaligned in time with neural and behavior data. | The LLM judges missed this detail. | `MISC` |
 | 6-c | How is `output` *whisker_motion_energy* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |
 | 7 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟢 🟡🟢🟢 |  |  |
 | 8-a | What are the most time-consuming steps of the code? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
