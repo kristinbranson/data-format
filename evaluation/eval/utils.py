@@ -817,17 +817,26 @@ def draw_summary_column(ax, layout, summary, *,
                         title_pad=1.6):
     """Draw a single grand-average fraction per (category, subtype) as a
     rightmost column of the figure. Each subtype block shows one centered
-    number; subtypes missing from `summary` are left blank.
+    bold number, color-graded so high fractions read as dark/bold and low
+    fractions fade toward grey. Subtypes missing from `summary` are blank.
     """
     sub_extents = layout["sub_extents"]
+
+    # Map frac to a grey level: values are typically in [0.5, 1.0], so
+    # stretch that range across the full grey→black gradient. Below 0.5
+    # clamps to the lightest grey.
+    def grade_color(frac):
+        t = max(0.0, min(1.0, (frac - 0.78) / 0.22))   # 0 at frac=0.5, 1 at 1.0
+        g = int(round((1 - t) * 0xb0))               # 0xb0 grey → 0x00 black
+        return f"#{g:02x}{g:02x}{g:02x}"
 
     for (c, s), (y_hi, y_lo) in sub_extents.items():
         frac = summary.get((c, s))
         if frac is None:
             continue
         ax.text(0.5, (y_hi + y_lo) / 2, f"{frac:.3f}",
-                ha="center", va="center", fontsize=9,
-                color="#333333", transform=ax.transData,
+                ha="center", va="center", fontsize=10, fontweight="bold",
+                color=grade_color(frac), transform=ax.transData,
                 clip_on=False)
 
     if title is not None:
