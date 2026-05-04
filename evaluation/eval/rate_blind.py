@@ -20,7 +20,7 @@ Per-question prompts (asked once after all 6 trials of a qid):
   - Solution note  → written to summary.md      as **Overall comment:**
                      (matches rate.py's output format)
   - Judge note     → written to eval_summary.md as **Overall comment:**
-                     (matches compare.py's output format; load_eval.py reads this)
+                     (matches compare.py's output format; utils.py reads this)
 
 Resume:
   - Trials whose Rating is no longer the placeholder are skipped.
