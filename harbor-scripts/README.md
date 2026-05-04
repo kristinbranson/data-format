@@ -209,6 +209,77 @@ Itemize-changes prefixes (rsync's `YXcstpoguax` format):
   - >f..tp..... — timestamp + permissions differ, content same
 ```
 
+### Conversion timing (cluster)
+
+End-to-end timing of `convert_data.py` for the four supervised tasks
+(`allen2p`, `lee2025`, `majnik2025`, `sosa2024`) — for both manually-written
+solutions in `manual/<task>/` and every agent trial under
+`harbor-jobs/<task>/<agent>/<trial>/verifier/snapshot/`. Runs as bsub jobs on
+`gpu_a100` with 8 cores; outputs go to `<repo>/timing_results/`.
+
+Per-task data dirs (mirror the docker-compose mounts):
+- `allen2p` → `<repo>/allen2p/data`
+- `lee2025` → `<repo>/lee2025/data`
+- `majnik2025` → `<repo>/track2p/data`
+- `sosa2024` → `<repo>/sosa2024/data`
+
+Workflow:
+```
+1. Verify prereqs       python submit_conversion_timing.py --check
+2. Submit one job       python submit_conversion_timing.py --start 0 --limit 1
+3. Submit everything    python submit_conversion_timing.py
+4. Watch failures       python scan_conversion_failures.py --only-fail
+5. Aggregate to CSV     python summarize_conversion_timing.py
+```
+
+Cluster env: `decoder-data-format`. Note that `$HOME` differs between
+workstation and cluster, so the env must be installed on the cluster
+separately. Known extra deps to install in the cluster env:
+`pip install "allensdk@git+https://github.com/AllenInstitute/AllenSDK.git" suite2p`.
+
+**run_one_conversion.py** — Run one `convert_data.py` with `/usr/bin/time -v`
++ `train_decoder.py --verify-only`. Working files (data symlink, output pkls,
+copied scripts) live in `/scratch/$USER/`; only `timing.txt`, `stdout.txt`,
+`verify.txt` get written to the permanent result dir. Patches `/app/data` to
+the local data symlink in the copied script and only passes `--datadir` if
+the script's argparse accepts it.
+```
+python run_one_conversion.py <task> <convert_data.py> <result_dir>
+```
+
+**submit_conversion_timing.py** — Discover and submit jobs. Auto-wraps `bsub`
+through `ssh login1` when run from the workstation.
+```
+python submit_conversion_timing.py --check                   # validate, don't submit
+python submit_conversion_timing.py --dry-run                 # print commands
+python submit_conversion_timing.py                           # submit all (29 jobs)
+python submit_conversion_timing.py --tasks sosa2024          # filter
+python submit_conversion_timing.py --manual-only             # skip agent trials
+python submit_conversion_timing.py --trials-only             # skip manual
+python submit_conversion_timing.py --start N --limit M       # paginate
+python submit_conversion_timing.py --minutes 360             # bsub -W
+```
+Each job gets `-n 8 -q gpu_a100 -gpu "num=1:aff=yes" -W 240`.
+
+**scan_conversion_failures.py** — Walk `timing_results/` and report
+per-job status (OK / BAD-CONV / BAD-VRFY / NO-VRFY / PENDING / NO-TIMING),
+with conv/verify wall time, output pkl size, and a rough throughput metric
+`(n_neurons + n_inputs + n_outputs) × n_trials × T_mean / wall_seconds`
+parsed out of `verify.txt`.
+```
+python scan_conversion_failures.py
+python scan_conversion_failures.py --only-fail --show-tail 30
+python scan_conversion_failures.py --only-pending
+```
+
+**summarize_conversion_timing.py** — Aggregate every `timing.txt` (plus
+shape fields scraped from `verify.txt`) into a CSV with throughput and
+work-unit columns.
+```
+python summarize_conversion_timing.py
+python summarize_conversion_timing.py --out /path/to/summary.csv
+```
+
 ### Utilities
 
 **gpu_ids.py** — Utility for GPU ID selection from Kai for use with podman on the cluster. We decided not to use harbor on the cluster because we weren't properly able to control access to resources. 
