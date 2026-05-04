@@ -239,7 +239,6 @@ SUBTYPE_ORDER = {
         "Vectorization",
         "Repeated work",
         "Unnecessary work",
-        "Memory usage",
     ],
 }
 
@@ -267,7 +266,6 @@ _EFF_KEYWORDS = [
     ("vectorized", "Vectorization"),
     ("repeat", "Repeated work"),
     ("unnecessary", "Unnecessary work"),
-    ("memory", "Memory usage"),
 ]
 
 _VAR_TITLE_RE = re.compile(r"`(input|output)`\s*\*([^*]+)\*")
@@ -624,7 +622,7 @@ def draw_dataset_column(ax, rows, layout, *,
             if n_subs <= 1:
                 continue
             ax.text(category_label_x, (y_hi + y_lo) / 2, cat,
-                    ha="right", va="center", fontsize=9,
+                    ha="right", va="center", fontsize=11,
                     fontweight="bold", rotation=90)
 
     y_top_data = layout["y_top"]
@@ -668,7 +666,7 @@ def draw_label_column(ax, layout, *,
         if n_subs <= 1:
             continue
         ax.text(category_label_x, (y_hi + y_lo) / 2, cat,
-                ha="left", va="center", fontsize=9,
+                ha="left", va="center", fontsize=11,
                 fontweight="bold", rotation=90,
                 transform=ax.transData, clip_on=False)
 
