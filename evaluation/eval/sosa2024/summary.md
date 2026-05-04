@@ -298,21 +298,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -354,21 +340,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 | Agent / trial | Rating | Note |
 |---|---|---|

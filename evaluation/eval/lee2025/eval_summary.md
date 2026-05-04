@@ -168,19 +168,6 @@
 
 ---
 
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-| Agent / trial | Human | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | ok | — |  |
-| claude-code / trial2 | match | match | match | — |  |
-| claude-code / trial3 | match | match | match | — |  |
-| codex / trial1 | match | match | match | — |  |
-| codex / trial2 | match | match | match | — |  |
-| codex / trial3 | match | match | match | — |  |
-
----
-
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 | Agent / trial | Human | Claude judge | Codex judge | Best | Why |

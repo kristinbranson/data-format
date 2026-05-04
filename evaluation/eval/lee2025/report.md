@@ -39,7 +39,6 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 2-e | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔵🟡 🔵🟢🟡 |  |  |
 | 3-a | What variables in the raw data is `input` *Blocked positions* derived from? | 🔵🔵🔵 🟢🟢🟢 | 🟡🔵🟡 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | All claude agents used the environment-geometry-to-name mapping, which is a bit more complicated but correct. | Two possible solutions; Claude judge is inconsistent. |
 | 3-b | What processing is involved in computing `input` *Blocked positions*? | 🟢🟢🟢 🟢🟢🟢 | 🟡🔵🟡 🔵🟡🟣 | 🔴🔴🔴 🔴🟢⚫ | Some used different conventions, but the same information is represented. | Same as above. |
-| 3-c | How is `input` *Blocked positions* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🟢 |  |  |
 | 4-a | What variables in the raw data is `output` *Position* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 4-b | What processing is involved in computing `output` *Position*? | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🔵 🔵🟡🟪 | 🔴🔴🔴 🔴🟢⚫ | The grid/bin conventions differ across some solutions but are all valid. |  |
 | 4-c | How is `output` *Position* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟡🟢 | 🟢🟡🟢 🔵🟢🟢 |  |  |

@@ -341,20 +341,6 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
 ## Q 8. How are minor mistakes in the data, e.g. missing data, handled?
 
 | Agent / trial | Rating | Note |

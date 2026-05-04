@@ -172,20 +172,6 @@
 **Overall comment:** Some used different conventions, but the same information is represented.
 
 ---
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 | Agent / trial | Rating | Note |

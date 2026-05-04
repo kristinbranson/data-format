@@ -45,12 +45,10 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 6-b | What processing is involved in computing `input` *Previous trial outcome*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🔵 | 🟢🟢🟢 🟣🟢🟡 |  |  |
 | 7-a | What variables in the raw data is `output` *Distance to reward zone* derived from? | 🟡🟡🟢 🟡🟢🟡 | 🔵🟡🟡 🟡🟢🟡 | 🔴🔴🔴 🔵🟡🟣 | Agents didn't verify the "30-trial switch rule" against the data — the correct approach is to identify the reward zone from the data rather than using a hard-coded switch time. | Claude caught some of the potential problems but missed others. | `LITERAL` |
 | 7-b | What processing is involved in computing `output` *Distance to reward zone*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
-| 7-c | How is `output` *Distance to reward zone* thresholded into categories? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
-| 7-d | How is `output` *Distance to reward zone* aligned with the neural data? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
+| 7-c | How is `output` *Distance to reward zone* aligned with the neural data? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 8-a | What variables in the raw data is `output` *Absolute position* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 8-b | What processing is involved in computing `output` *Absolute position*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟡🟢 | 🟢🟢🟢 🔴🔵🔴 |  |  |
-| 8-c | How is `output` *Absolute position* thresholded into categories? | 🟢🟢🟢 🟢🟢🟢 | 🟡🔴🟡 🟡🔴🟡 | 🟣🔴🟣 🔴🟣🔴 |  | Different choices of bin edges, but all are valid; the Claude judge is being too literal. |
-| 8-d | How is `output` *Absolute position* aligned with the neural data? | 🟢🟢🟢 🟢🟡🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
+| 8-c | How is `output` *Absolute position* aligned with the neural data? | 🟢🟢🟢 🟢🟡🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 9-a | What variables in the raw data is `output` *Lick* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 9-b | What processing is involved in computing `output` *Lick*? | 🟢🟢🟢 🟢🟡🟢 | 🟣🟡🟡 🟢🟢🟢 | 🟡🟡🟡 🔵🔵🔵 |  |  |
 | 9-c | How is `output` *Lick* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 |  |  |
