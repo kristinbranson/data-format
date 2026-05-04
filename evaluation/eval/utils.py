@@ -467,11 +467,26 @@ RATING_COLORS = {
 }
 NAN_COLOR = "#e8e8e8"
 
+# Redundant non-color encoding for color-blind viewers: a small white glyph
+# overlaid on each colored square. Greens (ok / match) and NaN are left
+# bare — color alone is fine when the message is "this is fine".
+RATING_GLYPHS = {
+     2: "+",         # better
+    -1: "!",         # concerning
+    -2: "✗",         # incorrect
+}
+
 
 def rating_color(v):
     if v is None or (isinstance(v, float) and np.isnan(v)):
         return NAN_COLOR
     return RATING_COLORS.get(int(v), NAN_COLOR)
+
+
+def rating_glyph(v):
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return None
+    return RATING_GLYPHS.get(int(v))
 
 
 def draw_dataset_column(ax, rows, layout, *,
@@ -549,7 +564,7 @@ def draw_dataset_column(ax, rows, layout, *,
         kind = r.get("render", "squares")
         if kind == "symbols":
             # Per-cell glyph colored by the underlying rating value:
-            #   ≥ 0 → ✓, [-1, 0) → ○ (open circle patch), < -1 → ✗
+            #   ≥ 0 → ✓, [-1, 0) → !, < -1 → ✗
             for i, rating in enumerate(r["ratings"]):
                 if rating is None or (isinstance(rating, float) and np.isnan(rating)):
                     continue
@@ -557,14 +572,14 @@ def draw_dataset_column(ax, rows, layout, *,
                 cx = xs[i] + square / 2
                 cy = y + square / 2
                 if rating >= -1 and rating < 0:
-                    ax.add_patch(Circle((cx, cy), radius=square * 0.22,
-                                        fill=False, edgecolor=color,
-                                        linewidth=1.6, zorder=2))
+                    symbol = "!"
+                elif rating >= 0:
+                    symbol = "✓"
                 else:
-                    symbol = "✓" if rating >= 0 else "✗"
-                    ax.text(cx, cy, symbol, ha="center", va="center",
-                            color=color, fontsize=14, fontweight="bold",
-                            zorder=2)
+                    symbol = "✗"
+                ax.text(cx, cy, symbol, ha="center", va="center",
+                        color=color, fontsize=14, fontweight="bold",
+                        zorder=2)
         elif kind == "text":
             # Text labels in r["text"]. Length 6 → one per cell; length 2 →
             # one per agent group (centered across that group's 3 cells).
@@ -591,6 +606,13 @@ def draw_dataset_column(ax, rows, layout, *,
                                        facecolor=rating_color(rating),
                                        edgecolor="white", linewidth=0.5,
                                        zorder=1))
+                glyph = rating_glyph(rating)
+                if glyph is not None:
+                    ax.text(xs[i] + cell_inset + cell_size / 2,
+                            y + cell_inset + cell_size / 2,
+                            glyph, ha="center", va="center",
+                            color="white", fontsize=10, fontweight="bold",
+                            zorder=2)
 
     if show_labels:
         for (c, s), (y_hi, y_lo) in sub_extents.items():
