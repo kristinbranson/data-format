@@ -162,7 +162,7 @@
 |---|---|---|---|---|---|
 | claude-code / trial1 | match | match | match | — |  |
 | claude-code / trial2 | incorrect | match | concerning | — |  |
-| claude-code / trial3 | match | match | — | — |  |
+| claude-code / trial3 | match | match | incorrect | — |  |
 | codex / trial1 | match | match | match | — |  |
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
@@ -190,7 +190,7 @@
 |---|---|---|---|---|---|
 | claude-code / trial1 | match | match | match | — |  |
 | claude-code / trial2 | match | match | match | — |  |
-| claude-code / trial3 | match | match | — | — |  |
+| claude-code / trial3 | match | match | concerning | — |  |
 | codex / trial1 | match | match | match | — |  |
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
@@ -232,7 +232,7 @@
 |---|---|---|---|---|---|
 | claude-code / trial1 | match | match | match | — |  |
 | claude-code / trial2 | ok | match | incorrect | — |  |
-| claude-code / trial3 | incorrect | match | — | — |  |
+| claude-code / trial3 | incorrect | match | match | — |  |
 | codex / trial1 | match | match | match | — |  |
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
@@ -274,7 +274,7 @@
 |---|---|---|---|---|---|
 | claude-code / trial1 | ok | match | match | — |  |
 | claude-code / trial2 | concerning | concerning | incorrect | — |  |
-| claude-code / trial3 | concerning | match | — | — |  |
+| claude-code / trial3 | concerning | match | match | — |  |
 | codex / trial1 | match | match | match | — |  |
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |

@@ -156,7 +156,7 @@
 | claude-code / trial1 | match | concerning | incorrect | Claude judge | Claude caught a minor bug |
 | claude-code / trial2 | incorrect | concerning | incorrect | — |  |
 | claude-code / trial3 | match | concerning | incorrect | Human |  |
-| codex / trial1 | match | concerning | — | Human |  |
+| codex / trial1 | match | concerning | incorrect | Human |  |
 | codex / trial2 | match | match | incorrect | Human |  |
 | codex / trial3 | match | match | incorrect | Human |  |
 
@@ -195,7 +195,7 @@
 | claude-code / trial1 | match | concerning | incorrect | Human |  |
 | claude-code / trial2 | match | concerning | incorrect | Human |  |
 | claude-code / trial3 | match | concerning | incorrect | Human |  |
-| codex / trial1 | match | concerning | — | Human |  |
+| codex / trial1 | match | concerning | incorrect | Human |  |
 | codex / trial2 | match | concerning | incorrect | Human |  |
 | codex / trial3 | match | concerning | incorrect | Human |  |
 
@@ -234,7 +234,7 @@
 | claude-code / trial1 | match | ok | incorrect | Human |  |
 | claude-code / trial2 | match | concerning | concerning | Claude judge | Claude caught a problem with agent implmentation of image name mapping |
 | claude-code / trial3 | match | match | concerning | Human |  |
-| codex / trial1 | match | concerning | — | Human |  |
+| codex / trial1 | match | concerning | incorrect | Human |  |
 | codex / trial2 | match | ok | concerning | Human |  |
 | codex / trial3 | match | concerning | incorrect | Human |  |
 
@@ -273,7 +273,7 @@
 | claude-code / trial1 | match | concerning | incorrect | Claude judge | Human error |
 | claude-code / trial2 | match | ok | ok | — |  |
 | claude-code / trial3 | match | match | concerning | Human |  |
-| codex / trial1 | match | concerning | — | Human |  |
+| codex / trial1 | match | concerning | incorrect | Human |  |
 | codex / trial2 | match | concerning | incorrect | Human |  |
 | codex / trial3 | match | concerning | concerning | Human |  |
 
@@ -312,7 +312,7 @@
 | claude-code / trial1 | match | match | match | — |  |
 | claude-code / trial2 | match | match | concerning | Human |  |
 | claude-code / trial3 | match | match | match | — |  |
-| codex / trial1 | match | match | — | — |  |
+| codex / trial1 | match | match | match | — |  |
 | codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
 

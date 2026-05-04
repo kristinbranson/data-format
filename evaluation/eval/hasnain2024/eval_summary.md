@@ -163,8 +163,8 @@
 | claude-code / trial1 | match | match | match | — |  |
 | claude-code / trial2 | match | match | match | — |  |
 | claude-code / trial3 | match | match | concerning | — |  |
-| codex / trial1 | match | — | match | — |  |
-| codex / trial2 | match | match | — | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
 
 **Overall comment:** _(no overall comment)_
@@ -191,8 +191,8 @@
 | claude-code / trial1 | match | match | concerning | — |  |
 | claude-code / trial2 | match | match | match | — |  |
 | claude-code / trial3 | match | match | match | — |  |
-| codex / trial1 | match | — | match | — |  |
-| codex / trial2 | match | match | — | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
 
 **Overall comment:** _(no overall comment)_
@@ -219,8 +219,8 @@
 | claude-code / trial1 | match | match | match | — |  |
 | claude-code / trial2 | match | match | incorrect | — |  |
 | claude-code / trial3 | match | match | concerning | — |  |
-| codex / trial1 | match | — | match | — |  |
-| codex / trial2 | match | match | — | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | concerning | — |  |
 
 **Overall comment:** _(no overall comment)_
@@ -247,8 +247,8 @@
 | claude-code / trial1 | ok | concerning | concerning | — |  |
 | claude-code / trial2 | ok | match | match | — |  |
 | claude-code / trial3 | ok | concerning | concerning | — |  |
-| codex / trial1 | ok | — | incorrect | — |  |
-| codex / trial2 | ok | match | — | — |  |
+| codex / trial1 | ok | match | incorrect | — |  |
+| codex / trial2 | ok | match | match | — |  |
 | codex / trial3 | ok | concerning | concerning | — |  |
 
 **Overall comment:** _(no overall comment)_
@@ -289,8 +289,8 @@
 | claude-code / trial1 | concerning | concerning | concerning | — |  |
 | claude-code / trial2 | match | incorrect | match | — |  |
 | claude-code / trial3 | match | incorrect | concerning | — |  |
-| codex / trial1 | concerning | — | incorrect | — |  |
-| codex / trial2 | incorrect | concerning | — | — |  |
+| codex / trial1 | concerning | match | incorrect | — |  |
+| codex / trial2 | incorrect | concerning | match | — |  |
 | codex / trial3 | match | match | concerning | — |  |
 
 **Overall comment:** _(no overall comment)_
@@ -331,8 +331,8 @@
 | claude-code / trial1 | match | match | match | — |  |
 | claude-code / trial2 | match | match | match | — |  |
 | claude-code / trial3 | match | match | match | — |  |
-| codex / trial1 | match | — | match | — |  |
-| codex / trial2 | match | match | — | — |  |
+| codex / trial1 | match | concerning | match | — |  |
+| codex / trial2 | match | match | match | — |  |
 | codex / trial3 | match | match | match | — |  |
 
 **Overall comment:** _(no overall comment)_
@@ -387,9 +387,9 @@
 | claude-code / trial1 | concerning | match | match | — |  |
 | claude-code / trial2 | concerning | match | match | — |  |
 | claude-code / trial3 | concerning | match | match | — |  |
-| codex / trial1 | ok | — | — | — |  |
+| codex / trial1 | ok | — | match | — |  |
 | codex / trial2 | concerning | match | match | — |  |
-| codex / trial3 | ok | — | — | — |  |
+| codex / trial3 | ok | — | match | — |  |
 
 **Overall comment:** _(no overall comment)_
 
@@ -401,9 +401,9 @@
 | claude-code / trial1 | ok | match | match | — |  |
 | claude-code / trial2 | ok | match | match | — |  |
 | claude-code / trial3 | ok | match | match | — |  |
-| codex / trial1 | ok | — | — | — |  |
+| codex / trial1 | ok | — | match | — |  |
 | codex / trial2 | ok | match | match | — |  |
-| codex / trial3 | ok | — | — | — |  |
+| codex / trial3 | ok | — | match | — |  |
 
 **Overall comment:** _(no overall comment)_
 
@@ -415,9 +415,9 @@
 | claude-code / trial1 | ok | match | match | — |  |
 | claude-code / trial2 | ok | match | match | — |  |
 | claude-code / trial3 | ok | match | match | — |  |
-| codex / trial1 | ok | — | — | — |  |
+| codex / trial1 | ok | — | concerning | — |  |
 | codex / trial2 | ok | match | match | — |  |
-| codex / trial3 | ok | — | — | — |  |
+| codex / trial3 | ok | — | match | — |  |
 
 **Overall comment:** _(no overall comment)_
 

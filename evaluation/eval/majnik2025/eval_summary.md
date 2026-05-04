@@ -155,12 +155,12 @@
 
 | Agent / trial | Human | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
-| claude-code / trial1 | match | match | — | — |  |
+| claude-code / trial1 | match | match | incorrect | — |  |
 | claude-code / trial2 | match | match | incorrect | — |  |
 | claude-code / trial3 | match | concerning | incorrect | Human |  |
 | codex / trial1 | match | better | better | Human |  |
 | codex / trial2 | match | better | incorrect | Human |  |
-| codex / trial3 | match | better | — | Human |  |
+| codex / trial3 | match | better | incorrect | Human |  |
 
 ---
 
@@ -194,12 +194,12 @@
 
 | Agent / trial | Human | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
-| claude-code / trial1 | concerning | concerning | — | — |  |
+| claude-code / trial1 | concerning | concerning | incorrect | — |  |
 | claude-code / trial2 | concerning | concerning | incorrect | — |  |
 | claude-code / trial3 | concerning | incorrect | incorrect | — |  |
 | codex / trial1 | match | better | ok | Human |  |
 | codex / trial2 | match | concerning | incorrect | Human |  |
-| codex / trial3 | match | better | — | Human |  |
+| codex / trial3 | match | better | incorrect | Human |  |
 
 **Overall comment:** Judge ratings are inconsistent for the same solutions.
 

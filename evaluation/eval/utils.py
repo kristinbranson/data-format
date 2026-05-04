@@ -468,7 +468,7 @@ RATING_COLORS = {
 NAN_COLOR = "#e8e8e8"
 
 
-def _rating_color(v):
+def rating_color(v):
     if v is None or (isinstance(v, float) and np.isnan(v)):
         return NAN_COLOR
     return RATING_COLORS.get(int(v), NAN_COLOR)
@@ -553,7 +553,7 @@ def draw_dataset_column(ax, rows, layout, *,
             for i, rating in enumerate(r["ratings"]):
                 if rating is None or (isinstance(rating, float) and np.isnan(rating)):
                     continue
-                color = _rating_color(rating)
+                color = rating_color(rating)
                 cx = xs[i] + square / 2
                 cy = y + square / 2
                 if rating >= -1 and rating < 0:
@@ -588,7 +588,7 @@ def draw_dataset_column(ax, rows, layout, *,
             for i, rating in enumerate(r["ratings"]):
                 ax.add_patch(Rectangle((xs[i] + cell_inset, y + cell_inset),
                                        cell_size, cell_size,
-                                       facecolor=_rating_color(rating),
+                                       facecolor=rating_color(rating),
                                        edgecolor="white", linewidth=0.5,
                                        zorder=1))
 

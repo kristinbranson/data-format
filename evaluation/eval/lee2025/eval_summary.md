@@ -162,7 +162,7 @@
 | claude-code / trial3 | match | concerning | incorrect | Human |  |
 | codex / trial1 | match | ok | incorrect | — |  |
 | codex / trial2 | match | concerning | match | Human |  |
-| codex / trial3 | match | better | — | Human |  |
+| codex / trial3 | match | better | incorrect | Human |  |
 
 **Overall comment:** Same as above.
 
@@ -190,7 +190,7 @@
 | claude-code / trial3 | match | ok | incorrect | — |  |
 | codex / trial1 | match | ok | incorrect | — |  |
 | codex / trial2 | match | concerning | match | Human |  |
-| codex / trial3 | match | better | — | Claude judge |  |
+| codex / trial3 | match | better | incorrect | Claude judge |  |
 
 ---
 
