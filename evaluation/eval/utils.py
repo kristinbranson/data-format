@@ -305,12 +305,16 @@ def categorize(qid, title):
     return None
 
 
-def collect_rows(dataset_data):
+def collect_rows(dataset_data, *, rating_field="best_rating"):
     """Walk one dataset's nested dict -> ordered list of row specs.
 
     Variables rows are ordered so vars-with-alignment come first within each
     sub-type, so the i-th row of Source variables / Processing / Alignment
     refers to the same variable for i < n_vars_with_alignment.
+
+    `rating_field` selects which rater's ratings populate the row's
+    ``"ratings"`` array. Valid values: ``"best_rating"`` (default — combined
+    best per trial), ``"human"``, ``"claude"``, or ``"codex"``.
     """
     var_groups = {}      # main_qid -> {sub_letter: row}
     other_rows = []
@@ -327,7 +331,7 @@ def collect_rows(dataset_data):
                 "subtype": subtype,
                 "var_label": var_label,
                 "title": q["title"],
-                "ratings": q["best_rating"],
+                "ratings": q[rating_field],
                 "agents": list(q["agents"]),
                 "trials": q["trials"],
             }
@@ -672,17 +676,21 @@ def bucket(min_rating):
     return "has incorrect"
 
 
-def compute_trial_scores(data, *, exclude_categories=("Code Efficiency",)):
+def compute_trial_scores(data, *, exclude_categories=("Code Efficiency",),
+                         rating_field="best_rating"):
     """Per-(dataset, agent, trial) overall score across questions in `data`.
 
-    For each trial slot, gather the best_rating values of every question
-    that is NOT in ``exclude_categories`` (Code Efficiency by default,
-    since it is "soft" advice rather than a correctness check), and
-    summarize:
+    For each trial slot, gather the ratings of every question that is NOT
+    in ``exclude_categories`` (Code Efficiency by default, since it is
+    "soft" advice rather than a correctness check), and summarize:
       n_questions  count of valid (non-NaN) ratings
       n_ok         count of ratings ≥ 0
       min_rating   worst rating across the trial (drives the bucket)
       bucket       one of BUCKET_ORDER
+
+    `rating_field` selects which rater's ratings to use. Valid values:
+    ``"best_rating"`` (default — combined best per trial), ``"human"``,
+    ``"claude"``, or ``"codex"``.
 
     Returns a list of records (call ``pd.DataFrame(...)`` on the result).
     """
@@ -698,7 +706,7 @@ def compute_trial_scores(data, *, exclude_categories=("Code Efficiency",)):
                 cat = categorize(qid, q["title"])
                 if cat is None or cat[0] in excluded:
                     continue
-                for i, r in enumerate(q["best_rating"]):
+                for i, r in enumerate(q[rating_field]):
                     trial_ratings[i].append(r)
                     if trial_meta[i] is None:
                         trial_meta[i] = (q["agents"][i], int(q["trials"][i]))
@@ -766,6 +774,73 @@ def end_to_end_rows(ds, trial_scores, *, agents=("claude-code", "codex")):
             "render": "text",
         },
     ]
+
+
+def compute_subtype_summary(all_rows, *,
+                            exclude_categories=("End-to-End",)):
+    """Per-(category, subtype) grand-average proportion of correct ratings.
+
+    `all_rows` is a list of dataset row-lists (one per dataset). For each
+    (category, subtype) NOT in ``exclude_categories`` (End-to-End by default,
+    since it is itself a summary), pool every valid rating across every
+    dataset, every agent, every trial, and every row (so for Data Variables
+    this averages across variables too), then compute:
+
+        count(rating >= 0) / count(valid ratings)
+
+    Returns: ``{(category, subtype): float fraction or None}``.
+    """
+    excluded = set(exclude_categories)
+    counts = {}  # (cat, sub) -> [n_ok, n_total]
+    for rows in all_rows:
+        for r in rows:
+            if r["category"] in excluded:
+                continue
+            if r.get("render", "squares") != "squares":
+                continue
+            ratings = np.asarray(r["ratings"], dtype=float)
+            mask = ~np.isnan(ratings)
+            if not mask.any():
+                continue
+            key = (r["category"], r["subtype"])
+            if key not in counts:
+                counts[key] = [0, 0]
+            counts[key][0] += int((ratings[mask] >= 0).sum())
+            counts[key][1] += int(mask.sum())
+
+    return {k: (n_ok / n_total if n_total else None)
+            for k, (n_ok, n_total) in counts.items()}
+
+
+def draw_summary_column(ax, layout, summary, *,
+                        title=None,
+                        title_pad=1.6):
+    """Draw a single grand-average fraction per (category, subtype) as a
+    rightmost column of the figure. Each subtype block shows one centered
+    number; subtypes missing from `summary` are left blank.
+    """
+    sub_extents = layout["sub_extents"]
+
+    for (c, s), (y_hi, y_lo) in sub_extents.items():
+        frac = summary.get((c, s))
+        if frac is None:
+            continue
+        ax.text(0.5, (y_hi + y_lo) / 2, f"{frac:.3f}",
+                ha="center", va="center", fontsize=9,
+                color="#333333", transform=ax.transData,
+                clip_on=False)
+
+    if title is not None:
+        ax.text(0.5, layout["y_top"] + 0.6, title,
+                ha="center", va="bottom",
+                fontsize=11, fontweight="bold")
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(layout["y_bot"] - 0.3, layout["y_top"] + title_pad)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
 
 def insert_end_to_end(rows, e2e_rows):
