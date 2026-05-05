@@ -182,13 +182,43 @@ def load_trial_metrics(eval_dir: Path = EVAL_DIR) -> dict:
     return json.loads(path.read_text())
 
 
+# Different agent runs name the same conceptual decoder variable in slightly
+# different ways (e.g., chen2024's "tongue Y" target appears as
+# `tongue_y_position`, `tongue_y_bin`, or `tongue_y` across trials). Without
+# normalising, each variant becomes its own DataFrame column and most cells
+# are NaN even though the underlying measurement is present in every trial.
+# Confirmed by per-trial inspection of trial_metrics.json — only the
+# unsupervised side has these variants in any column we use.
+DECODER_VAR_ALIASES = {
+    # chen2024 — "tongue Y" decoded variable
+    "tongue_y_position":          "tongue_y",
+    "tongue_y_bin":               "tongue_y",
+    # hasnain2024
+    "behavioral_context":         "context",
+    "motion_energy_bin":          "motion_energy",
+    "paw_velocity_bin":           "paw_velocity",
+    "tongue_velocity_bin":        "tongue_velocity",
+    # zhang2025 — "prior probability of left" + *_bin codex variants
+    "prior_probability_of_left":  "prior",
+    "prior_probability_left":     "prior",
+    "wheel_speed_bin":            "wheel_speed",
+    "whisker_motion_energy_bin":  "whisker_motion_energy",
+    # zhong2025 — *_bin codex variants + visual_stimulus_category split
+    "position_bin":               "position",
+    "running_speed_bin":          "running_speed",
+    "visual_stimulus_category":   "visual_stimulus",
+}
+
+
 def trial_metrics_df(metrics: dict | None = None, eval_dir: Path = EVAL_DIR):
     """Flatten trial metrics into a long DataFrame.
 
     One row per (dataset, agent, trial). Nested dicts (e.g.
     `validation_balanced_accuracy`) are exploded into dot-separated columns
     such as `validation_balanced_accuracy.running_speed`. Trials that lack
-    a given field show NaN.
+    a given field show NaN. Decoder-variable names are canonicalised through
+    DECODER_VAR_ALIASES so cross-trial variants of the same conceptual
+    variable land in the same column.
     """
     import pandas as pd
     if metrics is None:
@@ -202,7 +232,8 @@ def trial_metrics_df(metrics: dict | None = None, eval_dir: Path = EVAL_DIR):
                 for k, v in m.items():
                     if isinstance(v, dict):
                         for sub_k, sub_v in v.items():
-                            rec[f"{k}.{sub_k}"] = sub_v
+                            canonical = DECODER_VAR_ALIASES.get(sub_k, sub_k)
+                            rec[f"{k}.{canonical}"] = sub_v
                     else:
                         rec[k] = v
                 rows.append(rec)
