@@ -30,12 +30,12 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🔵🟡🟣 | 🔴🔴🔴 🔴🟢🔴 | All agent solutions used the joblib files instead of the .mat files, but this is correct. | Judge ratings are *very inconsistent* for the same agent implementation across 6 runs. |
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🔴🔵 🟢🟢🟢 |  |  |
 | 1-c | How are the data split into sessions? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🔴🟢 🟢🟢🟢 |  |  |
-| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟡🟢🟢 | 🟡🟢🟢 🟣🟡🟢 | 🔴🔵🟢 🔴🟢🟢 | 1/6 implementations were not robust because they followed the paper description too literally (40-min recording session). |  | `LITERAL` |
+| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟡🟢🟢 | 🟡🟢🟢 🟣🟡🟢 | 🔴🔵🟢 🔴🟢🟢 | 1/6 implementations were not robust because they followed the paper description too literally (40-min recording session). |  | `ASSUME=1` |
 | 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🔵🟢 | 🟢🟢🟢 🟢🟡🟣 | 🔴🟢🟢 🟢🟢🔵 |  |  |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🔵 🟢🟢🟢 |  |  |
-| 2-b | How is the `neural` data processed? | 🟢🟣🟢 🟡🟣🟢 | 🟢🟡🟢 🟣🟡🟢 | 🟡🔴🔵 🔴🟢🟡 | Largest variability across runs/agents — some performed additional processing steps following the paper. | Claude's ratings don't make sense to me here. | `DETAIL` |
-| 2-c | How is the `neural` data filtered based on quality controls? | 🟡🟡🟢 🟡🔵🟡 | 🟡🟢🟢 🟢🟡🟢 | 🟡🔴🟡 🔵🟢🔴 | One-frame NaN check is not robust (4/6). |  | `OUTLIERFILTER` |
-| 2-d | How is the `neural` data temporally binned/resampled? | 🟢🔵🟢 🟡🔵🟢 | 🟢🟡🟢 🟣🟡🟢 | 🟢🔴🟢 🔴🟢🟢 |  | Same as 2-b: Claude rated a partial solution "better" but the complete solution "concerning". |
+| 2-b | How is the `neural` data processed? | 🟢🟣🟢 🟡🟣🟢 | 🟢🟡🟢 🟣🟡🟢 | 🟡🔴🔵 🔴🟢🟡 | Largest variability across runs/agents — some performed additional processing steps following the paper. | Claude's ratings don't make sense to me here. | `PROCESS=1` |
+| 2-c | How is the `neural` data filtered based on quality controls? | 🟡🟡🟢 🟡🔵🟡 | 🟡🟢🟢 🟢🟡🟢 | 🟡🔴🟡 🔵🟢🔴 | One-frame NaN check is not robust (4/6). |  | `FILTER=4`,`ASSUME=4`|
+| 2-d | How is the `neural` data temporally binned/resampled? | 🟢🔵🟢 🟡🔵🟢 | 🟢🟡🟢 🟣🟡🟢 | 🟢🔴🟢 🔴🟢🟢 |  | Same as 2-b: Claude rated a partial solution "better" but the complete solution "concerning". |  `PROCESS=1` |
 | 2-e | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔵🟡 🔵🟢🟡 |  |  |
 | 3-a | What variables in the raw data is `input` *Blocked positions* derived from? | 🔵🔵🔵 🟢🟢🟢 | 🟡🔵🟡 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | All claude agents used the environment-geometry-to-name mapping, which is a bit more complicated but correct. | Two possible solutions; Claude judge is inconsistent. |
 | 3-b | What processing is involved in computing `input` *Blocked positions*? | 🟢🟢🟢 🟢🟢🟢 | 🟡🔵🟡 🔵🟡🟣 | 🔴🔴🔴 🔴🟢⚫ | Some used different conventions, but the same information is represented. | Same as above. |
