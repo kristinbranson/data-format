@@ -27,12 +27,12 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🔵🟢 | All agents used `h5py` directly instead of the `pynwb` interface to read the data. |  | `SDK` |
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🟢 |  |  |
 | 1-c | How are the data split into sessions? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
-| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟢🟢🟢 | 🟨🟢🟨 🟢🔵🟢 | 🟡🟡🔴 🟢🔴🟢 | Slightly different handling of potential mismatches between `trial_start` and teleport events. | Claude correctly flagged some implementations as less robust. |
+| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟢🟢🟢 | 🟨🟢🟨 🟢🔵🟢 | 🟡🟡🔴 🟢🔴🟢 | Slightly different handling of potential mismatches between `trial_start` and teleport events. | Claude correctly flagged some implementations as less robust. | `ASSUME=2`|
 | 1-e | How are trials filtered based on quality controls? | 🟣🔵🟣 🔵🔵🟣 | 🔵🔴🟡 🟡🔴🔴 | 🔴🔴🔴 🔴🔴🔴 | Some agents implemented additional filtering based on a detail in the paper's methods. |  | `DETAIL` |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔴 🟢🔴🟢 |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔴🟢 | 🔵🟡🟣 🟢🟡🟡 | 🟡🔴🔴 🔵🔴🟢 |  |  |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🟣🟣🟣 🟢🟢🟢 | 🟣🟡🟣 🟢🟢🟢 | 🟡🔴🔴 🟢🟢🟡 |  | Claude judge gave inconsistent ratings for the same solution. | `DETAIL` |
-| 2-d | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🔵🔴🟣 | A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing. | Both judges caught the mistake. | `TIMERES` |
+| 2-d | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🔵🔴🟣 | A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing. | Both judges caught the mistake. | `TIMERES=1`, `ASSUME=1` |
 | 2-e | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | No timestamp is provided, so no additional alignment is needed. |  |
 | 3-a | What variables in the raw data is `input` *Time from start of trial in seconds* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟡🔵 🟢🟢🟢 | 🟡🔴🔴 🔵🔴🔵 |  | Inconsistent ratings from the LLM judges for the same solution. |
 | 3-b | What processing is involved in computing `input` *Time from start of trial in seconds*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟡🔵 🟢🟢🟢 | 🟡🔴🔴 🟢🔴🟢 |  |  |
@@ -43,7 +43,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 5-b | What processing is involved in computing `input` *Trial number*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 🟢🟢🟢 🟢🟢🟡 | Some agents cast between `float64` and `float32` for no apparent reason. |  |
 | 6-a | What variables in the raw data is `input` *Previous trial outcome* derived from? | 🟢🔵🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟡 |  |  |
 | 6-b | What processing is involved in computing `input` *Previous trial outcome*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🔵 | 🟢🟢🟢 🟣🟢🟡 |  |  |
-| 7-a | What variables in the raw data is `output` *Distance to reward zone* derived from? | 🟡🟡🟢 🟡🟢🟡 | 🔵🟡🟡 🟡🟢🟡 | 🔴🔴🔴 🔵🟡🟣 | Agents didn't verify the "30-trial switch rule" against the data — the correct approach is to identify the reward zone from the data rather than using a hard-coded switch time. | Claude caught some of the potential problems but missed others. | `LITERAL` |
+| 7-a | What variables in the raw data is `output` *Distance to reward zone* derived from? | 🟡🟡🟢 🟡🟢🟡 | 🔵🟡🟡 🟡🟢🟡 | 🔴🔴🔴 🔵🟡🟣 | Agents didn't verify the "30-trial switch rule" against the data — the correct approach is to identify the reward zone from the data rather than using a hard-coded switch time. | Claude caught some of the potential problems but missed others. | `ASSUME=4` |
 | 7-b | What processing is involved in computing `output` *Distance to reward zone*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 7-c | How is `output` *Distance to reward zone* aligned with the neural data? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |
 | 8-a | What variables in the raw data is `output` *Absolute position* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |

@@ -38,8 +38,8 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 3-b | What processing is involved in computing `input` *Time*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟣🟣🟣 | ⚫🔴🔴 🟣🔴⚫ |  |  |
 | 3-c | How is `input` *Time* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🟢🟢 🟣🔴🔴 |  |  |
 | 4-a | What variables in the raw data is `output` *Motion energy* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟡 🟢🔵🔵 | 🟢🔴🔴 🟢🔴🔴 |  |  |
-| 4-b | What processing is involved in computing `output` *Motion energy*? | 🟡🟡🟡 🟢🟢🟢 | 🟡🟡🔴 🟣🟡🟣 | ⚫🔴🔴 🔵🔴⚫ | Claude agents skipped normalization steps; Codex agents used min-max normalization. | Judge ratings are inconsistent for the same solutions. | `MISC` |
-| 4-c | How is `output` *Motion energy* aligned with the neural data? | 🟢🔴🔴 🟢🟢🟢 | 🔵🟡🟡 🟣🔵🟣 | 🔴🔴🔴 🟣🔴🔴 | 2/6 incorrect solutions (did not attempt to identify missing frames); 4/6 correct solutions using a different approach to detect missing frames. | Judge ratings are inconsistent. | `COMPLEX` |
+| 4-b | What processing is involved in computing `output` *Motion energy*? | 🟡🟡🟡 🟢🟢🟢 | 🟡🟡🔴 🟣🟡🟣 | ⚫🔴🔴 🔵🔴⚫ | Claude agents skipped normalization steps; Codex agents used min-max normalization. | Judge ratings are inconsistent for the same solutions. | `MISC=3` |
+| 4-c | How is `output` *Motion energy* aligned with the neural data? | 🟢🔴🔴 🟢🟢🟢 | 🔵🟡🟡 🟣🔵🟣 | 🔴🔴🔴 🟣🔴🔴 | 2/6 incorrect solutions (did not attempt to identify missing frames); 4/6 correct solutions using a different approach to detect missing frames. | Judge ratings are inconsistent. | `PROCESS=2` |
 | 7 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟡 🟢🟢🟢 | 🔵🔵🟡 🟣🟢🟣 | 🔵🟡🔴 🟣🔵🔴 |  |  |
 | 8-a | What are the most time-consuming steps of the code? | 🔵🟢🟢 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Only two solutions used GPU/CUDA via `suite2p`. |  |
 | 8-b | What loops in the code could have been vectorized to improve efficiency? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟪🟢🔵 | 🔵🔵🔵 🟣🔵🟢 |  | Some agents' solutions for detecting missing frames are more efficient. |

@@ -6,14 +6,15 @@
   - Allen2p, splitting data into sessions, confused by variable named `ophys_experiment_id`. Example of how to do this correctly is in the example notebooks, agent ignored. TODO: check CONVERSION_NOTES.md to see if, in the code summary, agent noted this.
 **`TIMERES`**: Strange choices on time resolution
 **`RESAMP`**: Strange choices on resampling
-**`FILTER`**: Filtering parameters choice
+**`FILTER`**: Data filtering (selection) parameters choice
 **`PROCESS`**: Requires extra (complex) processing from raw data
   - Tracking data: filter by conf, interpolation
   - Combine recording for dual probe
-  - e.g., data stream from multiple camera, additional data analysis
+  - Data stream from multiple camera, additional data analysis
+  - Detect missing frames and interpolate 
+  - Setting bin edge correctly with esp. with skewed data distribution
 **`ASSUME`**: Assume certain information without checking against data
   - Lee2025: 40 minute session length (exact)
-
 **`OUTLIER`**: Handling missing or bad data 
 **`SEMANTIC`**: Semantic misunderstanding, common knowledge
 **`INCOMPLETE`**: Did not load the full dataset
