@@ -211,17 +211,24 @@ Itemize-changes prefixes (rsync's `YXcstpoguax` format):
 
 ### Conversion timing (cluster)
 
-End-to-end timing of `convert_data.py` for the four supervised tasks
-(`allen2p`, `lee2025`, `majnik2025`, `sosa2024`) — for both manually-written
-solutions in `manual/<task>/` and every agent trial under
-`harbor-jobs/<task>/<agent>/<trial>/verifier/snapshot/`. Runs as bsub jobs on
-`gpu_a100` with 8 cores; outputs go to `<repo>/timing_results/`.
+End-to-end timing of `convert_data.py` for supervised tasks (`allen2p`,
+`lee2025`, `majnik2025`, `sosa2024`) and unsupervised tasks (`hasnain2024`,
+`mouseland`, `zhang2025`, `map`). Supervised tasks have a hand-written
+reference at `manual/<task>/convert_data.py` that gets timed alongside every
+agent trial under `harbor-jobs/<task>/<agent>/<trial>/verifier/snapshot/`;
+unsupervised tasks have no manual baseline, so only agent trials are timed.
+Runs as bsub jobs on `gpu_a100` with 8 cores; outputs go to
+`<repo>/timing_results/`.
 
 Per-task data dirs (mirror the docker-compose mounts):
 - `allen2p` → `<repo>/allen2p/data`
 - `lee2025` → `<repo>/lee2025/data`
 - `majnik2025` → `<repo>/track2p/data`
 - `sosa2024` → `<repo>/sosa2024/data`
+- `hasnain2024` → `<repo>/hasnain2024/data`
+- `mouseland` → `<repo>/mouseland/data`
+- `zhang2025` → `<repo>/zhang2025/data`
+- `map` → `<repo>/MAP/data`
 
 Workflow:
 ```
@@ -252,7 +259,9 @@ through `ssh login1` when run from the workstation.
 ```
 python submit_conversion_timing.py --check                   # validate, don't submit
 python submit_conversion_timing.py --dry-run                 # print commands
-python submit_conversion_timing.py                           # submit all (29 jobs)
+python submit_conversion_timing.py                           # supervised tasks (29 jobs)
+python submit_conversion_timing.py --unsupervised            # unsupervised tasks (30 jobs)
+python submit_conversion_timing.py --all-tasks               # both
 python submit_conversion_timing.py --tasks sosa2024          # filter
 python submit_conversion_timing.py --manual-only             # skip agent trials
 python submit_conversion_timing.py --trials-only             # skip manual

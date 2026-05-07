@@ -23,31 +23,52 @@ Usage:
 
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+CANONICAL_TRIAL_RE = re.compile(r"_trial[123]$")
+
 REPO_ROOT = Path("/groups/branson/home/bransonk/behavioranalysis/code/"
                  "ScienceBenchmark/data-format")
 RUNNER = REPO_ROOT / "harbor-scripts" / "run_one_conversion.py"
 DEFAULT_RESULTS_ROOT = REPO_ROOT / "timing_results"
 SUPERVISED_TASKS = ["allen2p", "lee2025", "majnik2025", "sosa2024"]
+UNSUPERVISED_TASKS = ["hasnain2024", "mouseland", "zhang2025", "map"]
 
 # Must match TASK_DATA_DIR in run_one_conversion.py
 TASK_DATA_DIR = {
-    "allen2p":    REPO_ROOT / "allen2p"   / "data",
-    "lee2025":    REPO_ROOT / "lee2025"   / "data",
-    "majnik2025": REPO_ROOT / "track2p"   / "data",
-    "sosa2024":   REPO_ROOT / "sosa2024"  / "data",
+    # supervised
+    "allen2p":    REPO_ROOT / "allen2p"    / "data",
+    "lee2025":    REPO_ROOT / "lee2025"    / "data",
+    "majnik2025": REPO_ROOT / "track2p"    / "data",
+    "sosa2024":   REPO_ROOT / "sosa2024"   / "data",
+    # unsupervised
+    "hasnain2024": REPO_ROOT / "hasnain2024" / "data",
+    "mouseland":   REPO_ROOT / "mouseland"   / "data",
+    "zhang2025":   REPO_ROOT / "zhang2025"   / "data",
+    "map":         REPO_ROOT / "MAP"         / "data",
+}
+
+# Per-task baseline ("manual") solution dirs.
+# Only supervised tasks have a human-written reference solution; unsupervised
+# tasks have no manual baseline (only agent trials get timed).
+BASELINE_DIR = {
+    "allen2p":     REPO_ROOT / "manual" / "allen2p",
+    "lee2025":     REPO_ROOT / "manual" / "lee2025",
+    "majnik2025":  REPO_ROOT / "manual" / "majnik2025",
+    "sosa2024":    REPO_ROOT / "manual" / "sosa2024",
 }
 
 
-def discover_sources(task: str, manual: bool, trials: bool):
+def discover_sources(task: str, manual: bool, trials: bool,
+                     canonical_only: bool = False):
     """Yield (source_id, convert_data_py_path)."""
-    if manual:
-        p = REPO_ROOT / "manual" / task / "convert_data.py"
+    if manual and task in BASELINE_DIR:
+        p = BASELINE_DIR[task] / "convert_data.py"
         if p.exists():
             yield ("manual", p)
 
@@ -61,6 +82,9 @@ def discover_sources(task: str, manual: bool, trials: bool):
             parts = snap.parts
             agent, trial = parts[-5], parts[-4]
             if agent == "oracle":
+                continue
+            # canonical = exactly trial1, trial2, or trial3 (no badtrial*, no trial4+)
+            if canonical_only and not CANONICAL_TRIAL_RE.search(trial):
                 continue
             yield (f"{agent}__{trial}", snap)
 
@@ -177,19 +201,35 @@ def main():
     ap.add_argument("--results-root", type=Path, default=DEFAULT_RESULTS_ROOT)
     ap.add_argument("--minutes", type=int, default=240,
                     help="bsub -W (minutes); default 240 (4h)")
-    ap.add_argument("--tasks", default=",".join(SUPERVISED_TASKS),
-                    help="comma-separated subset of tasks")
+    ap.add_argument("--tasks", default=None,
+                    help="comma-separated subset of tasks "
+                         "(default: supervised tasks only)")
+    ap.add_argument("--unsupervised", action="store_true",
+                    help="use the unsupervised tasks "
+                         f"({', '.join(UNSUPERVISED_TASKS)}) instead of supervised")
+    ap.add_argument("--all-tasks", action="store_true",
+                    help="run all tasks (supervised + unsupervised)")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--manual-only", action="store_true")
     g.add_argument("--trials-only", action="store_true")
     ap.add_argument("--limit", type=int, default=None,
                     help="Submit at most N jobs total (useful with --dry-run or for a smoke test)")
+    ap.add_argument("--canonical-only", action="store_true",
+                    help="Only include trials named exactly _trial1/_trial2/_trial3 "
+                         "(skips _badtrial* and _trial4+ retry runs)")
     ap.add_argument("--start", type=int, default=0,
                     help="Skip the first N jobs in the discovery order (0-indexed). "
                          "Combine with --limit 1 to step through one at a time.")
     args = ap.parse_args()
 
-    tasks = [t.strip() for t in args.tasks.split(",") if t.strip()]
+    if args.tasks:
+        tasks = [t.strip() for t in args.tasks.split(",") if t.strip()]
+    elif args.all_tasks:
+        tasks = SUPERVISED_TASKS + UNSUPERVISED_TASKS
+    elif args.unsupervised:
+        tasks = UNSUPERVISED_TASKS
+    else:
+        tasks = SUPERVISED_TASKS
     manual = not args.trials_only
     trials = not args.manual_only
 
@@ -209,7 +249,7 @@ def main():
         n_jobs = 0
         n_bad = 0
         for task in tasks:
-            for source_id, script in discover_sources(task, manual, trials):
+            for source_id, script in discover_sources(task, manual, trials, args.canonical_only):
                 n_jobs += 1
                 errs = check_job(task, source_id, script, args.results_root)
                 if errs:
@@ -226,7 +266,7 @@ def main():
     # Flatten so --start / --limit index globally across tasks.
     all_jobs = [(task, source_id, script)
                 for task in tasks
-                for source_id, script in discover_sources(task, manual, trials)]
+                for source_id, script in discover_sources(task, manual, trials, args.canonical_only)]
 
     selected = all_jobs[args.start:]
     if args.limit is not None:

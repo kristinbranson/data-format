@@ -31,16 +31,22 @@ REPO_ROOT = Path("/groups/branson/home/bransonk/behavioranalysis/code/"
 # data dir per task — mirrors the docker-compose volume mount that places
 # the dataset at /app/data inside the container.
 TASK_DATA_DIR = {
-    "allen2p":    REPO_ROOT / "allen2p"   / "data",
-    "lee2025":    REPO_ROOT / "lee2025"   / "data",
-    "majnik2025": REPO_ROOT / "track2p"   / "data",
-    "sosa2024":   REPO_ROOT / "sosa2024"  / "data",
+    # supervised tasks
+    "allen2p":    REPO_ROOT / "allen2p"    / "data",
+    "lee2025":    REPO_ROOT / "lee2025"    / "data",
+    "majnik2025": REPO_ROOT / "track2p"    / "data",
+    "sosa2024":   REPO_ROOT / "sosa2024"   / "data",
+    # unsupervised tasks
+    "hasnain2024": REPO_ROOT / "hasnain2024" / "data",
+    "mouseland":   REPO_ROOT / "mouseland"   / "data",
+    "zhang2025":   REPO_ROOT / "zhang2025"   / "data",
+    "map":         REPO_ROOT / "MAP"         / "data",
 }
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("task", choices=["allen2p", "lee2025", "majnik2025", "sosa2024"])
+    ap.add_argument("task", choices=sorted(TASK_DATA_DIR.keys()))
     ap.add_argument("convert_data_py", type=Path)
     ap.add_argument("result_dir", type=Path)
     args = ap.parse_args()
@@ -52,6 +58,7 @@ def main():
 
     data_dir = TASK_DATA_DIR[task]
     env_dir = REPO_ROOT / "harbor-tasks" / task / "environment"
+    code_dir = env_dir / "code"  # mounted at /app/code in docker
     train_decoder = env_dir / "train_decoder.py"
     decoder_py   = env_dir / "decoder.py"
 
@@ -76,14 +83,26 @@ def main():
 
     try:
         os.symlink(data_dir, work / "data")
+        if code_dir.is_dir():
+            os.symlink(code_dir, work / "code")
         shutil.copy2(train_decoder, work / "train_decoder.py")
         shutil.copy2(decoder_py,    work / "decoder.py")
 
-        # Copy the script, then rewrite hard-coded "/app/data" -> work/data
-        # so scripts that bypass --datadir still find the data outside docker.
+        # Copy the script, then rewrite hard-coded docker-mount paths to the
+        # work-dir equivalents. Substituting the bare "/app" (rather than just
+        # "/app/data" and "/app/code") catches scripts that build paths from
+        # ROOT = Path("/app") rather than from a string literal. Order matters:
+        # do the longer matches first to avoid double-substituting "/app/..."
+        # paths that have already been rewritten.
         script_text = script.read_text()
         local_data = str(work / "data")
-        patched = script_text.replace("/app/data", local_data)
+        local_code = str(work / "code")
+        local_app  = str(work)
+        patched = (script_text
+                   .replace("/app/data", local_data)
+                   .replace("/app/code", local_code)
+                   .replace('"/app"',    f'"{local_app}"')
+                   .replace("'/app'",    f"'{local_app}'"))
         (work / "convert_data.py").write_text(patched)
 
         # Some scripts accept --datadir; others use only positional args.
