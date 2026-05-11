@@ -6,55 +6,6 @@ Ling-Qi Zhang and Kristin Branson
 
 This project explores the use of coding agents (Claude Code and Codex) to reorganize and reformat diverse neuroscience datasets into a standardized format. The goal is to evaluate how effectively coding agents can handle heterogeneous and messy biological research data by converting them into a common structure suitable for downstream analysis.
 
-## Target Data Format
-
-All datasets are converted into a consistent Python dictionary structure:
-
-```python
-data = {
-    'neural': [  # list of subjects (e.g., mice, rats)
-        [  # list of trials for subject 1
-            neuron_by_time_matrix,  # shape: (n_neurons, n_timepoints)
-            neuron_by_time_matrix,  # trial 2
-            ...
-        ],
-        [  # list of trials for subject 2
-            ...
-        ],
-        ...
-    ],
-
-    'input': [  # list of subjects
-        [  # list of trials for subject 1
-            input_data,  # stimulus/task variables (with or without time dimension)
-            ...
-        ],
-        ...
-    ],
-
-    'output': [  # list of subjects
-        [  # list of trials for subject 1
-            output_data,  # behavioral response (with or without time dimension)
-            ...
-        ],
-        ...
-    ],
-
-    'metadata': {
-        'task_description': str,  # description of the behavioral task
-        'brain_regions': str,     # recorded brain regions
-        # additional metadata fields as needed
-    }
-}
-```
-
-### Format Specifications
-
-- **neural**: Neural activity data organized by subject and trial, with consistent dimensions (neurons × time)
-- **input**: Task/stimulus variables that serve as inputs to the system (e.g., stimulus properties)
-- **output**: Behavioral readouts that serve as the response variable (e.g., choice, reaction time)
-- **metadata**: Descriptive information about the dataset, task, and recording parameters
-
 ## Datasets
 
 We cover 8 neuroscience datasets spanning calcium imaging and electrophysiology across a range of behavioral tasks.
@@ -72,6 +23,7 @@ We cover 8 neuroscience datasets spanning calcium imaging and electrophysiology 
 
 ```
 data-format/
+├── data/                          # Root directory of data
 ├── environments/                  # Conda environments for running all code (see environments/README.md)
 ├── template-harbor-task/          # Template from which all harbor tasks are created
 │                                  # (use harbor-scripts/sync_template.py to keep tasks synced)
@@ -221,3 +173,73 @@ Data sources:
 - **mouseland**: https://figshare.com/articles/dataset/Unsupervised_pretraining_in_biological_neural_network/28811129
 - **sosa2024**: https://dandiarchive.org/dandiset/001361
 - **zhang2025**: IBL Neuropixels (reproducible-ephys release), via the public openalyx IBL server.
+
+
+## Target Data Format
+
+All datasets are converted into a consistent Python dictionary structure:
+
+```python
+data = {
+    'neural': [  # list of subjects (e.g., mice, rats)
+        [  # list of trials for subject 1
+            neuron_by_time_matrix,  # shape: (n_neurons, n_timepoints)
+            neuron_by_time_matrix,  # trial 2
+            ...
+        ],
+        [  # list of trials for subject 2
+            ...
+        ],
+        ...
+    ],
+
+    'input': [  # list of subjects
+        [  # list of trials for subject 1
+            input_data,  # stimulus/task variables (with or without time dimension)
+            ...
+        ],
+        ...
+    ],
+
+    'output': [  # list of subjects
+        [  # list of trials for subject 1
+            output_data,  # behavioral response (with or without time dimension)
+            ...
+        ],
+        ...
+    ],
+
+    'metadata': {
+        'task_description': str,  # description of the behavioral task
+        'brain_regions': str,     # recorded brain regions
+        # additional metadata fields as needed
+    }
+}
+```
+
+### Output Format Specifications
+
+- **neural**: Neural activity data organized by subject and trial, with consistent dimensions (neurons × time)
+- **input**: Task/stimulus variables that serve as inputs to the system (e.g., stimulus properties)
+- **output**: Behavioral readouts that serve as the response variable (e.g., choice, reaction time)
+- **metadata**: Descriptive information about the dataset, task, and recording parameters
+
+## Downstream Task
+
+Each converted dataset is evaluated by training a neural decoder that maps the standardized `data['neural']` to `data['output']`. The decoder code and runner are bundled into every harbor task and are identical across tasks; the canonical copies live at:
+- **`template-harbor-task/environment/decoder.py`** — the decoder library. Exposes `verify_data_format`, `print_data_summary`, `train_decoder`, `predict`, `cross_validate_decoder`, `train_validate_decoder`, `accuracy_all_sessions`, `f1scores_all_sessions`, and plotting helpers. The default model (`_train_decoder_pca_logistic`) projects the per-session neural matrix to a fixed number of PCs and fits an L1-regularized logistic regression per output dimension; outputs are assumed categorical and chance is computed from the training-set class fractions.
+
+- **`template-harbor-task/environment/train_decoder.py`** — the entry point. Loads a `data.pkl` (the conversion artifact the agent produces), verifies the dict structure with `verify_data_format`, prints a summary, runs `train_validate_decoder` on a 70/30 train/test split, and reports balanced accuracy per output dimension against chance.
+
+The same decoder.py and train_decoder.py are also propagated into each harbor task at harbor-tasks/<task>/environment/ (use `harbor-scripts/sync_template.py` to keep them in sync with the template).
+
+Usage (run inside each task's container against the agent's converted data):
+```bash
+python train_decoder.py /app/converted_data.pkl
+# inspect the data format / sample plots without training:
+python train_decoder.py /app/converted_data.pkl --verify-only --plot-samples
+# write all stats to JSON for the verifier to consume:
+python train_decoder.py /app/converted_data.pkl --stats-json stats.json
+# force CPU (some tasks build a CUDA-less image):
+python train_decoder.py /app/converted_data.pkl --cpu
+```
