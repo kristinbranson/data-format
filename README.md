@@ -77,7 +77,7 @@ data-format/
 ├── prompts/                       # Older versions of prompts for each task
 │   └── harbor_instructions_v4.md  # Template for all v4 prompts
 ├── manual/                        # Manual solutions to tasks we manually solved
-│   └── {task_name}/               # task_name = ['allen2p','lee2025','majnik2025','sosa2024']solved
+│   └── {task_name}/               # task_name = ['allen2p','lee2025','majnik2025','sosa2024']
 │       ├── convert_data.py        # Code for conversion
 │       ├── DECISIONS.md           # Manual annotation of our decisions
 │       ├── MANUAL_NOTES.md        # Manual notes while coding
@@ -95,7 +95,7 @@ data-format/
 
 ## Task reference sources
 
-Each task is based on code, paper, and data from original sources. We have downloaded and includes the **papers** and **code** from these sources in `harbor-tasks/{task-name}environment/`. Sources of these are:
+Each task is based on code, paper, and data from original sources. We have downloaded and included the **papers** and **code** from these sources in `harbor-tasks/{task-name}environment/`. Sources of these are:
 ```
 harbor-tasks/
 ├── allen2p/
@@ -138,7 +138,7 @@ harbor-tasks/
 |       |                           # https://doi.org/10.1016/j.cell.2023.12.035
 |       ├── methodpaper.pdf         # "Brain-wide analysis reveals movement encoding structured across
 |       |                           #  and within brain areas"
-|       |                           # by Wang, al., Nature Neuroscience 2025
+|       |                           # by Wang, et al., Nature Neuroscience 2025
 |       |                           # https://doi.org/10.1038/s41593-025-02114-x
 |       ├── ChenLiuEtAl2023_SpikeSortingQC.pdf # "Spike sorting and quality control for the 
 |       |                           # mesoscale activity map project" by Chen, et al., 2023
@@ -171,12 +171,12 @@ harbor-tasks/
 |       |                           # https://doi.org/10.1016/j.neuron.2025.10.026
 |       |                           # by Zhang, Lyu, Hurwitz et al., 2025
 |       ├── dataarchitecture.pdf    # "Data architecture for a large-scale neuro-behavioral
-|       |                           # experiment" — Bonachi, et al., bioRxiv 2020
-|       |                           # https://www.biorxiv.org/content/10.1101/82787
+|       |                           # experiment" — International Brain Lab, bioRxiv 2020
+|       |                           # https://www.biorxiv.org/content/10.1101/827873v3
 |       ├── methods.txt             # Text copied from papers above
 
 ```
-## Data sources
+## Data sources and downloading
 
 Data are not included in this repository because of their size. Data are expected to be organized as follows:
 ```
@@ -193,60 +193,29 @@ data-format
     ├── zhang2025/
 ```
 
-To download, use the following instructions. Directory `data-format/data` must exist.
-
-### allen2p
 ```bash
-python download/allen2p.py data/allen2p
+  # single task
+  python download/download.py allen2p
+
+  # multiple tasks
+  python download/download.py hasnain2024 lee2025 majnik2025
+
+  # everything
+  python download/download.py --all
+
+  # single task with custom output dir
+  python download/download.py allen2p -o /scratch/allen2p
 ```
 
-### hasnain2024
+If any one task fails, the rest still run; failures are listed at the end and the exit code is non-zero. 
+If you don't pass -o flag, data is downloaded to `data/<task>/` relative to the repo root.
 
-Source: https://zenodo.org/records/13941415
-```bash
-python download/zenodo.py 13941415 data/hasnain2024
-```
-
-### lee2025
-
-Source: https://zenodo.org/records/13993254
-```bash
-python download/zenodo.py 13993254 data/lee2025
-```
-
-### majnik2025
-
-Source: https://zenodo.org/records/17091226
-```bash
-python download/zenodo.py 17091226 data/majnik2025
-```
-
-### map
-
-Source: https://dandiarchive.org/dandiset/000363
-```bash
-dandi download https://dandiarchive.org/dandiset/000363 -o data
-mv data/000363 data/map
-```
-
-### mouseland
-
-Source: https://figshare.com/articles/dataset/Unsupervised_pretraining_in_biological_neural_network/28811129
-```bash
-python download/figshare.py 28811129 data/mouseland
-```
-                       
-### sosa2024
-
-Source: https://dandiarchive.org/dandiset/001361
-```bash
-dandi download https://dandiarchive.org/dandiset/001361 -o data
-mv data/001361 data/sosa2024
-```
-
-### zhang2025
-
-Source: IBL Neuropixels (reproducible-ephys release), via the public openalyx IBL server.
-```bash
-python download/zhang2025.py data/zhang2025
-```
+Data sources:
+- **allen2p**: [Allen Brain Observatory: Visual Behavior 2P](https://portal.brain-map.org/circuits-behavior/visual-behavior-2p) (via AllenSDK S3 cache).
+- **hasnain2024**: https://zenodo.org/records/13941415
+- **lee2025**: https://zenodo.org/records/13993254
+- **majnik2025**: https://zenodo.org/records/17091226
+- **map**: https://dandiarchive.org/dandiset/000363
+- **mouseland**: https://figshare.com/articles/dataset/Unsupervised_pretraining_in_biological_neural_network/28811129
+- **sosa2024**: https://dandiarchive.org/dandiset/001361
+- **zhang2025**: IBL Neuropixels (reproducible-ephys release), via the public openalyx IBL server.
