@@ -1,4 +1,6 @@
-# Data Organization with Coding Agents
+# Neurodata Without Boredom: Benchmarking Agentic AI for Data Reuse
+
+Ling-Qi Zhang and Kristin Branson
 
 ## Overview
 
