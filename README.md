@@ -65,3 +65,19 @@ We cover 8 neuroscience datasets spanning calcium imaging and electrophysiology 
 6. **`zhong2025`** — 2-photon mesoscope recordings across mouse visual areas during a two-corridor visual-discrimination task in virtual reality ([Zhong et al., 2025](https://doi.org/10.1038/s41586-025-09180-y)). *Format:* custom per-session `.npy` files (separate neural and behavior arrays).
 7. **`sosa2024`** — 2-photon calcium imaging of mouse CA1 during a virtual linear-track task with hidden reward zones that switch across days ([Sosa et al., 2025](https://doi.org/10.1038/s41593-025-01985-4)). *Format:* NWB files distributed via DANDI.
 8. **`zhang2025`** — IBL Neuropixels sessions used to decode choice, prior, wheel speed, and whisker motion energy ([Zhang et al., 2025](https://doi.org/10.1016/j.neuron.2025.10.026)). *Format:* IBL ONE SDK (cached Parquet / NumPy artifacts).
+
+## Directories and files
+
+- `environments`: Conda environments for running all code, see `environments/README.md`
+- `template-harbor-task`: Template from which all harbor tasks are created. To keep this synced with harbor tasks, see `harbor-scripts/sync_template.py`. 
+- `prompt_v4`: Final version of the prompt for each task
+- `prompts`: Older versions of prompts for each task, including the template for all v4 prompts `prompts/harbor_instructions_v4.md`
+- `manual`: Manual solutions to the 4 tasks we manually solved:
+  - `{task_name}/convert_data.py`: Code for conversion
+  - `{task_name}/DECISIONS.md`: Manual annotation of our decisions
+  - `{task_name}/MANUAL_NOTES.md`: Manual notes while coding
+  - `{task_name}/*_out.txt`: stdout captures from code
+- `harbor-tasks`: Tasks set up for harbor. `harbor-tasks/{task_name}` directory for each task. 
+  - Each task provides reference code, paper, and data to the agents. Code and paper sources documented below **TODO**. Dataset download setup documented below **TODO**. 
+- `harbor-scripts`: Scripts for running harbor in various ways, checking status, compiling results. See `harbor-scripts/README.md` for descriptions
+- `evaluation`: Code for and results of manual ranking of agents' decisions
