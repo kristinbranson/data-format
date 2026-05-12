@@ -53,6 +53,37 @@ EXPECTED_FILES = [
     "verification_full_out.txt",
 ]
 
+# Directories to skip when searching for required/expected files.
+# `data/` is already excluded by the snapshot step in test.sh so it isn't
+# present in the workdir at test time; `__pycache__/` is the only noise we
+# need to filter out at this layer.
+_SKIP_DIRS = {"__pycache__"}
+
+
+def _find_workdir_file(filename, workdir=None):
+    """Locate `filename` under `workdir`. Returns the resolved Path if found
+    (preferring the top-level), else None.
+
+    Top-level first; if absent, walks subdirectories. This lets the test
+    tolerate agents that relocate generated files into `cache/` or other
+    subdirs.
+    """
+    base = Path(workdir) if workdir is not None else WORKDIR
+    top = base / filename
+    if top.exists():
+        return top
+    if not base.exists():
+        return None
+    for sub in base.iterdir():
+        if not sub.is_dir() or sub.name in _SKIP_DIRS:
+            continue
+        for p in sub.rglob(filename):
+            if any(part in _SKIP_DIRS for part in p.relative_to(base).parts):
+                continue
+            if p.is_file():
+                return p
+    return None
+
 
 @pytest.fixture(scope="module")
 def metrics():
@@ -67,8 +98,8 @@ def metrics():
 @pytest.fixture(scope="module")
 def submitted_data_sample():
     """Load the agent's sample converted data."""
-    path = WORKDIR / "sample_data.pkl"
-    if not path.exists():
+    path = _find_workdir_file("sample_data.pkl")
+    if path is None:
         pytest.skip("sample_data.pkl not found")
     with open(path, "rb") as f:
         return pickle.load(f)
@@ -77,8 +108,8 @@ def submitted_data_sample():
 @pytest.fixture(scope="module")
 def submitted_data_full():
     """Load the agent's full converted data."""
-    path = WORKDIR / "converted_data.pkl"
-    if not path.exists():
+    path = _find_workdir_file("converted_data.pkl")
+    if path is None:
         pytest.skip("converted_data.pkl not found")
     with open(path, "rb") as f:
         return pickle.load(f)
@@ -102,18 +133,32 @@ def submitted_data_stats(submitted_data_full):
     return stats
 
 def test_required_files_exist(metrics):
-    """Test that all required output files exist and are non-empty."""
+    """Test that all required output files exist and are non-empty.
+
+    Files are searched at the workdir top-level first, then in subdirectories
+    (excluding `__pycache__`). This tolerates agents that relocate generated
+    files into a subdir like `cache/`. The location of each found file is
+    recorded under `required_files_locations` for diagnostic purposes.
+    """
     missing = []
     empty = []
+    locations = {}
     for f in REQUIRED_FILES:
-        path = WORKDIR / f
-        if not path.exists():
+        path = _find_workdir_file(f)
+        if path is None:
             missing.append(f)
-        elif path.stat().st_size == 0:
+            continue
+        if path.stat().st_size == 0:
             empty.append(f)
+        try:
+            rel = path.relative_to(WORKDIR)
+            locations[f] = "" if str(rel.parent) == "." else str(rel.parent) + "/"
+        except ValueError:
+            locations[f] = ""
 
     metrics["required_files_missing"] = missing
     metrics["required_files_empty"] = empty
+    metrics["required_files_locations"] = locations
 
     assert not missing, f"Missing required files: {missing}"
     assert not empty, f"Required files exist but are empty: {empty}"
@@ -141,20 +186,31 @@ def test_no_contamination(metrics):
 
 
 def test_expected_files_exist(metrics):
-    """Test that all expected output files exist and are non-empty."""
+    """Test that all expected output files exist and are non-empty.
+
+    Same subdirectory-tolerant search as `test_required_files_exist`.
+    """
     missing = []
     empty = []
+    locations = {}
     for f in EXPECTED_FILES:
-        path = WORKDIR / f
-        if not path.exists():
+        path = _find_workdir_file(f)
+        if path is None:
             missing.append(f)
-        elif path.stat().st_size == 0:
+            continue
+        if path.stat().st_size == 0:
             empty.append(f)
+        try:
+            rel = path.relative_to(WORKDIR)
+            locations[f] = "" if str(rel.parent) == "." else str(rel.parent) + "/"
+        except ValueError:
+            locations[f] = ""
 
     metrics["expected_files_missing"] = missing
     metrics["expected_files_empty"] = empty
     metrics["expected_files_found"] = len(EXPECTED_FILES) - len(missing)
     metrics["expected_files_total"] = len(EXPECTED_FILES)
+    metrics["expected_files_locations"] = locations
 
     if missing:
         print(f"WARNING: Missing expected files: {missing}")
@@ -260,8 +316,21 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
                 if weight_range > 0 or exact_range:
                     ref_lo, ref_hi = reference_ranges[rn]
                     sub_lo, sub_hi = submitted_ranges[sn]
-                    scale = max(abs(ref_hi - ref_lo), 1e-6)
-                    cost_range = np.maximum(abs(ref_lo - sub_lo)/scale, abs(ref_hi - sub_hi)/scale)
+                    # If both ref and sub are (numerically) constant variables
+                    # — i.e. their min and max are within 1e-6 of each other —
+                    # we treat them as a perfect range match regardless of the
+                    # constant value. This avoids divide-by-tiny-scale
+                    # blow-ups when a reference variable is constant; constant
+                    # variables also carry no information for the decoder so
+                    # treating them as compatible is reasonable.
+                    ref_const = abs(ref_hi - ref_lo) < 1e-6
+                    sub_const = abs(sub_hi - sub_lo) < 1e-6
+                    if ref_const and sub_const:
+                        cost_range = 0.0
+                    else:
+                        scale = max(abs(ref_hi - ref_lo), 1e-6)
+                        cost_range = np.maximum(abs(ref_lo - sub_lo)/scale,
+                                                abs(ref_hi - sub_hi)/scale)
                 else:
                     cost_range = 0
                 
@@ -406,6 +475,25 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
     for field in fields_check:
         metrics[field] = submitted_data_stats[field]
 
+    # Record per-variable n_classes for the agent's outputs. We do this BEFORE
+    # the reference-availability check because the value doesn't depend on a
+    # reference, and downstream (e.g. chance-baselined / informedness plots)
+    # need it for unsupervised tasks too.
+    sub_output_range = submitted_data_stats.get('output_range', {})
+    for var, (lo, hi) in sub_output_range.items():
+        metrics[f'output_nclasses_{var}'] = int(round(hi - lo + 1))
+
+    # Per-variable input range — also recorded BEFORE the skip so unsupervised
+    # tasks have it. Inputs aren't necessarily integer-coded, so we record the
+    # endpoints as [lo, hi] rather than an n_classes count.
+    sub_input_range = submitted_data_stats.get('input_range', {})
+    for var, (lo, hi) in sub_input_range.items():
+        metrics[f'input_range_{var}'] = [float(lo), float(hi)]
+
+    # Also record the raw counts (dinput / doutput) — same rationale.
+    metrics['dinput']  = int(submitted_data_stats.get('dinput', 0))
+    metrics['doutput'] = int(submitted_data_stats.get('doutput', 0))
+
     if reference_data_stats is None:
         pytest.skip("Reference data stats not available for comparison")
         return
@@ -453,6 +541,13 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
         ref_lo, ref_hi = ref_output_range[ref_name]
         sub_lo, sub_hi = sub_output_range[sub_name]
         metrics[f'output_range_error_{ref_name}'] = float(max(abs(ref_lo - sub_lo), abs(ref_hi - sub_hi)))
+        # Record the number of output classes per variable, so consumers can
+        # derive chance level (= 1 / n_classes) for chance-baselined metrics.
+        # For integer-coded categorical outputs, n_classes = hi - lo + 1.
+        # `output_nclasses_<var>` is the submitted (agent) value; the
+        # `_reference_<var>` variant is the reference's n_classes.
+        metrics[f'output_nclasses_{ref_name}'] = int(round(sub_hi - sub_lo + 1))
+        metrics[f'output_nclasses_reference_{ref_name}'] = int(round(ref_hi - ref_lo + 1))
         # fraction error per output
         ref_fracs = sorted(reference_data_stats['data_summary']['output_fractions'][ref_name].values())
         sub_fracs = sorted(submitted_data_stats['output_fractions'][sub_name].values())

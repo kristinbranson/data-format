@@ -210,6 +210,29 @@ DECODER_VAR_ALIASES = {
 }
 
 
+# Top-level metrics fields whose name has a per-variable suffix (e.g.
+# `output_nclasses_tongue_y_position`). For these, we want to apply
+# DECODER_VAR_ALIASES to the suffix so different agents' naming variants
+# land in the same column. Longer prefixes first — they're checked in order.
+_ALIASED_TOP_LEVEL_PREFIXES = (
+    "output_nclasses_reference_",
+    "output_nclasses_",
+    "output_range_error_",
+    "output_fraction_error_",
+)
+
+
+def _canonicalize_top_level_key(k: str) -> str:
+    """If `k` is one of our per-variable top-level fields, alias its
+    variable suffix via DECODER_VAR_ALIASES."""
+    for prefix in _ALIASED_TOP_LEVEL_PREFIXES:
+        if k.startswith(prefix):
+            var = k[len(prefix):]
+            canonical = DECODER_VAR_ALIASES.get(var, var)
+            return f"{prefix}{canonical}"
+    return k
+
+
 def trial_metrics_df(metrics: dict | None = None, eval_dir: Path = EVAL_DIR):
     """Flatten trial metrics into a long DataFrame.
 
@@ -218,7 +241,10 @@ def trial_metrics_df(metrics: dict | None = None, eval_dir: Path = EVAL_DIR):
     such as `validation_balanced_accuracy.running_speed`. Trials that lack
     a given field show NaN. Decoder-variable names are canonicalised through
     DECODER_VAR_ALIASES so cross-trial variants of the same conceptual
-    variable land in the same column.
+    variable land in the same column — this applies both to nested-dict
+    sub-keys (validation_balanced_accuracy.<var>) and to top-level fields
+    whose name ends in a variable suffix (output_nclasses_<var>,
+    output_range_error_<var>, output_fraction_error_<var>, etc.).
     """
     import pandas as pd
     if metrics is None:
@@ -235,7 +261,7 @@ def trial_metrics_df(metrics: dict | None = None, eval_dir: Path = EVAL_DIR):
                             canonical = DECODER_VAR_ALIASES.get(sub_k, sub_k)
                             rec[f"{k}.{canonical}"] = sub_v
                     else:
-                        rec[k] = v
+                        rec[_canonicalize_top_level_key(k)] = v
                 rows.append(rec)
     return pd.DataFrame(rows).sort_values(["dataset", "agent", "trial"]).reset_index(drop=True)
 

@@ -35,6 +35,22 @@ CURATED_FIELDS = (
     "validation_balanced_accuracy",            # always present
     "validation_balanced_accuracy_reference",  # supervised only
     "validation_balanced_accuracy_ratio",      # supervised only
+    # Verifier-check fields (from test_outputs.py). Present whenever the
+    # corresponding test reached the point of recording them; absent when
+    # the test was skipped (e.g. for unsupervised datasets that have no
+    # reference solution, test_data_stats skips early and the *_cost /
+    # output_matches fields are not recorded).
+    "required_files_missing", "required_files_empty",
+    "expected_files_missing", "expected_files_empty",
+    "expected_files_found", "expected_files_total",
+    "contamination_detected",
+    "sample_data_format_valid", "full_data_format_valid",
+    "input_range_mean_cost",
+    "output_fraction_mean_cost",
+    "output_matches",
+    # Variable counts recorded before the test_data_stats skip (so they're
+    # present for unsupervised tasks too).
+    "dinput", "doutput",
 )
 
 _TRIAL_FILE_RE = re.compile(r"^(claude-code|codex)_trial(\d+)\.md$")
@@ -60,8 +76,42 @@ def _metrics_path_from_md(md_path: Path) -> Path | None:
     return None
 
 
+# Per-variable error fields recorded by test_data_stats. Names are
+# dataset-dependent (e.g. `output_fraction_error_running_speed`), so we
+# keep them by prefix rather than enumerating every variable. None values
+# in these fields are meaningful — they flag a mismatch in number of
+# categories (output_fraction_error) or a missing variable.
+CURATED_PREFIXES = (
+    # `input_range_` (no `_error`) catches the per-input [lo, hi] fields
+    # recorded before the skip, AND the existing `input_range_error_<var>`
+    # fields recorded after the matcher runs.
+    "input_range_",
+    "output_range_error_",
+    "output_fraction_error_",
+    # Per-variable class counts (and the reference variant), recorded by
+    # test_data_stats. Consumers derive chance = 1 / output_nclasses_<var>.
+    "output_nclasses_",
+)
+
+
 def _curate(raw: dict) -> dict:
-    return {k: raw[k] for k in CURATED_FIELDS if k in raw}
+    out = {k: raw[k] for k in CURATED_FIELDS if k in raw}
+    for k, v in raw.items():
+        if k.startswith(CURATED_PREFIXES):
+            out[k] = v
+    # Derived: worst-case (max) per-variable range / fraction errors.
+    # Useful for single-row "all output ranges match" / "all input ranges
+    # match" checks without having to enumerate per-variable columns.
+    for prefix, derived_name in (
+        ("input_range_error_",     "input_range_error_max"),
+        ("output_range_error_",    "output_range_error_max"),
+        ("output_fraction_error_", "output_fraction_error_max"),
+    ):
+        vals = [v for k, v in raw.items()
+                if k.startswith(prefix) and v is not None]
+        if vals:
+            out[derived_name] = float(max(vals))
+    return out
 
 
 def collect_trial_metrics(eval_dir: Path = EVAL_DIR) -> dict:

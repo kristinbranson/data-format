@@ -1,0 +1,31 @@
+% requires \usepackage{booktabs, multirow, xcolor}
+\begin{table}[t]
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l l rrr rrr c}
+\toprule
+ & & \multicolumn{3}{c}{Claude Code} & \multicolumn{3}{c}{Codex} & Reference \\
+\cmidrule(lr){3-5} \cmidrule(lr){6-8}
+Dataset & Variable & T1 & T2 & T3 & T1 & T2 & T3 & (chance) \\
+\midrule
+\multirow{5}{*}{Allen2P} & trial\_outcome & 0.919 & 0.991 & \textcolor{orange}{0.838} & 0.905 & \textcolor{orange}{0.836} & \textcolor{orange}{0.840} & 0.319 (0.250) \\
+ & running\_speed & \textcolor{orange}{0.820} & \textcolor{blue}{1.230} & \textcolor{orange}{0.703} & \textcolor{orange}{0.774} & \textcolor{red}{0.699} & \textcolor{red}{0.698} & 0.350 (0.200) \\
+ & pupil\_diameter & \textcolor{red}{0.659} & \textcolor{blue}{1.101} & \textcolor{red}{0.628} & \textcolor{orange}{0.734} & \textcolor{red}{0.629} & \textcolor{red}{0.628} & 0.432 (0.200) \\
+ & image\_name & 0.974 & \textcolor{blue}{1.146} & \textcolor{red}{0.372} & \textcolor{red}{0.634} & \textcolor{red}{0.482} & \textcolor{red}{0.482} & 0.395 (0.062) \\
+ & image\_change & 1.088 & \textcolor{blue}{1.157} & 0.905 & 1.029 & 1.001 & 1.003 & 0.587 (0.500) \\
+\midrule
+\multirow{1}{*}{Lee2025} & position & 1.007 & \textcolor{blue}{1.108} & 1.006 & 1.029 & \textcolor{blue}{1.252} & 1.002 & 0.548 (0.111) \\
+\midrule
+\multirow{1}{*}{Majnik2025} & motion\_energy & \textcolor{orange}{0.893} & \textcolor{red}{0.677} & \textcolor{red}{0.570} & \textcolor{orange}{0.899} & -- & \textcolor{orange}{0.879} & 0.524 (0.200) \\
+\midrule
+\multirow{6}{*}{Sosa2024} & position & \textcolor{orange}{0.858} & 0.903 & 0.950 & 0.916 & 0.939 & \textcolor{orange}{0.890} & 0.558 (0.200) \\
+ & speed & 1.018 & 1.052 & 1.069 & 1.049 & \textcolor{blue}{1.181} & 1.086 & 0.395 (0.200) \\
+ & lick & 1.064 & 0.988 & 1.041 & 0.966 & 1.038 & 1.058 & 0.606 (0.500) \\
+ & distance\_to\_reward\_zone & \textcolor{orange}{0.888} & 0.920 & \textcolor{blue}{1.102} & \textcolor{blue}{1.111} & 1.084 & 1.075 & 0.385 (0.143) \\
+ & reward\_location & 0.982 & 0.998 & 0.994 & 1.003 & 1.015 & 1.005 & 0.810 (0.333) \\
+ & reward\_outcome & 1.008 & 1.011 & 1.005 & 1.022 & 1.061 & 1.003 & 0.516 (0.500) \\
+\bottomrule
+\end{tabular}
+\caption{Per-trial decoder performance, supervised datasets. The first six numeric columns are the agent / reference ratio of validation balanced accuracy (T1--T3 of each agent). Colour: \textcolor{blue}{blue} if ratio $>$ 1.10, \textcolor{orange}{orange} if 0.70 $\leq$ ratio $<$ 0.90, \textcolor{red}{red} if ratio $<$ 0.70. The Reference column shows the manual-solution absolute balanced accuracy with the chance level $1/n_{classes}$ in parentheses.}
+\label{tab:decoder-supervised}
+\end{table}
