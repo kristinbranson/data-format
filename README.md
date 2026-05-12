@@ -562,31 +562,31 @@ evaluation/
 ├── DECISIONS.md                        # Reference question list (~30–40 numbered Qs:
 │                                       # data loading, neural processing, per-variable
 │                                       # derivation, missing-data handling, efficiency)
-├── eval/
-│   ├── /{task}                         # Per-dataset rating folder, one per task
-│   │   ├── claude-code_trial{1,2,3}.md # Human ratings of each claude-code trial
-│   │   ├── codex_trial{1,2,3}.md       # Human ratings of each codex trial
-│   │   ├── summary.md                  # Per-Q solution-quality summary (rate.py output)
-│   │   ├── eval_summary.md             # Human + Claude judge + Codex judge side-by-side
-│   │   │                               # (compare.py output, used to score the judges)
-│   │   └── report.md                   # Final markdown writeup (report.py output)
-│   │
-│   ├── rate.py                         # Interactive Q-by-Q rater for supervised tasks
-│   │                                   #   (compares trial against manual//DECISIONS.md)
-│   ├── rate_blind.py                   # Interactive rater for unsupervised tasks
-│   │                                   #   (no reference; rate against paper + code)
-│   ├── compare.py                      # Interactive arbitration: for each Q×trial disagreement
-│   │                                   # between human / Claude judge / Codex judge, prompt the
-│   │                                   # rater to pick the best answer and record it in
-│   │                                   # eval_summary.md
-│   ├── trial_metrics.py                # Pull verifier metrics.json fields per trial
-│   ├── trial_metrics.json              # Aggregated quantitative metrics across all trials
-│   ├── report.py                       # Generate per-dataset summary report
-│   ├── analysis.ipynb                  # Cross-task aggregate / summary plots for the paper
-│   ├── examples.ipynb                  # Scratch notebook: case studies of agent failure modes
-│   ├── metrics.ipynb                   # Trial-level verifier metrics (decoder accuracy +
-│   │                                   # dataset-scale stats from per-trial metrics.json)
-│   └── utils.py                        # Shared helpers
+└── eval/
+    ├── /{task}                         # Per-dataset rating folder, one per task
+    │   ├── claude-code_trial{1,2,3}.md # Human ratings of each claude-code trial
+    │   ├── codex_trial{1,2,3}.md       # Human ratings of each codex trial
+    │   ├── summary.md                  # Per-Q solution-quality summary (rate.py output)
+    │   ├── eval_summary.md             # Human + Claude judge + Codex judge side-by-side
+    │   │                               # (compare.py output, used to score the judges)
+    │   └── report.md                   # Final markdown writeup (report.py output)
+    │
+    ├── rate.py                         # Interactive Q-by-Q rater for supervised tasks
+    │                                   #   (compares trial against manual//DECISIONS.md)
+    ├── rate_blind.py                   # Interactive rater for unsupervised tasks
+    │                                   #   (no reference; rate against paper + code)
+    ├── compare.py                      # Interactive arbitration: for each Q×trial disagreement
+    │                                   # between human / Claude judge / Codex judge, prompt the
+    │                                   # rater to pick the best answer and record it in
+    │                                   # eval_summary.md
+    ├── trial_metrics.py                # Pull verifier metrics.json fields per trial
+    ├── trial_metrics.json              # Aggregated quantitative metrics across all trials
+    ├── report.py                       # Generate per-dataset summary report
+    ├── analysis.ipynb                  # Cross-task aggregate / summary plots for the paper
+    ├── examples.ipynb                  # Scratch notebook: case studies of agent failure modes
+    ├── metrics.ipynb                   # Trial-level verifier metrics (decoder accuracy +
+    │                                   # dataset-scale stats from per-trial metrics.json)
+    └── utils.py                        # Shared helpers
 ```
 
 See `EVAL_RUNBOOK.md` for a step-by-step procedure to reproduce the evaluation. The short version:
