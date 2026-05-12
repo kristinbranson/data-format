@@ -3,7 +3,6 @@
 Ling-Qi Zhang (zhangl5@janelia.hhmi.org)
 Kristin Branson (kristinbranson@gmail.com)
 
-
 ## Overview
 
 This project explores the use of coding agents (Claude Code and Codex) to reorganize and reformat diverse neuroscience datasets into a standardized format. The goal is to evaluate how effectively coding agents can handle heterogeneous and messy biological research data by converting them into a common structure suitable for downstream analysis.
@@ -23,13 +22,59 @@ We cover 8 neuroscience datasets spanning calcium imaging and electrophysiology 
 7. **`sosa2024`** — 2-photon calcium imaging of mouse CA1 during a virtual linear-track task with hidden reward zones that switch across days ([Sosa et al., 2025](https://doi.org/10.1038/s41593-025-01985-4)). *Format:* NWB files distributed via DANDI.
 8. **`zhang2025`** — IBL Neuropixels sessions used to decode choice, prior, wheel speed, and whisker motion energy ([Zhang et al., 2025](https://doi.org/10.1016/j.neuron.2025.10.026)). *Format:* IBL ONE SDK (cached Parquet / NumPy artifacts).
 
+ ## Prerequisites
+
+- **OS**: Developed for Linux. (The verifier pipeline assumes Linux paths; macOS may work for the Python parts but `docker compose` mounts and `dandi`'s NFS-aware caching have not been tested elsewhere.)
+- **GPU**: Developed with a single CUDA-capable GPU with ≥ 24 GB VRAM for the verifier's decoder training. The environment pins `torch 2.9.1+cu128`; if your driver doesn't support CUDA 12.8, you'll need to swap the torch wheel index in `environment/minimal_environment.yaml`. CPU-only runs work with `--cpu` on `train_decoder.py`, will need to change `test.sh` scripts accordingly.
+- **RAM**: Code requires loading entire dataset into RAM.
+- **Container runtime**: either Docker (default) with `nvidia-container-toolkit` for GPU passthrough, or Podman with `podman-compose` (the env yaml installs `podman-compose`; pass `--podman` to `run_harbor.sh`).
+- **Conda / mamba** for the Python environment (Miniforge / Miniconda / mambaforge all work).
+- **Disk space**: ≥ 50 GB free per task you download; ~1.4 TB free if downloading everything.
+- **API access** for running real LLM agents:
+  - `ANTHROPIC_API_KEY` (or a Claude Code OAuth token in `~/.claude/.credentials.json`) for the Claude agent and Claude judge. 
+  - `OPENAI_API_KEY` (or a Codex auth.json in `~/.codex/`) for the Codex agent and Codex judge.
+  - Not needed for `--agent oracle`.
+
+ ## Quickstart
+
+Run the oracle (reference solution) on one task to verify your setup, then point any LLM agent at the same task.
+
+1. Setup your environment. Check which version of pytorch you want to setup, and modify the `environment.yaml` file
+```bash
+conda env create -f environment/minimal_environment.yaml
+conda activate data-format
+```
+2. Download one dataset (~16 GB for hasnain2024)
+```bash
+mkdir -p data
+python download/download.py hasnain2024
+```
+3. Run the oracle agent — runs the reference `convert_data.py` + verifier
+```bash 
+harbor-scripts/run_harbor.sh --agent oracle --task hasnain2024
+```
+
+4. Check the result
+```bash
+python harbor-scripts/check_trial_health.py
+```
+
+Results land in `~/harbor-tasks/data-format/jobs/<task>/<agent>/<timestamp>_trial<N>/`, with:
+- `verifier/snapshot/` — the agent's convert_data.py + the converted *.pkl files + captured stdout
+- `verifier/metrics.json` — quantitative scores (decoder accuracy, dataset-stat match, judge rewards)
+- `verifier/judge/{claude,codex}/` — the LLM judges' decisions
+
+To run a real LLM agent instead of the oracle, swap --agent oracle for --agent claude or --agent codex (requires ANTHROPIC_API_KEY / OPENAI_API_KEY in env, or --apikeys pointing at a .env file). To sweep multiple tasks × agents, see harbor-scripts/job_config.yaml.
+
+The smallest tasks for first-run testing are lee2025 (15 GB) and hasnain2024 (16 GB); the largest is zhang2025 (566 GB). Full benchmark download is ~1.4 TB — see Data sources and downloading below.
+
 ## Organization
 
 ```
 data-format/
 ├── data/                          # Root directory of data
 ├── download/                      # Code for downloading data
-├── environments/                  # Conda environments for running all code (see environments/README.md)
+├── environment/                   # Conda environment for running all code
 ├── evaluation/                    # Code for and results of manual ranking of agents' decisions
 ├── harbor-tasks/                  # Tasks set up for harbor (one subdir per task):
 │   └── {task_name}/               # task_name = ['allen2p','hasnain2024','lee2025','majnik2025',
@@ -52,7 +97,7 @@ data-format/
     └── harbor_instructions_v4.md  # Template for all v4 prompts
 ```
 
-## Task reference sources
+## Task reference paper and code sources
 
 Each task is based on code, paper, and data from original sources. We have downloaded and included the **papers** and **code** from these sources in `harbor-tasks/{task-name}/environment/`. Sources of these are:
 ```
@@ -133,8 +178,21 @@ harbor-tasks/
 |       |                           # experiment" — International Brain Lab, bioRxiv 2020
 |       |                           # https://www.biorxiv.org/content/10.1101/827873v3
 |       ├── methods.txt             # Text copied from papers above
-
 ```
+
+ ## Conda environments
+
+Three conda environment YAMLs live in `environment/` (see `environment/README.md` for the file-level
+summary):
+
+| File | Resulting env name | Purpose |
+|---|---|---|
+| `minimal_environment.yaml` | `data-format` | **Recommended.** A minimal, post-hoc env that pins every  dependency this repo's own code (download scripts, decoder, verifier, harbor harness) needs. Use this unless it doesn't work... |
+| `decoder-data-format_freeze_full_environment.yaml` | `decoder-data-format` | Full `pip freeze` of the env used while developing and testing `decoder.py`. Kept for reproducibility; superseded by `minimal_environment.yaml`. |
+| `eval-data-format_freeze_full_environment.yaml` | `eval-data-format-podman` | Full `pip freeze` of the env used while running the harbor harness (oracle/agent/judge trials) against the eight tasks. Kept for reproducibility. |
+
+All environments have PyTorch (CUDA 12.8): torch==2.9.1+cu128, torchvision==0.24.1+cu128, pulled from the PyTorch CUDA-12.8 wheel index. On a CPU-only or machine with an older version of CUDA, you may need to swap the index URL and the +cu128 suffix accordingly.
+
 ## Data sources and downloading
 
 Data are not included in this repository because of their size. Data are expected to be organized as follows:
@@ -183,7 +241,9 @@ If you don't pass -o flag, data is downloaded to `data/<task>/` relative to the 
 | `zhang2025` | IBL Neuropixels (reproducible-ephys release, public openalyx server) | 566 GB |
 | **Total** | | **~1.4 TB** |
 
-## Target Data Format
+## Task
+
+### Target Data Format
 
 All datasets are converted into a consistent Python dictionary structure:
 
@@ -225,14 +285,13 @@ data = {
 }
 ```
 
-### Output format specifications
-
+**Output format specifications**:
 - **neural**: Neural activity data organized by subject and trial, with consistent dimensions (neurons × time)
 - **input**: Task/stimulus variables that serve as inputs to the system (e.g., stimulus properties)
 - **output**: Behavioral readouts that serve as the response variable (e.g., choice, reaction time)
 - **metadata**: Descriptive information about the dataset, task, and recording parameters
 
-## Downstream task
+### Downstream task
 
 Each converted dataset is evaluated by training a neural decoder that maps the standardized `data['neural']` to `data['output']`. The decoder code and runner are bundled into every harbor task and are identical across tasks; the canonical copies live at:
 - **`template-harbor-task/environment/decoder.py`** — the decoder library. Exposes `verify_data_format`, `print_data_summary`, `train_decoder`, `predict`, `cross_validate_decoder`, `train_validate_decoder`, `accuracy_all_sessions`, `f1scores_all_sessions`, and plotting helpers. The default model (`_train_decoder_pca_logistic`) projects the per-session neural matrix to a fixed number of PCs and fits an L1-regularized logistic regression per output dimension; outputs are assumed categorical and chance is computed from the training-set class fractions.
@@ -252,6 +311,32 @@ python train_decoder.py /app/converted_data.pkl --stats-json stats.json
 python train_decoder.py /app/converted_data.pkl --cpu
 ```
 
+## Prompts
+
+Final (v4) versions of the prompts are in `prompt_v4`. Earlier drafts are in `prompts`. All prompts follow the same structure:
+1. **Task definition.** What `data['input']` and `data['output']` of the trained decoder should be for *this* task (per-task list of variables to derive from the raw data, e.g. *running speed*, *trial outcome*, *image change*, *reward zone position*).
+2. **Target format.** The exact `data` dict layout (`neural`, `input`, `output`, `metadata`) and dimension conventions.
+3. **Reference inputs** the agent is given:
+  - `paper.pdf` — the original paper (or two papers, for `map` and `zhang2025`)
+  - `methods.txt` — relevant methods excerpts copied out of the paper
+  - `code/` — the upstream paper's code repository
+  - `data/` — the raw data
+4. **Conversion workflow** — an 11-step procedure the agent must follow in order:
+    | Step | What it does |
+    |---|---|
+    | 0 | Setup; create `CONVERSION_NOTES.md` immediately to document every decision |
+    | 1 | Read the reference code |
+    | 2 | Explore the dataset |
+    | 3 | Read the reference paper / methods text |
+    | 4 | Check consistency between code, paper, and data |
+    | 5 | Plan the mapping from raw fields → target format |
+    | 6 | Write `convert_data.py` |
+    | 7 | Run on a sample (`--sample`); validate format and time it |
+    | 8 | Train the decoder on the sample; verify above-chance accuracy |
+    | 9 | Run full conversion; check dataset statistics against the reference text |
+    | 10 | Critical review (self-audit pass) |
+    | 11 | Full decoder training run on the converted data |
+
 ## Harbor tasks
 
 - Each dataset is exposed to the agent as a harbor task in `harbor-tasks/<task>/`. All tasks share a common layout (based on `template-harbor-task/`). 
@@ -270,7 +355,9 @@ python train_decoder.py /app/converted_data.pkl --cpu
       - Whether the decoder accuracies match the manual solution's 
   - Run claude-code and codex agent judge with `judge_instructions.md`
 
-### Task layout
+`harbor-tasks/debug` is a nothing task used to debug the harbor setup.
+
+### Harbor task layout
 
 ```
 {task}/
@@ -305,7 +392,7 @@ python train_decoder.py /app/converted_data.pkl --cpu
     └── instruction_reference.md           # The agent's instruction.md, copied here for the judge.
 ```
 
-### Task scoring
+### Automatic task scoring
 
 Task verification is run by `tests/test.sh` which:
 - Runs `pytest test_outputs.py` to quantitatively assess solutions
@@ -422,6 +509,102 @@ To propagate template changes (e.g., updates to `decoder.py` or `test_outputs.py
 ```bash
 python harbor-scripts/sync_template.py --apply
 ```
+
+## Manual (gold-standard) solutions
+
+For the four **supervised** tasks (`allen2p`, `lee2025`, `majnik2025`, `sosa2024`), Ling-Qi Zhang and Kristin Branson hand-wrote a complete reference conversion before any agent saw the task. These manual solutions are the ground truth that the supervised LLM judges compare each agent's output against, and they provide the reference statistics that `test_outputs.py`'s quantitative checks use.
+
+```
+manual/                                # Only the 4 supervised tasks live here
+├── allen2p/
+├── lee2025/
+├── majnik2025/
+└── sosa2024/
+    ├── convert_data.py                # Hand-written reference conversion
+    ├── DECISIONS.md                   # Q-by-Q answers to the same ~30–40
+    │                                  # numbered questions the LLM judge asks
+    │                                  # (data loading, neural processing,
+    │                                  # per-variable derivation, missing-data
+    │                                  # handling, code efficiency)
+    ├── MANUAL_NOTES.md                # Chronological dev notes from the
+    │                                  # human while writing the conversion
+    │                                  # (false starts, lookups, gotchas)
+    ├── conversion_full_out.txt        # Captured stdout from convert_data.py
+    ├── verification_full_out.txt      # Captured stdout from
+    │                                  # train_decoder.py --verify-only
+    └── train_decoder_full_out.txt     # Captured stdout from train_decoder.py
+                                        # (per-output balanced accuracy = the
+                                        # numbers the verifier asserts agents
+                                        # must reach ≥95% of)
+```
+
+## Harbor scripts
+
+The `harbor-scripts/` directory holds the operational tooling — shell and Python scripts for running trials, post-processing them, and propagating template changes. The full per-script reference lives in `harbor-scripts/README.md`; this section is a tour of the most common workflows.
+
+- `harbor-scripts/run_harbor.sh` is used for running the agents and verification through Harbor, e.g.:
+```bash
+bash harbor-scripts/run_harbor.sh --agent claude --task sosa2024 --ntrials 3
+```
+- `harbor-scripts/run_unsupervised_judges.sh` runs the unsupervised judges for the supervised tasks.
+
+Other scripts check status, rerun parts that failed for various reasons, sync templates, sync job outputs, generate reference statistics, time code.
+
+See harbor-scripts/README.md for full per-script flag listings and the recommended end-to-end workflows.
+
+## Manual evaluation: Human ratings of agent output
+
+The `evaluation/` directory contains the **human-rater** side of the benchmark — the ground-truth dataset of expert ratings against which we compare the automated LLM-judge scores from `harbor-tasks/<task>/tests/test.sh`. Both supervised and unsupervised tasks are rated by hand using the same `DECISIONS.md` Q&A template that the LLM judges use, so per-question ratings are directly comparable.
+
+```
+evaluation/
+├── EVAL_RUNBOOK.md                     # Playbook for running the human evaluation
+├── DECISIONS.md                        # Reference question list (~30–40 numbered Qs:
+│                                       # data loading, neural processing, per-variable
+│                                       # derivation, missing-data handling, efficiency)
+├── eval/
+│   ├── /{task}                         # Per-dataset rating folder, one per task
+│   │   ├── claude-code_trial{1,2,3}.md # Human ratings of each claude-code trial
+│   │   ├── codex_trial{1,2,3}.md       # Human ratings of each codex trial
+│   │   ├── summary.md                  # Per-Q solution-quality summary (rate.py output)
+│   │   ├── eval_summary.md             # Human + Claude judge + Codex judge side-by-side
+│   │   │                               # (compare.py output, used to score the judges)
+│   │   └── report.md                   # Final markdown writeup (report.py output)
+│   │
+│   ├── rate.py                         # Interactive Q-by-Q rater for supervised tasks
+│   │                                   #   (compares trial against manual//DECISIONS.md)
+│   ├── rate_blind.py                   # Interactive rater for unsupervised tasks
+│   │                                   #   (no reference; rate against paper + code)
+│   ├── compare.py                      # Interactive arbitration: for each Q×trial disagreement
+│   │                                   # between human / Claude judge / Codex judge, prompt the
+│   │                                   # rater to pick the best answer and record it in
+│   │                                   # eval_summary.md
+│   ├── trial_metrics.py                # Pull verifier metrics.json fields per trial
+│   ├── trial_metrics.json              # Aggregated quantitative metrics across all trials
+│   ├── report.py                       # Generate per-dataset summary report
+│   ├── analysis.ipynb                  # Cross-task aggregate / summary plots for the paper
+│   ├── examples.ipynb                  # Scratch notebook: case studies of agent failure modes
+│   ├── metrics.ipynb                   # Trial-level verifier metrics (decoder accuracy +
+│   │                                   # dataset-scale stats from per-trial metrics.json)
+│   └── utils.py                        # Shared helpers
+```
+
+See `EVAL_RUNBOOK.md` for a step-by-step procedure to reproduce the evaluation. The short version:
+
+**Manual ratings**. For each task and each of the 3 trials per agent (claude-code and codex), an expert human:
+
+1. Reads the agent's `convert_data.py` and `CONVERSION_NOTES.md` from `harbor-jobs/<task>/<agent>/<timestamp>_trial<N>/verifier/snapshot/`.
+2. For every numbered question in `DECISIONS.md` (e.g. *"1-a. How are all the data loaded?"*), records:
+  - A rating (`MATCH` / `BETTER` / `OK` / `CONCERNING` / `INCORRECT` for supervised; `MATCH` / `CONCERNING` / `INCORRECT` for unsupervised) — the same labels the LLM judges use.
+  - A short note explaining the rating.
+3. Writes a per-Q overall comment summarizing how well the agent handled that decision across the three trials.
+
+`rate.py` (supervised) and `rate_blind.py` (unsupervised) drive this loop interactively.
+
+**Expert vs LLM as a judge comparison**:
+For every trial, `compare.py` shows the human ratings (from `eval/<task>/*_trial*.md`) alongside the two LLM judges' ratings (from
+`harbor-jobs/<task>/<agent>/<trial>/verifier/judge/{claude,codex}/llm_judge_eval.json`) when they disagree. The human expert scores whether they agree more with the human expert (themselves) or the LLM judge. Output is written to `eval_summary.md`.
+This allows us to both measure the accuracy of the LLM-agent judges, and to revise the human expert's rating if they notice something while reviewing disagreements. 
 
 ## License
 

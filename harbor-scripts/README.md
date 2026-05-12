@@ -51,6 +51,18 @@ Results go to `~/harbor-tasks/data-format/jobs/raw/` then get reorganized into
 
 Options: `--nconcurrent N`, `--gpuids LIST`, `--podman`, `--apikeys`, `--config FILE`.
 
+**job_config.yaml** — Harbor batch-config for running all tasks across both
+agents (claude-code and codex) in one `harbor run -c` invocation. Useful for
+the full eval sweep; for one-off task/agent runs use `run_harbor.sh` directly.
+```
+harbor run -c harbor-scripts/job_config.yaml                         # all tasks, both agents
+harbor run -c harbor-scripts/job_config.yaml -t hasnain2024          # one task
+harbor run -c harbor-scripts/job_config.yaml --ek use_podman=true    # podman instead of docker
+```
+Edit the `task_names:` list in the yaml to control which tasks are included.
+Auth env vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) must be set in the
+shell before running, or use `run_harbor.sh --apikeys` instead.
+
 ### Checking health
 
 **check_trial_health.py** — Check agent and verifier health across all trials.
