@@ -3,6 +3,8 @@
 Ling-Qi Zhang (zhangl5@janelia.hhmi.org)
 Kristin Branson (kristinbranson@gmail.com)
 
+**Preprint:** Zhang & Branson (2026). *Neurodata Without Boredom: Benchmarking Agentic AI for Data Reuse.* [arXiv:2605.12808](https://arxiv.org/abs/2605.12808)
+
 ## Overview
 
 This project explores the use of coding agents (Claude Code and Codex) to reorganize and reformat diverse neuroscience datasets into a standardized format. The goal is to evaluate how effectively coding agents can handle heterogeneous and messy biological research data by converting them into a common structure suitable for downstream analysis.
@@ -605,6 +607,22 @@ See `EVAL_RUNBOOK.md` for a step-by-step procedure to reproduce the evaluation. 
 For every trial, `compare.py` shows the human ratings (from `eval/<task>/*_trial*.md`) alongside the two LLM judges' ratings (from
 `harbor-jobs/<task>/<agent>/<trial>/verifier/judge/{claude,codex}/llm_judge_eval.json`) when they disagree. The human expert scores whether they agree more with the human expert (themselves) or the LLM judge. Output is written to `eval_summary.md`.
 This allows us to both measure the accuracy of the LLM-agent judges, and to revise the human expert's rating if they notice something while reviewing disagreements. 
+
+## Citation
+
+If you use this benchmark, please cite:
+
+> Ling-Qi Zhang and Kristin Branson. *Neurodata Without Boredom: Benchmarking Agentic AI for Data Reuse.* arXiv preprint arXiv:2605.12808, 2026.
+
+```bibtex
+@article{zhang2026neurodata,
+  title   = {Neurodata Without Boredom: Benchmarking Agentic AI for Data Reuse},
+  author  = {Zhang, Ling-Qi and Branson, Kristin},
+  journal = {arXiv preprint arXiv:2605.12808},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2605.12808},
+}
+```
 
 ## License
 
