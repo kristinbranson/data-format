@@ -18,6 +18,9 @@ import numpy as np
 import h5py
 import pickle
 
+_lee2025_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _lee2025_seed) % 2**31)
+
 
 ARENA_SIZE = 75.0
 N_GRID = 3
