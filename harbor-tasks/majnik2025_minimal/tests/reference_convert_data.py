@@ -172,7 +172,7 @@ def main(out_path, base_path, sample=False):
             for ti in range(n_trials):
                 s = ti * trial_frames
                 e = s + trial_frames
-                t = (np.arange(trial_frames) / FS).astype(np.float32)
+                t = ((s + np.arange(trial_frames)) / FS).astype(np.float32)
 
                 neural_trials.append(Fc[:, s:e])                  # (n_neurons, trial_frames)
                 inp_trials.append(t[np.newaxis, :])               # (1, trial_frames)

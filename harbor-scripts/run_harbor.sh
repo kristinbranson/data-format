@@ -9,6 +9,7 @@ USE_APIKEYS=false
 ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env"
 CONFIG_FILE=""
 GPUIDS=""
+JOBS_ROOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -18,23 +19,28 @@ while [[ $# -gt 0 ]]; do
     --task)     TASK="$2"; shift 2 ;;
     --config)   CONFIG_FILE="$2"; shift 2 ;;
     --gpuids)   GPUIDS="$2"; shift 2 ;;
+    --jobs-dir) JOBS_ROOT="$2"; shift 2 ;;
     --podman)   USE_PODMAN=true; shift ;;
     --apikeys)  USE_APIKEYS=true; shift ;;
     --env)      ENV_FILE="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--podman] [--apikeys] [--env FILE]"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
       exit 0
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--podman] [--apikeys] [--env FILE]"
+      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
       exit 1
       ;;
   esac
 done
 
-JOBS_DIR="$HOME/harbor-tasks/data-format/jobs/raw"
-REORG_BASE="$HOME/harbor-tasks/data-format/jobs"
+# Concurrent runs MUST NOT share a jobs dir: the reorganization step below
+# selects the newest timestamped run dir, so siblings would steal each
+# other's trials. Use --jobs-dir to give every cluster job its own.
+JOBS_ROOT="${JOBS_ROOT:-$HOME/harbor-tasks/data-format/jobs}"
+JOBS_DIR="$JOBS_ROOT/raw"
+REORG_BASE="$JOBS_ROOT"
 
 TASK_FLAG=""
 if [ -n "$TASK" ]; then
@@ -45,6 +51,18 @@ source $HOME/miniforge3/etc/profile.d/conda.sh
 conda activate eval-data-format-podman
 if [ "$USE_PODMAN" = true ]; then
   export REGISTRY_AUTH_FILE="$HOME/.config/containers/auth.json"
+  # On a batch node there is no systemd user session, so podman has nowhere to
+  # put its runtime state. The runroot must be per-job: a shared one goes stale
+  # across reboots ("boot ID differs"). The graphroot holds image layers and is
+  # deliberately shared per node so a second job skips the ~7 min image build.
+  if [ -n "${LSB_JOBID:-}" ]; then
+    export XDG_RUNTIME_DIR="/scratch/$USER/podman-run-$LSB_JOBID"
+    export TMPDIR="/scratch/$USER/podman-tmp-$LSB_JOBID"
+    mkdir -p "$XDG_RUNTIME_DIR" "$TMPDIR" "/scratch/$USER/podman-storage"
+    export CONTAINERS_RUNROOT="$XDG_RUNTIME_DIR"
+    export CONTAINERS_GRAPHROOT="/scratch/$USER/podman-storage"
+    trap 'rm -rf "$XDG_RUNTIME_DIR" "$TMPDIR"' EXIT
+  fi
 fi
 
 # --- Auth setup ---
@@ -102,6 +120,8 @@ else
       ;;
   esac
 fi
+HARBOR_RC=$?
+[ "$HARBOR_RC" -ne 0 ] && echo "WARNING: harbor run exited $HARBOR_RC"
 
 # Fix permissions on agent logs — Claude Code creates session files with restrictive
 # permissions (0604) that block Harbor's post-processing trajectory conversion.
@@ -277,3 +297,6 @@ for model in ['claude', 'codex']:
   fi
   echo "============================================================================="
 fi
+
+# Exit with harbor's status so a batch scheduler sees a failed run as failed.
+exit "${HARBOR_RC:-0}"

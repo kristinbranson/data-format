@@ -51,6 +51,36 @@ Results go to `~/harbor-tasks/data-format/jobs/raw/` then get reorganized into
 
 Options: `--nconcurrent N`, `--gpuids LIST`, `--podman`, `--apikeys`, `--config FILE`.
 
+**submit_harbor_cluster.py** — Submit the `_minimal` tasks to the Janelia cluster,
+one bsub job per (task, agent, trial). Each job takes a **whole `gpu_l4_large`
+node**: 64 slots + 1 GPU is an entire `l4_larges` host (64 physical cores,
+1006 GB, one L4). That is deliberate — podman here does not enforce
+`--cpus`/`--memory` (measured: `/sys/fs/cgroup/memory.max` reads `max` and
+`nproc` reports all 128 logical cores), so owning the node is the only way to
+bound a trial. Do **not** use `gpu_l4_16`: those `emeraldrapids` hosts have 8
+GPUs, so 16 slots is ⅛ of a node shared with co-tenants.
+```
+python submit_harbor_cluster.py --check          # validate, submit nothing
+python submit_harbor_cluster.py --dry-run        # print the bsub commands
+python submit_harbor_cluster.py                  # 8 tasks x 2 agents x 3 trials = 48 jobs
+python submit_harbor_cluster.py --tasks sosa2024_minimal --agents claude --trials 1
+python submit_harbor_cluster.py --start 0 --limit 1
+ssh login1 'bash -l -c "bjobs -J \"hb_*\""'      # track
+```
+Logs go to `/groups/branson/home/bransonk/cluster_logs/harbor/`, results to
+`/groups/branson/home/bransonk/harbor-cluster-jobs/<jobname>/` — both on
+`/groups` because `$HOME` differs between workstation and cluster. Each job gets
+its own `--jobs-dir`, which is required: `run_harbor.sh`'s reorganization step
+picks the newest timestamped run dir, so jobs sharing one would steal each
+other's trials. `-W 8:00` covers observed durations (1.25 h median, 6.06 h max).
+Roughly 85 GPU-hours ≈ $282 for a full sweep.
+
+Podman on a batch node needs a **per-job runroot** (a shared one goes stale
+across reboots — "boot ID differs") and benefits from a **node-local persistent
+graphroot** (`/scratch/$USER/podman-storage`), so the second job on a node skips
+the ~7 minute image build. `run_harbor.sh --podman` sets both when `LSB_JOBID`
+is present. `gpu_ids.py` is *not* needed on these single-GPU nodes.
+
 **job_config.yaml** — Harbor batch-config for running all tasks across both
 agents (claude-code and codex) in one `harbor run -c` invocation. Useful for
 the full eval sweep; for one-off task/agent runs use `run_harbor.sh` directly.
@@ -263,15 +293,15 @@ unsupervised tasks have no manual baseline, so only agent trials are timed.
 Runs as bsub jobs on `gpu_a100` with 8 cores; outputs go to
 `<repo>/timing_results/`.
 
-Per-task data dirs (mirror the docker-compose mounts):
-- `allen2p` → `<repo>/allen2p/data`
-- `lee2025` → `<repo>/lee2025/data`
-- `majnik2025` → `<repo>/track2p/data`
-- `sosa2024` → `<repo>/sosa2024/data`
-- `hasnain2024` → `<repo>/hasnain2024/data`
-- `mouseland` → `<repo>/mouseland/data`
-- `zhang2025` → `<repo>/zhang2025/data`
-- `map` → `<repo>/MAP/data`
+Per-task data dirs (mirror the docker-compose mounts, i.e. `<repo>/data/<task>`):
+- `allen2p` → `<repo>/data/allen2p/visual-behavior-ophys-1.1.0`
+- `hasnain2024` → `<repo>/data/hasnain2024`
+- `lee2025` → `<repo>/data/lee2025`
+- `majnik2025` → `<repo>/data/majnik2025`
+- `map` → `<repo>/data/map`
+- `mouseland` → `<repo>/data/mouseland`
+- `sosa2024` → `<repo>/data/sosa2024`
+- `zhang2025` → `<repo>/data/zhang2025`
 
 Workflow:
 ```

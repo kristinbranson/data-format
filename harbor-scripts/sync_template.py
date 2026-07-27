@@ -89,8 +89,15 @@ def main():
                 # File doesn't exist in this task — skip (may be intentional)
                 continue
 
-            # Skip files that intentionally differ for specific tasks
-            if rel_path in TASK_EXCLUDED.get(dest_dir.name, set()):
+            # Skip files that intentionally differ for specific tasks. A variant
+            # (e.g. sosa2024_minimal) inherits its parent's exclusions, and also
+            # keeps its own task.toml, which is tuned to the cluster node it runs on.
+            base_name = dest_dir.name.removesuffix("_minimal")
+            excluded = (TASK_EXCLUDED.get(dest_dir.name, set())
+                        | TASK_EXCLUDED.get(base_name, set()))
+            if dest_dir.name != base_name:
+                excluded |= {"task.toml"}
+            if rel_path in excluded:
                 continue
 
             dest_hash = file_hash(dest_file)
