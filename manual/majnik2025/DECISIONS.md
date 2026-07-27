@@ -149,11 +149,11 @@ iii. There is no stimulus event to align to. The recording is continuous, and tr
 
 ## 3-a. What variables in the raw data is `input` *Time* derived from?
 
-i. Time is not derived from any raw data variable. It is computed as the frame index divided by the frame rate, giving seconds from the start of each trial.
+i. Time is not derived from any raw data variable. It is computed as the absolute frame index divided by the frame rate, giving seconds from the start of each experiment.
 
 ii.
 ```python
-t = (np.arange(trial_frames) / FS).astype(np.float32)
+t = ( (s + np.arange(trial_frames)) / FS).astype(np.float32)
 inp_trials.append(t[np.newaxis, :])  # (1, trial_frames)
 ```
 
