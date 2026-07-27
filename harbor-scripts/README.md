@@ -189,6 +189,37 @@ generate_reference_stats.sh              # all tasks
 generate_reference_stats.sh sosa2024     # one task
 ```
 
+**generate_minimal_prompt.py** — Generate `minimal_prompts/<task>_prompt_minimal_v1.md`
+from `prompt_v4/<task>_prompt_v4.md` by stripping the procedural scaffolding: the
+critical-constraints preamble, `## Python environment`, the 13-step `## Conversion
+Workflow`, the `## CONVERSION_NOTES.md Template`, and `## Key Considerations`, plus the
+"computational neuroscientist" persona and the `**Documentation**` link bullet. The task
+specification, target format, decoder reference and success criteria are kept verbatim
+(~870 lines in, ~200 out). `--check` verifies the transform still reproduces the
+hand-written sosa2024 minimal prompt byte-for-byte.
+```
+python generate_minimal_prompt.py --all           # every prompt in prompt_v4/
+python generate_minimal_prompt.py sosa2024        # one task
+python generate_minimal_prompt.py --all --check   # verify only, write nothing
+python generate_minimal_prompt.py --all --force   # overwrite existing outputs
+```
+
+**generate_minimal_task.py** — Generate a minimal-prompt version of a task,
+`harbor-tasks/<task>_minimal`. Copies the task and swaps the prompt from
+`minimal_prompts/<task>_prompt_minimal_v<N>.md` into both `instruction.md` (what the
+agent sees) and `tests/instruction_reference.md` (what the judge reads); everything
+else — tests, judge instructions, reference solution, environment — is copied
+unchanged, so the prompt is the only difference from the parent task. Caches and
+`solution/*.pkl` leftovers are skipped. The generated directory is gitignored: it is
+reproducible from the parent task plus the prompt.
+```
+python generate_minimal_task.py sosa2024              # highest prompt version
+python generate_minimal_task.py sosa2024 --version 2  # pin to a prompt version
+python generate_minimal_task.py --all --version 1     # every task with a v1 prompt
+python generate_minimal_task.py sosa2024 --dry-run
+python generate_minimal_task.py sosa2024 --force      # regenerate in place
+```
+
 **generate_unsupervised_task.py** — Generate an unsupervised version of a task
 **OBSOLETE, do not use**
 (removes reference files from tests/).

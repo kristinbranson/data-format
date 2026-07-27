@@ -59,6 +59,12 @@ EXPECTED_FILES = [
 # need to filter out at this layer.
 _SKIP_DIRS = {"__pycache__"}
 
+# The canary scan walks the whole workdir, so it must avoid the mounted dataset
+# and anything too large or too binary to be agent-authored text.
+_CANARY_SKIP_DIRS = _SKIP_DIRS | {"data", ".git", ".venv", "venv"}
+_CANARY_SUFFIXES = {".py", ".ipynb", ".md", ".txt", ".sh", ".json", ".yaml", ".yml"}
+_CANARY_MAX_BYTES = 10 * 1024 * 1024
+
 
 def _find_workdir_file(filename, workdir=None):
     """Locate `filename` under `workdir`. Returns the resolved Path if found
@@ -165,16 +171,29 @@ def test_required_files_exist(metrics):
 
 
 def test_no_contamination(metrics):
-    """Check that agent-produced code does not contain reference solution canary strings."""
+    """Check that agent-produced code does not contain reference solution canary strings.
+
+    Walks subdirectories, because `_find_workdir_file` deliberately tolerates
+    agents that relocate their code into `cache/` or similar; a top-level-only
+    scan would exempt exactly those agents.
+    """
     contaminated_files = {}
-    for pyfile in WORKDIR.glob("*.py"):
-        try:
-            content = pyfile.read_text()
-        except Exception:
-            continue
-        found = [c for c in CANARY_STRINGS if c in content]
-        if found:
-            contaminated_files[pyfile.name] = found
+    for dirpath, dirnames, filenames in os.walk(WORKDIR):
+        # `data/` is the mounted dataset (hundreds of GB) and must never be read.
+        dirnames[:] = [d for d in dirnames if d not in _CANARY_SKIP_DIRS]
+        for name in filenames:
+            path = Path(dirpath) / name
+            if path.suffix.lower() not in _CANARY_SUFFIXES:
+                continue
+            try:
+                if path.stat().st_size > _CANARY_MAX_BYTES:
+                    continue
+                content = path.read_text(errors="replace")
+            except Exception:
+                continue
+            found = [c for c in CANARY_STRINGS if c in content]
+            if found:
+                contaminated_files[str(path.relative_to(WORKDIR))] = found
 
     metrics["contamination_detected"] = bool(contaminated_files)
     metrics["contaminated_files"] = {k: v for k, v in contaminated_files.items()}
@@ -511,8 +530,11 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
         exact_range=False,
     )
 
-    mean_input_cost = np.mean(input_match_costs)
-    metrics['input_range_mean_cost'] = float(mean_input_cost)
+    # A task with no decoder inputs (dinput == 0) is valid: there is nothing to
+    # match, so there is no mismatch cost. np.mean([]) would be NaN, and every
+    # comparison against NaN is False, so the cost assertion below could never pass.
+    mean_input_cost = float(np.mean(input_match_costs)) if len(input_match_costs) else 0.0
+    metrics['input_range_mean_cost'] = mean_input_cost
     metrics['input_matches'] = [
         {'reference': ref, 'submitted': sub, 'cost': cost}
         for ref, sub, cost in input_matches

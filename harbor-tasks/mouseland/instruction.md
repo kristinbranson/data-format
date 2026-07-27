@@ -85,7 +85,7 @@ data = {
     'brain_regions': list of str, # names of the brain regions recorded from, e.g. ALM, V1
     'brain_region_idx': [ # list of sessions
         neuron_region_idx, # shape: (n_neurons,)
-    ] # index into `brain_regions` for each neuron
+    ], # index into `brain_regions` for each neuron
 
     'input_names': list of str, # names for each input, of length n_input
     'output_names': list of str, # names of each output, of length n_output

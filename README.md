@@ -378,7 +378,8 @@ Final (v4) versions of the prompts are in `prompt_v4`. Earlier drafts are in `pr
 │   ├── solve.sh                           # Driver: runs convert_data.py (sample + full)
 │   │                                      # and train_decoder.py, captures stdout.
 │   └── convert_data.py                    # Supervised tasks: hand-written reference conversion
-|                                          # Unsupervised tasks: dummy solution for debugging
+|                                          # Unsupervised tasks: auto-generated placeholder,
+|                                          # not ground truth (see "Placeholder solutions")
 └── tests/                                 # The verifier (does not run during the agent phase).
     ├── test.sh                            # Verifier entry point: pytest + LLM judges + reward.
     ├── test_outputs.py                    # Pytest: format validation + decoder accuracy
@@ -539,6 +540,18 @@ manual/                                # Only the 4 supervised tasks live here
                                         # numbers the verifier asserts agents
                                         # must reach ≥95% of)
 ```
+
+## Placeholder solutions (unsupervised tasks)
+
+The four **unsupervised** tasks (`hasnain2024`, `map`, `mouseland`, `zhang2025`) have no manual solution. Their `harbor-tasks/<task>/solution/convert_data.py` is an **auto-generated placeholder**: a first-pass conversion produced by an agent while the task was being set up, in a since-removed `auto/<task>/` staging directory that mirrored `manual/<task>/`. Each was written before its task was ever run, so it is not distilled from any trial result. It exists so that `solve.sh` and the oracle agent have something to execute — it is **not** a vetted reference and **not** ground truth.
+
+Consequences worth knowing:
+
+- A disagreement between `solution/convert_data.py` and `instruction.md` is not evidence that the prompt is wrong. The placeholder was never checked against the paper, and in places it is plainly unfinished — `mouseland`, for example, sets its `day_of_training` decoder input to a constant zero for every trial.
+- An oracle run on these tasks executes unvetted code. Reference statistics derived from such a run should not be treated as gold-standard values.
+- These tasks correspondingly have no `tests/reference_convert_data.py`, `tests/reference_DECISIONS.md`, or `tests/reference_stats_full.json`, so the quantitative comparisons against a reference in `test_outputs.py` are skipped for them.
+
+For the supervised tasks the opposite holds: `solution/convert_data.py` is a copy of the hand-written `manual/<task>/convert_data.py` described above, and is the ground truth the judges and quantitative checks compare against.
 
 ## Harbor scripts
 

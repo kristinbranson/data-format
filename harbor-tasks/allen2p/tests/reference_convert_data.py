@@ -25,6 +25,9 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
+_allen2p_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _allen2p_seed) % 2**31)
+
 warnings.filterwarnings("ignore", message="Ignoring the following cached namespace")
 
 import allensdk.brain_observatory.behavior.behavior_project_cache as bpc

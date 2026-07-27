@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y software-properties-common \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y \
-    python3.13 python3.13-venv python3.13-dev \
+    python3.13 python3.13-venv python3.13-dev python-is-python3 \
     build-essential unzip git curl libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1 \

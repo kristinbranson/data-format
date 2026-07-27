@@ -151,7 +151,7 @@ For each question below:
 
 ## Step 3: Evaluate the AI's decisions
 
-Compare the AI's decisions (from Step 2) against the human reference solution (`/tests/reference_DECISIONS.md` and `/tests/reference_convert_data.py`).
+Compare the AI's decisions (from Step 2) with the instructions (`/tests/instruction_reference.md`), which involved replicating the analysis in the reference paper (`/app/paper.pdf`), the methods excerpt (`/app/methods.txt`), and the code (`/app/code`). No human reference solution is available for this task, so evaluate against those sources.
 
 Create the file `llm_judge_eval.json` with the following structure:
 ```json

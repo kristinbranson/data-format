@@ -29,7 +29,6 @@
   - A white paper about spike sorting and quality control is in the file `ChenLiuEtAl2023_SpikeSortingQC.pdf`
 - Some parts of the paper that describe the experiment and processing have been copied to the file `methods.txt`. 
 - **Code**:
-  - `ecephys_spike_sorting` contains code used for preprocessing, spike sorting and quality control.
   - `code` contains code from `methodpaper.pdf`.
 - **Data** from the papers are in the directory `data`.
 - **Documentation** on the NWB file format is at https://nwb-schema.readthedocs.io. 
@@ -94,7 +93,7 @@ data = {
     'brain_regions': list of str, # names of the brain regions recorded from, e.g. ALM, V1
     'brain_region_idx': [ # list of sessions
         neuron_region_idx, # shape: (n_neurons,)
-    ] # index into `brain_regions` for each neuron
+    ], # index into `brain_regions` for each neuron
 
     'input_names': list of str, # names for each input, of length n_input
     'output_names': list of str, # names of each output, of length n_output

@@ -7,6 +7,9 @@ import numpy as np
 import torch
 from suite2p.extraction import dcnv
 
+_majnik2025_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _majnik2025_seed) % 2**31)
+
 
 # ---------- preprocessing parameters ----------
 NEUCOEFF = 0.7
