@@ -33,9 +33,9 @@ for sess_idx, (dirpath, animal, date, probes) in enumerate(sessions):
 
 **What this does:** A hardcoded `EPHYS_SESSIONS` list of 44 (directory, animal, date, probe_numbers) tuples is iterated by `main()`. Each session's `.mat` is loaded by `load_mat_file`, which tries HDF5 v7.3 first then falls back to scipy v5 loader.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -53,9 +53,9 @@ subject_idx = np.array([unique_subjects.index(a) for a in all_animals])
 
 **What this does:** Each session contributes its `animal` name (second element of the session tuple). `unique_subjects` is the sorted set of animal names; `subject_idx` maps each session to its subject index.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -77,9 +77,9 @@ for sess_idx, (dirpath, animal, date, probes) in enumerate(sessions):
 
 **What this does:** Each entry of `EPHYS_SESSIONS` (animal+date+directory) defines one session. Per-session results are appended into the top-level lists; `session_info` records animal/date/directory for each.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -100,9 +100,9 @@ for t_idx in range(len(valid_trial_indices)):
 
 **What this does:** Trial count comes from `obj.bp.Ntrials`; `get_event_times` returns one go-cue time per trial; spikes are tagged with their trial number (`clu['trial']`) which is used to bin per-trial. Each retained trial yields a `(n_neurons, n_timepoints)` matrix appended to `neural_trials`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -124,9 +124,9 @@ if all_clusters:
 
 **What this does:** Trials with optogenetic stim, early licks, missing/non-positive go-cue times, or trial number beyond the last recorded spike are dropped. Sessions with <2 valid trials or <10 units are skipped entirely (lines 692-702).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -149,9 +149,9 @@ trialdat = bin_and_smooth_spikes(all_clusters, ntrials, align_times, time_axis, 
 
 **What this does:** Neural data is derived from `obj.clu[probe].trialtm` (per-spike within-trial times), `obj.clu[probe].trial` (trial indices), `obj.clu[probe].quality` (string label), and `obj.bp.ev.goCue` (alignment event times).
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -175,9 +175,9 @@ def bin_and_smooth_spikes(clusters, ntrials, align_times, time_axis, edges):
 
 **What this does:** Per neuron, per trial: spikes are aligned to the trial's go cue, histogrammed into 10 ms bins on the [-2.5, 2.5] s axis, divided by `DT` to get firing rate, then smoothed with a causal Gaussian (N=15, reflect boundary).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -203,9 +203,9 @@ if len(all_clusters) < MIN_UNITS: ... return None
 
 **What this does:** Two-stage neuron filter: (1) exclude clusters whose `quality` string is in the excluded set; (2) drop neurons with mean firing rate <=1 Hz across trials/time. Sessions with fewer than 10 surviving units are dropped.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -229,9 +229,9 @@ rate = counts.astype(np.float64) / DT
 
 **What this does:** A fixed 10 ms-bin edges array spans -2.5 to 2.5 s; bin centers form the time axis (500 bins). Spike counts per bin are converted to a rate (counts/DT).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -250,9 +250,9 @@ counts = np.histogram(aligned_times, bins=edges)[0]
 
 **What this does:** Per-trial go-cue times are read from `obj.bp.ev.goCue` and subtracted from each spike's within-trial time before histogramming, placing t=0 at the go cue.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-a. How is `lick_direction` derived from the raw data?
 
@@ -273,9 +273,9 @@ out[0, :] = int(lick_direction[t_idx])
 
 **What this does:** `obj.bp.R` (1 = right-trial) is taken as the per-trial lick direction (L=0, R=1) and broadcast across all timepoints in the output.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-b. How is `lick_direction` processed/discretized?
 
@@ -294,9 +294,9 @@ out[0, :] = int(lick_direction[t_idx])
 
 **What this does:** Already a 0/1 boolean (R vs not-R); cast to int and tiled along the time axis. No further discretization.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-c. How is `lick_direction` filtered based on quality controls?
 
@@ -310,9 +310,9 @@ R_valid = R[valid_trial_indices]
 
 **What this does:** No output-specific filter; `lick_direction` inherits the trial filter (no stim, no early, valid go cue, within recording extent).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-a. How is `behavioral_context` derived from the raw data?
 
@@ -332,9 +332,9 @@ out[1, :] = int(behavioral_context[t_idx])
 
 **What this does:** Read `obj.bp.autowater`; invert it so that DR (autowater=0) maps to 1 and WC (autowater=1) maps to 0.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-b. How is `behavioral_context` processed/discretized?
 
@@ -350,9 +350,9 @@ out[1, :] = int(behavioral_context[t_idx])
 
 **What this does:** Boolean inversion of `autowater`; one value per trial broadcast across the time axis.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-c. How is `behavioral_context` filtered based on quality controls?
 
@@ -366,9 +366,9 @@ autowater_valid = autowater[valid_trial_indices]
 
 **What this does:** No output-specific filter; inherits the trial-level filter only.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-a. How is `outcome` derived from the raw data?
 
@@ -388,9 +388,9 @@ out[2, :] = int(outcome[t_idx])
 
 **What this does:** `obj.bp.hit` is read directly as the per-trial correctness signal (1 = correct, 0 = miss/no).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-b. How is `outcome` processed/discretized?
 
@@ -406,9 +406,9 @@ out[2, :] = int(outcome[t_idx])
 
 **What this does:** Already binary; cast to int and tiled across time bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-c. How is `outcome` filtered based on quality controls?
 
@@ -424,7 +424,7 @@ hit_valid = hit[valid_trial_indices]
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-a. How is `tongue_velocity` derived from the raw data?
 
@@ -450,9 +450,9 @@ spd = np.sqrt(xvel**2 + yvel**2)
 
 **What this does:** Reads the `tongue` DLC feature from the side-camera (`view=0`) `obj.traj` data, takes x/y trajectories, computes per-frame velocity via `np.gradient`, then speed = sqrt(xvel^2+yvel^2). NaN frames (tongue not visible) get velocity 0.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-b. How is `tongue_velocity` processed/discretized?
 
@@ -478,9 +478,9 @@ out[3, :] = tongue_disc[:, t_idx].astype(np.int64)
 
 **What this does:** Velocity time series is interpolated onto the neural 10 ms time axis, then thresholded by the session-wide 50th percentile (>= median => 1, else 0).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-c. How is `output` *tongue_velocity* aligned with the neural data?
 
@@ -516,9 +516,9 @@ tongue_speed = extract_velocity_from_traj(
 
 **What this does:** A session-wide `vidshift` is computed from `obj.sglx.bitcode.bitstart/fs` minus `obj.bp.ev.bitStart` (fallback 0.5 s). For each trial, the side-cam `frameTimes` are corrected by `vidshift` and the trial's `goCue` time, then the per-frame speed is `np.interp`-ed onto the neural `time_axis` (10 ms bins, [-2.5, 2.5] s).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-a. How is `paw_velocity` derived from the raw data?
 
@@ -537,9 +537,9 @@ paw_speed_valid = paw_speed[:, valid_trial_indices]
 
 **What this does:** Same `extract_velocity_from_traj` pipeline as tongue, but using the bottom-camera (`view=1`) `top_paw` DLC feature; positions are smoothed (N=21 reflect), velocity = gradient, baseline (median velocity) subtracted, speed = sqrt(xvel^2 + yvel^2).
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-b. How is `paw_velocity` processed/discretized?
 
@@ -563,9 +563,9 @@ out[4, :] = paw_disc[:, t_idx].astype(np.int64)
 
 **What this does:** Position is smoothed (causal Gaussian N=21), gradient gives velocity, baseline (median) subtracted; speed interpolated to neural axis; binarized at session 50th percentile.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-c. How is `output` *paw_velocity* aligned with the neural data?
 
@@ -596,9 +596,9 @@ paw_speed = extract_velocity_from_traj(
 
 **What this does:** Bottom-cam (`view=1`) `frameTimes` for each trial are shifted by the session `vidshift` (computed from `bitcode.bitstart/fs` minus `bp.ev.bitStart`) and the trial's `goCue` time, then the per-frame paw speed is linearly interpolated (`np.interp`) onto the neural `time_axis` (10 ms bins, [-2.5, 2.5] s).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-a. How is `motion_energy` derived from the raw data?
 
@@ -625,9 +625,9 @@ me_data, me_thresh = load_motion_energy(dirpath, animal, date)
 
 **What this does:** Reads a separate `motionEnergy_<animal>_<date>.mat`, robust to several struct/cell layouts, returning a per-trial list of 1D ME time series.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-b. How is `motion_energy` processed/discretized?
 
@@ -652,9 +652,9 @@ out[5, :] = me_disc[:, t_idx].astype(np.int64)
 
 **What this does:** ME is aligned to go cue using video frame times (offset `vidshift`), interpolated onto the neural time axis, then binarized at the session 50th percentile.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-c. How is `output` *motion_energy* aligned with the neural data?
 
@@ -689,9 +689,9 @@ me_interp = interpolate_motion_energy(
 
 **What this does:** Motion energy is paired with side-cam (`view=0`) `frameTimes`; those are shifted by the session `vidshift` (or 0.5 s fallback) and the per-trial `goCue` time, then `np.interp` resamples the ME signal onto the neural `time_axis` (10 ms bins, [-2.5, 2.5] s). If `frameTimes` are missing, synthetic times at 400 Hz are used.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -720,9 +720,9 @@ else:
 
 **What this does:** Missing files / fields raise warnings or fall back to defaults (zeros). Trials beyond the last recorded spike are dropped. Missing ME files yield zero arrays. NaN velocities/ME are nearest-filled; all-NaN columns -> zero.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-a. What are the most time-consuming steps of the code?
 
@@ -746,9 +746,9 @@ print(f"    Motion energy: {time.time()-t4:.1f}s")
 
 **What this does:** Code times four blocks per session: spike binning + smoothing, tongue velocity extraction, paw velocity extraction, and motion energy loading/interpolation.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -781,9 +781,9 @@ for t in range(ntrials):
 
 **What this does:** Nested per-neuron x per-trial loops in spike binning; per-trial loops in velocity/ME extraction; explicit per-NaN inner loops for nearest-neighbor fill.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-c. What processing does the code repeat multiple times?
 
@@ -802,9 +802,9 @@ paw_speed = extract_velocity_from_traj(data, fmt, view=1, feat_name='top_paw', .
 
 **What this does:** `get_traj_data` is called once per trial inside the tongue extractor (view=0), again inside the paw extractor (view=1), and again inside the ME interpolator (view=0) — re-parsing feature names and HDF5 references each time. `causal_gaussian_smooth` rebuilds its kernel on every call.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -825,9 +825,9 @@ def generate_processing_plots(...):
 
 **What this does:** Continuous tongue/paw/ME speeds are computed in full but only their median-binarized versions are kept. `generate_processing_plots` (when `--show-processing`) creates per-session figures unrelated to the saved pickle.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-e. How is memory usage optimized?
 
@@ -853,6 +853,6 @@ with open(args.outfile, 'wb') as f:
 
 **What this does:** Per-trial neural/velocity/ME arrays are allocated as float32; HDF5 file handles are closed after each session; output pickled with protocol 4. Discretized outputs are stored as int64.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_

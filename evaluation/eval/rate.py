@@ -3,13 +3,24 @@
 Interactive Q-by-Q rating tool for the Data-Format evaluation.
 
 Usage:
-    python rate.py <dataset>            # resume (skip already-rated entries)
-    python rate.py <dataset> --overwrite  # re-rate everything
+    python rate.py <dataset>                 # prompts for the evaluator code
+    python rate.py <dataset> --rater LZ      # skip the prompt
+    python rate.py <dataset> --overwrite     # re-rate everything
 
 For each question in the reference DECISIONS.md, walks through all 6 trial
 samples (3 claude-code + 3 codex) one at a time in random anonymized order,
 shows the reference answer alongside, and prompts for rating + note. Writes
 each answer back to the per-trial markdown file immediately.
+
+Each evaluator works in their own folder, seeded from the master dossiers at
+the dataset root (see raters.py)::
+
+    eval/<dataset>/claude-code_trial1.md   master: content, ratings blank
+    eval/<dataset>/<CODE>/claude-code_trial1.md   this evaluator's ratings
+    eval/<dataset>/<CODE>/summary.md              this evaluator's summary
+
+so evaluators never see each other's ratings and never write the same file.
+Register new evaluator codes in raters.json.
 """
 
 import argparse
@@ -19,6 +30,9 @@ import shutil
 import sys
 import textwrap
 from pathlib import Path
+
+import raters as R
+from compare import build_qid_map
 
 try:
     from rich.columns import Columns
@@ -33,7 +47,7 @@ except ImportError:
     _CONSOLE = None
 
 REPO_ROOT = Path("/groups/zhang/home/zhangl5/Data-Format")
-EVAL_DIR = REPO_ROOT / "evaluation" / "eval"
+EVAL_DIR = R.EVAL_DIR
 MANUAL_DIR = REPO_ROOT / "manual"
 
 VALID_RATINGS = ["better", "match", "ok", "concerning", "incorrect", "missing"]
@@ -160,8 +174,18 @@ def header(label: str, color: str = "\033[1;36m") -> str:
     return f"{color}{'═' * pad}  {label}  {'═' * pad}\033[0m"
 
 
+def strip_eval_lines(body: str) -> str:
+    """Drop the Rating/Note lines so the displayed sample is content only."""
+    out = [ln for ln in body.splitlines()
+           if not re.match(r"^\*\*(Rating|Note):\*\*", ln)]
+    while out and not out[-1].strip():
+        out.pop()
+    return "\n".join(out)
+
+
 def show_pair(qid: str, qtitle: str, ref_section: str, sample_label: str,
               sample_section: str, sample_idx: int, sample_total: int):
+    sample_section = strip_eval_lines(sample_section)
     if _RICH:
         term_width = shutil.get_terminal_size((120, 40)).columns
         col_width = (term_width - 4) // 2  # 4 = inter-panel padding margin
@@ -196,7 +220,10 @@ def show_pair(qid: str, qtitle: str, ref_section: str, sample_label: str,
 def prompt_rating() -> str:
     while True:
         choices = " | ".join(VALID_RATINGS)
-        raw = input(f"  Rating [{choices}] (shortcut b/m/o/c/i/n): ").strip().lower()
+        try:
+            raw = input(f"  Rating [{choices}] (shortcut b/m/o/c/i/n): ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            sys.exit("\nStopped — everything rated so far is already saved.")
         if raw in VALID_RATINGS:
             return raw
         if raw in RATING_SHORTCUTS:
@@ -208,7 +235,10 @@ def prompt_rating() -> str:
 
 
 def prompt_note() -> str:
-    note = input("  Note (free text, blank ok): ").strip()
+    try:
+        note = input("  Note (free text, blank ok): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        sys.exit("\nStopped before the note was saved — the rating above was not written.")
     return note if note else "_(no note)_"
 
 
@@ -217,15 +247,18 @@ def prompt_overall_comment() -> str:
         _CONSOLE.print("[bold magenta]Overall comment for this question[/bold magenta] (free text, blank ok):")
     else:
         print("Overall comment for this question (free text, blank ok):")
-    raw = input("  > ").strip()
+    try:
+        raw = input("  > ").strip()
+    except (EOFError, KeyboardInterrupt):
+        sys.exit("\nStopped — per-trial ratings are saved; this question's summary is not.")
     return raw if raw else "_(no overall comment)_"
 
 
 def write_summary(summary_path: Path, qid: str, qtitle: str,
-                  results: list, overall: str):
+                  results: list, overall: str, dataset: str = "", rater: str = ""):
     """
     results: list of dicts {agent, trial, rating, note}, in canonical order.
-    Writes/replaces a section for this qid in summary.md.
+    Writes/replaces a section for this qid in <dataset>/<CODE>/summary.md.
     """
     block_lines = [f"## Q {qid}. {qtitle}", ""]
     block_lines.append("| Agent / trial | Rating | Note |")
@@ -241,7 +274,9 @@ def write_summary(summary_path: Path, qid: str, qtitle: str,
     block = "\n".join(block_lines) + "\n"
 
     if not summary_path.exists():
-        header = f"# Evaluation summary — {summary_path.parent.name}\n\n---\n\n"
+        dataset = dataset or summary_path.parent.parent.name
+        who = f" · evaluator {rater}" if rater else ""
+        header = f"# Evaluation summary — {dataset}{who}\n\n---\n\n"
         summary_path.write_text(header + block)
         return
 
@@ -261,11 +296,42 @@ def write_summary(summary_path: Path, qid: str, qtitle: str,
     summary_path.write_text(new_text)
 
 
+# ---------- reference ↔ dossier question mapping ----------
+
+def _report_mapping(dataset: str, ref: dict, trial_sections: dict, qmaps: dict):
+    """Print how reference questions line up with the dossier sections, and
+    refuse to continue if any reference question cannot be located."""
+    renumbered, unmapped = [], []
+    for qid in ref:
+        targets = {qmaps[key].get(qid) for key in trial_sections}
+        if None in targets:
+            unmapped.append(qid)
+            targets.discard(None)
+        for t in targets:
+            if t != qid:
+                renumbered.append((qid, t))
+                break
+
+    if renumbered:
+        print(f"  Note: {len(renumbered)} question(s) are numbered differently in "
+              f"the dossiers; pairing them by content:")
+        for qid, t in renumbered:
+            print(f"    reference {qid} → dossier {t}   ({ref[qid]['title'][:60]})")
+    if unmapped:
+        print(f"\n  ERROR: {len(unmapped)} reference question(s) have no matching "
+              f"dossier section: {', '.join(unmapped)}")
+        print("  Rating them would compare unrelated questions. Fix the titles, or "
+              f"add variable aliases in {EVAL_DIR / dataset / 'qid_aliases.json'}.")
+        sys.exit(1)
+
+
 # ---------- main ----------
 
 def main():
     ap = argparse.ArgumentParser(description="Interactive Q-by-Q rating tool.")
     ap.add_argument("dataset", help="Dataset name (e.g. allen2p)")
+    ap.add_argument("--rater", help="Evaluator code (e.g. LZ). Prompted for if omitted; "
+                                    "$DATAFORMAT_RATER is used as a fallback.")
     ap.add_argument("--overwrite", action="store_true",
                     help="Re-rate all entries even if already filled.")
     ap.add_argument("--question", help="Only rate a specific question (e.g. 1-a)")
@@ -275,13 +341,15 @@ def main():
     if not dataset_dir.exists():
         sys.exit(f"Eval folder not found: {dataset_dir}")
 
-    # Discover trial files
-    trial_files = {}
-    for agent, n in TRIAL_ORDER:
-        path = dataset_dir / f"{agent}_trial{n}.md"
-        if not path.exists():
-            sys.exit(f"Missing trial file: {path}")
-        trial_files[(agent, n)] = path
+    # Who is rating? Seeds/updates <dataset>/<CODE>/ from the master dossiers.
+    rater = R.resolve_rater(args.rater)
+    print(f"Evaluator: {rater.label}")
+    trial_files = R.sync_rater_dir(args.dataset, rater.code)
+    rater_workdir = R.rater_dir(args.dataset, rater.code)
+    print(f"Working in: {rater_workdir}")
+    for key in TRIAL_ORDER:
+        if key not in trial_files:
+            sys.exit(f"Missing trial file: {rater_workdir / f'{key[0]}_trial{key[1]}.md'}")
 
     # Parse reference + per-trial content
     print(f"Loading reference for {args.dataset}...")
@@ -289,6 +357,15 @@ def main():
     print(f"  Found {len(ref)} reference questions.")
 
     trial_sections = {key: parse_trial_file(path) for key, path in trial_files.items()}
+
+    # Reference and dossier question numbers do NOT always agree: the reference
+    # has been renumbered/renamed since some dossiers were generated (allen2p
+    # reorders its output variables; sosa2024 gained two sub-questions). Pair
+    # them by what the question is *about* — the same fingerprint compare.py
+    # uses to line human ratings up with the judges — never by bare qid.
+    qmaps = {key: build_qid_map(ref, sections, dataset=args.dataset)
+             for key, sections in trial_sections.items()}
+    _report_mapping(args.dataset, ref, trial_sections, qmaps)
 
     # Determine ordered question list (from reference)
     qids = list(ref.keys())
@@ -298,15 +375,24 @@ def main():
         qids = [args.question]
 
     rng = random.Random()  # fresh shuffle each session
-    summary_path = dataset_dir / "summary.md"
+    summary_path = R.summary_path(args.dataset, rater.code)
 
     for qid in qids:
         ref_section = f"## {qid}. {ref[qid]['title']}\n\n{ref[qid]['body']}"
 
+        # summary.md is keyed by the *dossier* numbering, not the reference's:
+        # every evaluator's folder is a copy of the same masters, so keying by
+        # the dossier keeps all evaluators' summaries directly comparable even
+        # when the reference has been renumbered since (see _report_mapping).
+        sqid = next((qmaps[key][qid] for key in TRIAL_ORDER
+                     if qmaps[key].get(qid)), qid)
+        stitle = next((trial_sections[key][sqid]["title"] for key in TRIAL_ORDER
+                       if sqid in trial_sections[key]), ref[qid]["title"])
+
         # Determine which trials still need rating
         unrated = []
         for key in TRIAL_ORDER:
-            sec = trial_sections[key].get(qid)
+            sec = trial_sections[key].get(qmaps[key].get(qid))
             if sec is None:
                 print(f"WARNING: trial {key} is missing question {qid}; skipping.")
                 continue
@@ -330,22 +416,23 @@ def main():
         ratings_collected = {}
         for i, label in enumerate(labels):
             key = mapping[label]
-            sec = trial_sections[key][qid]
-            sample_section = f"## Q {qid}. {sec['title']}\n\n{sec['body']}"
+            dqid = qmaps[key][qid]
+            sec = trial_sections[key][dqid]
+            sample_section = f"## Q {dqid}. {sec['title']}\n\n{sec['body']}"
             show_pair(qid, ref[qid]['title'], ref_section, label,
                       sample_section, i + 1, len(labels))
             rating = prompt_rating()
             note = prompt_note()
             ratings_collected[label] = (rating, note)
             # Write back immediately so we can resume
-            write_rating(trial_files[key], qid, rating, note)
+            write_rating(trial_files[key], dqid, rating, note)
             # Refresh in-memory copy for this trial
             trial_sections[key] = parse_trial_file(trial_files[key])
 
         # Reveal mapping + collect summary rows in canonical order
         summary_rows = []
         for key in TRIAL_ORDER:
-            sec = trial_sections[key].get(qid)
+            sec = trial_sections[key].get(qmaps[key].get(qid))
             if sec is None:
                 continue
             summary_rows.append({
@@ -385,7 +472,8 @@ def main():
 
         # Prompt for overall comment and write summary block
         overall = prompt_overall_comment()
-        write_summary(summary_path, qid, ref[qid]["title"], summary_rows, overall)
+        write_summary(summary_path, sqid, stitle, summary_rows, overall,
+                      dataset=args.dataset, rater=rater.code)
         if _RICH:
             _CONSOLE.print(f"[dim]→ summary updated: {summary_path}[/dim]\n")
         else:

@@ -29,9 +29,9 @@ for animal in animals_to_process:
 
 **What this does:** Loads each animal's data from the (extensionless) joblib file in `data/` using `joblib.load`, indexed by the animal name. The hardcoded list of 7 animals is iterated; each animal contains `trace`, `position`, and `envs` arrays whose first axis is the day/session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -55,9 +55,9 @@ for animal in animals_to_process:
 
 **What this does:** The 7 animals (QLAK-CA1-*) are hardcoded as the subjects list, and each session's `subject_idx` is set to the animal's index in that list.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -87,9 +87,9 @@ for s in range(n_sessions):
 
 **What this does:** Each "day" axis index of the per-animal arrays is treated as one session; the loop iterates over `n_days` and appends each day's data as a separate session in the output lists.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -124,9 +124,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** Each session is sliced into non-overlapping 1800-frame (60-second @ 30 Hz) trials by integer division of total frame count. Any remainder frames at the end of the session are discarded.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -139,9 +139,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** No trial-level quality control is applied; every contiguous 1800-frame block is kept (only the trailing partial trial is dropped by integer division).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -161,9 +161,9 @@ trial_neural = active_trace[:, start:end].astype(np.float32)
 
 **What this does:** Neural data is derived from the per-animal `trace` array (binarized calcium events) loaded from each animal's joblib file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -188,9 +188,9 @@ trial_neural = active_trace[:, start:end].astype(np.float32)
 
 **What this does:** Inactive (all-NaN) cells are removed, any residual NaN values are replaced with 0, and the binary trace is cast to float32 and sliced per trial. No further processing (smoothing, normalization, deconvolution) is applied.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -210,9 +210,9 @@ n_active = active_mask.sum()
 
 **What this does:** Cells whose trace for the entire session is NaN (i.e., not registered on that day) are excluded; all remaining registered cells are kept with no place-cell or activity-based filtering.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -232,9 +232,9 @@ trial_duration_frames = fps * trial_duration_sec  # 1800 frames
 
 **What this does:** The neural trace is kept at the native 30 Hz frame rate (≈33.33 ms bins); no resampling or temporal binning is applied.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -258,9 +258,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** There is no stimulus event; trials are aligned to the start of each contiguous 60-second segment of the continuous recording (frame index 0 of the trial = `trial_idx * 1800`).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -288,9 +288,9 @@ env_mats = {
 
 **What this does:** The input is derived from the `envs` string array (one environment-shape name per day), which is mapped through a hardcoded `get_env_mat` lookup table to a 3×3 binary accessibility matrix. The `blocked` raw variable is not used directly.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -312,9 +312,9 @@ input_names = [f'partition_{i}' for i in range(9)]
 
 **What this does:** The 3×3 binary accessibility matrix from `get_env_mat` is flattened to a 9-element vector, cast to float32, and used as a constant per-trial input (1 = accessible partition, 0 = blocked partition). It is repeated identically for every trial in the session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** flipped from our solution but is valid
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -331,9 +331,9 @@ trial_input = env_mat.astype(np.float32)
 
 **What this does:** Input has no time axis — it is a single (9,) static vector per trial. No frame-by-frame alignment with the neural data is needed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -354,9 +354,9 @@ bin_ids = discretize_position_3x3(pos_day)  # (n_frames,)
 
 **What this does:** Output is derived from the `position` array (2D x,y coordinates per frame, in cm) loaded from each animal's joblib file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -386,9 +386,9 @@ trial_output = bin_ids[start:end].reshape(1, -1).astype(np.int64)
 
 **What this does:** x and y are clipped to [0, 75) cm, divided by 25 cm bin size, floored and clipped to {0,1,2}, then combined as `x_bin * 3 + y_bin` to give a single integer bin id 0-8 per frame.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -411,9 +411,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** Position bins and neural traces are sliced with identical `start:end` indices per trial, so they are aligned frame-for-frame at the native 30 Hz sampling rate.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -437,9 +437,9 @@ n_trials = n_frames_total // trial_duration_frames
 
 **What this does:** All-NaN cells are filtered out, residual NaNs (if any) are replaced with 0, and the trailing partial minute of frames in each session is discarded by integer division.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -460,9 +460,9 @@ print(f"  Loaded in {t_load:.1f}s", flush=True)
 
 **What this does:** Per the notes' timing table, the joblib load step (~13 s/animal) dominates over per-session processing (~9 s for ~31 days). Total full-dataset conversion took ~215 s.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -486,9 +486,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** Trial-splitting is done with a Python `for` loop over `n_trials` (~40 iterations per session) appending sliced views to lists; this could be expressed as a single reshape/stack operation across trials, but the loop is short and not flagged as a bottleneck in the notes.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -504,9 +504,9 @@ trial_input = env_mat.astype(np.float32)
 
 **What this does:** The same per-session `env_mat` vector is appended (as a fresh cast) into `trials_input` once per trial, so the identical (9,) array is duplicated ~40× per session in the output structure.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -525,8 +525,8 @@ def plot_processing(animal_name, raw_data, sessions_neural, sessions_input,
 
 **What this does:** A `plot_processing` routine generates per-animal PNG visualizations (only when `--show-processing` is passed); these plots are diagnostic outputs not consumed by the decoder. No other obvious unused processing is performed in the main path.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

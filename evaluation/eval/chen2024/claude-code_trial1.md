@@ -27,9 +27,9 @@ for i, nwb_path in enumerate(nwb_files):
 
 **What this does:** Globs all `sub-*/sub-*_ses-*.nwb` under `/app/data`, sorts them, and iterates session-by-session calling `process_session` on each NWB file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -55,9 +55,9 @@ subject_idx = np.array(subject_idx, dtype=np.int64)
 
 **What this does:** Reads `subject_id` per NWB file; builds an OrderedDict mapping unique subject IDs to integer indices; emits `subjects` list and a per-session `subject_idx` array.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -79,9 +79,9 @@ def process_session(nwb_path, show_processing=False, session_idx=0):
 
 **What this does:** Each NWB file is treated as one session. `process_session` returns a per-session dict containing neural/input/output lists; sessions are appended to `all_sessions` in `convert_all`.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -113,9 +113,9 @@ go_times = data['go_times'][trial_indices]
 
 **What this does:** Pulls per-trial fields from the NWB `trials` table; trial alignment uses `go_times` (from BehavioralEvents `go_start_times`) indexed by `trial_indices`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -141,9 +141,9 @@ recording_mask = (go_times + ALIGN_START <= max_spike_time) & \
 
 **What this does:** Excludes auto_water and free_water trials, plus trials whose [-2.5s,+1.5s] window around go cue falls outside recorded spike time range. Session-level filter (perf>65%, ≥50 correct L/R) applied earlier.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -171,9 +171,9 @@ for ui in good_indices:
 
 **What this does:** Derived from NWB `units` table: `spike_times` (via VectorIndex `.target.data`), `classification` (filter == 'good'), and `anno_name` (brain region).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -206,9 +206,9 @@ def bin_spikes(spike_times_list, go_times, align_start, align_end, bin_width, n_
 
 **What this does:** Spike times converted to firing rates by histogram binning into 80 non-overlapping 50ms bins from -2.5s to +1.5s relative to go cue, divided by bin width to give Hz.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -235,9 +235,9 @@ n_neurons = len(neuron_mask)
 
 **What this does:** Two filters: (1) `classification == 'good'` (NWB-encoded classifier QC), and (2) units must map to one of 14 major brain regions via `anno_name` keyword matching, else dropped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -259,9 +259,9 @@ all_matrices[t, n, :] = counts / bin_width
 
 **What this does:** 80 non-overlapping 50ms bins from -2.5s to +1.5s. Spikes counted with np.histogram, divided by bin_width → Hz.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -285,9 +285,9 @@ for t in range(n_trials):
 
 **What this does:** Each trial's go cue time (from `BehavioralEvents.go_start_times`) defines time 0; spike times are subtracted by `go_t` and binned in [-2.5, +1.5]s.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-a. What variables in the raw data is `output` *choice* derived from?
 
@@ -303,9 +303,9 @@ choices = np.array([0 if ins == 'left' else 1 for ins in instructions], dtype=np
 
 **What this does:** Derived from NWB `trials.trial_instruction` ('left'/'right') string column.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-b. What processing is involved in computing `output` *choice*?
 
@@ -323,9 +323,9 @@ out = np.array([
 
 **What this does:** Strings mapped to integers (left→0, right→1); per-trial scalar broadcast to length-80 vector across time bins.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-c. How is `output` *choice* aligned with the neural data?
 
@@ -347,7 +347,7 @@ for t in range(n_valid_trials):
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-a. What variables in the raw data is `output` *outcome* derived from?
 
@@ -364,9 +364,9 @@ outcomes = np.array([outcome_map.get(o, 0) for o in outcomes_raw], dtype=np.int6
 
 **What this does:** Derived from NWB `trials.outcome` string column.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-b. What processing is involved in computing `output` *outcome*?
 
@@ -384,9 +384,9 @@ np.full(N_BINS, outcomes[t], dtype=np.int64),        # outcome (per-trial, broad
 
 **What this does:** String labels mapped to integers via dict (unknowns default to 0/'ignore'); broadcast across time bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-c. How is `output` *outcome* aligned with the neural data?
 
@@ -402,7 +402,7 @@ np.full(N_BINS, outcomes[t], dtype=np.int64),        # outcome (per-trial, broad
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-a. What variables in the raw data is `output` *early_lick* derived from?
 
@@ -418,9 +418,9 @@ early_licks = np.array([1 if el == 'early' else 0 for el in early_lick_raw], dty
 
 **What this does:** Derived from NWB `trials.early_lick` string column.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-b. What processing is involved in computing `output` *early_lick*?
 
@@ -437,9 +437,9 @@ np.full(N_BINS, early_licks[t], dtype=np.int64),     # early lick (per-trial, br
 
 **What this does:** Strings mapped: 'early'→1 else 0; broadcast across time bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-c. How is `output` *early_lick* aligned with the neural data?
 
@@ -455,7 +455,7 @@ np.full(N_BINS, early_licks[t], dtype=np.int64),     # early lick (per-trial, br
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-a. What variables in the raw data is `output` *tongue_y_position* derived from?
 
@@ -472,9 +472,9 @@ tongue_timestamps = tongue_ts_obj.timestamps[:]
 
 **What this does:** Derived from NWB `BehavioralTimeSeries.Camera0_side_TongueTracking` data column 1 (y) and column 2 (confidence) plus its timestamps.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-b. What processing is involved in computing `output` *tongue_y_position*?
 
@@ -510,9 +510,9 @@ d[trial_y >= p60] = 2
 
 **What this does:** Imputes occluded frames (confidence<0.9) with session mean y; bins frames per trial into 80 bins via `np.digitize` (mean within bin); discretizes against session 40th/60th percentiles into {0,1,2}.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-c. How is `output` *tongue_y_position* aligned with the neural data?
 
@@ -539,9 +539,9 @@ tongue_y_discrete[t].astype(np.int64),                # tongue y (time-varying)
 
 **What this does:** Tongue timestamps are aligned to each trial's `go_times` and binned into the same 80-bin [-2.5,+1.5]s window as `neural`; output stored as a length-80 vector per trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -584,9 +584,9 @@ if not np.all(recording_mask):
 
 **What this does:** Empty/unmapped CCF annotations → neuron dropped; missing tone onset → zeros; occluded tongue frames → session mean; trials outside recording window → dropped. Sessions failing performance/L-R thresholds skipped. p40==p60 edge case patched with epsilon.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-a. What are the most time-consuming steps of the code?
 
@@ -613,9 +613,9 @@ for n in range(n_neurons):
 
 **What this does:** Per session: spike binning (~3.3s, dominant), NWB I/O (~1.5s), tongue processing (~1.5s). Spike binning loops O(n_neurons × n_trials).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -645,9 +645,9 @@ for si in range(len(photostim_start_ts)):
 
 **What this does:** Triple nested loops in `bin_spikes` (neuron × trial × histogram); per-bin loop in `compute_tongue_y_per_trial` (could use np.bincount); per-bin scan in `compute_photostim_input` (could use vectorized comparisons).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-c. What processing does the code repeat multiple times?
 
@@ -667,9 +667,9 @@ bin_centers = np.linspace(align_start + bin_width/2, align_end - bin_width/2, n_
 
 **What this does:** `bin_edges`/`bin_centers` recomputed in each helper (bin_spikes, tongue, photostim, tone_onset). `compute_session_performance` iterates trials in Python loop with multiple per-trial scans (lines 306-336). Region mapping loop scans keyword list per neuron.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -694,9 +694,9 @@ all_values = np.concatenate([t for t in tongue_y_trials])
 
 **What this does:** Loads `photostim_power`, `photostim_duration`, `left_lick_ts`, `right_lick_ts` (used only minimally / not in output). Also loads tongue x-coordinate. Computes `tongue_y_trials` continuous values that are then discarded after discretization. `subject_desc` loaded but only used in metadata.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-e. How is memory usage optimized?
 
@@ -717,6 +717,6 @@ with open(outfile, 'wb') as f:
 
 **What this does:** NWB file handle closed after extraction; neural arrays use float32 instead of float64; pickle protocol 4 used for large objects. No streaming/chunked processing — full per-session matrices held in memory and then accumulated across all sessions before pickling.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_

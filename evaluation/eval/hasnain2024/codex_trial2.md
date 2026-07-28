@@ -39,9 +39,9 @@ def convert_session(spec: SessionSpec, make_plot: bool = False) -> dict:
 
 **What this does:** A hard-coded list of 12 (animal, date, probe) specs from the paper's Figure 8 two-context ALM loader is iterated; for each, the session `.mat` is loaded with `mat73` and the matching motion-energy file with `scipy.io.loadmat`. Sessions outside this list (and the entire `RandomizedDelay`/`*Inhibition` directories) are not loaded.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -62,9 +62,9 @@ def build_dataset(converted_sessions: list[dict]) -> dict:
 
 **What this does:** Each `SessionSpec.animal` (e.g. "JEB6") becomes the subject id; unique sorted subject names form `subjects`, and each session's `subject_idx` is its position in that list.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -90,9 +90,9 @@ class SessionSpec:
 
 **What this does:** Each entry of `CONTEXT_SESSION_SPECS` defines one session as `<animal>_<date>` plus a probe index; `neural`/`input`/`output` are lists indexed by session in that order, and `metadata.source_session_ids` records the ids.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -121,9 +121,9 @@ for local_trial_idx, trial_idx in enumerate(kept_trials):
 
 **What this does:** Trials are indexed by the raw `bp.ev.goCue` entries (one per trial). `select_valid_trials` applies QC masks; `get_first_lick_direction` further requires a lick post-alignment. Each surviving trial produces one element in the per-session `neural`/`input`/`output` lists, each of length `n_timepoints=1000` (5 ms bins over `[-2.5, 2.5]`).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -153,9 +153,9 @@ def get_first_lick_direction(obj, trial_idx, go_time):
 
 **What this does:** Trials must be `hit | miss`, not `early`, not `no`, and not have `stim.enable`. They additionally must have at least one post-`goCue` `lickL` or `lickR` event; trials with no licks after the go cue are dropped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -188,9 +188,9 @@ for unit_idx, use_unit in enumerate(quality_keep):
 
 **What this does:** `neural` is built from `obj.clu[probe_index]` per-unit fields `trialtm` (per-spike trial-relative times), `trial` (per-spike 1-based trial number), and `quality` labels, using `bp.ev.goCue` (the alignment event) to compute go-cue-relative spike times.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -219,9 +219,9 @@ kern /= np.sum(kern)
 
 **What this does:** Spike times are subtracted from each trial's `goCue`, binned into 5 ms bins over `[-2.5, 2.5]` (1000 bins) using `np.add.at`, divided by `dt` to convert counts to firing rate, and smoothed with a causal Gaussian (window length 15, only the left half non-zero, reflect boundary on the leading edge). Output cast to `float32`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -249,9 +249,9 @@ if mean_fr <= LOW_FR_HZ: continue
 
 **What this does:** Two-stage unit curation: (1) drop units whose `clu.quality` string is in {`garbage`, `gabrga`, `noisy`, `real?`}; (2) compute mean firing rate over the `[-2.5, 2.5]` window across all session trials and drop units with mean FR `<= 1 Hz`.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -275,9 +275,9 @@ rates = aligned_counts / DT
 
 **What this does:** A fixed 5 ms uniform grid spans `[-2.5, 2.5)` (1000 bins, bin centers stored in `TIME_AXIS`). Spike times relative to `goCue` are floored to bin index, accumulated into counts via `np.add.at`, divided by `DT` to give Hz, then smoothed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -297,9 +297,9 @@ bin_idx = np.floor((aligned - TMIN) / DT).astype(np.int64)
 
 **What this does:** Per-trial `goCue` times are read from `bp.ev.goCue` and subtracted from each spike's `trialtm` so that t=0 corresponds to the go cue (or the goCue-equivalent event on WC trials). The same `align_times` vector is used for kinematics, motion energy, and lick events.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-a. What variables in the raw data is the final `lick_direction` data derived from?
 
@@ -322,9 +322,9 @@ def get_first_lick_direction(obj: dict, trial_idx: int, go_time: float) -> int |
 
 **What this does:** Derived from `bp.ev.lickL` and `bp.ev.lickR` event-time arrays per trial, plus the trial's `goCue` to define "post-alignment". Not derived from `bp.R`/`bp.L` instructed sides.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-b. How is the `lick_direction` data processed?
 
@@ -343,9 +343,9 @@ output_trial = np.vstack([
 
 **What this does:** For each kept trial, the side of the earliest post-`goCue` lick (L vs R) becomes a single int (0 or 1) which is broadcast to a constant length-1000 trace as row 0 of the per-trial `output` matrix.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-c. How is the `lick_direction` data filtered based on quality controls?
 
@@ -366,9 +366,9 @@ for trial_idx in valid_trials:
 
 **What this does:** Trials with no `lickL` or `lickR` event at or after `goCue` are dropped from the kept-trial list, removing them from `neural`, `input`, and `output`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-a. What variables in the raw data is the final `behavioral_context` data derived from?
 
@@ -388,9 +388,9 @@ trial_labels.append((
 
 **What this does:** Derived solely from `bp.autowater` (per-trial boolean): autowater -> WC (0), not-autowater -> DR (1).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-b. How is the `behavioral_context` data processed?
 
@@ -410,9 +410,9 @@ output_trial = np.vstack([
 
 **What this does:** The per-trial context label is broadcast to a constant length-1000 trace as row 1 of the per-trial `output` matrix.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-c. How is the `behavioral_context` data filtered based on quality controls?
 
@@ -425,7 +425,7 @@ output_trial = np.vstack([
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-a. What variables in the raw data is the final `outcome` data derived from?
 
@@ -445,9 +445,9 @@ trial_labels.append((
 
 **What this does:** Derived only from `bp.hit` (with `bp.miss` used implicitly via the trial filter requiring `hit | miss`); `hit==1` -> correct (1), else incorrect (0).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-b. How is the `outcome` data processed?
 
@@ -467,9 +467,9 @@ output_trial = np.vstack([
 
 **What this does:** Per-trial 0/1 label broadcast to a constant length-1000 trace as row 2 of the per-trial `output` matrix.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-c. How is the `outcome` data filtered based on quality controls?
 
@@ -488,7 +488,7 @@ valid = (~early) & (~no) & (~stim_enable) & (hit | miss)
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-a. What variables in the raw data is the final `tongue_velocity` data derived from?
 
@@ -506,9 +506,9 @@ tongue_speed = np.sqrt(tongue_vx**2 + tongue_vy**2)
 
 **What this does:** Derived from side-view DLC tongue x/y positions (`obj.traj[0]` "tongue" feature `ts[:, 0:2, feat_index]`), per-trial `frameTimes`, plus `vidshift` (computed from `bp.ev.bitStart` and `sglx.bitcode.bitstart/sglx.fs`) and the trial's `goCue` for alignment.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-b. How is the `tongue_velocity` data processed?
 
@@ -529,9 +529,9 @@ tongue_bin = ((tongue_speed[:, trial_idx] >= tongue_threshold) & tongue_visible[
 
 **What this does:** Tongue x/y positions are linearly interpolated onto the 5 ms `TIME_AXIS` (no nearest-fill across NaNs since tongue has visibility gaps). Velocity = `np.gradient` per axis; speed = sqrt(vx^2+vy^2). The session-median threshold uses only tongue-visible samples; final binary is `speed >= threshold AND visible`, so invisible periods always go to the low bin.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-c. How is the `tongue_velocity` data aligned with the neural data?
 
@@ -568,9 +568,9 @@ tongue_x, tongue_y = align_feature_positions(obj, 0, "tongue", align_times, TIME
 
 **What this does:** Side-view DLC tongue x/y are first re-referenced to neural time per trial via `shifted_time = frame_times - vidshift - align_times[trial_idx]`, where `vidshift = sglx.bitcode.bitstart/sglx.fs - bp.ev.bitStart` and `align_times` are `bp.ev.goCue`. Positions are then linearly interpolated with `np.interp` onto the same 5 ms `TIME_AXIS` (`[-2.5, 2.5)`, 1000 bins) used for spike binning; velocity/speed are computed on this aligned grid.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-a. What variables in the raw data is the final `paw_velocity` data derived from?
 
@@ -592,9 +592,9 @@ np.divide(np.nansum(paw_stack, axis=0), paw_counts, out=paw_speed, where=paw_cou
 
 **What this does:** Derived from bottom-view DLC features `top_paw` and `bottom_paw` x/y positions in `obj.traj[1]`, plus `frameTimes`, `vidshift`, and per-trial `goCue` for alignment.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-b. How is the `paw_velocity` data processed?
 
@@ -614,9 +614,9 @@ paw_threshold = float(np.nanpercentile(paw_speed[:, kept_trials], 50))
 
 **What this does:** Per-paw x/y positions are linearly interpolated onto `TIME_AXIS`, gap-filled by nearest-value, velocity from `np.gradient` minus per-trial median-derivative baseline; speed = sqrt(vx^2+vy^2) per paw; the two paws are averaged element-wise. Each timepoint is binarized at the session-wide 50th percentile of paw speed.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-c. How is the `paw_velocity` data aligned with the neural data?
 
@@ -649,9 +649,9 @@ for paw_feat in ("top_paw", "bottom_paw"):
 
 **What this does:** Per-trial bottom-view DLC paw x/y are aligned with the same recipe used for tongue: per-trial `frame_times` are shifted by `-vidshift - align_times[trial_idx]` (where `align_times = bp.ev.goCue`), then linearly interpolated onto the 5 ms `TIME_AXIS`; for non-tongue features residual NaNs are nearest-filled before velocity computation. The same aligned grid is used for both `top_paw` and `bottom_paw` before averaging speeds.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-a. What variables in the raw data is the final `motion_energy` data derived from?
 
@@ -675,9 +675,9 @@ def align_motion_energy(obj, me, align_times, time_axis):
 
 **What this does:** Derived from the per-trial `me.data` array in companion `motionEnergy_<animal>_<date>.mat` files, plus side-view `frameTimes` from `obj.traj[0]`, `vidshift`, and per-trial `goCue`. The raw `me.moveThresh` is loaded but unused.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-b. How is the `motion_energy` data processed?
 
@@ -699,9 +699,9 @@ me_threshold = float(np.nanpercentile(motion_energy[:, kept_trials], 50))
 
 **What this does:** Raw `me.data` is truncated to match `frameTimes` length, then linearly interpolated onto the 5 ms `TIME_AXIS` after subtracting `vidshift` and the trial's `goCue`; gaps nearest-filled. Each timepoint is binarized at the session-wide 50th percentile of aligned ME, and stored as row 5 of `output`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-c. How is the `motion_energy` data aligned with the neural data?
 
@@ -736,9 +736,9 @@ def align_motion_energy(obj: dict, me: dict, align_times: np.ndarray, time_axis:
 
 **What this does:** Per-trial motion-energy samples are paired with side-view (`obj.traj[0]`) `frameTimes`, truncated to a common length, then re-referenced to the neural clock as `shifted_time = frame_times[valid] - vidshift - align_times[trial_idx]` (with `align_times = bp.ev.goCue` and `vidshift = sglx.bitcode.bitstart/sglx.fs - bp.ev.bitStart`). The shifted samples are linearly interpolated with `np.interp` onto the same 5 ms `TIME_AXIS` used for spikes, and remaining NaNs are nearest-filled.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -767,9 +767,9 @@ if math.isinf(first_l) and math.isinf(first_r):
 
 **What this does:** Missing video frame times -> fallback to a synthetic 400 Hz grid. Sparse NaNs in interpolated positions/ME -> nearest-neighbor fill (non-tongue) or zero (tongue velocity). Trials with no usable lick events are dropped. Trials with all-NaN `NdroppedFrames` skip kinematics for that trial. Empty quality strings are treated as kept.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-a. What are the most time-consuming steps of the code?
 
@@ -790,9 +790,9 @@ for unit_idx, use_unit in enumerate(quality_keep):
 
 **What this does:** Loading the v7.3/HDF5 session with `mat73` and the per-unit / per-trial Python loops for spike binning, kinematics interpolation, and motion-energy alignment dominate runtime; reported as ~7.4 s/session.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -817,9 +817,9 @@ for unit_idx, use_unit in enumerate(quality_keep):
 
 **What this does:** Per-trial loops in `align_feature_positions`, `compute_velocity`, and `align_motion_energy`, plus per-unit loops in `convert_session` and the per-column `np.convolve` loop in `my_smooth`, are written serially in Python and could be batched.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-c. What processing does the code repeat multiple times?
 
@@ -845,9 +845,9 @@ def align_motion_energy(obj, me, ...):
 
 **What this does:** Per-unit alignment subtraction of `align_times` and the Trial->local-trial map is recomputed inside `mean_firing_rate_window` and again in `bin_unit_spikes`. `align_feature_positions` re-flattens `featNames` and recomputes shifted_time per feature/trial. `compute_vidshift(obj)` runs once in `convert_session` and again inside `align_motion_energy`. The `(time, trial, feature)` interpolation pipeline is repeated separately for tongue, top_paw, bottom_paw.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -865,9 +865,9 @@ session_input.append(time_input)
 
 **What this does:** `me.moveThresh` is loaded per session but never referenced again (replaced by computed median). The same `TIME_AXIS` is rebuilt and stored once per trial as the `input`, which is identical for all trials. Smoothing is applied to all 1000 bins of every kept unit even though downstream decoders may window-aggregate.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-e. How is memory usage optimized?
 
@@ -888,6 +888,6 @@ for sess_idx, spec in enumerate(session_specs):
 
 **What this does:** Neural arrays are downcast to `float32`; output traces use `int64`. Sessions are processed one at a time with no explicit caching across sessions, but the full session `obj` is held in memory during processing and all converted sessions are accumulated in a list before pickling. There is no streaming write of `converted_data.pkl`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_

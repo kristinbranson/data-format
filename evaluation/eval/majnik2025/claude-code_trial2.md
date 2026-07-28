@@ -32,9 +32,9 @@ tstamps = np.load(os.path.join(me_dir, 'tstamps.npy'))
 
 **What this does:** Subjects are an explicit hardcoded list of 6 mouse IDs (jm031–jm046). Sessions are obtained by sorting subdirectories (excluding hidden) within each subject. For each session, neural data (`F.npy`, `Fneu.npy`) is loaded from `suite2p/plane0` and motion-energy/timestamps from `move_deve`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -53,9 +53,9 @@ for subj_idx, subject in enumerate(subjects_to_process):
 
 **What this does:** Subjects are defined by an explicit hardcoded list of 6 IDs. Each ID corresponds to a top-level directory under `data/`. Subject index is the position in `SUBJECTS`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -79,9 +79,9 @@ sessions = get_sessions(subject_dir)
 
 **What this does:** Sessions are subdirectories of each subject directory, sorted alphabetically; hidden entries are skipped. Each session corresponds to one daily recording.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -110,9 +110,9 @@ def split_into_trials(dff_binned, me_binned):
 
 **What this does:** Trials are non-overlapping 2-minute (120s) blocks of the binned recording, equating to 360 time bins per trial. The number of trials per session is `n_bins // 360`; remainder bins are discarded.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -125,9 +125,9 @@ def split_into_trials(dff_binned, me_binned):
 
 **What this does:** No trial-level quality filtering is applied. Trials are taken as consecutive 2-minute blocks; only the trailing partial-bin remainder is dropped via integer division.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -144,9 +144,9 @@ Fneu = np.load(os.path.join(s2p_dir, 'Fneu.npy'))
 
 **What this does:** Neural data is derived from suite2p `F.npy` (raw fluorescence) and `Fneu.npy` (neuropil fluorescence) in `suite2p/plane0`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -175,9 +175,9 @@ def compute_dff(F, Fneu, device=None):
 
 **What this does:** Neuropil subtraction with coefficient 0.7, then suite2p `preprocess` (maximin baseline, win 60s, sigma 10, 8th percentile) computes baseline-subtracted fluorescence. dF/F is computed as `(F_corr - baseline) / baseline`, with the baseline clipped to 1e-6 to avoid division by zero. The continuous trace is then bin-averaged over 10 frames (see Q 2-d).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -190,9 +190,9 @@ def compute_dff(F, Fneu, device=None):
 
 **What this does:** No additional cell-level filtering is performed. All neurons in `F.npy` are kept; the data is already pre-filtered by the upstream Track2p pipeline.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -222,9 +222,9 @@ dff_binned = bin_traces(dff, BIN_SIZE)
 
 **What this does:** dF/F (and motion energy) are averaged within non-overlapping 10-frame bins via reshape+mean, yielding a time bin size of 10/30 = 333.33 ms. Trailing frames that don't fill a full bin are trimmed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -242,9 +242,9 @@ dff_binned = bin_traces(dff, BIN_SIZE)
 
 **What this does:** Each trial is a contiguous 2-minute block beginning at the start of the recording session; alignment metadata is set to `'Start of recording session'` with `off_start=0.0`. There is no event-driven alignment.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -267,9 +267,9 @@ def make_time_input(n_timebins):
 
 **What this does:** Time is not derived from any raw data variable; it is computed from the bin index multiplied by the bin duration (10/30 = 0.333 s).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -287,9 +287,9 @@ def make_time_input(n_timebins):
 
 **What this does:** Time vector is `arange(n_timebins) * (10/30)` seconds, reshaped to (1, n_timebins) and cast to float32. Time resets to 0 at the start of each trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -309,9 +309,9 @@ for neural_t, me_t in zip(neural_trials, me_trials):
 
 **What this does:** The input time vector length is set to match each trial's neural shape (`neural_t.shape[1]`), so it is aligned bin-for-bin with the neural array within each trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -328,9 +328,9 @@ tstamps = np.load(os.path.join(me_dir, 'tstamps.npy'))
 
 **What this does:** Motion energy is loaded from `move_deve/motion_energy_glob.npy` per session. `tstamps.npy` is also loaded but only the length is used (for interpolation; see Q 4-c).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -362,9 +362,9 @@ me_disc = discretize_me(me_t, bin_edges)
 
 **What this does:** Motion energy is bin-averaged over 10-frame bins (matching the neural binning), then concatenated across all sessions to compute 5 equal-percentile bin edges globally. Each per-trial motion-energy vector is then discretized into integer labels 0–4 via `np.digitize` against those global edges. No per-session normalization is applied.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** missing normalization
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -393,9 +393,9 @@ me_interp = interpolate_motion_energy(me, n_frames, tstamps)
 
 **What this does:** When motion-energy has fewer samples than neural frames, the ME signal is linearly interpolated by mapping its existing samples uniformly across the full neural frame index (`np.linspace(0, n_neural-1, n_me)` then `np.interp`). When ME is longer it is truncated. Resulting ME has one sample per neural frame, then both are bin-averaged to align bin-for-bin within trials. Note: although `tstamps` is loaded and passed in, it is not actually used inside the interpolation routine.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -421,9 +421,9 @@ n_trials = n_bins // bins_per_trial
 
 **What this does:** Missing motion-energy frames are linearly interpolated to match neural length (or truncated if longer). Baseline values are floored at 1e-6 to avoid division by zero in dF/F. Trailing frames that don't fill a full bin (and bins that don't fill a full trial) are discarded via integer division. No explicit assertion verifies post-interpolation length equality.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -442,9 +442,9 @@ F_subtracted = preprocess(
 
 **What this does:** The most expensive step per session is the suite2p `preprocess` baseline correction; it is run with GPU acceleration when CUDA is available. File I/O for `F.npy`/`Fneu.npy`/`motion_energy_glob.npy` is the next contributor.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -471,9 +471,9 @@ for neural_t, me_t in zip(neural_trials, me_trials):
 
 **What this does:** Trial-splitting and per-trial input/output construction use Python `for` loops over trials and sessions; these slicing and discretization steps could be done as a single reshape/array operation. Binning itself is already vectorized via reshape+mean.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -498,9 +498,9 @@ dff_binned, me_binned, n_neurons, n_frames_raw = process_session(
 
 **What this does:** When `--show-processing` is enabled, `plot_processing` re-loads `F.npy`, `Fneu.npy`, and `motion_energy_glob.npy` from disk for plotting in addition to the loads already performed inside `process_session`. The two-pass design (process all sessions, then split into trials) keeps all binned session data in memory rather than recomputing.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -518,8 +518,8 @@ me_interp = interpolate_motion_energy(me, n_frames, tstamps)
 
 **What this does:** `tstamps.npy` is loaded and passed into `interpolate_motion_energy`, but the function body never uses the `tstamps` argument (interpolation is purely length-based). Beyond that, no other clearly unused processing is present; the `me_disc_trials` accumulation is only used when plotting is enabled.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

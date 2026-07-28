@@ -25,9 +25,9 @@ for a_idx, animal in enumerate(animals_to_process):
 
 **What this does:** Iterates over a hard-coded list of 7 animal names (ANIMALS), loading each animal's joblib file from the `data/` directory using `joblib.load`. Inside each animal dict, sessions ("days") are indexed by the first axis of `trace`, `position`, `envs`, and `blocked`, and each day is then split into 1-minute trials.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -48,9 +48,9 @@ for a_idx, animal in enumerate(animals_to_process):
 
 **What this does:** Subjects are defined by a hard-coded list of 7 animal names; each name corresponds to one joblib file in `data/`. The list is stored directly into `subjects`, and each animal's data is processed under one `subject_idx` (a_idx).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -75,9 +75,9 @@ position = animal_data['position'][day_idx]  # (2, n_frames)
 
 **What this does:** Sessions are indexed by the first axis (days) of the animal's `trace`/`position`/`envs` arrays. For each day, `process_session` is called with that day index to produce a list of trials.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -105,9 +105,9 @@ for t in range(n_trials):
 
 **What this does:** Each session is split into non-overlapping 60-second (1800-frame, or 600 post-binned) trials by integer division of total bins by `BINS_PER_TRIAL`. Remainder bins that don't fill a full trial are discarded.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -127,9 +127,9 @@ if len(neural_trials) < 2:
 
 **What this does:** Only sessions with fewer than 2 trials are skipped. No per-trial QC/velocity filtering is applied; all 1-minute trials from eligible sessions are kept.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -147,9 +147,9 @@ valid_trace = trace[valid_mask]  # (n_valid, n_frames)
 
 **What this does:** The `neural` data is derived from the `trace` field of each animal's joblib file, indexed per day.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -175,9 +175,9 @@ def temporal_bin_trace(trace_2d, sigma=TEMPORAL_BIN_SIZE, bin_size=TEMPORAL_BIN_
 
 **What this does:** Valid cells' binary trace is gaussian-smoothed along the time axis (sigma=3 frames), then average-pooled with a window/stride of 3 frames, producing a (n_valid_cells, n_bins) float32 array.
 
-**Rating:** better
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -196,9 +196,9 @@ n_valid = valid_mask.sum()
 
 **What this does:** Cells not registered for the current day (NaN at frame 0 of that day's trace) are excluded. No event-count or velocity-based filtering is applied.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -221,9 +221,9 @@ binned = trimmed.reshape(n_cells, n_bins, bin_size).mean(axis=2)
 
 **What this does:** The raw 30 Hz trace is gaussian-smoothed (sigma=3 frames) then downsampled by a factor of 3 via mean pooling, yielding 100 ms bins.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -247,9 +247,9 @@ for t in range(n_trials):
 
 **What this does:** Trials are contiguous 60-second windows cut from the session starting at t=0. The metadata records `temporal_alignment_event` as "Start of recording session" with `off_start=0` and `off_end=60` seconds.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -279,9 +279,9 @@ env_input = get_env_input(env_name)  # (9,)
 
 **What this does:** The `input` is derived from the per-day `envs` field (environment name string), looked up in a hard-coded dictionary of 3x3 environment-shape matrices. The `blocked` field is not used.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -304,9 +304,9 @@ input_trials.append(env_input)  # (9,) static
 
 **What this does:** The environment-name string is mapped to a hard-coded 3x3 binary geometry matrix (1 = open, 0 = wall/blocked) and flattened into a 9-element float32 vector. The same vector is repeated for every trial of that session. Note this encodes the inverse of "blocked" positions: 1 = accessible.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -324,9 +324,9 @@ output_trials.append(trial_output)
 
 **What this does:** The 9-element environment vector is appended once per trial (one (9,) array per trial), constant across the trial; no per-timepoint alignment.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -342,9 +342,9 @@ position = animal_data['position'][day_idx]  # (2, n_frames)
 
 **What this does:** Output position is derived from the per-day `position` field (2 × n_frames x,y in cm) of the animal's joblib file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -373,9 +373,9 @@ pos_bins = discretize_position(binned_pos)
 
 **What this does:** Continuous (x,y) position in cm is first temporally averaged in 3-frame bins (matching the neural binning), then each axis is divided into 3 equal 25 cm bins via `floor(pos / 25)` clipped to [0,2], and combined as `x_bin * 3 + y_bin` to give an integer label 0–8.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -397,9 +397,9 @@ trial_output = pos_bins[start:end].reshape(1, -1).astype(np.int64)  # (1, 600)
 
 **What this does:** Position and trace are both binned at 3-frame resolution, then sliced with identical `start:end` indices per trial, ensuring frame-by-frame alignment.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -428,9 +428,9 @@ if len(neural_trials) < 2:
 
 **What this does:** Cells with NaN trace at frame 0 of a session are removed; sessions with zero valid cells return empty trials; sessions yielding fewer than 2 trials are skipped; remainder frames not divisible by the bin size or trial length are silently dropped. Unknown environment names raise an error.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -451,9 +451,9 @@ with open(args.output, 'wb') as f:
 
 **What this does:** The script loads each animal joblib file (large I/O), then for each session runs a gaussian_filter1d on the (cells × frames) trace cast to float64, then pickles a multi-GB result. The notes report ~37 s per animal (~4.3 min total for 7 animals).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -480,9 +480,9 @@ for a_idx, animal in enumerate(animals_to_process):
 
 **What this does:** Trials per session are constructed in a Python `for t in range(n_trials)` loop that slices contiguous windows; the per-animal and per-day loops are inherently sequential I/O-bound iterations.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -505,9 +505,9 @@ binned_trace = temporal_bin_trace(valid_trace)
 
 **What this does:** The same (9,) environment-input vector is appended once per trial within a session (so the same array is stored multiple times). The trace and position are each binned/smoothed once per session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -530,8 +530,8 @@ if show_processing and fig_axes is not None and n_trials > 0:
 
 **What this does:** Optional `--show-processing` plots draw 4-panel figures per session and save PNGs; these are not consumed by the decoder. Otherwise the conversion produces only the fields used downstream.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

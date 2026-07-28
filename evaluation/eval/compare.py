@@ -25,6 +25,8 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
 
+import raters as _R
+
 _CONSOLE = Console()
 
 REPO_ROOT = Path("/groups/zhang/home/zhangl5/Data-Format")
@@ -279,14 +281,18 @@ def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[st
 
 # ---------- summary file I/O ----------
 #
-# eval_summary.md is grouped by question (mirrors rate.py's summary.md):
+# eval_summary.md is grouped by question (mirrors rate.py's summary.md) and
+# carries one rating column per registered evaluator:
 #
 #   ## Q <qid>. <title>
 #
-#   | Agent / trial | Human | Claude judge | Codex judge | Best | Why |
-#   |---|---|---|---|---|---|
-#   | claude-code / trial1 | ok | ok | incorrect | Human | human was right |
+#   | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+#   |---|---|---|---|---|---|---|
+#   | claude-code / trial1 | ok | concerning | ok | incorrect | LZ | ... |
 #   ...
+#
+# Files written before multiple evaluators existed use a single `Human` column;
+# it is read as the primary evaluator's ratings.
 
 def _split_md_row(line: str) -> list[str] | None:
     """Split a markdown table row into cells, respecting `\\|` escapes."""
@@ -315,23 +321,59 @@ def _split_md_row(line: str) -> list[str] | None:
     return cells
 
 
-def _try_parse_row(line: str) -> tuple[str, int, dict] | None:
+def _parse_header(line: str, primary: str) -> dict[str, int] | None:
+    """Map a table header row → {field: column index}. None if not a header."""
     cells = _split_md_row(line)
-    if not cells or len(cells) != 6:
+    if not cells or not cells[0].lower().startswith("agent"):
         return None
-    trial_label, h, c, x, best, why = cells
-    m = re.match(r"^(claude-code|codex)\s*/\s*trial([1-3])$", trial_label)
+    cols: dict[str, int] = {}
+    for i, name in enumerate(cells):
+        key = name.strip().lower()
+        if key in ("claude judge", "claude"):
+            cols["claude"] = i
+        elif key in ("codex judge", "codex"):
+            cols["codex"] = i
+        elif key == "best":
+            cols["best"] = i
+        elif key == "why":
+            cols["why"] = i
+        elif key == "human":
+            cols[f"rater:{primary}"] = i   # legacy single-evaluator file
+        elif re.fullmatch(r"[A-Z]{2,4}", name.strip()):
+            cols[f"rater:{name.strip()}"] = i
+    return cols
+
+
+def _try_parse_row(line: str, cols: dict[str, int]) -> tuple[str, int, dict] | None:
+    cells = _split_md_row(line)
+    if not cells:
+        return None
+    m = re.match(r"^(claude-code|codex)\s*/\s*trial([1-3])$", cells[0])
     if not m:
         return None
+    get = lambda i: cells[i] if i is not None and i < len(cells) else ""
+    ratings = {k.split(":", 1)[1]: get(i) for k, i in cols.items()
+               if k.startswith("rater:")}
     return m.group(1), int(m.group(2)), {
-        "human": h, "claude": c, "codex": x, "best": best, "why": why,
+        "ratings": ratings,
+        "claude": get(cols.get("claude")),
+        "codex": get(cols.get("codex")),
+        "best": get(cols.get("best")),
+        "why": get(cols.get("why")),
     }
 
 
-def parse_summary(path: Path) -> tuple[dict[tuple[str, str, int], dict], dict[str, str]]:
-    """Parse eval_summary.md → (rows, overall_comments)."""
+def parse_summary(path: Path, primary: str | None = None
+                  ) -> tuple[dict[tuple[str, str, int], dict], dict[str, str]]:
+    """Parse eval_summary.md → (rows, overall_comments).
+
+    Each row carries `ratings` ({evaluator code: rating}) plus the judge
+    columns. `human` is kept as an alias for the primary evaluator's rating so
+    existing callers keep working.
+    """
     if not path.exists():
         return {}, {}
+    primary = primary or _R.primary_code()
     text = path.read_text()
     sec_re = re.compile(
         r"^##\s+Q\s+(\d+(?:-[a-z])?)\.\s+(.+?)$(.*?)(?=^##\s+Q\s+|\Z)",
@@ -343,12 +385,23 @@ def parse_summary(path: Path) -> tuple[dict[tuple[str, str, int], dict], dict[st
         qid = sec.group(1)
         title = sec.group(2).strip()
         body = sec.group(3)
+        cols: dict[str, int] = {}
         for line in body.splitlines():
-            parsed = _try_parse_row(line)
+            header = _parse_header(line, primary)
+            if header:
+                cols = header
+                continue
+            if not cols:
+                continue
+            parsed = _try_parse_row(line, cols)
             if not parsed:
                 continue
             agent, n, fields = parsed
-            rows[(qid, agent, n)] = {**fields, "title": title}
+            rows[(qid, agent, n)] = {
+                **fields,
+                "human": fields["ratings"].get(primary),
+                "title": title,
+            }
         m = re.search(r"^\*\*Overall comment:\*\*\s*(.+)$", body, re.MULTILINE)
         if m:
             overalls[qid] = m.group(1).strip()
@@ -369,6 +422,25 @@ def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
         print(f"WARN: refusing to wipe non-empty {path} with empty content.",
               file=sys.stderr)
         return
+    # One rating column per evaluator who has a folder for this dataset; their
+    # ratings are read straight from their dossier copies at write time.
+    dataset = path.parent.name
+    codes = _R.rating_columns(dataset)
+    disk_ratings = _R.collect_ratings(dataset, codes)
+    # A qid is only refreshed from the dossiers if both sides still label it the
+    # same question. Question numbering has drifted before (sosa2024 gained two
+    # sub-questions after its summary was written), and refreshing across a
+    # renumbering would pair one question's rating with another's judges.
+    dossier_titles = _R.collect_titles(dataset, codes)
+    stale = set()
+    for qid, t in titles.items():
+        d = dossier_titles.get(qid)
+        if d and _R.normalize_title(d) != _R.normalize_title(t):
+            stale.add(qid)
+    if stale:
+        print(f"WARN: {dataset}: question numbering differs from the dossiers for "
+              f"Q {', '.join(sorted(stale))} — keeping the ratings already in "
+              f"{path.name} for those questions.", file=sys.stderr)
     by_qid: dict[str, list[tuple[tuple[str, int], dict]]] = {}
     for (qid, agent, n), v in entries.items():
         by_qid.setdefault(qid, []).append(((agent, n), v))
@@ -384,12 +456,18 @@ def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
         lines.append(f"## Q {qid}. {title}")
         lines.append("")
         if qid in by_qid:
-            lines.append("| Agent / trial | Human | Claude judge | Codex judge | Best | Why |")
-            lines.append("|---|---|---|---|---|---|")
+            lines.append("| Agent / trial | " + " | ".join(codes)
+                         + " | Claude judge | Codex judge | Best | Why |")
+            lines.append("|---" * (len(codes) + 5) + "|")
             for (agent, n), v in sorted(by_qid[qid], key=lambda x: TRIAL_KEYS.index(x[0])):
+                on_disk = ({} if qid in stale
+                           else disk_ratings.get(qid, {}).get((agent, n), {}))
+                rated = v.get("ratings") or {}
                 row_cells = [
                     f"{agent} / trial{n}",
-                    v.get("human") or "—",
+                    # Prefer the live dossier reading; fall back to what the
+                    # file already held (e.g. a rater folder that moved away).
+                    *[on_disk.get(c) or rated.get(c) or "—" for c in codes],
                     v.get("claude") or "—",
                     v.get("codex") or "—",
                     v.get("best") or "—",
@@ -422,11 +500,11 @@ def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
     os.replace(tmp, path)
 
 
-def prompt_best() -> str | None:
-    raw = input("  Best [1=Human / 2=Claude / 3=Codex] (Enter to skip): ").strip().lower()
+def prompt_best(rater: str = "Human") -> str | None:
+    raw = input(f"  Best [1={rater} / 2=Claude / 3=Codex] (Enter to skip): ").strip().lower()
     if not raw:
         return None
-    mapping = {"1": "Human", "h": "Human",
+    mapping = {"1": rater, "h": rater,
                "2": "Claude judge", "c": "Claude judge",
                "3": "Codex judge", "x": "Codex judge"}
     return mapping.get(raw, raw)
@@ -501,10 +579,14 @@ def _is_consistent(h: str | None, jc: str | None, jx: str | None) -> bool:
     return True
 
 
-def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = False):
+def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = False,
+                rater: "_R.Rater | None" = None):
+    rater = rater or _R.resolve_rater()
+    _CONSOLE.print(f"[bold]Evaluator:[/bold] {rater.label}")
+    rater_files = _R.sync_rater_dir(dataset, rater.code)
     bundles = []
     for agent, n in TRIAL_KEYS:
-        human_path = EVAL_DIR / dataset / f"{agent}_trial{n}.md"
+        human_path = rater_files[(agent, n)]
         trial_path = find_trial_path(dataset, agent, n)
         meta, body = parse_human(human_path)
         jc = load_judge(trial_path, "claude")
@@ -581,6 +663,7 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
             if consistent:
                 qid_entries[key] = {
                     "human": h_rating or "—",
+                    "ratings": {rater.code: h_rating or "—"},
                     "claude": jc_rating or "—",
                     "codex": jx_rating or "—",
                     "best": "—",
@@ -650,7 +733,7 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
 
             # Prompt user for best evaluation + justification
             try:
-                best = prompt_best()
+                best = prompt_best(rater.code)
             except (EOFError, KeyboardInterrupt):
                 aborted = True
                 break
@@ -668,6 +751,7 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
 
             qid_entries[key] = {
                 "human": h_rating or "—",
+                "ratings": {rater.code: h_rating or "—"},
                 "claude": jc_rating or "—",
                 "codex": jx_rating or "—",
                 "best": best,
@@ -719,11 +803,14 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
 def main():
     ap = argparse.ArgumentParser(description="Walk through human vs LLM-judge mismatches.")
     ap.add_argument("dataset")
+    ap.add_argument("--rater", help="Evaluator code whose ratings are compared against "
+                                    "the judges (default: the primary evaluator)")
     ap.add_argument("--question", help="Limit walkthrough to one question (e.g. 1-a)")
     ap.add_argument("--overwrite", action="store_true",
                     help="Re-prompt for entries already present in eval_summary.md")
     args = ap.parse_args()
-    walkthrough(args.dataset, only_qid=args.question, overwrite=args.overwrite)
+    walkthrough(args.dataset, only_qid=args.question, overwrite=args.overwrite,
+                rater=_R.resolve_rater(args.rater or _R.primary_code()))
 
 
 if __name__ == "__main__":

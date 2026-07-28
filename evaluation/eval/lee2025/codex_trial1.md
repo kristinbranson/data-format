@@ -31,9 +31,9 @@ for animal in animals:
 
 **What this does:** Scans `data/` for files matching the `QLAK-CA1-\d+` pattern, then loads each animal's joblib file individually. For each animal's dictionary, iterates over `n_days` recording sessions stored in the `trace`, `position`, `blocked`, and `envs` fields.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -59,9 +59,9 @@ subject_to_idx = {animal: idx for idx, animal in enumerate(subjects)}
 
 **What this does:** Each file matching `QLAK-CA1-\d+` becomes one subject; the filename itself is the subject identifier. A subject-to-index map is built and per-session `subject_idx` values are stored in the converted dict.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -86,9 +86,9 @@ for day_idx in range(ndays):
 
 **What this does:** Iterates over the leading day axis of each per-animal joblib (one session per day index), assigning a `session_id` of `<animal>_day<NN>` and converting that day's `trace`/`position`/`blocked`/`envs` slice independently.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -120,9 +120,9 @@ def get_trial_slices(n_frames_session: int) -> list[tuple[int, int]]:
 
 **What this does:** Caps each session at the nominal 40-minute window (72,000 frames at 30 Hz) and partitions it into 40 consecutive 60-second slices. Recordings slightly shorter than 72,000 frames yield a truncated final trial; slices below the 3-frame temporal bin minimum are dropped.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** The assumption of 40-min session is uncessary and could lead to error
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -135,9 +135,9 @@ def get_trial_slices(n_frames_session: int) -> list[tuple[int, int]]:
 
 **What this does:** No trial-level quality-control filtering is implemented in the conversion script beyond skipping slices shorter than the temporal bin size. Velocity / activity filters from the reference decoder are not applied here.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -158,9 +158,9 @@ trace_valid = trace_day[valid_cells].astype(np.float32, copy=False)
 
 **What this does:** Neural data comes from the per-animal joblib field `trace[day]`, which holds the released binarized rising-phase calcium event matrix (cells x frames).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -189,9 +189,9 @@ neural_trials.append(neural_binned)
 
 **What this does:** Processing keeps the released binary event traces and averages each non-overlapping 3-frame window (100 ms) per neuron, casting to float32. No further denoising or normalization is applied.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** The agent did half of the preprocessing steps of the paper
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -212,9 +212,9 @@ trace_valid = trace_day[valid_cells].astype(np.float32, copy=False)
 
 **What this does:** Only the first time-frame of each cell is checked; cells that are NaN at frame 0 (taken to mean unregistered on that day) are dropped. No additional activity, place-cell, or velocity filter is applied to neurons.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** only checking the first frame is not a good practice in general
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -241,9 +241,9 @@ def temporal_bin_mean(arr: np.ndarray, bin_size: int) -> np.ndarray:
 
 **What this does:** Native 30 Hz frames are pooled into non-overlapping 3-frame windows (100 ms bins) by reshaping and taking the mean along the bin axis. `TIME_BIN_MS = 100.0` is recorded in metadata.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** Binning without the smoothing first as the paper did
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -270,9 +270,9 @@ for start, end in trial_slices:
 
 **What this does:** No external behavioral event alignment; trial start times are simply the boundaries of consecutive 60-second segments measured from session start. The metadata flags this with `temporal_alignment_event = "start of each consecutive 1-minute chunk within a session"`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -297,9 +297,9 @@ open_mask = blocked_to_open_vector(animal_data["blocked"][day])
 
 **What this does:** The input is derived from the per-day entry of `animal_data["blocked"]`, which lists indices (0-8) of blocked 3x3 partitions (or `[-1]` for no blocking).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -323,9 +323,9 @@ input_trials.append(open_mask.copy())
 
 **What this does:** Starts from an all-ones length-9 vector, zeroes the blocked indices, and transposes the reshaped 3x3 mask so the flattened order matches the `x_bin * 3 + y_bin` convention used by the output. The encoding is `1 = open, 0 = blocked` and is replicated once per trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -349,9 +349,9 @@ for start, end in trial_slices:
 
 **What this does:** The same length-9 open-mask vector is appended once per trial alongside the neural trial. It is a static (non-time-varying) per-trial input that the downstream framework tiles across the trial's bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -372,9 +372,9 @@ position_raw = position_valid[:, start:end]
 
 **What this does:** Output is derived from the per-day `animal_data["position"]` field, a `(2, n_frames)` array of x-y coordinates from DeepLabCut head tracking, aligned with the same frames as `trace`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -404,9 +404,9 @@ output_binned = discretize_position_3x3(position_binned, session_max_xy).astype(
 
 **What this does:** First, x and y are temporally averaged into 100 ms bins. Then each axis is divided by `(session_max + 1e-5) / 3`, floored, and clipped to `{0,1,2}`; the 9-class label is `x_bin * 3 + y_bin`. The session's per-axis maxima act as the arena scale.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** slightly different implementation but it's ok
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -431,9 +431,9 @@ for start, end in trial_slices:
 
 **What this does:** Both neural and position arrays are sliced with identical `[start:end]` indices and pooled with the same 3-frame averaging, so the binned output and binned neural arrays share the same time axis frame-for-frame.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -461,9 +461,9 @@ session_max_xy = np.nanmax(position_valid[:, :usable_frames], axis=1)
 
 **What this does:** NaN-only cells (unregistered on a given day) are dropped via the valid-cell mask. Position max is computed with `nanmax` and a small buffer guards against zero division; clipping handles out-of-range bins. Sessions exceeding 72,000 frames are truncated; shorter sessions yield a shorter final trial. Trial slices below 3 frames are skipped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -493,9 +493,9 @@ for animal in animals:
 
 **What this does:** The script identifies joblib decompression / animal loading as the dominant cost. Per-session and per-animal elapsed times are printed via `time.perf_counter()` so the longest steps are observable in the run log.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -521,9 +521,9 @@ for start, end in trial_slices:
 
 **What this does:** Temporal binning is already vectorized via reshape+mean. The remaining Python-level loop is over trials within a session; trial slicing/binning could in principle be batched into a single reshape over the whole session before chunking, but is left per-trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -548,9 +548,9 @@ for start, end in trial_slices:
 
 **What this does:** `temporal_bin_mean` is called separately for each trial's neural and position slices, and `open_mask.copy()` is appended once per trial; the reshape-based binning is repeated per trial rather than batched once over the whole session.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -579,8 +579,8 @@ debug_info = {
 
 **What this does:** Optional plotting (`maybe_plot_processing`) and the per-session `debug_info` dict are computed/persisted (debug_info is local; metadata-only fields stored) but are not consumed by the downstream decoder. Plotting only runs when `--show-processing` is set, capped at 2 sessions.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

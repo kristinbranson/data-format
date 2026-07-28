@@ -3,8 +3,8 @@
 Generate a human-readable evaluation report (markdown) for one dataset.
 
 Sources (all already produced by other tools):
-  - evaluation/eval/<dataset>/summary.md       (rate.py output: Human ratings + per-Q overall comment about the SOLUTION)
-  - evaluation/eval/<dataset>/eval_summary.md  (compare.py output: Human + Claude-judge + Codex-judge ratings + per-Q overall comment about the JUDGES)
+  - evaluation/eval/<dataset>/<CODE>/summary.md  (rate.py output, per evaluator: solution ratings + per-Q overall comment about the SOLUTION)
+  - evaluation/eval/<dataset>/eval_summary.md  (compare.py output: one column per evaluator + Claude-judge + Codex-judge ratings + per-Q overall comment about the JUDGES)
 
 Output:
   - evaluation/eval/<dataset>/report.md
@@ -125,12 +125,36 @@ def parse_rate_summary(path: Path) -> tuple[dict, dict, dict]:
 
 # ---------- eval_summary.md (compare.py) ----------
 
-def parse_eval_summary(path: Path) -> tuple[dict, dict, dict, dict, dict]:
+def _eval_header_cols(line: str, rater: str) -> dict[str, int] | None:
+    """Map an eval_summary header row → {field: index}, or None if not a header.
+
+    The evaluator columns are named by code ("LZ", "KB"); files written before
+    evaluators were named use a single "Human" column.
+    """
+    cells = _split_md_row(line)
+    if not cells or not cells[0].lower().startswith("agent"):
+        return None
+    cols = {}
+    for i, name in enumerate(cells):
+        key = name.strip().lower()
+        if key in ("claude judge", "claude"):
+            cols["claude"] = i
+        elif key in ("codex judge", "codex"):
+            cols["codex"] = i
+        elif key == "best":
+            cols["best"] = i
+        elif key == "human" or name.strip() == rater:
+            cols["human"] = i
+    return cols
+
+
+def parse_eval_summary(path: Path, rater: str = "") -> tuple[dict, dict, dict, dict, dict]:
     """
     Returns (human_ratings, claude_ratings, codex_ratings, judge_comments, best_picks).
       *_ratings:    {(qid, agent, n): rating}
       judge_comments: {qid: text}  (from `**Overall comment:**`)
-      best_picks:   {(qid, agent, n): "Human" | "Claude judge" | "Codex judge" | "—"}
+      best_picks:   {(qid, agent, n): "<evaluator code>" | "Claude judge" | "Codex judge" | "—"}
+    `rater` selects which evaluator's column is reported as the human one.
     """
     if not path.exists():
         return {}, {}, {}, {}, {}
@@ -143,19 +167,25 @@ def parse_eval_summary(path: Path) -> tuple[dict, dict, dict, dict, dict]:
     for sec in sec_re.finditer(text):
         qid = sec.group(1)
         body = sec.group(3)
+        cols: dict[str, int] = {}
         for line in body.splitlines():
-            cells = _split_md_row(line)
-            if not cells or len(cells) != 6:
+            header = _eval_header_cols(line, rater)
+            if header:
+                cols = header
                 continue
-            trial, hv, cv, xv, bv, _why = cells
-            m = re.match(r"^(claude-code|codex)\s*/\s*trial([1-3])$", trial)
+            cells = _split_md_row(line)
+            if not cells or not cols:
+                continue
+            m = re.match(r"^(claude-code|codex)\s*/\s*trial([1-3])$", cells[0])
             if not m:
                 continue
+            cell = lambda k: (cells[cols[k]].strip()
+                              if k in cols and cols[k] < len(cells) else "")
             key = (qid, m.group(1), int(m.group(2)))
-            h[key] = hv.strip().lower()
-            c[key] = cv.strip().lower()
-            x[key] = xv.strip().lower()
-            best[key] = bv.strip()
+            h[key] = cell("human").lower()
+            c[key] = cell("claude").lower()
+            x[key] = cell("codex").lower()
+            best[key] = cell("best")
         cm = re.search(r"^\*\*Overall comment:\*\*\s*(.+)$", body, re.MULTILINE)
         if cm:
             comments[qid] = cm.group(1).strip()
@@ -212,14 +242,18 @@ def extract_existing_comments(path: Path) -> str:
     return m.group(1).strip()
 
 
-def build_report(dataset: str) -> str:
+def build_report(dataset: str, rater: str | None = None) -> str:
+    import raters as R
     ddir = EVAL_DIR / dataset
-    summary_path = ddir / "summary.md"
+    # Solution ratings now live per evaluator; the report is built from one of
+    # them (the primary by default). eval_summary.md holds every evaluator.
+    summary_path = R.summary_path(dataset, rater or R.primary_code())
     eval_path = ddir / "eval_summary.md"
     existing_comments = extract_existing_comments(ddir / "report.md")
 
     rs_h, rs_titles, rs_solution = parse_rate_summary(summary_path)
-    es_h, es_c, es_x, es_judge, es_best = parse_eval_summary(eval_path)
+    es_h, es_c, es_x, es_judge, es_best = parse_eval_summary(
+        eval_path, rater=rater or R.primary_code())
 
     # Prefer titles from summary.md (richer); fall back to eval_summary.md if missing.
     titles = dict(rs_titles)
@@ -281,10 +315,12 @@ def build_report(dataset: str) -> str:
 def main():
     ap = argparse.ArgumentParser(description="Generate evaluation report markdown.")
     ap.add_argument("dataset")
+    ap.add_argument("--rater", help="Evaluator whose solution ratings/notes the "
+                                    "report is built from (default: primary)")
     ap.add_argument("--out", help="Output path (default: <dataset>/report.md)")
     args = ap.parse_args()
 
-    report = build_report(args.dataset)
+    report = build_report(args.dataset, rater=args.rater)
     out_path = Path(args.out) if args.out else EVAL_DIR / args.dataset / "report.md"
     out_path.write_text(report)
     print(f"Wrote {out_path} ({len(report)} bytes)")

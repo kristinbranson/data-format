@@ -31,9 +31,9 @@ def find_nwb_files(data_dir='data'):
 
 **What this does:** Walks the `data/` directory, collecting all `sub-*` subdirectories and globbing every `.nwb` file inside each. Each NWB file is opened directly with `h5py.File` (rather than `pynwb`) for reading.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -54,9 +54,9 @@ subject_idx = np.array([unique_subjects.index(s) for s in all_subject_ids])
 
 **What this does:** Subject identity comes from the `sub-<id>` directory name. Each session retains its subject ID, and a final `unique_subjects` list with `subject_idx` mapping is produced.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -78,9 +78,9 @@ for fpath in files:
 
 **What this does:** Each NWB file under a subject directory is treated as one session. Sessions are not numbered explicitly — they are just iterated in sorted-filename order.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -113,9 +113,9 @@ if len(teleport_inds) != n_trials:
 
 **What this does:** Identifies trial boundaries by indices where `trial_start > 0` and `teleport > 0`. If counts mismatch, each trial start is paired with the next teleport after it; counts are then truncated to match.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -137,9 +137,9 @@ for t in range(n_trials):
 
 **What this does:** Trials with fewer than 2 timepoints are silently skipped. No other per-trial QC filtering on length, behavior validity, etc.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -166,9 +166,9 @@ deconv = np.concatenate(deconv_list, axis=1)
 
 **What this does:** Loads `processing/ophys/Deconvolved/<plane>/data` for each available plane and concatenates across planes along the ROI axis. Fluorescence and Neuropil are also loaded for downstream interneuron filtering.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -200,9 +200,9 @@ neural_all = deconv[:, final_cell_mask].T
 
 **What this does:** Concatenates planes; computes a simplified dF/F (raw F minus 0.7*neuropil, normalized by median); marks ROIs whose dF/F correlates >0.5 with speed as putative interneurons and excludes them in addition to the iscell filter.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -222,9 +222,9 @@ final_cell_mask = cell_mask_concat & ~interneuron_mask
 
 **What this does:** Two-stage QC: (1) keep ROIs with `iscell[:,0]==1` (Suite2p curation), (2) further exclude ROIs flagged as interneurons by speed-dFF correlation > 0.5.
 
-**Rating:** better
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -244,9 +244,9 @@ time_bin_ms = 1000.0 / IMAGING_RATE_NOMINAL
 
 **What this does:** Neural data is kept at the native imaging frame rate; no resampling. Frame period derived from per-session `imaging_rate`; reported `time_bin_size` in metadata uses the nominal 15.5078125 Hz.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -269,9 +269,9 @@ for t in range(n_trials):
 
 **What this does:** Per-trial neural slice spans from the `trial_start` index to the `teleport` index, naturally aligning to trial start (no extra offset).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -291,9 +291,9 @@ time_from_start = np.arange(n_tp, dtype=np.float32) * frame_time
 
 **What this does:** Computed from the integer frame index multiplied by `1/imaging_rate`, not from the NWB `timestamps` array.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -309,9 +309,9 @@ time_from_start = np.arange(n_tp, dtype=np.float32) * frame_time
 
 **What this does:** Simple multiplication of `arange(n_timepoints)` by frame period. No subtraction needed since indexing already starts at 0 within the trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -334,9 +334,9 @@ if n_timepoints != n_behav:
 
 **What this does:** Neural and behavior streams are assumed sample-aligned at the imaging rate; if their lengths differ, both are truncated to the minimum. The time-from-start array indexes the trial slice.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -366,9 +366,9 @@ trial_env = env_per_trial.copy()
 
 **What this does:** Environment is parsed from the NWB `identifier` (scene name like `Env1_LocationA` or `Env1_B_to_Env2_C`); the NWB `environment` time series is loaded but not used for the per-trial env value.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -400,9 +400,9 @@ np.full((1, n_tp), env_type, dtype=np.float32),
 
 **What this does:** A switch session uses `change_trial=30` as the boundary between "from" and "to" environments. Per-trial env is broadcast across all timepoints in the trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -420,9 +420,9 @@ for t in range(n_trials):
 
 **What this does:** Trial number is the loop index from segmenting `trial_start`/`teleport` (0-indexed within session), not the NWB `trial number` time series.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -440,9 +440,9 @@ np.full((1, n_tp), trial_num, dtype=np.float32),
 
 **What this does:** No processing beyond casting and broadcasting the loop counter across the trial's timepoints.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -470,9 +470,9 @@ for t in range(n_trials):
 
 **What this does:** Derived from `Reward/timestamps`. Each reward timestamp is mapped to its closest behavior frame via argmin distance; per-trial reward flag = any reward frame inside the trial.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -495,9 +495,9 @@ np.full((1, n_tp), prev_out, dtype=np.float32),
 
 **What this does:** Lags the per-trial reward flag by 1; trial 0 defaults to 0. Broadcast across trial timepoints.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -525,9 +525,9 @@ signed_dist = compute_distance_to_reward_zone(trial_pos, rz_start, rz_end)
 
 **What this does:** Position from the NWB `position` time series; reward-zone bounds are looked up from a hard-coded dict keyed by zone letter parsed from the scene-name `identifier`. The NWB `reward_zone` time series is not used.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -552,9 +552,9 @@ def compute_distance_to_reward_zone(position, rz_start, rz_end):
 
 **What this does:** Signed distance: negative if before the zone, positive if past it, exactly 0 inside.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -579,9 +579,9 @@ def discretize_distance(distance):
 
 **What this does:** Manual masking into 7 bins matching the spec edges (-inf,-50,-10,0, exact 0, 10, 50, inf). The "in zone" bin is `distance == 0`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -605,9 +605,9 @@ signed_dist = compute_distance_to_reward_zone(trial_pos, rz_start, rz_end)
 
 **What this does:** Position and neural data are sliced with identical `[si:ei]` indices, so they share the same per-frame alignment.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -625,9 +625,9 @@ trial_pos = position[si:ei]
 
 **What this does:** Directly the `position` behavior time series, sliced to the trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -643,9 +643,9 @@ pos_bins = discretize_position(trial_pos)
 
 **What this does:** No processing beyond discretization (see 8-c).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -664,9 +664,9 @@ def discretize_position(position):
 
 **What this does:** Floor-divides position by 90 cm and clips to [0,4], yielding 5 equal-width bins covering 0–450 cm.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -684,9 +684,9 @@ trial_pos = position[si:ei]
 
 **What this does:** Same `[si:ei]` slice indices used for both, after the global length-equalization truncation.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -712,9 +712,9 @@ for t in range(n_trials):
 
 **What this does:** Derived from the `lick` behavior time series.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -737,9 +737,9 @@ lick_out = (trial_lick > 0).astype(np.int64)
 
 **What this does:** Binarize lick (>0 -> 1). Then a stuck-sensor heuristic zeroes the entire trial's licks if more than 30% of frames have cumcount>2.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -757,9 +757,9 @@ trial_lick = lick_binary[si:ei]
 
 **What this does:** Same per-trial index slice.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -781,9 +781,9 @@ rz_loc = zone_map.get(rz_labels[t], 0)
 
 **What this does:** Reward-zone label is parsed from the NWB `identifier` (scene name), not from the `reward_zone` time series. Each trial gets one of {A,B,C}.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -814,9 +814,9 @@ def get_reward_zone_labels(scene, n_trials, change_trial=30):
 
 **What this does:** Parses single-zone vs `_to_` switch scenes. Switch sessions use a hard-coded `change_trial=30` boundary between from-zone and to-zone labels. Mapped to integer 0/1/2 and broadcast across trial timepoints.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -844,9 +844,9 @@ for t in range(n_trials):
 
 **What this does:** Derived from `Reward/timestamps`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -871,9 +871,9 @@ np.full((1, n_tp), rew_outcome, dtype=np.int64),
 
 **What this does:** Each reward timestamp mapped to its nearest behavior frame via argmin, then per-trial outcome = any reward in the trial window. Broadcast across timepoints.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -909,9 +909,9 @@ trial_neural = np.nan_to_num(trial_neural, nan=0.0)
 
 **What this does:** Handles (1) neural/behavior length mismatch via truncation, (2) sessions with <2 trials skipped, (3) trial_start/teleport count mismatch via greedy matching, (4) trials with <2 timepoints skipped, (5) NaNs in neural data replaced with 0, (6) stuck lick sensor heuristic per trial.
 
-**Rating:** better
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -934,9 +934,9 @@ with open(args.output, 'wb') as f:
 
 **What this does:** No explicit profiling. Per-session timing is printed; main heavy operations are NWB I/O of large arrays (Deconvolved + Fluorescence + Neuropil), the simplified dF/F + speed correlation computation, and pickling the ~9.4 GB output.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -962,9 +962,9 @@ for t in range(n_trials):
 
 **What this does:** Several Python loops remain that could be vectorized: per-ROI iscell list-comp, per-ROI interneuron mask assignment, per-reward-event argmin (could use `np.searchsorted`), per-trial segmentation loop.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -984,9 +984,9 @@ for t in range(n_trials):
 
 **What this does:** Per-trial slicing, discretization, and broadcasting are repeated inside the trial loop. There is no second pass over NWB files (single-pass design with no separate survey step).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -1010,8 +1010,8 @@ speed_bins.reshape(1, -1),
 
 **What this does:** Fluorescence and Neuropil are loaded only to derive a simplified dF/F for the interneuron filter, then discarded. A `speed` output channel is also computed and included in `output_names` though the spec listed in DECISIONS does not request a separate speed output.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

@@ -25,9 +25,9 @@ def load_session(path: Path, show_processing: bool):
 
 **What this does:** Discovers NWB files via a glob pattern `sub-*/sub-*_behavior+ophys.nwb` under `data/`, sorts them, and opens each one with h5py rather than via pynwb. Each NWB file is treated as one session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -51,9 +51,9 @@ subject_idx.append(subject_to_idx[subject])
 
 **What this does:** Subject identity is read from each NWB file's `general/subject/subject_id` field. A `subject_to_idx` dict assigns sequential indices for each unique subject, and `subject_idx` records the subject for each session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -71,9 +71,9 @@ session_id = decode_h5_scalar(handle["general/session_id"])
 
 **What this does:** Each NWB file maps to a single session; the session ID is read directly from the NWB `general/session_id` attribute. Sessions are processed one at a time in sorted order.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -103,9 +103,9 @@ def reconstruct_trials(trial_start: np.ndarray, teleport: np.ndarray) -> list[tu
 
 **What this does:** Trial boundaries are determined from the `trial_start` and `teleport` behavioral streams. For each trial-start frame the next teleport frame after it becomes the trial end; the (start, stop) pair defines the trial frame range.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -131,9 +131,9 @@ if is_bad_lick_trial(lick_trial):
 
 **What this does:** Trials with fewer than 2 position samples are skipped. Trials are also dropped when more than 35% (`LICK_ERROR_FRAC = 0.35`) of frames have cumulative lick count >2, treated as a lick-sensor failure.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -161,9 +161,9 @@ else:
 
 **What this does:** Neural activity is read from NWB `processing/ophys/Deconvolved` (deconvolved calcium events). For multi-plane sessions, the planes are reassembled into a single ROI matrix using `planeIdx`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -185,9 +185,9 @@ neural_trial = deconvolved[start:stop].T
 
 **What this does:** Beyond reading the deconvolved values, the only processing is curated-ROI selection, multi-plane reassembly, dtype cast to `float16`, slicing by trial frame indices, and transposing to `(neurons, time)`.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** float16 is not necessary
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -207,9 +207,9 @@ curated_idx = np.flatnonzero(iscell[:, 0] > 0.5)
 
 **What this does:** ROIs are filtered to those with `iscell[:,0] > 0.5` (Suite2p manual curation flag). No additional speed-correlation interneuron exclusion is applied.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -228,9 +228,9 @@ TIME_BIN_MS = 1000.0 / FRAME_RATE_HZ
 
 **What this does:** Neural data is kept at the native imaging frame rate (~15.5 Hz, ~64.5 ms). No rebinning or resampling is performed; the rate constant is stored in metadata.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -250,9 +250,9 @@ for trial_idx, (start, stop) in enumerate(trials):
 
 **What this does:** Neural data is sliced from the same `start:stop` frame range as the behavior, so the first frame of each per-trial neural array corresponds to the trial-start event. No extra offset is applied.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -270,9 +270,9 @@ time_trial = position_t[start:stop] - position_t[start]
 
 **What this does:** Time-from-trial-start is computed from the `position` time series' timestamp array.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -290,9 +290,9 @@ time_trial.astype(np.float32),
 
 **What this does:** Per-trial timestamps are zeroed by subtracting the timestamp at the trial-start frame, producing seconds elapsed since trial start.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -312,9 +312,9 @@ n_time = neural_trial.shape[1]
 
 **What this does:** Behavior and neural arrays use the same `start:stop` frame indices and the NWB stores them already aligned to the imaging frame grid, so no resampling is performed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -340,9 +340,9 @@ env_code = float(ENV_TO_INT[env_name])
 
 **What this does:** Environment label is parsed from the NWB `identifier` scene string (e.g. `Env1_LocationA`, `Env1_B_to_Env2_C`) rather than from the `environment` time series. `Env1` -> 0, `Env2` -> 1.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -366,9 +366,9 @@ np.full(n_time, env_code, dtype=np.float32),
 
 **What this does:** For switch sessions, trials before index 30 use the pre-switch env, trials >=30 use the post-switch env. The resulting integer code is repeated across all timepoints in the trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -386,9 +386,9 @@ for trial_idx, (start, stop) in enumerate(trials):
 
 **What this does:** Trial number is the 0-based loop index from enumerating the reconstructed `(start, stop)` trial list, not the NWB `trial number` time series.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -404,9 +404,9 @@ np.full(n_time, float(trial_idx), dtype=np.float32),
 
 **What this does:** The integer trial index is broadcast to a constant float vector of length `n_time` for the trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -435,9 +435,9 @@ def reward_outcomes_from_timestamps(reward_times, trial_times, trials):
 
 **What this does:** Derived from the `Reward` time series timestamps. For each trial, a binary outcome flag is set if any reward timestamp falls within the trial's start/stop time window. The previous trial's outcome is then used.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -456,9 +456,9 @@ np.full(n_time, float(prev_reward), dtype=np.float32),
 
 **What this does:** For trial `t > 0`, the previous trial's outcome (0/1) is used; trial 0 defaults to 0. The value is repeated across all frames in the trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -484,9 +484,9 @@ zone_start, zone_end = ZONE_COORDS_CM[zone_name]
 
 **What this does:** Distance is derived from the `position` behavioral time series and the per-trial reward zone (A/B/C) parsed from the scene identifier. The fixed zone coordinates from the paper define the zone bounds.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -515,9 +515,9 @@ def discretize_distance_to_zone(position_cm, zone_start, zone_end):
 
 **What this does:** Computes signed distance from current position to the nearest zone edge: negative before the zone, 0 inside, positive after. Then discretizes into the 7 bins below.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -540,9 +540,9 @@ return bins
 
 **What this does:** 7 bins are assigned by hard-coded thresholds at -50, -10, 0 (exact), 10, 50 cm. The `distance == 0.0` case is its own "in_zone" bin, and any value outside the explicit ranges falls to bin 6 (`gt50`).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -562,9 +562,9 @@ dist_bin = discretize_distance_to_zone(pos_trial, zone_start, zone_end)
 
 **What this does:** Position and neural data share the same `start:stop` frame slice, so the discretized distance vector is automatically aligned with the neural time axis frame-by-frame.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -582,9 +582,9 @@ pos_trial = position[start:stop]
 
 **What this does:** Derived from the `position` behavioral time series, sliced to the trial frame range.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -605,9 +605,9 @@ pos_bin = discretize_absolute_position(pos_trial)
 
 **What this does:** Position is clipped to `[0, 450)` cm, then discretized into 5 equal-width bins via `np.digitize` against `linspace(0, 450, 6)`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -628,9 +628,9 @@ return np.digitize(clipped, edges[1:-1], right=False).astype(np.int16)
 
 **What this does:** 5 equal-width bins of 90 cm each spanning 0-450 cm; positions are clipped to within the track before digitizing. Negative pre-sync (-500) values map to bin 0 after clipping.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -650,9 +650,9 @@ pos_bin = discretize_absolute_position(pos_trial)
 
 **What this does:** Same `start:stop` slice as neural data; alignment is automatic with one bin per frame.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -670,9 +670,9 @@ lick_trial = lick[start:stop]
 
 **What this does:** Derived from the `lick` behavioral time series, sliced to the trial range.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -691,9 +691,9 @@ lick_bin = binarize_licks(lick_trial)
 
 **What this does:** The lick stream is rounded to nearest int, then clipped to `[0, 1]`, producing a binary per-frame lick output.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -713,9 +713,9 @@ lick_bin = binarize_licks(lick_trial)
 
 **What this does:** Same `start:stop` indexing as the neural data, producing a per-frame aligned lick vector.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -741,9 +741,9 @@ zone_code = int(ZONE_TO_INT[zone_name])
 
 **What this does:** Reward zone identity is parsed from the NWB `identifier` scene string using regex over three formats (`Env1_LocationA`, `Env1_LocationA_to_B`, `Env1_A_to_Env2_C`). Zones are encoded A=0, B=1, C=2.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -768,9 +768,9 @@ np.full(n_time, zone_code, dtype=np.int16),
 
 **What this does:** For switch sessions, trials before index 30 use the pre-switch zone; trials >=30 use the post-switch zone. The integer zone code is broadcast across all frames in the trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -797,9 +797,9 @@ def reward_outcomes_from_timestamps(reward_times, trial_times, trials):
 
 **What this does:** Derived from the `Reward` time series' timestamps, compared against the position-time trial start/stop timestamps.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -819,9 +819,9 @@ np.full(n_time, reward_code, dtype=np.int16),
 
 **What this does:** A single-pointer scan over reward timestamps marks each trial as 1 if any reward time is in `[start_t, stop_t)`, else 0. The per-trial value is repeated across all frames.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -854,9 +854,9 @@ if len(session_data["neural_trials"]) < 2:
 
 **What this does:** Several defensive checks: invalid (stop <= start) trials are skipped; trials with <2 frames are skipped; bad-lick trials are dropped with a counter; sessions with fewer than 2 usable trials are skipped; multi-plane shape mismatches raise an error. No explicit handling for negative pre-sync `position` (-500) or `environment` (-1) values besides clipping in the position discretizer.
 
-**Rating:** better
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -885,9 +885,9 @@ for session_number, path in enumerate(session_files):
 
 **What this does:** Per-session NWB I/O (especially loading the full deconvolved matrix) is the dominant cost. Multi-plane sessions read both planes; per-session timings are printed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -915,9 +915,9 @@ for trial_idx, (start, stop) in enumerate(trials):
 
 **What this does:** Per-trial loop applies discretization functions trial-by-trial, and the reward-outcome assignment uses a sequential pointer scan over trials. The per-session loop is also serial across files. The code itself does not call out vectorization opportunities.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -935,9 +935,9 @@ def load_session(path: Path, show_processing: bool):
 
 **What this does:** Each session is loaded only once; no separate "survey" pre-pass over the dataset is performed. (No relevant code found indicating intentional repeated processing.)
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -957,8 +957,8 @@ def make_processing_plot(session_label, savedir, neural_trials, input_trials, ou
 
 **What this does:** Optional `--show-processing` plotting computes and renders figures that are not consumed by downstream training. Otherwise no obviously discarded computation. (No explicit notes-based discussion.)
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

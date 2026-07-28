@@ -10,17 +10,22 @@ display three panels side-by-side:
   B (blue)    — the Claude judge's DECISIONS section + rating
   C (magenta) — the Codex  judge's DECISIONS section + rating
 
+Panels B and C are shown only to the evaluator who owns the judge-comparison
+pass (`"primary": true` in raters.json). Any other evaluator sees panel A alone,
+so their ratings stay independent of the LLM judges.
+
 Per-trial prompt:
   - Rating: incorrect | concerning | ok | match  (no "better" / "missing"
     since there's no reference to be "better than")
-  → written immediately to the dossier file's **Rating:** line
-    (evaluation/eval/<dataset>/<agent>_trial<N>.md)
+  → written immediately to the **Rating:** line of this evaluator's dossier copy
+    (evaluation/eval/<dataset>/<CODE>/<agent>_trial<N>.md)
 
 Per-question prompts (asked once after all 6 trials of a qid):
-  - Solution note  → written to summary.md      as **Overall comment:**
+  - Solution note  → written to <CODE>/summary.md as **Overall comment:**
                      (matches rate.py's output format)
-  - Judge note     → written to eval_summary.md as **Overall comment:**
+  - Judge note     → written to eval_summary.md   as **Overall comment:**
                      (matches compare.py's output format; utils.py reads this)
+                     — primary evaluator only
 
 Resume:
   - Trials whose Rating is no longer the placeholder are skipped.
@@ -29,7 +34,8 @@ Resume:
   - --overwrite re-prompts everything.
 
 Usage:
-    python3 rate_blind.py <dataset>
+    python3 rate_blind.py <dataset>                # prompts for evaluator code
+    python3 rate_blind.py <dataset> --rater KB
     python3 rate_blind.py <dataset> --question 1-c
     python3 rate_blind.py <dataset> --overwrite
 """
@@ -50,6 +56,7 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 
+import raters as R
 from compare import (
     EVAL_DIR,
     TRIAL_KEYS,
@@ -181,7 +188,7 @@ def _insert_or_replace(path: Path, qid: str, header: str, block: str):
 
 def write_summary_qid(path: Path, qid: str, title: str,
                       rows: list[tuple[str, int, str | None, str | None, str | None]],
-                      solution_note: str | None):
+                      solution_note: str | None, dataset: str = "", rater: str = ""):
     """summary.md: per-trial Rating + Note table + Solution note as Overall comment."""
     lines = [f"## Q {qid}. {title}", ""]
     lines.append("| Agent / trial | Rating | Note |")
@@ -193,30 +200,44 @@ def write_summary_qid(path: Path, qid: str, title: str,
     lines.append("")
     lines.append("---")
     block = "\n".join(lines) + "\n"
-    header = f"# Evaluation summary — {path.parent.name}\n\n---\n\n"
+    dataset = dataset or path.parent.parent.name
+    who = f" · evaluator {rater}" if rater else ""
+    header = f"# Evaluation summary — {dataset}{who}\n\n---\n\n"
     _insert_or_replace(path, qid, header, block)
 
 
 def write_eval_summary_qid(path: Path, qid: str, title: str,
                            rows: list[tuple[str, int, str | None, str | None, str | None]],
-                           judge_note: str | None):
-    """eval_summary.md: Human + Claude judge + Codex judge comparison + Judge note."""
+                           judge_note: str | None, rater: str = "",
+                           dataset: str = ""):
+    """eval_summary.md: one column per evaluator + both judges + Judge note.
+
+    Every evaluator's rating is read back from their own dossier copy, so the
+    combined table stays complete no matter who ran the walkthrough.
+    """
+    dataset = dataset or path.parent.name
+    codes = R.rating_columns(dataset, include=rater or None)
+    per_trial = R.collect_ratings(dataset, codes).get(qid, {})
+
     lines = [f"## Q {qid}. {title}", ""]
-    lines.append("| Agent / trial | Human | Claude judge | Codex judge | Best | Why |")
-    lines.append("|---|---|---|---|---|---|")
+    lines.append("| Agent / trial | " + " | ".join(codes)
+                 + " | Claude judge | Codex judge | Best | Why |")
+    lines.append("|---" * (len(codes) + 5) + "|")
     for agent, n, h, jc, jx in rows:
-        cells = [
-            f"{agent} / trial{n}",
-            h or "—", jc or "—", jx or "—",
-            "—", "",
-        ]
+        human_cells = []
+        for code in codes:
+            v = per_trial.get((agent, n), {}).get(code)
+            if code == rater and h:
+                v = h  # the rating just entered wins over a stale read
+            human_cells.append(v or "—")
+        cells = [f"{agent} / trial{n}", *human_cells, jc or "—", jx or "—", "—", ""]
         lines.append("| " + " | ".join(c.replace("|", "\\|") for c in cells) + " |")
     lines.append("")
     lines.append(f"**Overall comment:** {judge_note or '_(no overall comment)_'}")
     lines.append("")
     lines.append("---")
     block = "\n".join(lines) + "\n"
-    header = f"# Eval comparison — {path.parent.name}\n\n---\n\n"
+    header = f"# Eval comparison — {dataset}\n\n---\n\n"
     _insert_or_replace(path, qid, header, block)
 
 
@@ -284,31 +305,46 @@ def _solution_panel(body: str):
 
 
 def render_qid_recap(qid: str, title: str,
-                     rows: list[tuple[str, int, str | None, str | None, str | None]]):
+                     rows: list[tuple[str, int, str | None, str | None, str | None]],
+                     rater: str = "Human", show_judges: bool = True):
     tbl = Table(title=f"Q {qid}. {title}", title_style="bold cyan", border_style="cyan")
     tbl.add_column("Agent / trial", style="bold")
-    tbl.add_column("Human")
-    tbl.add_column("Claude")
-    tbl.add_column("Codex")
+    tbl.add_column(rater)
+    if show_judges:
+        tbl.add_column("Claude")
+        tbl.add_column("Codex")
     color_map = {"better": "green", "match": "cyan", "ok": "white",
                  "concerning": "yellow", "incorrect": "red", "missing": "red"}
     def colorize(r):
         c = color_map.get(r, "white")
         return f"[{c}]{r or '—'}[/{c}]"
     for agent, n, h, jc, jx in rows:
-        tbl.add_row(f"{agent}/trial{n}", colorize(h), colorize(jc), colorize(jx))
+        cells = [f"{agent}/trial{n}", colorize(h)]
+        if show_judges:
+            cells += [colorize(jc), colorize(jx)]
+        tbl.add_row(*cells)
     _CONSOLE.print()
     _CONSOLE.print(tbl)
 
 
 # ---------- walkthrough ----------
 
-def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = False):
+def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = False,
+                rater: R.Rater | None = None):
+    rater = rater or R.resolve_rater()
+    # Judge panels (and the judge-side eval_summary.md) belong to the pass-2 owner.
+    show_judges = rater.primary
+    _CONSOLE.print(f"[bold]Evaluator:[/bold] {rater.label}"
+                   + ("" if show_judges else "  [dim](judge panels hidden)[/dim]"))
+    rater_files = R.sync_rater_dir(dataset, rater.code)
+    _CONSOLE.print(f"[dim]Working in: {R.rater_dir(dataset, rater.code)}[/dim]")
+
     bundles = []
     for agent, n in TRIAL_KEYS:
-        human_path = EVAL_DIR / dataset / f"{agent}_trial{n}.md"
-        if not human_path.exists():
-            print(f"WARN: dossier missing: {human_path}", file=sys.stderr)
+        human_path = rater_files.get((agent, n))
+        if human_path is None or not human_path.exists():
+            print(f"WARN: dossier missing: {EVAL_DIR / dataset / f'{agent}_trial{n}.md'}",
+                  file=sys.stderr)
             continue
         trial_path = find_trial_path(dataset, agent, n)
         meta, body = parse_human(human_path)
@@ -334,14 +370,16 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
             sys.exit(f"Q {only_qid} not found across dossiers for {dataset}")
         qids_seen = [only_qid]
 
-    summary_path = EVAL_DIR / dataset / "summary.md"          # solution-side
-    eval_summary_path = EVAL_DIR / dataset / "eval_summary.md"  # judge-side
+    summary_path = R.summary_path(dataset, rater.code)          # solution-side, per rater
+    eval_summary_path = R.eval_summary_path(dataset)            # judge-side, shared
     sol_notes = parse_overall_comments(summary_path)
-    judge_notes = parse_overall_comments(eval_summary_path)
-    if summary_path.exists() or eval_summary_path.exists():
+    judge_notes = parse_overall_comments(eval_summary_path) if show_judges else {}
+    if summary_path.exists() or (show_judges and eval_summary_path.exists()):
         _CONSOLE.print(
-            f"[dim]Loaded {len(sol_notes)} solution notes from {summary_path.name}, "
-            f"{len(judge_notes)} judge notes from {eval_summary_path.name}[/dim]"
+            f"[dim]Loaded {len(sol_notes)} solution notes from {rater.code}/{summary_path.name}"
+            + (f", {len(judge_notes)} judge notes from {eval_summary_path.name}"
+               if show_judges else "")
+            + "[/dim]"
         )
 
     rated_trials = 0
@@ -377,7 +415,7 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
             for b in bundles
             if b[3].get(qid)
         )
-        notes_done = qid in sol_notes and qid in judge_notes
+        notes_done = qid in sol_notes and (qid in judge_notes or not show_judges)
         if all_rated and notes_done and not overwrite:
             skipped_qids += 1
             continue
@@ -421,15 +459,16 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
                 f"[bold cyan]{dataset} • {sample_label} ({sample_idx + 1}/6) • Q {qid} — {title}[/bold cyan]"
             ))
 
-            cols = [
-                _solution_panel(body.get(qid, "")),
-                _judge_panel("Claude judge", "blue",
-                             jc_dec_md, jc_rating, jc_code,
-                             jc_just, jc_code_just, jc_qid),
-                _judge_panel("Codex judge", "magenta",
-                             jx_dec_md, jx_rating, jx_code,
-                             jx_just, jx_code_just, jx_qid),
-            ]
+            cols = [_solution_panel(body.get(qid, ""))]
+            if show_judges:
+                cols += [
+                    _judge_panel("Claude judge", "blue",
+                                 jc_dec_md, jc_rating, jc_code,
+                                 jc_just, jc_code_just, jc_qid),
+                    _judge_panel("Codex judge", "magenta",
+                                 jx_dec_md, jx_rating, jx_code,
+                                 jx_just, jx_code_just, jx_qid),
+                ]
             term_w = _CONSOLE.size.width
             if len(cols) * 70 <= term_w:
                 cw = (term_w - 2 * (len(cols) - 1)) // len(cols)
@@ -481,26 +520,29 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
         rows.sort(key=lambda r: TRIAL_KEYS.index((r[0], r[1])))
 
         # ---- per-qid notes ----
-        render_qid_recap(qid, title, rows)
+        render_qid_recap(qid, title, rows, rater=rater.code, show_judges=show_judges)
         try:
             sn = prompt_note("Solution note", sol_notes.get(qid))
-            jn = prompt_note("Judge note", judge_notes.get(qid))
+            jn = prompt_note("Judge note", judge_notes.get(qid)) if show_judges else None
         except (EOFError, KeyboardInterrupt):
             _CONSOLE.print("\n[dim]aborted before saving notes[/dim]")
             aborted = True
             break
 
         try:
-            write_summary_qid(summary_path, qid, title, rows, sn)
-            write_eval_summary_qid(eval_summary_path, qid, title, rows, jn)
+            write_summary_qid(summary_path, qid, title, rows, sn,
+                              dataset=dataset, rater=rater.code)
+            written = [f"{rater.code}/{summary_path.name}"]
+            if show_judges:
+                write_eval_summary_qid(eval_summary_path, qid, title, rows, jn,
+                                       rater=rater.code, dataset=dataset)
+                written.append(eval_summary_path.name)
             if sn is not None:
                 sol_notes[qid] = sn
             if jn is not None:
                 judge_notes[qid] = jn
             rated_qids += 1
-            _CONSOLE.print(
-                f"[dim]→ Q {qid} flushed to {summary_path.name} + {eval_summary_path.name}[/dim]"
-            )
+            _CONSOLE.print(f"[dim]→ Q {qid} flushed to {' + '.join(written)}[/dim]")
         except Exception as e:
             _CONSOLE.print(f"[red]ERROR writing summary files: {e}[/red]")
             aborted = True
@@ -515,11 +557,14 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("dataset")
+    ap.add_argument("--rater", help="Evaluator code (e.g. LZ). Prompted for if omitted; "
+                                    "$DATAFORMAT_RATER is used as a fallback.")
     ap.add_argument("--question", help="Limit to one qid (e.g. 1-c)")
     ap.add_argument("--overwrite", action="store_true",
                     help="Re-prompt trials/qids that are already filled")
     args = ap.parse_args()
-    walkthrough(args.dataset, only_qid=args.question, overwrite=args.overwrite)
+    walkthrough(args.dataset, only_qid=args.question, overwrite=args.overwrite,
+                rater=R.resolve_rater(args.rater))
 
 
 if __name__ == "__main__":

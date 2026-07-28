@@ -29,9 +29,9 @@ interframe_int = np.load(move_dir / "interframe_int.npy")
 
 **What this does:** Subjects are discovered as directories starting with `jm` under `data/`. Sessions are subdirectories whose name starts with 4 digits. Each session loads suite2p `F.npy`, `Fneu.npy`, `ops.npy` and move_deve `motion_energy_glob.npy`, `tstamps.npy`, `interframe_int.npy`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -50,9 +50,9 @@ subject_to_idx = {subject: idx for idx, subject in enumerate(subjects)}
 
 **What this does:** Subjects are the sorted set of `jm*` directory names under `data/`. A `subject_idx` is assigned per session via this sorted ordering and saved into the output dictionary.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -69,9 +69,9 @@ for session_dir in sorted(p for p in subject_dir.iterdir() if p.is_dir() and p.n
 
 **What this does:** Session directories are subfolders of each subject whose name begins with 4 digits (the year), iterated in sorted order. Each yields one `SessionInfo` record processed independently.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -98,9 +98,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** Continuous sessions are segmented into consecutive 2-minute (120 s) pseudo-trials after 10-frame binning, yielding 360 bins per trial. Remainder bins are dropped. A safeguard requires at least 2 trials per session (lines 391-392).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -117,9 +117,9 @@ if len(neural_trials) < 2:
 
 **What this does:** No per-trial quality filtering. The only check is that each session must produce at least 2 pseudo-trials, otherwise an error is raised.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -141,9 +141,9 @@ def compute_baseline_corrected_fluorescence(s2p_dir: Path) -> tuple[np.ndarray, 
 
 **What this does:** Neural data is derived from `suite2p/plane0/F.npy` (raw fluorescence), `Fneu.npy` (neuropil), with parameters loaded from `ops.npy`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -176,9 +176,9 @@ def bin_array_mean(x: np.ndarray, bin_frames: int) -> np.ndarray:
 
 **What this does:** Neuropil subtraction with the per-session `ops['neucoeff']` (typically 0.7), then suite2p `dcnv.preprocess` baseline correction using saved ops parameters (maximin baseline, 60s window, etc.) on CPU. The resulting trace is averaged over non-overlapping 10-frame bins (~333 ms) before trial segmentation.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -191,9 +191,9 @@ def bin_array_mean(x: np.ndarray, bin_frames: int) -> np.ndarray:
 
 **What this does:** No additional cell filtering is applied. All neurons present in `F.npy` are kept, relying on the released suite2p/Track2p arrays to be already curated to the across-day matched cells.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -213,9 +213,9 @@ neural_binned = bin_array_mean(neural_processed, BIN_FRAMES)
 
 **What this does:** The 30 Hz processed neural trace is averaged in non-overlapping 10-frame windows, producing one sample every 333.33 ms (3 Hz). `time_bin_size` is recorded in metadata as `333.33`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -238,9 +238,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** Each pseudo-trial begins at the start of its 2-minute block; alignment is to the start of the block. `off_start=0.0`, `off_end=120.0` are recorded in metadata.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -258,9 +258,9 @@ time_binned = bin_array_mean(time_full_sec[np.newaxis, :], BIN_FRAMES)[0]
 
 **What this does:** Time is computed from frame index using `ops['fs']` (30 Hz), with a +0.5 frame-center offset, then 10-frame averaged. It is not loaded from any timing file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -279,9 +279,9 @@ input_trial = time_binned[np.newaxis, start:stop].astype(np.float32, copy=False)
 
 **What this does:** A frame-centered time vector (in seconds from session start) is built, averaged over 10-frame windows to produce bin-center times, then sliced per trial. The time values reflect elapsed session time (not reset per trial).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -299,9 +299,9 @@ time_binned = bin_array_mean(time_full_sec[np.newaxis, :], BIN_FRAMES)[0]
 
 **What this does:** Time and neural are derived from the same frame index space (length `n_frames`) and binned identically with the same 10-frame averaging, so they are frame-for-frame aligned by construction.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -320,9 +320,9 @@ motion_full, missing_idx = reconstruct_motion_trace(motion_raw, interframe_int, 
 
 **What this does:** Motion energy is loaded from `move_deve/motion_energy_glob.npy`. `tstamps.npy` and `interframe_int.npy` provide camera timing used to reconstruct missing-frame positions.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -356,9 +356,9 @@ output_trial = np.digitize(motion_norm_binned[start:stop], motion_edges[1:-1], r
 
 **What this does:** (1) Missing camera frames are inferred from interframe-interval timing-step accumulation and filled by linear interpolation. (2) Reconstructed motion is averaged in 10-frame bins. (3) All sessions' binned motion are pooled, min-max normalized globally, then discretized into 5 equal-percentile bins (Q1-Q5) using `np.digitize`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -379,9 +379,9 @@ motion_binned = bin_array_mean(motion_full[np.newaxis, :], BIN_FRAMES)[0]
 
 **What this does:** Imaging is the master clock at length `ops['nframes']`. Behavior is re-indexed onto this clock by inferring missed frames from `interframe_int.npy` (gap rounded to integer multiples of the median interval). After interpolation, motion has the same length as the neural trace and is binned identically.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -409,9 +409,9 @@ if observed_idx[-1] != target_len - 1:
 
 **What this does:** Missing motion frames are detected by accumulating rounded interframe-interval steps; gap positions are filled with NaN and linearly interpolated. A sanity check raises if reconstructed length does not match imaging frame count. Remainder bins not filling a full trial are silently dropped during segmentation.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -436,9 +436,9 @@ processed = dcnv.preprocess(
 
 **What this does:** The dominant cost is suite2p's `dcnv.preprocess` baseline correction, run on CPU. Notes report a per-session mean of ~2.5 s and ~85 s total for 41 sessions.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -461,9 +461,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** Trial segmentation uses a per-trial Python loop that slices the binned arrays. Within the loop, all expensive ops (binning, normalization, digitization) are already vectorized; the loop itself just slices.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -487,9 +487,9 @@ if args.show_processing:
 
 **What this does:** Each session is processed once in a loop. When `--show-processing` is enabled, the plotting function recomputes per-session normalized motion and class assignments using `motion_min`/`motion_max` already known at the dataset level.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -517,8 +517,8 @@ motion_preview = { ... "timestamps": ..., "interframe_int": ... }
 
 **What this does:** Per-session preview slices for `F`, `Fneu`, `corrected`, `processed`, raw timestamps, and interframe intervals are loaded/copied to support optional plotting. `tstamps.npy` is loaded but not used in the actual data computation. These are not written into the final pickle.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
