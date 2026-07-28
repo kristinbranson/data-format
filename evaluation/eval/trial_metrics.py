@@ -1,25 +1,43 @@
 """Pull per-trial verifier metrics into a single JSON file for analysis.
 
-For each rated trial we already have an eval markdown file at
-``eval/<dataset>/<agent>_trial<N>.md``. The first paragraph of every such
-file contains a canonical ``Trial path:`` line pointing at the verifier
-snapshot folder under ``harbor-jobs/...``. We reuse that pointer (rather
-than guessing dataset / agent name remappings ourselves) to find the
-matching ``verifier/metrics.json`` and extract a curated subset of fields.
+Two discovery modes, both emitting the same curated schema
+(``dataset -> agent -> trial -> {metrics}``) so downstream consumers in
+``utils.py`` / ``metrics.py`` work with either.
 
-Output: ``eval/trial_metrics.json`` keyed dataset -> agent -> trial.
+**Rating-driven (default).** For each rated trial we already have an eval
+markdown file at ``eval/<dataset>/<agent>_trial<N>.md``. The first paragraph
+of every such file contains a canonical ``Trial path:`` line pointing at the
+verifier snapshot folder under ``harbor-jobs/...``. We reuse that pointer
+(rather than guessing dataset / agent name remappings ourselves) to find the
+matching ``verifier/metrics.json``.
 
-Run from anywhere:    python eval/pull_trial_metrics.py
+    python eval/trial_metrics.py                  -> eval/trial_metrics.json
+
+**Direct scan (``--jobs-root``).** Runs with no rating markdown -- e.g. the
+minimal-prompt sweep -- are discovered by globbing job directories instead.
+Needed because the rating files are hand-written and only exist for trials
+someone has already evaluated.
+
+    python eval/trial_metrics.py \\
+        --jobs-root /groups/branson/home/bransonk/harbor-cluster-jobs \\
+        --out trial_metrics_minimal.json
+
+Run from anywhere.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from pathlib import Path
 
 EVAL_DIR = Path(__file__).resolve().parent
 OUT_FILE = EVAL_DIR / "trial_metrics.json"
+
+# The results archive at the repo root (a symlink to /nearline). Cluster sweeps
+# live elsewhere and are passed explicitly via --jobs-root.
+DEFAULT_JOBS_ROOT = EVAL_DIR.parents[1] / "harbor-jobs"
 
 # Fields kept from each metrics.json. Missing fields are silently skipped
 # so the same curated list works for both supervised and unsupervised
@@ -142,10 +160,130 @@ def collect_trial_metrics(eval_dir: Path = EVAL_DIR) -> dict:
     return out
 
 
+# Cluster sweeps put one trial in each job directory, and every trial inside is
+# named `<timestamp>_trial1` regardless of which repeat it is -- the real trial
+# number lives in the job directory name, e.g. `hb_sosa2024_minimal_codex_t3`.
+_JOB_DIR_TRIAL_RE = re.compile(r"_t(\d+)$")
+_TRIAL_SUFFIX_RE = re.compile(r"_trial(\d+)$")
+
+# Two directory layouts, globbed relative to a jobs root:
+#   cluster: <job_dir>/<task>/<agent>/<timestamp>_trialN/verifier/metrics.json
+#   legacy:            <task>/<agent>/<timestamp>_trialN/verifier/metrics.json
+_LAYOUT_GLOBS = (
+    "*/*/*/*_trial*/verifier/metrics.json",
+    "*/*/*_trial*/verifier/metrics.json",
+)
+
+
+def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str] | None:
+    """Derive (dataset, agent, trial_num, timestamp) from a metrics.json path.
+
+    Args:
+        metrics_path: .../<task>/<agent>/<timestamp>_trialN/verifier/metrics.json
+        root: the jobs root `metrics_path` was globbed under.
+
+    Returns:
+        (dataset, agent, trial_num, timestamp), or None if the path doesn't
+        parse. `dataset` has any `_minimal` suffix stripped so minimal and
+        full-prompt runs share dataset keys and can be compared directly.
+    """
+    # parts[-1] is `verifier`, parts[-2] the trial dir, then agent, then task.
+    parts = metrics_path.relative_to(root).parts[:-1]  # drop 'metrics.json'
+    if len(parts) < 4:
+        return None
+    trial_dir, agent, task = parts[-2], parts[-3], parts[-4]
+
+    dataset = task.removesuffix("_minimal")
+    timestamp = trial_dir.split("_trial")[0]
+
+    # Prefer the job directory's `_tN`; fall back to the `_trialN` suffix, which
+    # is what the legacy layout carries.
+    trial_num = None
+    if len(parts) >= 5:
+        m = _JOB_DIR_TRIAL_RE.search(parts[-5])
+        if m:
+            trial_num = int(m.group(1))
+    if trial_num is None:
+        m = _TRIAL_SUFFIX_RE.search(trial_dir)
+        trial_num = int(m.group(1)) if m else 1
+
+    return dataset, agent, trial_num, timestamp
+
+
+def collect_from_jobs_roots(roots: list[Path]) -> dict:
+    """Discover trials by globbing job directories rather than rating markdown.
+
+    Args:
+        roots: jobs roots to scan, searched in order.
+
+    Returns:
+        {dataset: {agent: {trial_str: {curated metrics}}}}.
+
+    A task/agent/trial can appear more than once -- a failed run that was
+    resubmitted leaves both directories behind -- so the newest timestamp wins.
+    """
+    # (dataset, agent, trial) -> (timestamp, curated metrics)
+    best: dict[tuple[str, str, int], tuple[str, dict]] = {}
+    n_seen = n_skipped = 0
+
+    for root in roots:
+        root = Path(root).expanduser()
+        if not root.is_dir():
+            print(f"  ! jobs root not found, skipping: {root}")
+            continue
+        for pattern in _LAYOUT_GLOBS:
+            for metrics_path in sorted(root.glob(pattern)):
+                ident = _identify_trial(metrics_path, root)
+                if ident is None:
+                    continue
+                dataset, agent, trial_num, timestamp = ident
+                n_seen += 1
+                try:
+                    raw = json.loads(metrics_path.read_text())
+                except (OSError, json.JSONDecodeError) as e:
+                    # A trial that died mid-verification can leave truncated
+                    # JSON; skip it rather than aborting the whole scan.
+                    print(f"  ! unreadable {metrics_path}: {e}")
+                    n_skipped += 1
+                    continue
+                key = (dataset, agent, trial_num)
+                if key not in best or timestamp > best[key][0]:
+                    best[key] = (timestamp, _curate(raw))
+
+    out: dict[str, dict[str, dict[str, dict]]] = {}
+    for (dataset, agent, trial_num), (_ts, curated) in sorted(best.items()):
+        out.setdefault(dataset, {}).setdefault(agent, {})[str(trial_num)] = curated
+
+    n_kept = sum(len(t) for a in out.values() for t in a.values())
+    print(f"  found: {n_seen}, kept: {n_kept} (newest per task/agent/trial), "
+          f"unreadable: {n_skipped}")
+    return out
+
+
 def main() -> None:
-    metrics = collect_trial_metrics()
-    OUT_FILE.write_text(json.dumps(metrics, indent=2, sort_keys=True))
-    print(f"\nWrote {OUT_FILE}")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--jobs-root", nargs="*", type=Path, default=None,
+        help="Scan these job directories instead of the eval rating markdown. "
+             f"With no value, uses {DEFAULT_JOBS_ROOT}.")
+    parser.add_argument(
+        "--out", type=Path, default=None,
+        help=f"Output file; relative paths resolve under {EVAL_DIR}. "
+             f"Default: {OUT_FILE.name}")
+    args = parser.parse_args()
+
+    if args.jobs_root is None:
+        metrics = collect_trial_metrics()
+    else:
+        roots = args.jobs_root or [DEFAULT_JOBS_ROOT]
+        metrics = collect_from_jobs_roots(roots)
+
+    out_file = args.out or OUT_FILE
+    if not out_file.is_absolute():
+        out_file = EVAL_DIR / out_file
+    out_file.write_text(json.dumps(metrics, indent=2, sort_keys=True))
+    print(f"\nWrote {out_file}")
 
 
 if __name__ == "__main__":

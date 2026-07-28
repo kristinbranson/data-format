@@ -11,6 +11,14 @@
 #   --judges-only         Rerun both judges and update metrics.json
 #   --verifier-dir DIR    Use DIR as the verifier directory (default: newest
 #                         verifier_rerun_* if one exists, otherwise verifier/)
+#   --podman              Use rootless podman instead of docker. REQUIRED for
+#                         trials stored on /groups or /nrs: docker runs the
+#                         container as real root, and those NFS mounts are
+#                         root-squashed, so every write the verifier makes
+#                         (/logs/verifier, the /app/data mountpoint, the final
+#                         chown) is denied. Rootless podman maps container-root
+#                         to your own UID, which is how the cluster jobs write
+#                         there successfully.
 #
 # The task name is inferred from the trial path: jobs/<task>/<agent>/<timestamp>/
 #
@@ -29,12 +37,17 @@ RUN_CLAUDE_JUDGE=false
 RUN_CODEX_JUDGE=false
 JUDGE_ONLY=false
 VERIFIER_DIR_OVERRIDE=""
+CONTAINER_CMD="docker"
+# docker and podman spell GPU passthrough differently: docker uses its own
+# --gpus flag, podman uses CDI device names from /etc/cdi/nvidia.yaml.
+GPU_FLAG="--gpus all"
 while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --claude-judge-only) RUN_CLAUDE_JUDGE=true; JUDGE_ONLY=true; shift ;;
         --codex-judge-only)  RUN_CODEX_JUDGE=true;  JUDGE_ONLY=true; shift ;;
         --judges-only)       RUN_CLAUDE_JUDGE=true; RUN_CODEX_JUDGE=true; JUDGE_ONLY=true; shift ;;
         --verifier-dir)      VERIFIER_DIR_OVERRIDE="$2"; shift 2 ;;
+        --podman)            CONTAINER_CMD="podman"; GPU_FLAG="--device nvidia.com/gpu=all"; shift ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -58,6 +71,18 @@ fi
 # Read data directory from docker-compose.yaml (the host path mounted to /app/data)
 COMPOSE="$TASK_DIR/environment/docker-compose.yaml"
 DATA_DIR=$(grep ':/app/data' "$COMPOSE" | sed 's|.*- ||; s|:/app/data.*||; s|^ *||')
+# Volume sources in docker-compose.yaml are relative to the compose file's own
+# directory (compose defines them that way, and it keeps the task portable across
+# the workstation and cluster paths). This script bypasses compose and builds its
+# own `docker run -v`, so it has to do that resolution itself -- otherwise the
+# check below fails from any cwd but harbor-tasks/<task>/environment/.
+# Resolving also makes DATA_DIR absolute, which `docker -v` requires: a relative
+# source is treated as a named volume rather than a bind mount, which would
+# silently hand the container an empty /app/data instead of erroring.
+case "$DATA_DIR" in
+    /*) ;;
+    *)  DATA_DIR=$(realpath -m "$(dirname "$COMPOSE")/$DATA_DIR") ;;
+esac
 if [ ! -d "$DATA_DIR" ]; then
     echo "Error: Data directory not found: $DATA_DIR (from $COMPOSE)"
     exit 1
@@ -67,9 +92,9 @@ fi
 # Default to verifier/snapshot; overridden for judge-only mode targeting a rerun dir.
 
 # Build Docker image if it doesn't exist
-if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+if ! "$CONTAINER_CMD" image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "Building Docker image $IMAGE_NAME..."
-    docker build -t "$IMAGE_NAME" "$TASK_DIR/environment"
+    "$CONTAINER_CMD" build -t "$IMAGE_NAME" "$TASK_DIR/environment"
 else
     echo "Using existing Docker image $IMAGE_NAME"
 fi
@@ -146,10 +171,13 @@ echo "=== Running Claude judge ==="
 cd "$CLAUDE_DIR"
 # IS_SANDBOX=1 allows claude to run --permission-mode bypassPermissions as root,
 # matching how Harbor runs the claude agent.
+# The model is pinned rather than using the bare `opus` alias, which gets
+# repointed as new models ship. An unpinned rerun would silently re-judge with a
+# different model than the one recorded in the trial being fixed. Matches test.sh.
 IS_SANDBOX=1 \
   CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
   claude -p "$(cat /tests/judge_instructions.md)" \
-    --model opus \
+    --model claude-opus-4-6 \
     --permission-mode bypassPermissions \
     --output-format stream-json \
     --no-session-persistence \
@@ -200,8 +228,8 @@ chown -R "$HOST_UID:$HOST_GID" /logs/verifier/ 2>/dev/null || true
 echo "=== Judge rerun complete ==="
 '
 
-    docker run --rm \
-        --gpus all \
+    "$CONTAINER_CMD" run --rm \
+        $GPU_FLAG \
         -e CLAUDE_CODE_OAUTH_TOKEN \
         -e CODEX_AUTH_JSON_B64 \
         -v "$SNAPSHOT_DIR":/app \
@@ -238,8 +266,8 @@ else
     #   - verifier output -> /logs/verifier
     #   - agent logs -> /logs/agent (for chown)
     # Claude and Codex CLIs are pre-installed in the Docker image.
-    docker run --rm \
-        --gpus all \
+    "$CONTAINER_CMD" run --rm \
+        $GPU_FLAG \
         -e CLAUDE_CODE_OAUTH_TOKEN \
         -e CODEX_AUTH_JSON_B64 \
         -v "$SNAPSHOT_DIR":/app \

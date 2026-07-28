@@ -184,10 +184,12 @@ mkdir -p "$CLAUDE_DIR"
 
 echo "=== Running Claude judge (unsupervised) ==="
 cd "$CLAUDE_DIR"
+# Pin the exact model, not the bare `opus` alias, which gets repointed as new
+# models ship and would silently change the grading basis. Matches test.sh.
 IS_SANDBOX=1 \
   CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
   claude -p "$(cat /tests/judge_instructions.md)" \
-    --model opus \
+    --model claude-opus-4-6 \
     --permission-mode bypassPermissions \
     --output-format stream-json \
     --no-session-persistence \

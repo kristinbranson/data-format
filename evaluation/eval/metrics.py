@@ -58,7 +58,10 @@ def display_name(ds):
     return DISPLAY_NAME.get(ds, ds[:1].upper() + ds[1:])
 
 SUPERVISED_DS   = ["allen2p", "lee2025", "majnik2025", "sosa2024"]
-UNSUPERVISED_DS = ["chen2024", "hasnain2024", "zhang2025", "zhong2025"]
+# chen2024 and zhong2025 were replaced by map and mouseland. The .tex tables in
+# figures/ dated 2026-05-12 were generated against the old set; regenerating them
+# needs a trial_metrics.json that covers the current tasks.
+UNSUPERVISED_DS = ["hasnain2024", "map", "mouseland", "zhang2025"]
 
 
 # %%
