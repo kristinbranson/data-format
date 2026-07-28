@@ -463,11 +463,19 @@ def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
                 on_disk = ({} if qid in stale
                            else disk_ratings.get(qid, {}).get((agent, n), {}))
                 rated = v.get("ratings") or {}
+
+                def cell(c, qid=qid, on_disk=on_disk, rated=rated):
+                    # The dossiers are authoritative: an un-rated question must
+                    # clear rather than keep a stale value. The one exception is
+                    # a renumbered question, where the dossiers cannot be joined
+                    # to this row at all and the file's own value stands.
+                    if on_disk.get(c):
+                        return on_disk[c]
+                    return (rated.get(c) or "—") if qid in stale else "—"
+
                 row_cells = [
                     f"{agent} / trial{n}",
-                    # Prefer the live dossier reading; fall back to what the
-                    # file already held (e.g. a rater folder that moved away).
-                    *[on_disk.get(c) or rated.get(c) or "—" for c in codes],
+                    *[cell(c) for c in codes],
                     v.get("claude") or "—",
                     v.get("codex") or "—",
                     v.get("best") or "—",
