@@ -19,9 +19,15 @@ import argparse
 import os
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 from pathlib import Path
+
+# Exit quietly when stdout is closed early (e.g. `--dry-run | head`), the way
+# standard Unix tools do, instead of raising BrokenPipeError.
+if hasattr(signal, "SIGPIPE"):
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RUN_HARBOR = REPO_ROOT / "harbor-scripts" / "run_harbor.sh"
@@ -33,7 +39,12 @@ QUEUE = "gpu_l4_large"
 SLOTS = 64
 GPUS = 1
 RAM_PER_SLOT_GB = 15
-WALL = "8:00"  # observed trials: 1.25 h median, 6.06 h max (mouseland)
+# Observed agent+verify time: 1.25 h median, 6.06 h max (mouseland). The two LLM
+# judges add roughly another hour on top of that (measured: ~25 min for the Claude
+# judge alone on sosa2024), which left almost no headroom at the previous 8:00.
+# LSF kills at the wall clock, so an overrun loses a trial that has already been
+# paid for in full. gpu_* queues allow up to 14 days.
+WALL = "24:00"
 
 # Must resolve identically on the workstation and on compute nodes, so /groups
 # rather than $HOME (workstation /home/<user>@hhmi.org vs cluster
@@ -89,24 +100,87 @@ def check() -> bool:
     errs = []
     if not RUN_HARBOR.is_file():
         errs.append(f"missing {RUN_HARBOR}")
-    for task in discover_tasks():
-        d = REPO_ROOT / "harbor-tasks" / task
-        if not (d / "task.toml").is_file():
-            errs.append(f"{task}: no task.toml")
-        if not (d / "environment" / "docker-compose.yaml").is_file():
-            errs.append(f"{task}: no docker-compose.yaml")
-    for d in (CLUSTER_LOG_DIR, CLUSTER_JOBS_DIR):
-        if not d.parent.is_dir():
-            errs.append(f"cannot create {d}: {d.parent} does not exist")
-    if shutil.which("bsub") is None and shutil.which("ssh") is None:
-        errs.append("neither bsub nor ssh available")
+    def report(ok, label, detail=""):
+        print(f"  [{'OK  ' if ok else 'FAIL'}] {label}{'  ' + detail if detail else ''}")
+        if not ok:
+            errs.append(label)
 
     ram = SLOTS * RAM_PER_SLOT_GB
     print(f"queue {QUEUE}: {SLOTS} slots x {RAM_PER_SLOT_GB} GB = {ram} GB, "
-          f"{GPUS} GPU, -W {WALL}")
-    print(f"tasks: {', '.join(discover_tasks())}")
-    for e in errs:
-        print(f"  FAIL: {e}", file=sys.stderr)
+          f"{GPUS} GPU, -W {WALL}\n")
+
+    # --- local ---
+    report(RUN_HARBOR.is_file(), "run_harbor.sh present", str(RUN_HARBOR))
+    report("--jobs-dir" in RUN_HARBOR.read_text() if RUN_HARBOR.is_file() else False,
+           "run_harbor.sh supports --jobs-dir",
+           "(required: concurrent jobs must not share a jobs dir)")
+
+    # --apikeys sources this; both keys must be defined or every job fails at startup
+    env_file = REPO_ROOT / ".env"
+    env_txt = env_file.read_text() if env_file.is_file() else ""
+    report(env_file.is_file(), ".env readable (needed by --apikeys)", str(env_file))
+    for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+        report(f"{key}=" in env_txt.replace("export ", ""), f".env defines {key}")
+
+    for d in (CLUSTER_LOG_DIR, CLUSTER_JOBS_DIR):
+        report(d.is_dir() or os.access(d.parent, os.W_OK), f"writable: {d}")
+
+    for task in discover_tasks():
+        d = REPO_ROOT / "harbor-tasks" / task
+        compose = d / "environment" / "docker-compose.yaml"
+        ok = (d / "task.toml").is_file() and compose.is_file()
+        detail = ""
+        if ok:
+            # the host side of the bind mount must exist, or the container starts empty
+            mounts = [ln.strip()[2:].split(":")[0].strip()
+                      for ln in compose.read_text().splitlines()
+                      if ln.strip().startswith("- ") and ":/app/" in ln]
+            # Existence here proves nothing about a compute node: only /groups,
+            # /nrs and /misc are mounted on both. /nearline in particular is
+            # visible from the workstation but NOT from compute nodes, so a
+            # dataset moved there would pass a naive check and fail every job.
+            problems = []
+            for m in mounts:
+                real = (compose.parent / m).resolve()
+                if not real.exists():
+                    problems.append(f"missing {m}")
+                elif str(real).startswith("/nearline"):
+                    problems.append(f"{m} -> {real} on /nearline, not mounted on compute nodes")
+                elif not str(real).startswith(("/groups/", "/nrs/", "/misc/")):
+                    problems.append(f"{m} -> {real} not on a cluster-visible filesystem")
+            ok, detail = not problems, "; ".join(problems)
+        report(ok, f"{task}: task.toml, compose, data mount", detail)
+
+    # --- cluster, in one round trip ---
+    if shutil.which("bsub") is not None:
+        report(True, "bsub on PATH (running on a submit host)")
+    elif shutil.which("ssh") is None:
+        report(False, "neither bsub nor ssh available")
+    else:
+        probe = ("command -v bsub >/dev/null && echo BSUB_OK; "
+                 "[ -x $HOME/miniforge3/envs/eval-data-format-podman/bin/harbor ] && echo ENV_OK; "
+                 "[ -d /groups/branson ] && echo GROUPS_OK; [ -d /nrs/branson ] && echo NRS_OK")
+        try:
+            out = subprocess.run(["ssh", "-o", "BatchMode=yes", "login1",
+                                  f"bash -l -c {shlex.quote(probe)}"],
+                                 capture_output=True, text=True, timeout=90,
+                                 stdin=subprocess.DEVNULL).stdout
+        except Exception as e:
+            out = ""
+            print(f"  [FAIL] ssh login1 failed: {e}")
+            errs.append("ssh login1")
+        report("BSUB_OK" in out, "bsub available on login1")
+        report("ENV_OK" in out, "conda env eval-data-format-podman on the cluster")
+        report("GROUPS_OK" in out, "/groups mounted on login1")
+        report("NRS_OK" in out, "/nrs mounted on login1 (mouseland, zhang2025 data)")
+
+    print()
+    if errs:
+        print(f"{len(errs)} check(s) FAILED", file=sys.stderr)
+    else:
+        print(f"all checks passed — ready to submit "
+              f"{len(discover_tasks())} tasks x {len(AGENTS)} agents x {DEFAULT_TRIALS} trials "
+              f"= {len(discover_tasks()) * len(AGENTS) * DEFAULT_TRIALS} jobs")
     return not errs
 
 

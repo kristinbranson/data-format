@@ -37,6 +37,10 @@ mkdir -p "$JUDGE_DIR"
 echo "=== [4/6] Setting up judge ==="
 
 # --- Claude Opus 4.6 ---
+# Pin the exact model rather than the bare `opus` alias: the alias is repointed as
+# new models ship (it silently moved to claude-opus-5), which would change the
+# grading basis mid-benchmark with no record of it in this file. Codex is already
+# pinned via -m below, so this makes the two judges symmetric.
 echo "=== [5/6] Claude judge ==="
 CLAUDE_DIR="$JUDGE_DIR/claude"
 mkdir -p "$CLAUDE_DIR"
@@ -50,7 +54,7 @@ CLAUDE_ENV="IS_SANDBOX=1"
 [ -n "${ANTHROPIC_API_KEY:-}" ] && CLAUDE_ENV="$CLAUDE_ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
 env $CLAUDE_ENV \
   claude -p "$(cat /tests/judge_instructions.md)" \
-    --model opus \
+    --model claude-opus-4-6 \
     --permission-mode bypassPermissions \
     --output-format stream-json \
     --no-session-persistence \

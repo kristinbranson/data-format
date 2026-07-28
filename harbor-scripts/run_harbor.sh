@@ -51,17 +51,57 @@ source $HOME/miniforge3/etc/profile.d/conda.sh
 conda activate eval-data-format-podman
 if [ "$USE_PODMAN" = true ]; then
   export REGISTRY_AUTH_FILE="$HOME/.config/containers/auth.json"
-  # On a batch node there is no systemd user session, so podman has nowhere to
-  # put its runtime state. The runroot must be per-job: a shared one goes stale
-  # across reboots ("boot ID differs"). The graphroot holds image layers and is
-  # deliberately shared per node so a second job skips the ~7 min image build.
+  # On a batch node there is no systemd user session and no per-job container
+  # state. Redirecting podman requires CONFIG FILES: CONTAINERS_RUNROOT and
+  # CONTAINERS_GRAPHROOT are not env vars podman reads, and an explicit runroot
+  # in ~/.config/containers/storage.conf overrides XDG_RUNTIME_DIR.
+  # The split matters: runroot and tmp_dir are PER JOB, because a shared runroot
+  # goes stale when the node reboots ("current system boot ID differs from cached
+  # boot ID"); graphroot is shared per node so a second job on the same host
+  # reuses cached layers instead of repeating the ~7 min image build.
   if [ -n "${LSB_JOBID:-}" ]; then
-    export XDG_RUNTIME_DIR="/scratch/$USER/podman-run-$LSB_JOBID"
-    export TMPDIR="/scratch/$USER/podman-tmp-$LSB_JOBID"
-    mkdir -p "$XDG_RUNTIME_DIR" "$TMPDIR" "/scratch/$USER/podman-storage"
-    export CONTAINERS_RUNROOT="$XDG_RUNTIME_DIR"
-    export CONTAINERS_GRAPHROOT="/scratch/$USER/podman-storage"
-    trap 'rm -rf "$XDG_RUNTIME_DIR" "$TMPDIR"' EXIT
+    PODMAN_JOB_DIR="/scratch/$USER/podman-$LSB_JOBID"
+    PODMAN_GRAPHROOT="/scratch/$USER/podman-storage"
+    mkdir -p "$PODMAN_JOB_DIR/run" "$PODMAN_JOB_DIR/tmp" "$PODMAN_GRAPHROOT"
+    cat > "$PODMAN_JOB_DIR/storage.conf" <<EOF
+[storage]
+driver = "overlay"
+runroot = "$PODMAN_JOB_DIR/run"
+graphroot = "$PODMAN_GRAPHROOT"
+[storage.options]
+mount_program = "/usr/bin/fuse-overlayfs"
+EOF
+    cat > "$PODMAN_JOB_DIR/containers.conf" <<EOF
+[engine]
+# crun defaults to the systemd cgroup manager, which needs a D-Bus session bus.
+# A batch node has none, so container creation dies with
+# "sd-bus call: Interactive authentication required".
+cgroup_manager = "cgroupfs"
+tmp_dir = "$PODMAN_JOB_DIR/tmp"
+EOF
+    export CONTAINERS_STORAGE_CONF="$PODMAN_JOB_DIR/storage.conf"
+    export CONTAINERS_CONF="$PODMAN_JOB_DIR/containers.conf"
+    export XDG_RUNTIME_DIR="$PODMAN_JOB_DIR/run"
+    echo "podman: runroot=$PODMAN_JOB_DIR/run graphroot=$PODMAN_GRAPHROOT"
+    # Rootless podman leaves a `catatonit -P` pause process holding the user
+    # namespace. It reparents to init and never exits, so LSF keeps the job in
+    # RUN long after the work is done -- a whole node held until the wall clock
+    # kills it. Kill it by the pid podman recorded, and only if that pid really
+    # is catatonit, so a recycled pid can never be hit.
+    cleanup_podman_job() {
+      local pidfile pid
+      for pidfile in "$PODMAN_JOB_DIR/tmp/pause.pid" \
+                     "$PODMAN_JOB_DIR/run/libpod/tmp/pause.pid"; do
+        [ -f "$pidfile" ] || continue
+        pid=$(cat "$pidfile" 2>/dev/null)
+        if [ -n "$pid" ] && [ "$(ps -p "$pid" -o comm= 2>/dev/null)" = "catatonit" ]; then
+          echo "podman: stopping pause process $pid"
+          kill "$pid" 2>/dev/null || true
+        fi
+      done
+      rm -rf "$PODMAN_JOB_DIR"
+    }
+    trap cleanup_podman_job EXIT
   fi
 fi
 
