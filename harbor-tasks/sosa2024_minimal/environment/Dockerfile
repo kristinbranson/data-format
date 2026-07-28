@@ -19,11 +19,16 @@ RUN pip install --no-cache-dir numpy scipy matplotlib tqdm opencv-python \
     allensdk@git+https://github.com/AllenInstitute/AllenSDK.git \
     sentence-transformers
 
-# Install Claude CLI and Codex CLI for LLM judge (verifier)
-RUN curl -fsSL https://claude.ai/install.sh | bash
+# Install Claude CLI and Codex CLI for LLM judge (verifier).
+# Versions are pinned to match harbor-scripts/config_20260728.json (judges block)
+# and tests/versions.json. Unpinned installers gave the archived runs 5 Claude
+# Code versions and 3 Codex versions across trials that get pooled in one
+# analysis, and a drifted harness emits session events harbor cannot convert.
+# Keep these in step with the config by hand -- a Dockerfile cannot read it.
+RUN curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.81
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
-    && npm i -g @openai/codex
+    && npm i -g @openai/codex@0.116.0
 ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app

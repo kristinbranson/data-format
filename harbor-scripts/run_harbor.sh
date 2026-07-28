@@ -7,9 +7,13 @@ TASK=""
 USE_PODMAN=false
 USE_APIKEYS=false
 ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env"
-CONFIG_FILE=""
 GPUIDS=""
 JOBS_ROOT=""
+# Pinned harness/model versions. Dated configs; newest wins unless --versions
+# says otherwise, and the choice is echoed below so the run log records it.
+VERSIONS_FILE=""
+
+USAGE="Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--versions FILE] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -17,19 +21,19 @@ while [[ $# -gt 0 ]]; do
     --ntrials)  NTRIALS="$2"; shift 2 ;;
     --nconcurrent) NCONCURRENT="$2"; shift 2 ;;
     --task)     TASK="$2"; shift 2 ;;
-    --config)   CONFIG_FILE="$2"; shift 2 ;;
+    --versions) VERSIONS_FILE="$2"; shift 2 ;;
     --gpuids)   GPUIDS="$2"; shift 2 ;;
     --jobs-dir) JOBS_ROOT="$2"; shift 2 ;;
     --podman)   USE_PODMAN=true; shift ;;
     --apikeys)  USE_APIKEYS=true; shift ;;
     --env)      ENV_FILE="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
+      echo "$USAGE"
       exit 0
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--config FILE] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
+      echo "$USAGE"
       exit 1
       ;;
   esac
@@ -140,26 +144,74 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HARBOR_TASKS="$(cd "$SCRIPT_DIR/../harbor-tasks" && pwd)"
 
-if [ -n "$CONFIG_FILE" ]; then
-  harbor run -c "$CONFIG_FILE" -o "$JOBS_DIR" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
-else
-  case "$AGENT" in
-    claude)
-      harbor run -p "$HARBOR_TASKS" -a "claude-code" -m "claude-opus-4-6" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
-      ;;
-    codex)
-      harbor run -p "$HARBOR_TASKS" -a "codex" -m "gpt-5.4" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
-      ;;
-    oracle)
-      harbor run -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
-      ;;
-    *)
-      echo "Unknown agent: $AGENT"
-      echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman]"
-      exit 1
-      ;;
-  esac
+# Resolve the versions config: explicit --versions, else the newest dated one.
+# Defaulting to newest keeps existing callers working, but the file used is
+# echoed so a run log always records which pins were in force.
+if [ -z "$VERSIONS_FILE" ]; then
+  VERSIONS_FILE=$(ls -1 "$SCRIPT_DIR"/config_*.json 2>/dev/null | sort | tail -1)
 fi
+if [ ! -f "$VERSIONS_FILE" ]; then
+  echo "ERROR: no versions config found (looked for $SCRIPT_DIR/config_*.json)."
+  echo "       Pass one with --versions FILE."
+  exit 1
+fi
+echo "versions: $VERSIONS_FILE"
+
+# Keep the generated files in step with the config automatically -- the task
+# Dockerfiles and tests/versions.json cannot read it at runtime, so a bumped
+# config would otherwise leave agents on the new harness and judges on the old.
+# Under LSF only verify: the 48 jobs of a sweep share this checkout, so writers
+# would race; submit_harbor_cluster.py applies once before any job starts.
+# Failure is fatal either way -- a warning in a batch log is a warning nobody
+# reads, and the result would be a silently split run.
+if [ -n "${LSB_JOBID:-}" ]; then
+  python3 "$SCRIPT_DIR/apply_versions.py" --check --versions "$VERSIONS_FILE" \
+    || { echo "ERROR: generated files are out of step with $VERSIONS_FILE."; exit 1; }
+else
+  python3 "$SCRIPT_DIR/apply_versions.py" --versions "$VERSIONS_FILE" \
+    || { echo "ERROR: could not apply $VERSIONS_FILE."; exit 1; }
+fi
+
+# Read one field for one agent out of the config. Fails loudly rather than
+# returning an empty string, since an empty -m or --ak silently unpins the run.
+read_pin() {  # $1 = agent key (claude|codex), $2 = field
+  python3 -c '
+import json, sys
+cfg, agent, field = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    value = json.load(open(cfg))["tools"][agent][field]
+except (KeyError, ValueError, OSError) as exc:
+    sys.exit(f"versions config {cfg}: cannot read tools.{agent}.{field}: {exc}")
+if not value:
+    sys.exit(f"versions config {cfg}: tools.{agent}.{field} is empty")
+print(value)' "$VERSIONS_FILE" "$1" "$2" || exit 1
+}
+
+# No `harbor run -c` path: a job config would bypass the pins above, and harbor's
+# -a flag wipes a config's `agents` list outright, so combining them silently
+# drops the version pins. Everything goes through the flags below.
+case "$AGENT" in
+  claude)
+    MODEL=$(read_pin claude model) || exit 1
+    HARNESS=$(read_pin claude harness_version) || exit 1
+    echo "agent: claude-code harness=$HARNESS model=$MODEL"
+    harbor run -p "$HARBOR_TASKS" -a "claude-code" -m "$MODEL" --ak version="$HARNESS" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+    ;;
+  codex)
+    MODEL=$(read_pin codex model) || exit 1
+    HARNESS=$(read_pin codex harness_version) || exit 1
+    echo "agent: codex harness=$HARNESS model=$MODEL"
+    harbor run -p "$HARBOR_TASKS" -a "codex" -m "$MODEL" --ak version="$HARNESS" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+    ;;
+  oracle)
+    harbor run -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+    ;;
+  *)
+    echo "Unknown agent: $AGENT"
+    echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman]"
+    exit 1
+    ;;
+esac
 HARBOR_RC=$?
 [ "$HARBOR_RC" -ne 0 ] && echo "WARNING: harbor run exited $HARBOR_RC"
 

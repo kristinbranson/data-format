@@ -66,7 +66,7 @@ Results land in `~/harbor-tasks/data-format/jobs/<task>/<agent>/<timestamp>_tria
 - `verifier/metrics.json` — quantitative scores (decoder accuracy, dataset-stat match, judge rewards)
 - `verifier/judge/{claude,codex}/` — the LLM judges' decisions
 
-To run a real LLM agent instead of the oracle, swap --agent oracle for --agent claude or --agent codex (requires ANTHROPIC_API_KEY / OPENAI_API_KEY in env, or --apikeys pointing at a .env file). To sweep multiple tasks × agents, see harbor-scripts/job_config.yaml.
+To run a real LLM agent instead of the oracle, swap --agent oracle for --agent claude or --agent codex (requires ANTHROPIC_API_KEY / OPENAI_API_KEY in env, or --apikeys pointing at a .env file). To sweep multiple tasks × agents, use harbor-scripts/submit_harbor_cluster.py, which submits one cluster job per (task, agent, trial). Harness and model versions are pinned in harbor-scripts/config_<YYYYMMDD>.json.
 
 The smallest tasks for first-run testing are lee2025 (15 GB) and hasnain2024 (16 GB); the largest is zhang2025 (566 GB). Full benchmark download is ~1.4 TB — see Data sources and downloading below.
 

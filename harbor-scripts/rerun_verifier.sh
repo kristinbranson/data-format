@@ -52,6 +52,16 @@ while [[ "${1:-}" == --* ]]; do
     esac
 done
 
+# A judge-only rerun never touches the GPU: the decoder training that needs one
+# lives in test_outputs.py, which this mode skips. The judges only read files and
+# call an API. Requesting a GPU anyway makes the run depend on the host's CDI
+# spec being parseable by the local podman -- skew between nvidia-container-toolkit
+# and podman shows up as "unresolvable CDI devices" and kills the run before the
+# container starts, for a device nothing was going to use.
+if [ "$JUDGE_ONLY" = true ]; then
+    GPU_FLAG=""
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -61,6 +71,27 @@ TRIAL_DIR="${1:?Usage: $0 [--claude-judge-only|--codex-judge-only|--judges-only]
 TASK_NAME="$(basename "$(dirname "$(dirname "$TRIAL_DIR")")")"
 TASK_DIR="$REPO_DIR/harbor-tasks/$TASK_NAME"
 IMAGE_NAME="hb__${TASK_NAME}-reverify"
+
+# Keep the task Dockerfile in step with the pinned versions before building, and
+# fold those versions into the image tag. Without the tag, a version bump would
+# silently reuse the image built from the previous Dockerfile, because the build
+# below is skipped whenever the tag already exists.
+VERSIONS_FILE="${VERSIONS_FILE:-$(ls -1 "$SCRIPT_DIR"/config_*.json 2>/dev/null | sort | tail -1)}"
+if [ -f "$VERSIONS_FILE" ]; then
+    python3 "$SCRIPT_DIR/apply_versions.py" --versions "$VERSIONS_FILE" >/dev/null \
+        || { echo "Error: could not apply $VERSIONS_FILE"; exit 1; }
+    read_harness() {  # $1 = tool key
+        python3 -c "
+import json, sys
+print(json.load(open(sys.argv[1]))['tools'][sys.argv[2]]['harness_version'])" \
+            "$VERSIONS_FILE" "$1"
+    }
+    IMAGE_TAG="claude-$(read_harness claude)_codex-$(read_harness codex)"
+    IMAGE_NAME="${IMAGE_NAME}:${IMAGE_TAG}"
+    echo "versions: $VERSIONS_FILE  ->  $IMAGE_NAME"
+else
+    echo "Warning: no config_*.json found; image tag will not record harness versions"
+fi
 
 if [ ! -d "$TASK_DIR" ]; then
     echo "Error: Task directory not found: $TASK_DIR"
@@ -159,6 +190,21 @@ if [ "$JUDGE_ONLY" = true ]; then
     JUDGE_SCRIPT='
 export PATH="$HOME/.local/bin:$PATH"
 JUDGE_DIR=/logs/verifier/judge
+
+# Judge models come from /tests/versions.json, which ships in with the tests.
+# Fall back to the literals so a task whose tests predate versions.json still
+# runs rather than invoking the judge with an empty model flag.
+read_judge_model() {  # $1 = judge key, $2 = fallback
+  python3 -c "
+import json, sys
+try:
+    print(json.load(open('"'"'/tests/versions.json'"'"'))['"'"'tools'"'"'][sys.argv[1]]['"'"'model'"'"'])
+except Exception:
+    print(sys.argv[2])" "$1" "$2"
+}
+CLAUDE_JUDGE_MODEL=$(read_judge_model claude claude-opus-4-6)
+CODEX_JUDGE_MODEL=$(read_judge_model codex gpt-5.4)
+echo "judge models: claude=$CLAUDE_JUDGE_MODEL codex=$CODEX_JUDGE_MODEL"
 '
 
     if [ "$RUN_CLAUDE_JUDGE" = true ]; then
@@ -177,7 +223,7 @@ cd "$CLAUDE_DIR"
 IS_SANDBOX=1 \
   CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN" \
   claude -p "$(cat /tests/judge_instructions.md)" \
-    --model claude-opus-4-6 \
+    --model "$CLAUDE_JUDGE_MODEL" \
     --permission-mode bypassPermissions \
     --output-format stream-json \
     --no-session-persistence \
@@ -206,7 +252,7 @@ fi
 echo "=== Running Codex judge ==="
 cd "$CODEX_DIR"
 codex exec "$(cat /tests/judge_instructions.md)" \
-    -m gpt-5.4 \
+    -m "$CODEX_JUDGE_MODEL" \
     --dangerously-bypass-approvals-and-sandbox \
     --json \
     --ephemeral \

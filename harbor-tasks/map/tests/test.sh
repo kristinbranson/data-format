@@ -36,11 +36,25 @@ mkdir -p "$JUDGE_DIR"
 
 echo "=== [4/6] Setting up judge ==="
 
-# --- Claude Opus 4.6 ---
-# Pin the exact model rather than the bare `opus` alias: the alias is repointed as
-# new models ship (it silently moved to claude-opus-5), which would change the
-# grading basis mid-benchmark with no record of it in this file. Codex is already
-# pinned via -m below, so this makes the two judges symmetric.
+# Judge models come from /tests/versions.json, shipped in with the tests so the
+# container has them (it cannot read the host config). Pinning the exact model
+# rather than an alias matters: `opus` is repointed as new models ship -- it
+# silently moved to claude-opus-5 -- which would change the grading basis with no
+# record of it. Fall back to the literals so a task whose tests predate
+# versions.json still runs, rather than judging with an empty --model.
+JUDGE_VERSIONS=/tests/versions.json
+read_judge_model() {  # $1 = judge key (claude|codex), $2 = fallback model
+  python3 -c "
+import json, sys
+try:
+    print(json.load(open('$JUDGE_VERSIONS'))['judges'][sys.argv[1]]['model'])
+except Exception:
+    print(sys.argv[2])" "$1" "$2"
+}
+CLAUDE_JUDGE_MODEL=$(read_judge_model claude claude-opus-4-6)
+CODEX_JUDGE_MODEL=$(read_judge_model codex gpt-5.4)
+echo "judge models: claude=$CLAUDE_JUDGE_MODEL codex=$CODEX_JUDGE_MODEL"
+
 echo "=== [5/6] Claude judge ==="
 CLAUDE_DIR="$JUDGE_DIR/claude"
 mkdir -p "$CLAUDE_DIR"
@@ -54,7 +68,7 @@ CLAUDE_ENV="IS_SANDBOX=1"
 [ -n "${ANTHROPIC_API_KEY:-}" ] && CLAUDE_ENV="$CLAUDE_ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
 env $CLAUDE_ENV \
   claude -p "$(cat /tests/judge_instructions.md)" \
-    --model claude-opus-4-6 \
+    --model "$CLAUDE_JUDGE_MODEL" \
     --permission-mode bypassPermissions \
     --output-format stream-json \
     --no-session-persistence \
@@ -82,7 +96,7 @@ fi
 
 cd "$CODEX_DIR"
 codex exec "$(cat /tests/judge_instructions.md)" \
-    -m gpt-5.4 \
+    -m "$CODEX_JUDGE_MODEL" \
     --dangerously-bypass-approvals-and-sandbox \
     --json \
     --ephemeral \

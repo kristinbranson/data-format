@@ -1,0 +1,48 @@
+{
+  "_comment": [
+    "Pinned harness (CLI) and model versions for runs from 2026-07-28.",
+    "Dated rather than mutable: the config that produced a set of results stays",
+    "readable alongside them. Start a new config_<YYYYMMDD>.json when bumping.",
+    "",
+    "Data collected before 20260728 did NOT pin the harness, and those jobs span",
+    "several harness versions (claude-code 2.1.72-2.1.97, codex 0.114.0-0.118.0).",
+    "",
+    "Chosen values are the most-used in harbor-jobs (claude-code 2.1.81: 8 trials,",
+    "codex 0.116.0: 12 trials), so new runs stay comparable to the published",
+    "results rather than to a version nothing was published on.",
+    "",
+    "ONE entry per tool, deliberately: the agent and the judge share /root/.local/bin",
+    "inside the trial container, so whichever installs last wins. Separate agent and",
+    "judge versions could therefore never be honoured reliably -- and a single field",
+    "makes 'agent and judge run the same CLI' true by construction rather than by",
+    "remembering to keep two numbers equal.",
+    "",
+    "Consumed at runtime by run_harbor.sh (model via -m, harness via --ak version=)",
+    "and by the judge paths (test.sh, rerun_verifier.sh, run_unsupervised_judges.sh)",
+    "via tests/versions.json, which is generated from this file.",
+    "",
+    "Two places cannot read it and carry the values literally: each task's",
+    "environment/Dockerfile (installs the judge CLIs at image build time) and each",
+    "task's tests/versions.json. Do NOT edit those by hand -- edit this file, then:",
+    "",
+    "    python harbor-scripts/apply_versions.py           # rewrite all 36",
+    "    python harbor-scripts/apply_versions.py --check   # report drift, exit 1",
+    "",
+    "To bump: copy this to config_<newdate>.json, change the versions, run",
+    "apply_versions.py. Image layers after the CLI installs rebuild (~1-2 min);",
+    "the expensive pip layers above them stay cached."
+  ],
+
+  "tools": {
+    "claude": {
+      "harbor_agent": "claude-code",
+      "harness_version": "2.1.81",
+      "model": "claude-opus-4-6"
+    },
+    "codex": {
+      "harbor_agent": "codex",
+      "harness_version": "0.116.0",
+      "model": "gpt-5.4"
+    }
+  }
+}

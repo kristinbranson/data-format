@@ -20,10 +20,12 @@ RUN pip install --no-cache-dir numpy scipy matplotlib tqdm opencv-python \
     sentence-transformers
 
 # Install Claude CLI and Codex CLI for LLM judge (verifier)
-RUN curl -fsSL https://claude.ai/install.sh | bash
+# Versions pinned to match harbor-scripts/config_20260728.json (judges block).
+# This Dockerfile is excluded from sync_template.py, so keep it in step by hand.
+RUN curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.81
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
-    && npm i -g @openai/codex
+    && npm i -g @openai/codex@0.116.0
 ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app

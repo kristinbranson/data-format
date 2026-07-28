@@ -29,6 +29,10 @@ ALL_DEST_DIRS = TASK_DIRS + STAGING_DIRS
 # Paths are relative to the task directory.
 SHARED_FILES = [
     "task.toml",
+    # Judge model pins, shipped into the container as /tests/versions.json because
+    # the verifier cannot read the host config. Generated from the dated config in
+    # harbor-scripts/; regenerate there, then sync.
+    "tests/versions.json",
     "tests/compute_reward.py",
     "tests/decoder.py",
     "tests/test_outputs.py",

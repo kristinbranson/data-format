@@ -61,17 +61,39 @@ def discover_tasks() -> list[str]:
                   if p.is_dir() and p.name.endswith("_minimal"))
 
 
-def build_job(task: str, agent: str, trial: int) -> tuple[str, str, Path]:
-    """Return (job_name, bsub command line, log path) for one trial."""
+def newest_versions_config() -> Path | None:
+    """Return the newest dated harness/model pin config, or None if there is none.
+
+    Configs are named config_<YYYYMMDD>.json so a lexical sort is chronological.
+    """
+    configs = sorted((REPO_ROOT / "harbor-scripts").glob("config_*.json"))
+    return configs[-1] if configs else None
+
+
+def build_job(task: str, agent: str, trial: int,
+              versions: Path | None = None) -> tuple[str, str, Path]:
+    """Return (job_name, bsub command line, log path) for one trial.
+
+    Args:
+        task: harbor task directory name.
+        agent: "claude" or "codex".
+        trial: 1-based repeat number, used only in the job name.
+        versions: harness/model pin config to pass through to run_harbor.sh.
+            Resolved once by the caller and passed explicitly to every job --
+            run_harbor.sh would otherwise pick the newest config itself, so a new
+            one appearing mid-sweep would silently split the run across two
+            configurations.
+    """
     job_name = f"hb_{task}_{agent}_t{trial}"
     log_path = CLUSTER_LOG_DIR / f"{job_name}.log"
     jobs_dir = CLUSTER_JOBS_DIR / job_name
 
+    versions_flag = f" --versions {shlex.quote(str(versions))}" if versions else ""
     inner = (
         f"bash {shlex.quote(str(RUN_HARBOR))} "
         f"--task {shlex.quote(task)} --agent {shlex.quote(agent)} "
         f"--ntrials 1 --nconcurrent 1 --podman --apikeys "
-        f"--jobs-dir {shlex.quote(str(jobs_dir))}"
+        f"--jobs-dir {shlex.quote(str(jobs_dir))}{versions_flag}"
     )
     bsub = (
         f'bsub -n {SLOTS} -gpu "num={GPUS}" -q {QUEUE} -W {WALL} '
@@ -111,6 +133,9 @@ def check() -> bool:
 
     # --- local ---
     report(RUN_HARBOR.is_file(), "run_harbor.sh present", str(RUN_HARBOR))
+    cfg = newest_versions_config()
+    report(cfg is not None, "harness/model pin config present",
+           str(cfg) if cfg else "(none: versions would be unpinned)")
     report("--jobs-dir" in RUN_HARBOR.read_text() if RUN_HARBOR.is_file() else False,
            "run_harbor.sh supports --jobs-dir",
            "(required: concurrent jobs must not share a jobs dir)")
@@ -192,12 +217,32 @@ def main():
     parser.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     parser.add_argument("--start", type=int, default=0, help="skip the first N jobs")
     parser.add_argument("--limit", type=int, default=None, help="submit at most N jobs")
+    parser.add_argument("--versions", type=Path, default=None,
+                        help="harness/model pin config (default: newest "
+                             "harbor-scripts/config_*.json)")
     parser.add_argument("--check", action="store_true", help="validate only")
     parser.add_argument("--dry-run", "-n", action="store_true", help="print, do not submit")
     args = parser.parse_args()
 
     if args.check:
         sys.exit(0 if check() else 1)
+
+    # Resolve once so every job in this sweep gets the same pins, even if a
+    # newer config lands while the sweep is still submitting.
+    versions = args.versions or newest_versions_config()
+    if versions is None:
+        print("WARNING: no harbor-scripts/config_*.json found -- harness and "
+              "model versions will be unpinned", file=sys.stderr)
+    elif not args.dry_run:
+        # Apply here, once, before any job starts. The task Dockerfiles cannot
+        # read the config and are baked into images built inside the jobs, so a
+        # bumped config must reach them first. The jobs themselves only verify --
+        # 48 of them share this checkout and would race as writers.
+        rc = subprocess.call([sys.executable,
+                              str(REPO_ROOT / "harbor-scripts" / "apply_versions.py"),
+                              "--versions", str(versions)])
+        if rc != 0:
+            sys.exit(f"apply_versions.py failed ({rc}); not submitting")
 
     tasks = args.tasks or discover_tasks()
     jobs = [(t, a, i) for t in tasks for a in args.agents
@@ -212,9 +257,10 @@ def main():
 
     print(f"{'Would submit' if args.dry_run else 'Submitting'} {len(jobs)} jobs "
           f"to {QUEUE} (-n {SLOTS} -gpu num={GPUS} -W {WALL})")
+    print(f"versions: {versions}")
     failed = 0
     for task, agent, trial in jobs:
-        job_name, bsub_cmd, _ = build_job(task, agent, trial)
+        job_name, bsub_cmd, _ = build_job(task, agent, trial, versions)
         if args.dry_run:
             print(f"  {bsub_cmd}")
             continue

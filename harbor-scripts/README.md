@@ -49,7 +49,7 @@ run_harbor.sh --agent oracle --task sosa2024
 Results go to `~/harbor-tasks/data-format/jobs/raw/` then get reorganized into
 `jobs/<task>/<agent>/<timestamp>_trial<N>/`.
 
-Options: `--nconcurrent N`, `--gpuids LIST`, `--podman`, `--apikeys`, `--config FILE`.
+Options: `--nconcurrent N`, `--gpuids LIST`, `--podman`, `--apikeys`, `--versions FILE`, `--jobs-dir DIR`.
 
 **submit_harbor_cluster.py** — Submit the `_minimal` tasks to the Janelia cluster,
 one bsub job per (task, agent, trial). Each job takes a **whole `gpu_l4_large`
@@ -72,7 +72,8 @@ Logs go to `/groups/branson/home/bransonk/cluster_logs/harbor/`, results to
 `/groups` because `$HOME` differs between workstation and cluster. Each job gets
 its own `--jobs-dir`, which is required: `run_harbor.sh`'s reorganization step
 picks the newest timestamped run dir, so jobs sharing one would steal each
-other's trials. `-W 8:00` covers observed durations (1.25 h median, 6.06 h max).
+other's trials. `-W 24:00` covers observed durations (1.25 h median, 6.06 h max)
+plus the two LLM judges, which add roughly an hour on top of the trial itself.
 Roughly 85 GPU-hours ≈ $282 for a full sweep.
 
 Podman on a batch node needs a **per-job runroot** (a shared one goes stale
@@ -81,17 +82,49 @@ graphroot** (`/scratch/$USER/podman-storage`), so the second job on a node skips
 the ~7 minute image build. `run_harbor.sh --podman` sets both when `LSB_JOBID`
 is present. `gpu_ids.py` is *not* needed on these single-GPU nodes.
 
-**job_config.yaml** — Harbor batch-config for running all tasks across both
-agents (claude-code and codex) in one `harbor run -c` invocation. Useful for
-the full eval sweep; for one-off task/agent runs use `run_harbor.sh` directly.
+**config_&lt;YYYYMMDD&gt;.json** — Pinned harness (CLI) and model versions, the single
+source of truth for what a run actually executes. `run_harbor.sh` reads it and
+passes the model via `-m` and the harness via `--ak version=`; the judge paths
+read the same values from `tests/versions.json`, which is generated from it and
+shipped into the container.
 ```
-harbor run -c harbor-scripts/job_config.yaml                         # all tasks, both agents
-harbor run -c harbor-scripts/job_config.yaml -t hasnain2024          # one task
-harbor run -c harbor-scripts/job_config.yaml --ek use_podman=true    # podman instead of docker
+run_harbor.sh --agent claude --task sosa2024            # newest config_*.json
+run_harbor.sh --agent claude --task sosa2024 --versions harbor-scripts/config_20260728.json
 ```
-Edit the `task_names:` list in the yaml to control which tasks are included.
-Auth env vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) must be set in the
-shell before running, or use `run_harbor.sh --apikeys` instead.
+Dated rather than mutable, so the config that produced a set of results stays
+readable alongside them; start a new `config_<YYYYMMDD>.json` when bumping.
+`run_harbor.sh` echoes which file it used, and `submit_harbor_cluster.py`
+resolves it once per sweep so a new config landing mid-submission cannot split
+the run across two configurations.
+
+Note that jobs before 20260728 were run without pinned harnesses, and have a variety of
+values here. This matters most in the minimal prompt versions, since there was a several
+month gap.
+
+One entry per tool, not separate agent/judge entries: they share
+`/root/.local/bin` inside the trial container, so whichever installs last wins.
+A single field makes "agent and judge run the same CLI" true by construction.
+
+**apply_versions.py** — Propagate a config to the two places that cannot read
+one at runtime: each task's `environment/Dockerfile` (installs the judge CLIs at
+image build time) and each task's `tests/versions.json` (ships into the verifier
+container). 36 files; never edit them by hand.
+```
+python apply_versions.py                    # apply the newest config_*.json
+python apply_versions.py --check            # report drift, exit 1 if any
+python apply_versions.py --versions harbor-scripts/config_20260728.json
+```
+To bump a version: copy the config to `config_<newdate>.json`, edit the
+versions, run `apply_versions.py`.
+
+You do not normally invoke it: `run_harbor.sh` applies the config itself when
+run locally, and only *verifies* under LSF (the jobs of a sweep share one
+checkout, so concurrent writers would race); `submit_harbor_cluster.py` applies
+once before submitting, because task Dockerfiles are baked into images built
+inside the jobs. Both abort on failure rather than warning — the failure mode is
+a run where agents use the new harness and judges the old one. Covers `allen2p`/`allen2p_minimal`, which
+`sync_template.py` excludes. Only layers below the CLI installs rebuild
+(~1-2 min); the pip layers above them stay cached.
 
 ### Checking health
 
@@ -111,6 +144,32 @@ Shows unmerged verifier reruns.
 check_status.sh                  # all tasks
 check_status.sh sosa2024 claude  # filter by task/agent
 ```
+Both scan `<jobs_root>/<task>/<agent>/<timestamp>_trial<N>/`; cluster results have
+an extra per-job level (`harbor-cluster-jobs/hb_<task>_<agent>_t<N>/...`).
+
+**rebuild_trajectories.py** — Rebuild `agent/trajectory.json` for trials where
+harbor's converter failed. Harbor converts the agent's raw session files to ATIF
+after the run, and that conversion can fail while the trial itself succeeds — the
+failure is printed, never raised — leaving a complete, scored trial with no
+trajectory. This re-runs the converter over the session files preserved in the
+trial output, so nothing has to be re-run.
+```
+python rebuild_trajectories.py --dry-run --jobs-root <dir>   # report only
+python rebuild_trajectories.py --jobs-root <dir>
+python rebuild_trajectories.py --trial <trial_dir>
+```
+Recovers 6 of the 2026-07-27 sweep's 10 missing trajectories; the rest are dead
+runs with no session files. Oracle trials never have one (no LLM session).
+
+> **Depends on an out-of-repo patch.** The conversion bug is in the vendored
+> harbor checkout at `codepacks/harbor-kai` (`078c4db`), not here: skipped events
+> still consumed a `step_id`, leaving a gap that ATIF's "sequential from 1"
+> validator rejected, so an otherwise-fine trajectory was discarded. Fixed in
+> `agents/installed/claude_code.py` and `codex.py` by numbering from the output
+> rather than the input. Re-cloning or updating that checkout loses the fix and
+> trajectories start being silently dropped again. It only triggers when the
+> agent harness drifts far enough to emit events harbor cannot map, which is what
+> pinning the harness now prevents.
 
 ### Re-running verification
 
@@ -121,9 +180,27 @@ rerun_verifier.sh --claude-judge-only <trial_dir>    # rerun claude judge only
 rerun_verifier.sh --codex-judge-only <trial_dir>     # rerun codex judge only
 rerun_verifier.sh --judges-only <trial_dir>          # rerun both judges
 rerun_verifier.sh --verifier-dir <dir> <trial_dir>   # target a specific verifier dir
+rerun_verifier.sh --podman <trial_dir>               # required for trials on /groups
 ```
 In judge-only mode, automatically targets the newest unmerged `verifier_rerun_*/`
-directory if one exists, otherwise targets `verifier/`.
+directory if one exists, otherwise targets `verifier/`. **Judge-only mode writes
+into `verifier/` in place** — it does not stage a rerun directory, so the
+previous judge output is replaced and no merge step is needed. Copy `verifier/`
+first if you want a before/after comparison.
+
+`--podman` is required for trials stored under `/groups` or `/nrs`: docker runs
+the container as real root and those NFS mounts are root-squashed, so every
+write the verifier makes is denied. Rootless podman maps container-root to your
+UID, which is how the cluster jobs write there. Judge-only runs drop the GPU
+request, since only the decoder training in `test_outputs.py` needs one and a
+GPU request makes the run depend on the host CDI spec being parseable.
+
+The image is tagged with the pinned harness versions
+(`hb__<task>-reverify:claude-<ver>_codex-<ver>`) and the config is applied
+before building, so a version bump rebuilds automatically instead of silently
+reusing an image built with the old CLI. Deleting the image by hand is only
+needed after changing `test_outputs.py` or other test code, which is not in the
+tag.
 
 **merge_rerun_verifier.sh** — Merge a verifier rerun into the original verifier directory.
 ```
@@ -204,7 +281,12 @@ Syncs the following files:
 
 After updating any of these files, use this to propagate changes. 
 
-If `Dockerfile` is changed: Delete old docker images (`docker image rm hb__<task>-reverify`)
+If `Dockerfile` is changed: reverify images are tagged with the pinned harness
+versions, so a **version** bump rebuilds on its own. Any other Dockerfile edit is
+not in the tag — delete the stale images first
+(`docker image rm hb__<task>-reverify:<tag>`, or `podman` if that is what built them).
+Note `tests/versions.json` and the `Dockerfile` version lines are generated: edit the
+config and run `apply_versions.py`, do not hand-edit them.
 Note that some tasks have specialized files and will require manual melding after a change: 
 `Dockerfile`: `allen2p`
 `task.toml`: `mouseland`
