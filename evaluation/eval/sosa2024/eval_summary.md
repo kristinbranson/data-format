@@ -285,6 +285,19 @@
 
 ---
 
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+| Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | ok | match | match | — |  |
+| claude-code / trial2 | ok | match | match | — |  |
+| claude-code / trial3 | ok | match | match | — |  |
+| codex / trial1 | ok | match | match | — |  |
+| codex / trial2 | ok | match | match | — |  |
+| codex / trial3 | ok | match | match | — |  |
+
+---
+
 ## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
@@ -321,6 +334,21 @@
 | codex / trial1 | match | match | incorrect | — |  |
 | codex / trial2 | match | concerning | ok | LZ |  |
 | codex / trial3 | match | match | incorrect | — |  |
+
+---
+
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+| Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | concerning | better | LZ |  |
+| claude-code / trial2 | match | incorrect | incorrect | LZ |  |
+| claude-code / trial3 | match | concerning | better | LZ |  |
+| codex / trial1 | match | concerning | incorrect | LZ |  |
+| codex / trial2 | match | incorrect | better | LZ |  |
+| codex / trial3 | match | concerning | incorrect | LZ |  |
+
+**Overall comment:** Judge rating very inconsistent
 
 ---
 

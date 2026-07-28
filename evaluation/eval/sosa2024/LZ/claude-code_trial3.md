@@ -644,7 +644,7 @@ def discretize_distance(distance):
 
 **What this does:** Custom branching assigns one of 7 integer bins, with bin 3 reserved for distance exactly equal to 0 (i.e., samples inside the reward zone).
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 

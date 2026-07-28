@@ -543,7 +543,7 @@ def discretize_distance(distance_cm):
 
 **What this does:** Hand-coded boolean masks assigning each sample to one of 7 bins (0-6) by signed distance; zero distance gets its own bin (3).
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 

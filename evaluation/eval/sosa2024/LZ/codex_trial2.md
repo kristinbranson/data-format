@@ -537,9 +537,9 @@ def discretize_distance(distance_cm):
 
 **What this does:** Hand-coded boolean masks place each value into one of 7 bins with thresholds at ±50, ±10, and exactly 0. The `==0` case is a separate bin matching the "inside zone" sentinel.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_
+**Note:** don't like the == 0 operation
 
 ---
 

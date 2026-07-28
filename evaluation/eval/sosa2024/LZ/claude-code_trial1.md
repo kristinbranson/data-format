@@ -559,7 +559,7 @@ dist_to_rz_binned = discretize_distance_to_rz(dist_to_rz)
 
 **What this does:** Maps signed distance to one of 7 integer bins via boolean indexing, with bin 3 reserved for samples exactly inside (distance == 0).
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 

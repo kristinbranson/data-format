@@ -540,7 +540,7 @@ return bins
 
 **What this does:** 7 bins are assigned by hard-coded thresholds at -50, -10, 0 (exact), 10, 50 cm. The `distance == 0.0` case is its own "in_zone" bin, and any value outside the explicit ranges falls to bin 6 (`gt50`).
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 

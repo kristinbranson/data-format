@@ -579,7 +579,7 @@ def discretize_distance(distance):
 
 **What this does:** Manual masking into 7 bins matching the spec edges (-inf,-50,-10,0, exact 0, 10, 50, inf). The "in zone" bin is `distance == 0`.
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 
