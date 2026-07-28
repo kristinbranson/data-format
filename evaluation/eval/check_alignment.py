@@ -102,7 +102,7 @@ def check(dataset: str, code: str) -> int:
             drift.append((qid, dt, st))
     for qid, dt, st in drift:
         print(f"   ✗ Q {qid}: dossier {dt!r} vs summary.md {st!r} "
-              f"— run: python3 renumber_summary.py {dataset} --apply")
+              f"— run: python3 archive/renumber_summary.py {dataset} --apply")
         problems += 1
 
     # 3. Rating drift, matched by title (immune to renumbering).

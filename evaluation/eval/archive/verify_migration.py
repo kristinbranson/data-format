@@ -21,6 +21,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import sys
+from pathlib import Path
+
+# Archived: still runnable, but raters.py lives one level up.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import raters as R
 
 REPO_ROOT = Path("/groups/zhang/home/zhangl5/Data-Format")
