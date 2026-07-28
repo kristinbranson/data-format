@@ -9,11 +9,15 @@ USE_APIKEYS=false
 ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env"
 GPUIDS=""
 JOBS_ROOT=""
+# Which conda env supplies harbor. Overridable so an alternate harbor checkout can
+# be tested without touching the default -- the cluster has its own conda root and
+# only has this env, so changing the default here breaks every LSF job.
+CONDA_ENV="eval-data-format-podman"
 # Pinned harness/model versions. Dated configs; newest wins unless --versions
 # says otherwise, and the choice is echoed below so the run log records it.
 VERSIONS_FILE=""
 
-USAGE="Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--versions FILE] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
+USAGE="Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--versions FILE] [--conda-env NAME] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -22,6 +26,7 @@ while [[ $# -gt 0 ]]; do
     --nconcurrent) NCONCURRENT="$2"; shift 2 ;;
     --task)     TASK="$2"; shift 2 ;;
     --versions) VERSIONS_FILE="$2"; shift 2 ;;
+    --conda-env) CONDA_ENV="$2"; shift 2 ;;
     --gpuids)   GPUIDS="$2"; shift 2 ;;
     --jobs-dir) JOBS_ROOT="$2"; shift 2 ;;
     --podman)   USE_PODMAN=true; shift ;;
@@ -52,7 +57,8 @@ if [ -n "$TASK" ]; then
 fi
 
 source $HOME/miniforge3/etc/profile.d/conda.sh
-conda activate eval-data-format-podman
+conda activate "$CONDA_ENV" || { echo "ERROR: no conda env '$CONDA_ENV'"; exit 1; }
+echo "conda env: $CONDA_ENV"
 if [ "$USE_PODMAN" = true ]; then
   export REGISTRY_AUTH_FILE="$HOME/.config/containers/auth.json"
   # On a batch node there is no systemd user session and no per-job container
@@ -172,44 +178,54 @@ else
     || { echo "ERROR: could not apply $VERSIONS_FILE."; exit 1; }
 fi
 
-# Read one field for one agent out of the config. Fails loudly rather than
-# returning an empty string, since an empty -m or --ak silently unpins the run.
-read_pin() {  # $1 = agent key (claude|codex), $2 = field
-  python3 -c '
-import json, sys
-cfg, agent, field = sys.argv[1], sys.argv[2], sys.argv[3]
-try:
-    value = json.load(open(cfg))["tools"][agent][field]
-except (KeyError, ValueError, OSError) as exc:
-    sys.exit(f"versions config {cfg}: cannot read tools.{agent}.{field}: {exc}")
-if not value:
-    sys.exit(f"versions config {cfg}: tools.{agent}.{field} is empty")
-print(value)' "$VERSIONS_FILE" "$1" "$2" || exit 1
+# Read one field of one arm. Empty output when the field is absent -- the caller
+# decides whether that is fatal, because it depends on the field: an empty model
+# would silently unpin the run, but harness_version is legitimately absent on
+# terminus arms, which are native harbor code with no CLI to pin.
+read_pin() {  # $1 = arm key, $2 = field
+  jq -r --arg arm "$1" --arg f "$2" '.tools[$arm][$f] // empty' "$VERSIONS_FILE"
 }
 
 # No `harbor run -c` path: a job config would bypass the pins above, and harbor's
 # -a flag wipes a config's `agents` list outright, so combining them silently
 # drops the version pins. Everything goes through the flags below.
 case "$AGENT" in
-  claude)
-    MODEL=$(read_pin claude model) || exit 1
-    HARNESS=$(read_pin claude harness_version) || exit 1
-    echo "agent: claude-code harness=$HARNESS model=$MODEL"
-    harbor run -p "$HARBOR_TASKS" -a "claude-code" -m "$MODEL" --ak version="$HARNESS" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
-    ;;
-  codex)
-    MODEL=$(read_pin codex model) || exit 1
-    HARNESS=$(read_pin codex harness_version) || exit 1
-    echo "agent: codex harness=$HARNESS model=$MODEL"
-    harbor run -p "$HARBOR_TASKS" -a "codex" -m "$MODEL" --ak version="$HARNESS" -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
-    ;;
   oracle)
+    # The oracle runs the reference solution, not an LLM: no model, no harness.
     harbor run -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
     ;;
   *)
-    echo "Unknown agent: $AGENT"
-    echo "Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--task name] [--podman]"
-    exit 1
+    # Every other agent is an arm defined in the versions config, so adding one
+    # (a new agent, or the same agent on a different model) needs no change here.
+    HARBOR_AGENT=$(read_pin "$AGENT" harbor_agent)
+    MODEL=$(read_pin "$AGENT" model)
+    if [ -z "$HARBOR_AGENT" ] || [ -z "$MODEL" ]; then
+      # Built separately: nesting a jq program inside a double-quoted string mangles
+      # its quotes.
+      KNOWN_ARMS=$(jq -r '.tools | keys | join(", ")' "$VERSIONS_FILE")
+      echo "ERROR: '$AGENT' is not an arm in $VERSIONS_FILE (needs harbor_agent and model)."
+      echo "       Known arms: $KNOWN_ARMS (or oracle)"
+      exit 1
+    fi
+    # Absent on native agents like terminus-2, which have no CLI to pin.
+    HARNESS=$(read_pin "$AGENT" harness_version)
+    AK=""
+    [ -n "$HARNESS" ] && AK="--ak version=$HARNESS"
+
+    # An arm with no harness is a native agent reaching the provider API directly
+    # through LiteLLM, which reads env vars and knows nothing about the CLI
+    # credential files. Without keys it fails deep inside the container, so say so
+    # here instead.
+    if [ -z "$HARNESS" ] && [ "$USE_APIKEYS" != true ]; then
+      if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+        echo "ERROR: arm '$AGENT' ($HARBOR_AGENT) calls the provider API directly and needs"
+        echo "       ANTHROPIC_API_KEY / OPENAI_API_KEY. Pass --apikeys, or export them."
+        exit 1
+      fi
+    fi
+
+    echo "arm: $AGENT  agent=$HARBOR_AGENT  model=$MODEL  harness=${HARNESS:-n/a}"
+    harbor run -p "$HARBOR_TASKS" -a "$HARBOR_AGENT" -m "$MODEL" $AK -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
     ;;
 esac
 HARBOR_RC=$?

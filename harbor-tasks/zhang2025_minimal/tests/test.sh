@@ -44,12 +44,8 @@ echo "=== [4/6] Setting up judge ==="
 # versions.json still runs, rather than judging with an empty --model.
 JUDGE_VERSIONS=/tests/versions.json
 read_judge_model() {  # $1 = judge key (claude|codex), $2 = fallback model
-  python3 -c "
-import json, sys
-try:
-    print(json.load(open('$JUDGE_VERSIONS'))['judges'][sys.argv[1]]['model'])
-except Exception:
-    print(sys.argv[2])" "$1" "$2"
+  jq -r --arg k "$1" --arg fallback "$2" \
+     '.tools[$k].model // $fallback' "$JUDGE_VERSIONS" 2>/dev/null || echo "$2"
 }
 CLAUDE_JUDGE_MODEL=$(read_judge_model claude claude-opus-4-6)
 CODEX_JUDGE_MODEL=$(read_judge_model codex gpt-5.4)

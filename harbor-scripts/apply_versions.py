@@ -39,6 +39,11 @@ CLAUDE_INSTALL_RE = re.compile(r"(curl -fsSL https://claude\.ai/install\.sh \| b
                                r"(?: -s -- (\S+))?")
 CODEX_INSTALL_RE = re.compile(r"(npm i -g @openai/codex)(?:@(\S+))?")
 
+# The two CLIs that act as judges. The source config also defines run arms (agents
+# on particular models); only these ship into the verifier container, and only
+# these have a harness_version to write into a Dockerfile.
+JUDGE_TOOLS = {"claude", "codex"}
+
 
 def newest_config() -> Path | None:
     """Return the newest dated config, or None.
@@ -77,15 +82,26 @@ def render_versions_json(cfg: dict, source_name: str) -> str:
     Returns:
         JSON text, newline-terminated.
     """
+    # Only the judge tools ship. The source config also holds run arms (e.g. the
+    # terminus arms, which are agents rather than judges); those are irrelevant
+    # inside the verifier, would let the agent read the run configuration from
+    # /tests, and would otherwise make every added arm rewrite all 18 copies.
+    judges = {k: v for k, v in cfg["tools"].items() if k in JUDGE_TOOLS}
+    missing = JUDGE_TOOLS - judges.keys()
+    if missing:
+        sys.exit(f"{source_name}: tools is missing judge entr(ies) {sorted(missing)}")
+
     out = {
         "_comment": [
             f"GENERATED from harbor-scripts/{source_name} by apply_versions.py.",
             "Do not edit here -- edit the source config and re-run that script.",
             "Ships into the verifier container as /tests/versions.json, where the",
             "judge scripts read the model; the container cannot see the host config.",
-            "One entry per tool: agent and judge share a CLI by construction.",
+            "Judge tools only: run arms defined in the source config are deliberately",
+            "not shipped. One entry per tool -- agent and judge share a CLI by",
+            "construction, since they share /root/.local/bin in the trial container.",
         ],
-        "tools": cfg["tools"],
+        "tools": judges,
     }
     return json.dumps(out, indent=2) + "\n"
 

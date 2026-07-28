@@ -19,6 +19,12 @@ RUN pip install --no-cache-dir numpy scipy matplotlib tqdm opencv-python \
     allensdk@git+https://github.com/AllenInstitute/AllenSDK.git \
     sentence-transformers
 
+# jq is used by tests/test.sh to read the pinned judge models from
+# /tests/versions.json. Its own layer, deliberately placed AFTER the pip installs:
+# adding it to the apt line at the top would invalidate the torch and scientific
+# layers and turn every image rebuild into ~7 minutes instead of ~1.
+RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+
 # Install Claude CLI and Codex CLI for LLM judge (verifier).
 # Versions are pinned to match harbor-scripts/config_20260728.json (judges block)
 # and tests/versions.json. Unpinned installers gave the archived runs 5 Claude

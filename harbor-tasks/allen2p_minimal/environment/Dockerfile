@@ -20,6 +20,12 @@ RUN pip install --no-cache-dir numpy scipy matplotlib tqdm opencv-python \
     sentence-transformers
 
 # Install Claude CLI and Codex CLI for LLM judge (verifier)
+# jq is used by tests/test.sh to read the pinned judge models from
+# /tests/versions.json. Its own layer, deliberately placed AFTER the pip installs:
+# adding it to the apt line at the top would invalidate the torch and scientific
+# layers and turn every image rebuild into ~7 minutes instead of ~1.
+RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+
 # Versions pinned to match harbor-scripts/config_20260728.json (judges block).
 # This Dockerfile is excluded from sync_template.py, so keep it in step by hand.
 RUN curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.81

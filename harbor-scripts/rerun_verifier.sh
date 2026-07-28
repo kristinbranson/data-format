@@ -195,12 +195,8 @@ JUDGE_DIR=/logs/verifier/judge
 # Fall back to the literals so a task whose tests predate versions.json still
 # runs rather than invoking the judge with an empty model flag.
 read_judge_model() {  # $1 = judge key, $2 = fallback
-  python3 -c "
-import json, sys
-try:
-    print(json.load(open('"'"'/tests/versions.json'"'"'))['"'"'tools'"'"'][sys.argv[1]]['"'"'model'"'"'])
-except Exception:
-    print(sys.argv[2])" "$1" "$2"
+  jq -r --arg k "$1" --arg fallback "$2" \
+     '"'"'.tools[$k].model // $fallback'"'"' /tests/versions.json 2>/dev/null || echo "$2"
 }
 CLAUDE_JUDGE_MODEL=$(read_judge_model claude claude-opus-4-6)
 CODEX_JUDGE_MODEL=$(read_judge_model codex gpt-5.4)

@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import shlex
 import shutil
@@ -52,7 +53,21 @@ WALL = "24:00"
 CLUSTER_LOG_DIR = Path("/groups/branson/home/bransonk/cluster_logs/harbor")
 CLUSTER_JOBS_DIR = Path("/groups/branson/home/bransonk/harbor-cluster-jobs")
 
-AGENTS = ["claude", "codex"]
+# Default arms come from the versions config rather than being hardcoded, so adding
+# an arm there (a new agent, or the same agent on a different model) is enough to
+# include it in a sweep. Falls back to the CLI arms if no config is present.
+DEFAULT_AGENTS = ["claude", "codex"]
+
+
+def config_arms() -> list[str]:
+    """Arm names defined in the newest versions config, or DEFAULT_AGENTS."""
+    cfg = newest_versions_config()
+    if cfg is None:
+        return DEFAULT_AGENTS
+    try:
+        return sorted(json.loads(cfg.read_text())["tools"])
+    except (KeyError, ValueError, OSError):
+        return DEFAULT_AGENTS
 DEFAULT_TRIALS = 3
 
 
@@ -204,8 +219,8 @@ def check() -> bool:
         print(f"{len(errs)} check(s) FAILED", file=sys.stderr)
     else:
         print(f"all checks passed — ready to submit "
-              f"{len(discover_tasks())} tasks x {len(AGENTS)} agents x {DEFAULT_TRIALS} trials "
-              f"= {len(discover_tasks()) * len(AGENTS) * DEFAULT_TRIALS} jobs")
+              f"{len(discover_tasks())} tasks x {len(config_arms())} arms x {DEFAULT_TRIALS} trials "
+              f"= {len(discover_tasks()) * len(config_arms()) * DEFAULT_TRIALS} jobs")
     return not errs
 
 
@@ -213,7 +228,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tasks", nargs="*", help="task names (default: all *_minimal)")
-    parser.add_argument("--agents", nargs="*", default=AGENTS, help=f"default: {AGENTS}")
+    arms = config_arms()
+    parser.add_argument("--agents", nargs="*", default=arms,
+                        help=f"arms from the versions config; default: {arms}")
     parser.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     parser.add_argument("--start", type=int, default=0, help="skip the first N jobs")
     parser.add_argument("--limit", type=int, default=None, help="submit at most N jobs")

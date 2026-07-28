@@ -11,11 +11,22 @@
     "codex 0.116.0: 12 trials), so new runs stay comparable to the published",
     "results rather than to a version nothing was published on.",
     "",
-    "ONE entry per tool, deliberately: the agent and the judge share /root/.local/bin",
+    "Entries are RUN ARMS, not tools: an agent plus the model it runs. claude and codex",
+    "keep those key names because they do double duty as the judge pins -- the judges are",
+    "always those two CLIs whichever agent ran the trial.",
+    "",
+    "ONE entry per CLI tool, deliberately: the agent and the judge share /root/.local/bin",
     "inside the trial container, so whichever installs last wins. Separate agent and",
     "judge versions could therefore never be honoured reliably -- and a single field",
     "makes 'agent and judge run the same CLI' true by construction rather than by",
     "remembering to keep two numbers equal.",
+    "",
+    "terminus arms carry NO harness_version, deliberately. terminus-2 is native harbor",
+    "code (a tmux loop calling models through LiteLLM), not an installed CLI, so there is",
+    "nothing to pin -- its version is the harbor commit. Consumers must treat the field as",
+    "optional rather than defaulting it to empty, which would silently unpin a CLI arm.",
+    "Terminus reaches models via LiteLLM, so it needs ANTHROPIC_API_KEY / OPENAI_API_KEY",
+    "in the environment (run_harbor.sh --apikeys); the CLI credential files do not apply.",
     "",
     "Consumed at runtime by run_harbor.sh (model via -m, harness via --ak version=)",
     "and by the judge paths (test.sh, rerun_verifier.sh, run_unsupervised_judges.sh)",
@@ -42,6 +53,14 @@
     "codex": {
       "harbor_agent": "codex",
       "harness_version": "0.116.0",
+      "model": "gpt-5.4"
+    },
+    "terminus-opus": {
+      "harbor_agent": "terminus-2",
+      "model": "claude-opus-4-6"
+    },
+    "terminus-gpt": {
+      "harbor_agent": "terminus-2",
       "model": "gpt-5.4"
     }
   }
