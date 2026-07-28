@@ -296,35 +296,6 @@ def write_summary(summary_path: Path, qid: str, qtitle: str,
     summary_path.write_text(new_text)
 
 
-# ---------- reference ↔ dossier question mapping ----------
-
-def _report_mapping(dataset: str, ref: dict, trial_sections: dict, qmaps: dict):
-    """Print how reference questions line up with the dossier sections, and
-    refuse to continue if any reference question cannot be located."""
-    renumbered, unmapped = [], []
-    for qid in ref:
-        targets = {qmaps[key].get(qid) for key in trial_sections}
-        if None in targets:
-            unmapped.append(qid)
-            targets.discard(None)
-        for t in targets:
-            if t != qid:
-                renumbered.append((qid, t))
-                break
-
-    if renumbered:
-        print(f"  Note: {len(renumbered)} question(s) are numbered differently in "
-              f"the dossiers; pairing them by content:")
-        for qid, t in renumbered:
-            print(f"    reference {qid} → dossier {t}   ({ref[qid]['title'][:60]})")
-    if unmapped:
-        print(f"\n  ERROR: {len(unmapped)} reference question(s) have no matching "
-              f"dossier section: {', '.join(unmapped)}")
-        print("  Rating them would compare unrelated questions. Fix the titles, or "
-              f"add variable aliases in {EVAL_DIR / dataset / 'qid_aliases.json'}.")
-        sys.exit(1)
-
-
 # ---------- main ----------
 
 def main():
@@ -347,6 +318,9 @@ def main():
     trial_files = R.sync_rater_dir(args.dataset, rater.code)
     rater_workdir = R.rater_dir(args.dataset, rater.code)
     print(f"Working in: {rater_workdir}")
+    # Pre-flight: the reference, the dossiers and the summary files must still
+    # agree on what each question number means. Exits if they don't.
+    R.check_alignment(args.dataset, rater.code)
     for key in TRIAL_ORDER:
         if key not in trial_files:
             sys.exit(f"Missing trial file: {rater_workdir / f'{key[0]}_trial{key[1]}.md'}")
@@ -363,9 +337,10 @@ def main():
     # reorders its output variables; sosa2024 gained two sub-questions). Pair
     # them by what the question is *about* — the same fingerprint compare.py
     # uses to line human ratings up with the judges — never by bare qid.
+    # (The startup check above already reported any renumbering and refused to
+    # run if a reference question matched nothing.)
     qmaps = {key: build_qid_map(ref, sections, dataset=args.dataset)
              for key, sections in trial_sections.items()}
-    _report_mapping(args.dataset, ref, trial_sections, qmaps)
 
     # Determine ordered question list (from reference)
     qids = list(ref.keys())

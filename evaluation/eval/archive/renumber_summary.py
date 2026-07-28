@@ -95,7 +95,7 @@ def main():
         print(f"{args.dataset}: numbering already matches the dossiers.")
     elif args.apply:
         print(f"\nRenumbered {total} heading(s). "
-              f"Now re-run:  python3 merge_eval.py --apply --dataset {args.dataset}")
+              f"Now re-run:  python3 raters.py merge {args.dataset} --apply")
     else:
         print(f"\n{total} heading(s) would change. Re-run with --apply.")
 

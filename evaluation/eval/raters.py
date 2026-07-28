@@ -345,10 +345,184 @@ def datasets(eval_dir: Path = EVAL_DIR) -> list[str]:
     return out
 
 
-if __name__ == "__main__":
+# ---------- question-numbering alignment ----------
+#
+# Question numbers are the join key between the reference DECISIONS.md, the
+# dossiers and the summary files, and they have drifted apart twice:
+#
+#   - the reference gets renumbered after dossiers are generated (allen2p
+#     reordered its output variables and renamed one), so reference 3-a is
+#     dossier 5-a. rate.py resolves this by pairing on content.
+#   - summary.md / eval_summary.md keep the numbering the reference had at
+#     rating time (sosa2024 gained two sub-questions, pushing "aligned" from
+#     7-c to 7-d). Nothing pairs those by content, so a qid-keyed merge would
+#     pair one question's rating with another question's judges.
+#
+# `alignment_report` reports both; `check_alignment` is the pre-flight the
+# rating tools run before letting an evaluator start.
+
+MANUAL_DIR = Path("/groups/zhang/home/zhangl5/Data-Format/manual")
+
+_SUMMARY_SEC = re.compile(
+    r"^##\s+Q\s+(\d+(?:-[a-z])?)\.\s+(.+?)$(.*?)(?=^##\s+Q\s+|\Z)",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def reference_titles(dataset: str) -> dict[str, str]:
+    """{qid: title} from manual/<dataset>/DECISIONS.md ({} if there is none)."""
+    path = MANUAL_DIR / dataset / "DECISIONS.md"
+    if not path.exists():
+        return {}
+    return {m.group(1): m.group(2).strip() for m in
+            re.finditer(r"^##\s+(\d+(?:-[a-z])?)\.\s+(.+?)$",
+                        path.read_text(), re.MULTILINE)}
+
+
+def summary_titles(path: Path) -> dict[str, str]:
+    """{qid: title} from a summary-style file."""
+    if not path.exists():
+        return {}
+    return {m.group(1): m.group(2).strip() for m in _SUMMARY_SEC.finditer(path.read_text())}
+
+
+def alignment_report(dataset: str, code: str,
+                     eval_dir: Path = EVAL_DIR) -> tuple[list[str], list[str]]:
+    """
+    Returns (problems, notes) for one dataset/evaluator.
+
+    `notes` are informational (drift the tools resolve on their own); each
+    entry in `problems` is a message ending with the command that fixes it.
+    """
+    from compare import build_qid_map  # deferred: compare.py imports this module
+
+    problems: list[str] = []
+    notes: list[str] = []
+    dossier = collect_titles(dataset, [code], eval_dir)
+    if not dossier:
+        return problems, notes
+
+    ref = reference_titles(dataset)
+    if ref:
+        qmap = build_qid_map({q: {"title": t} for q, t in ref.items()},
+                             {q: {"title": t} for q, t in dossier.items()},
+                             dataset=dataset)
+        moved = [(q, qmap[q]) for q in sorted(ref) if qmap.get(q) and qmap[q] != q]
+        if moved:
+            shown = ", ".join(f"{a}→{b}" for a, b in moved[:6])
+            notes.append(f"{len(moved)} question(s) numbered differently in the "
+                         f"dossiers; pairing them by content ({shown}"
+                         f"{', …' if len(moved) > 6 else ''})")
+        for q in sorted(ref):
+            if not qmap.get(q):
+                problems.append(
+                    f"reference Q {q} ({ref[q][:60]!r}) matches no dossier section — "
+                    f"rating it would compare unrelated questions. Fix the title or "
+                    f"add an alias in {dataset_dir(dataset, eval_dir)/'qid_aliases.json'}")
+
+    for path in (summary_path(dataset, code, eval_dir), eval_summary_path(dataset, eval_dir)):
+        for qid, st in summary_titles(path).items():
+            dt = dossier.get(qid)
+            if dt and normalize_title(dt) != normalize_title(st):
+                problems.append(
+                    f"{path.parent.name}/{path.name} Q {qid} is {st[:50]!r} but the "
+                    f"dossiers call that number {dt[:50]!r} — repair with: "
+                    f"python3 archive/renumber_summary.py {dataset} --apply")
+    return problems, notes
+
+
+def check_alignment(dataset: str, code: str, eval_dir: Path = EVAL_DIR,
+                    fatal: bool = True) -> bool:
+    """Pre-flight check. Prints findings; exits when `fatal` and problems exist."""
+    problems, notes = alignment_report(dataset, code, eval_dir)
+    for n in notes:
+        print(f"  Note: {n}")
+    for p in problems:
+        print(f"  PROBLEM: {p}")
+    if problems and fatal:
+        sys.exit(f"\nRefusing to start: {len(problems)} question-alignment problem(s).")
+    return not problems
+
+
+# ---------- combined eval_summary.md ----------
+
+def merge_eval_summary(dataset: str, apply: bool = False,
+                       eval_dir: Path = EVAL_DIR) -> bool:
+    """
+    Rebuild <dataset>/eval_summary.md so it carries one rating column per
+    evaluator, read from the dossiers. Judge columns, Best/Why and the overall
+    comments are preserved. Returns True if the file changed.
+    """
+    from compare import parse_summary, write_summary  # deferred (circular import)
+
+    path = eval_summary_path(dataset, eval_dir)
+    if not path.exists():
+        return False
+    before = path.read_text()
+    entries, overalls = parse_summary(path)
+    if not entries:
+        return False
+    titles = {qid: v["title"] for (qid, _, _), v in entries.items() if v.get("title")}
+
+    # "Best: Human" predates named evaluators — it meant the evaluator who ran
+    # the judge comparison, i.e. the primary one.
+    primary = primary_code()
+    for v in entries.values():
+        if (v.get("best") or "").strip().lower() == "human":
+            v["best"] = primary
+
+    target = path if apply else path.with_suffix(".md.preview")
+    write_summary(target, entries, titles, overalls)
+    after = target.read_text()
+    if not apply:
+        target.unlink()
+    return after != before
+
+
+# ---------- CLI ----------
+
+def _main():
+    import argparse
+    ap = argparse.ArgumentParser(description="Evaluator registry and eval-folder upkeep.")
+    sub = ap.add_subparsers(dest="cmd")
+    sub.add_parser("list", help="Show registered evaluators and datasets (default)")
+    c = sub.add_parser("check", help="Check question-numbering alignment")
+    c.add_argument("dataset", nargs="?")
+    c.add_argument("--rater")
+    m = sub.add_parser("merge", help="Rebuild eval_summary.md evaluator columns")
+    m.add_argument("dataset", nargs="?")
+    m.add_argument("--apply", action="store_true")
+    args = ap.parse_args()
+
+    if args.cmd == "check":
+        code = (args.rater or primary_code()).upper()
+        total = 0
+        for ds in ([args.dataset] if args.dataset else datasets()):
+            print(f"── {ds} / {code}")
+            total += 0 if check_alignment(ds, code, fatal=False) else 1
+        print(f"\n{total} dataset(s) with problems.")
+        sys.exit(1 if total else 0)
+
+    if args.cmd == "merge":
+        changed = []
+        for ds in ([args.dataset] if args.dataset else datasets()):
+            cols = rating_columns(ds)
+            if merge_eval_summary(ds, apply=args.apply):
+                changed.append(ds)
+            print(f"── {ds}: columns {', '.join(cols)}"
+                  + ("  [changed]" if ds in changed else "  (unchanged)"))
+        verb = "rewritten" if args.apply else "would change"
+        print(f"\n{len(changed)} eval_summary.md {verb}."
+              + ("" if args.apply or not changed else " Re-run with --apply."))
+        return
+
     reg = load_registry()
     print(f"Registry: {REGISTRY_PATH}")
     for code in rater_codes(reg):
         r = reg[code]
         print(f"  {code:<4} primary={r.primary}  {r.name or '(no name)'}")
     print(f"Datasets with master dossiers: {', '.join(datasets())}")
+
+
+if __name__ == "__main__":
+    _main()

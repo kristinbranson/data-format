@@ -21,18 +21,19 @@ workflow, but all three still run from here (each adds the parent directory to
   title. Needed when the reference `DECISIONS.md` is renumbered after rating:
   sosa2024 gained two "thresholded into categories" sub-questions, which pushed
   "aligned with the neural data" from `7-c` to `7-d` while the summary files
-  kept the old numbers. Applied once (4 headings). Bring it back only if
-  `check_alignment.py` reports summary-vs-dossier title drift again; follow it
-  with `merge_eval.py --apply`.
+  kept the old numbers. Applied once (4 headings). Bring it back only if a
+  rating tool reports summary-vs-dossier title drift; follow it with
+  `python3 raters.py merge <dataset> --apply`.
 
 Live tools stay in `evaluation/eval/`:
 
 | script | role |
 |---|---|
-| `raters.py` | shared library — evaluator registry, rater folders, rating I/O. Imported by everything below; not optional. |
+| `raters.py` | shared library — evaluator registry, rater folders, rating I/O, alignment check, `eval_summary.md` merge. Imported by everything below; not optional. Also a CLI: `list` (default), `check [dataset]`, `merge [dataset] [--apply]`. |
 | `rate.py` | Q-by-Q rating against a reference `DECISIONS.md` |
 | `rate_blind.py` | rating for datasets with no reference |
 | `compare.py` | judge-comparison pass (primary evaluator) |
-| `merge_eval.py` | regenerate `eval_summary.md`'s evaluator columns from the dossiers |
 | `report.py` | render `report.md` |
-| `check_alignment.py` | pre-flight: question-numbering drift between reference, dossiers and summaries |
+
+`rate.py` and `rate_blind.py` run the alignment check themselves at startup and
+refuse to run on a misaligned dataset, so there is nothing to remember.

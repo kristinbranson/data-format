@@ -338,6 +338,8 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
                    + ("" if show_judges else "  [dim](judge panels hidden)[/dim]"))
     rater_files = R.sync_rater_dir(dataset, rater.code)
     _CONSOLE.print(f"[dim]Working in: {R.rater_dir(dataset, rater.code)}[/dim]")
+    # Pre-flight: dossiers and summary files must agree on question numbering.
+    R.check_alignment(dataset, rater.code)
 
     bundles = []
     for agent, n in TRIAL_KEYS:
