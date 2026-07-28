@@ -294,23 +294,37 @@ def build_report(dataset: str, rater: str | None = None) -> str:
     es_h, es_c, es_x, es_judge, es_best = parse_eval_summary(
         eval_path, rater=rater or R.primary_code())
 
-    # Prefer titles from summary.md (richer); fall back to eval_summary.md if missing.
-    titles = dict(rs_titles)
+    # One ratings column per evaluator, this report's own first. Ratings come
+    # from the dossiers — the same source eval_summary.md is built from.
+    who = rater or R.primary_code()
+    codes = [who] + [c for c in R.rating_columns(dataset) if c != who]
+    disk = R.collect_ratings(dataset, codes)
+    per_code = {
+        c: {(qid, agent, n): (cell.get(c) or "")
+            for qid, per_trial in disk.items()
+            for (agent, n), cell in per_trial.items()}
+        for c in codes
+    }
+    # Fall back to the summary files if this evaluator has no dossier folder.
+    human_ratings = per_code.get(who) or {**es_h, **rs_h}
 
-    # Use summary.md ratings as the human source of truth (has notes); fall back to
-    # eval_summary.md if a question wasn't in summary.md (shouldn't happen normally).
-    human_ratings = {**es_h, **rs_h}
+    # Prefer titles from summary.md (richer); fall back to the dossiers.
+    titles = {**R.collect_titles(dataset, codes), **rs_titles}
 
-    # Question order — union of all qids seen, sorted canonically
-    qids = sorted({q for (q, _, _) in human_ratings} | set(rs_titles), key=_qid_sort_key)
+    # Question scope stays driven by the summary files, not by the dossiers: a
+    # dossier may carry ratings for questions the workflow deliberately leaves
+    # out of the roll-up (rate_blind.py skips "aligned with the neural data" for
+    # scalar variables, which no judge asks about). The dossiers supply the
+    # ratings for these questions, not the list of them.
+    qids = sorted({q for (q, _, _) in {**es_h, **rs_h}} | set(rs_titles),
+                  key=_qid_sort_key)
 
     # Name the evaluator this report is built from — with more than one of them,
     # "Human" no longer identifies whose ratings and notes these are.
-    who = rater or R.primary_code()
-    others = [c for c in R.rating_columns(dataset) if c != who]
-    evaluator_line = f"- Human evaluator: **{who}**" + (
-        f" (this dataset also has ratings from {', '.join(others)} — see eval_summary.md)"
-        if others else "")
+    others = codes[1:]
+    evaluator_line = (
+        f"- Human evaluators: **{who}** (this report's comments and notes), "
+        f"{', '.join(others)}" if others else f"- Human evaluator: **{who}**")
 
     lines = [
         f"# Evaluation Report — {dataset}",
@@ -332,16 +346,17 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         *( [existing_comments, ""] if existing_comments else [] ),
         "## Per-question evaluations",
         "",
-        f"| Q | Question | {who} | Claude judge | Codex judge | Solution comment "
-        "| LLM judge comment | Difference categories |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Q | Question | " + " | ".join(codes)
+        + " | Claude judge | Codex judge | Solution comment "
+          "| LLM judge comment | Difference categories |",
+        "|---" * (len(codes) + 6) + "|",
     ]
 
     placeholder_comments = {"_(no overall comment)_", "(no overall comment)",
                             "_(no comment)_", "(no comment)", "n/a", "N/A"}
     for qid in qids:
         title = (titles.get(qid) or "").replace("|", "\\|").replace("\n", " ")
-        h_cell = six_squares(human_ratings, qid)
+        h_cells = [six_squares(per_code.get(c) or human_ratings, qid) for c in codes]
         c_cell = (six_squares(es_c, qid, highlight=es_best, judge_label="Claude judge")
                   if es_c else (EMPTY_MARK * 3 + " " + EMPTY_MARK * 3))
         x_cell = (six_squares(es_x, qid, highlight=es_best, judge_label="Codex judge")
@@ -358,8 +373,8 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         diff = (diff_by_title.get(_norm_question(titles.get(qid, "")))
                 or diff_by_qid.get(qid, ""))
         lines.append(
-            f"| {qid} | {title} | {h_cell} | {c_cell} | {x_cell} | {sol} | {judge} "
-            f"| {diff} |"
+            f"| {qid} | {title} | " + " | ".join(h_cells)
+            + f" | {c_cell} | {x_cell} | {sol} | {judge} | {diff} |"
         )
 
     lines.append("")

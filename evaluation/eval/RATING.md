@@ -182,10 +182,12 @@ python3 report.py chen2024                # writes chen2024/report.md
 python3 report.py chen2024 --rater KB     # same report from KB's ratings/notes
 ```
 
-The report names the evaluator it was built from in its header and in the
-ratings column (`| Q | Question | LZ | Claude judge | …`), and points at
-`eval_summary.md` when the dataset has ratings from anyone else — so it is
-always clear whose ratings a given report shows.
+The report carries one ratings column per evaluator
+(`| Q | Question | LZ | KB | Claude judge | …`), with the evaluator it was built
+from first and named in the header — the solution comments and the
+judge-was-better markers are theirs. Which questions get a row is still decided
+by the summary files, so questions the workflow leaves out of the roll-up (the
+alignment questions `rate_blind.py` skips for scalar variables) stay out.
 
 Two parts of `report.md` are hand-curated, not generated, and are carried
 across regenerations: the `## Comments` section and the **`Difference
