@@ -242,6 +242,44 @@ def extract_existing_comments(path: Path) -> str:
     return m.group(1).strip()
 
 
+def extract_difference_categories(path: Path) -> tuple[dict[str, str], dict[str, str]]:
+    """
+    Pull the hand-curated `Difference categories` cells out of a previous
+    report.md → ({qid: value}, {normalized question text: value}).
+
+    That column is written by hand, never generated, so it has to survive a
+    regeneration. Questions are matched on their text first and their number
+    second, so the values follow a question even if it is renumbered.
+    """
+    if not path.exists():
+        return {}, {}
+    by_qid, by_title = {}, {}
+    col = None
+    for line in path.read_text().splitlines():
+        cells = _split_md_row(line)
+        if not cells:
+            continue
+        if cells[0].strip().lower() == "q":
+            names = [c.strip().lower() for c in cells]
+            col = (names.index("difference categories")
+                   if "difference categories" in names else None)
+            continue
+        if col is None or col >= len(cells):
+            continue
+        qid = cells[0].strip()
+        if not re.match(r"^\d+(-[a-z])?$", qid):
+            continue
+        value = cells[col].strip()
+        if value:
+            by_qid[qid] = value
+            by_title[_norm_question(cells[1])] = value
+    return by_qid, by_title
+
+
+def _norm_question(text: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[*_`\\]+", "", text or "")).strip().lower()
+
+
 def build_report(dataset: str, rater: str | None = None) -> str:
     import raters as R
     ddir = EVAL_DIR / dataset
@@ -250,6 +288,7 @@ def build_report(dataset: str, rater: str | None = None) -> str:
     summary_path = R.summary_path(dataset, rater or R.primary_code())
     eval_path = ddir / "eval_summary.md"
     existing_comments = extract_existing_comments(ddir / "report.md")
+    diff_by_qid, diff_by_title = extract_difference_categories(ddir / "report.md")
 
     rs_h, rs_titles, rs_solution = parse_rate_summary(summary_path)
     es_h, es_c, es_x, es_judge, es_best = parse_eval_summary(
@@ -283,8 +322,9 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         *( [existing_comments, ""] if existing_comments else [] ),
         "## Per-question evaluations",
         "",
-        "| Q | Question | Human | Claude judge | Codex judge | Solution comment | LLM judge comment |",
-        "|---|---|---|---|---|---|---|",
+        "| Q | Question | Human | Claude judge | Codex judge | Solution comment "
+        "| LLM judge comment | Difference categories |",
+        "|---|---|---|---|---|---|---|---|",
     ]
 
     placeholder_comments = {"_(no overall comment)_", "(no overall comment)",
@@ -304,8 +344,12 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         if judge in placeholder_comments:
             judge = ""
         judge = judge.replace("|", "\\|").replace("\n", " ")
+        # Hand-curated column: match on question text, fall back to the number.
+        diff = (diff_by_title.get(_norm_question(titles.get(qid, "")))
+                or diff_by_qid.get(qid, ""))
         lines.append(
-            f"| {qid} | {title} | {h_cell} | {c_cell} | {x_cell} | {sol} | {judge} |"
+            f"| {qid} | {title} | {h_cell} | {c_cell} | {x_cell} | {sol} | {judge} "
+            f"| {diff} |"
         )
 
     lines.append("")

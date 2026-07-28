@@ -174,11 +174,19 @@ rating is `NaN`. `metrics.ipynb` / `analysis.ipynb` keep working off
 `q["human"]`, so adding KB changes nothing until you deliberately use
 `q["humans"]`.
 
-To render a report from a specific evaluator's notes:
+Then render the report — one per evaluator, built from `eval_summary.md` plus
+that evaluator's `summary.md` (the primary's, unless `--rater` says otherwise):
 
 ```bash
-python3 report.py chen2024 --rater KB     # default: the primary evaluator
+python3 report.py chen2024                # writes chen2024/report.md
+python3 report.py chen2024 --rater KB     # same report from KB's ratings/notes
 ```
+
+Two columns of `report.md` are hand-curated, not generated, and are carried
+across regenerations: the `## Comments` section and the **`Difference
+categories`** column (matched to each question by its text, so the values follow
+a question even if it is renumbered). Everything else is rebuilt from the
+summary files, so edits to other columns will not survive.
 
 ---
 
