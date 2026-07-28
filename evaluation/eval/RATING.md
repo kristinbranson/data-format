@@ -15,8 +15,7 @@ python3 report.py <dataset>                # regenerate report.md
 ```
 
 Ctrl-C is safe — re-run to resume. To redo, add `--overwrite` (with
-`--question 3-a` for just one); to start a dataset over, `rm -rf <dataset>/KB`.
-Re-run the last two commands after any re-rating.
+`--question 3-a` for just one)
 
 ---
 
