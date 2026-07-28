@@ -4,6 +4,33 @@ How a second evaluator (KB) rates the agent-produced conversion code, where
 those ratings are stored, and how they are combined with the existing ratings
 (LZ) and the LLM judges into the tables the analysis reads.
 
+## TL;DR
+
+All commands run from `evaluation/eval/`. Substitute the evaluator code and the
+dataset; `<dataset>` is one of `allen2p`, `chen2024`, `hasnain2024`, `lee2025`,
+`majnik2025`, `sosa2024`, `zhang2025`, `zhong2025`.
+
+```bash
+cd /groups/zhang/home/zhangl5/Data-Format/evaluation/eval
+
+# 1. Rate. With a reference (allen2p, lee2025, majnik2025, sosa2024):
+python3 rate.py <dataset> --rater KB
+#    Without one (chen2024, hasnain2024, zhang2025, zhong2025):
+python3 rate_blind.py <dataset> --rater KB
+#    Stop any time with Ctrl-C; re-run the same command to resume.
+
+# 2. Fold the new ratings into the combined table.
+python3 raters.py merge <dataset> --apply      # omit <dataset> for all of them
+
+# 3. Regenerate the report.
+python3 report.py <dataset>                    # --rater KB for KB's version
+
+# 4. Sanity check (optional — step 1 runs this check itself).
+python3 raters.py check
+```
+
+Repeat 1–3 per dataset. Everything else below is detail.
+
 Evaluators are registered in [`raters.json`](raters.json):
 
 | code | role |
