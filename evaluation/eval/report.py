@@ -304,6 +304,14 @@ def build_report(dataset: str, rater: str | None = None) -> str:
     # Question order — union of all qids seen, sorted canonically
     qids = sorted({q for (q, _, _) in human_ratings} | set(rs_titles), key=_qid_sort_key)
 
+    # Name the evaluator this report is built from — with more than one of them,
+    # "Human" no longer identifies whose ratings and notes these are.
+    who = rater or R.primary_code()
+    others = [c for c in R.rating_columns(dataset) if c != who]
+    evaluator_line = f"- Human evaluator: **{who}**" + (
+        f" (this dataset also has ratings from {', '.join(others)} — see eval_summary.md)"
+        if others else "")
+
     lines = [
         f"# Evaluation Report — {dataset}",
         "",
@@ -312,17 +320,19 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         f"- Dataset: **{dataset}**",
         f"- Questions covered: {len(qids)}",
         f"- Trials per question: 6 (3 claude-code + 3 codex)",
-        f"- Evaluators: Human, Claude judge, Codex judge",
+        evaluator_line,
+        f"- Judges: Claude, Codex",
         "",
         f"**Legend:**  {LEGEND_LINE}  ",
-        "A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than the human.",
+        f"A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed "
+        f"more accurate than evaluator {who}.",
         "",
         "## Comments",
         "",
         *( [existing_comments, ""] if existing_comments else [] ),
         "## Per-question evaluations",
         "",
-        "| Q | Question | Human | Claude judge | Codex judge | Solution comment "
+        f"| Q | Question | {who} | Claude judge | Codex judge | Solution comment "
         "| LLM judge comment | Difference categories |",
         "|---|---|---|---|---|---|---|---|",
     ]

@@ -182,7 +182,12 @@ python3 report.py chen2024                # writes chen2024/report.md
 python3 report.py chen2024 --rater KB     # same report from KB's ratings/notes
 ```
 
-Two columns of `report.md` are hand-curated, not generated, and are carried
+The report names the evaluator it was built from in its header and in the
+ratings column (`| Q | Question | LZ | Claude judge | …`), and points at
+`eval_summary.md` when the dataset has ratings from anyone else — so it is
+always clear whose ratings a given report shows.
+
+Two parts of `report.md` are hand-curated, not generated, and are carried
 across regenerations: the `## Comments` section and the **`Difference
 categories`** column (matched to each question by its text, so the values follow
 a question even if it is renumbered). Everything else is rebuilt from the
