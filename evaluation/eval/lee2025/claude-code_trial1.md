@@ -31,9 +31,9 @@ for animal in animals:
 
 **What this does:** Loads each of 7 hardcoded animals from preprocessed joblib files in the `data/` directory using `joblib.load`, then iterates over animals and sessions (days) within each.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -57,9 +57,9 @@ subject_id = ANIMALS.index(animal)
 
 **What this does:** Subjects are an explicit hardcoded list of 7 animal IDs. Each `.mat`/joblib file corresponds to one subject; subject_idx maps each session to its position in the ANIMALS list.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -86,9 +86,9 @@ for day in range(n_days):
 
 **What this does:** Each day index along the first axis of `trace`/`position`/`envs` is treated as one session. The script iterates `for day in range(n_days)` to produce a session per day per animal.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -120,9 +120,9 @@ for start in trial_starts:
 
 **What this does:** Sessions are split into non-overlapping 1800-frame (60-second) trials. The final partial trial is kept if it is at least 900 frames (30 s); shorter remainders are dropped. Sessions yielding fewer than 2 trials are skipped entirely.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -145,9 +145,9 @@ if n_trials < 2:
 
 **What this does:** No QC-based trial filtering is applied; the only exclusions are length-based (drop final partial trials shorter than 30 s, drop entire sessions producing fewer than 2 trials).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -167,9 +167,9 @@ neural_trial = trace_registered[:, start:end].astype(np.float32)
 
 **What this does:** Neural data comes from the `trace` field of the per-animal joblib dictionary, which holds preprocessed binary calcium events with shape `(n_days, n_cells, n_frames)`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -193,9 +193,9 @@ neural_trial = trace_registered[:, start:end].astype(np.float32)
 
 **What this does:** No additional transformation is applied beyond selecting registered cells and casting to float32. The trace is used as-is (binary 0/1 events) at native shape `(n_registered, trial_len)` per trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -220,9 +220,9 @@ trace_registered = trace[registered_mask]  # (n_registered, n_frames)
 
 **What this does:** Cells with NaN in their first frame on a given day (i.e. unregistered for that session) are removed; all remaining registered cells are kept. No place-cell or other QC filtering is applied. Sessions with zero registered cells are skipped.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -242,9 +242,9 @@ FRAMES_PER_TRIAL = FPS * TRIAL_DURATION_S  # 1800 frames
 
 **What this does:** No resampling. The neural trace is kept at native 30 Hz; the metadata reports `time_bin_size = 33.33 ms`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -270,9 +270,9 @@ for start in trial_starts:
 
 **What this does:** There is no external event to align to; trials are defined as fixed 1-minute slices of the continuous recording. Metadata declares the alignment event as the start of each trial segment, with `off_start=0.0` and `off_end=60.0` seconds.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -299,9 +299,9 @@ env_mat = get_env_mat(env_name).flatten()  # (9,)
 
 **What this does:** Rather than using the raw `blocked` field, the input is derived from `envs[day]` (the environment name string) by mapping it through `get_env_mat`, which returns a hardcoded 3x3 binary mask of accessible vs. blocked partitions for each of 10 environment shapes.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** valid solution but a bit complicted
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -324,9 +324,9 @@ input_names = [f"env_partition_{r}{c}" for r in range(N_POS_BINS) for c in range
 
 **What this does:** The 3x3 environment matrix is flattened to a length-9 float32 vector (1=accessible, 0=blocked) and assigned as a static per-trial input. Input feature names are `env_partition_rc` for r,c in 0..2. The encoding is the inverse of "blocked" (it marks accessible cells).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -350,9 +350,9 @@ output_trials.append(output_trial)
 
 **What this does:** The input is a constant length-9 vector per trial — it does not have a time dimension. The same env_mat vector is paired with every trial of a given session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -371,9 +371,9 @@ pos_bins = bin_position_3x3(position)  # (n_frames,)
 
 **What this does:** Position is taken from the `position` field of the per-animal joblib dictionary, which holds (2, n_frames) x,y coordinates per day in cm.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -404,9 +404,9 @@ output_trial = pos_bins[start:end].astype(np.int64).reshape(1, -1)
 
 **What this does:** The 2D x,y position is discretized into a 3x3 grid across the 75 cm arena by `floor(pos / (75/3))`, clipping to [0, 2], and combining as `x_bin*3 + y_bin` to yield an integer bin index 0-8. The per-trial output has shape `(1, trial_len)` and dtype int64. Output values are labeled `x{r}y{c}` for r,c in 0..2.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -431,9 +431,9 @@ for start in trial_starts:
 
 **What this does:** Position is sampled at the same 30 Hz as the neural trace and is sliced with identical `[start:end]` indices per trial, giving frame-for-frame alignment with the neural data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -466,9 +466,9 @@ if n_trials < 2:
 
 **What this does:** Unregistered cells (NaN traces for that day) are dropped via `~np.isnan(trace[:, 0])`. Days with zero registered cells or fewer than 2 produced trials are skipped. Final partial trials shorter than 30 s are dropped. No imputation of missing position frames is performed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -501,9 +501,9 @@ Conversion full output (conversion_full_out.txt) reports per-animal totals aroun
 
 **What this does:** The script instruments per-animal and per-day wall-clock times via `time.time()`. The dominant cost is loading the per-animal joblib files (`load_animal_data`) and writing the large output pickle.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -536,9 +536,9 @@ for day in range(n_days):
 
 **What this does:** The remaining loops are an outer animal loop, an outer day/session loop, and an inner trial-slicing loop that builds Python lists of array slices. Position binning is already vectorized via NumPy. The trial-splitting loop could in principle be replaced by a single reshape on the truncated trace.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -558,9 +558,9 @@ input_trial = env_mat.astype(np.float32)
 
 **What this does:** The same constant `env_mat` is appended once per trial in the input list (so it is duplicated per trial within a session). Per-day cell registration and position binning are computed once per session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -588,8 +588,8 @@ def plot_processing(animal, d, all_neural, all_input, all_output, session_info):
 
 **What this does:** Only `trace`, `position`, and `envs` are read from `d`; the source-data fields `blocked`, `maps`, `SFPs`, `centroids` are loaded into memory (as part of the joblib dict) but never used for the converted output. The optional `plot_processing` path produces PNGs that are not part of the output dataset (gated behind `--show-processing`).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

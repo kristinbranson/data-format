@@ -34,9 +34,9 @@ for idx, file_path in enumerate(target_files, start=1):
 
 **What this does:** Globs `data/sub-*/*.nwb` to enumerate one NWB file per (subject, session). Each file is opened with `h5py` and processed sequentially in `process_session`, which reads trial table, units, behavioral events, and tongue tracking groups directly from HDF5.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -60,9 +60,9 @@ subject_to_idx = {subject: idx for idx, subject in enumerate(subjects)}
 
 **What this does:** Subject ID is parsed from the parent folder name (`sub-<id>`). After all sessions are processed, unique subject IDs are sorted and a `subject_idx` array maps each session to its subject index.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 ## Q 1-c. How are the data split into sessions?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -85,9 +85,9 @@ def get_session_identity(file_path: Path) -> tuple[str, str]:
 
 **What this does:** Each `.nwb` file is treated as one session, with the session ID derived from the file stem. One `SessionResult` is produced per file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -115,9 +115,9 @@ go_times = go_times_all[selected_trial_idx]
 
 **What this does:** Trials come from the NWB `intervals/trials` table, with one row per trial. Each trial keeps its `start_time`, `stop_time`, and per-trial go cue from `BehavioralEvents/go_start_times` (truncated to the number of behavioral trials). Output is one `(units, bins)` matrix per kept trial.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -148,9 +148,9 @@ if dropped_zero_trials:
 
 **What this does:** Trial QC is two-stage. First, only trials whose full `[-2.5, +1.5] s` window lies within the union of good-unit `obs_intervals` are kept. Second, any trial with all-zero neural activity is dropped. `is_good_trials` is used per-(unit, trial) only when its column count matches the selected trial set; otherwise per-unit `obs_intervals` overlap is recomputed and out-of-range bins are zeroed. Early-lick / photostim / ignore trials are intentionally retained.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -174,9 +174,9 @@ go_times_all = h5["acquisition"]["BehavioralEvents"]["go_start_times"]["timestam
 
 **What this does:** `neural` is built from `units/spike_times` (with `units/spike_times_index` for ragged-row offsets) for units flagged `classification == "good"`, aligned to per-trial go cues from `BehavioralEvents/go_start_times`. `units/obs_intervals` and `units/is_good_trials` are used for validity masking.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -208,9 +208,9 @@ for unit_pos, unit_idx in enumerate(good_unit_idx):
 
 **What this does:** For each good unit, spike times are binned by `np.searchsorted` against absolute bin edges (per-trial go cue + relative edge grid). Counts are divided by `0.05 s` to give firing rates in Hz, invalid trials are zeroed, and the result is cast to `float16`.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -239,9 +239,9 @@ if np.any(invalid_trials):
 
 **What this does:** Units are kept only if `units/classification == "good"`. Per-(unit, trial) validity uses `units/is_good_trials` when it aligns with the selected trial set, otherwise per-unit `obs_intervals` coverage; invalid bins are zeroed. Sessions with zero good units are skipped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -269,9 +269,9 @@ fr = counts / bin_width
 
 **What this does:** 80 non-overlapping 50 ms bins span `[-2.5, +1.5] s` relative to go cue. Spike counts per bin are computed by `np.searchsorted` between absolute edges, then divided by bin width to get Hz.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -289,9 +289,9 @@ abs_edges = go_times[:, None] + bin_edges_rel[None, :]
 
 **What this does:** Each trial's bin edges are computed as `go_time[trial] + bin_edges_rel`, so spike-time binning is naturally anchored to per-trial go cue onset.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-a. What variables in the raw data is `output` *choice* derived from?
 
@@ -316,9 +316,9 @@ def infer_choice_for_trial(trial_start, trial_stop, go_time, instruction, left_l
 
 **What this does:** Derived from `BehavioralEvents/left_lick_times` and `right_lick_times`, plus `intervals/trials/trial_instruction` as a fallback when no lick occurs in the trial.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-b. What processing is involved in computing `output` *choice*?
 
@@ -351,9 +351,9 @@ for trial in range(n_trials):
 
 **What this does:** For each trial, look at the first post-go lick across left/right streams. Earlier side wins (left=0, right=1). If no post-go lick, fall back to the first lick anywhere in `[trial_start, trial_stop]`. If no lick at all, fall back to `trial_instruction` (left/right).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-c. How is `output` *choice* aligned with the neural data?
 
@@ -376,7 +376,7 @@ for trial in range(n_trials):
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-a. What variables in the raw data is `output` *outcome* derived from?
 
@@ -395,9 +395,9 @@ outcome_trials = np.array([outcome_map[str(x)] for x in outcome], dtype=np.int8)
 
 **What this does:** Read directly from `intervals/trials/outcome` string column.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-b. What processing is involved in computing `output` *outcome*?
 
@@ -413,9 +413,9 @@ outcome_trials = np.array([outcome_map[str(x)] for x in outcome], dtype=np.int8)
 
 **What this does:** Lowercased string outcome labels are mapped to integers 0/1/2 via a dict lookup; no other processing.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-c. How is `output` *outcome* aligned with the neural data?
 
@@ -435,7 +435,7 @@ out[3] = tongue_discrete[trial]
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-a. What variables in the raw data is `output` *early_lick* derived from?
 
@@ -454,9 +454,9 @@ early_trials = np.array([early_map[str(x)] for x in early_lick], dtype=np.int8)
 
 **What this does:** Read from `intervals/trials/early_lick` string column.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-b. What processing is involved in computing `output` *early_lick*?
 
@@ -471,9 +471,9 @@ early_trials = np.array([early_map[str(x)] for x in early_lick], dtype=np.int8)
 
 **What this does:** Lowercased label mapped to 0/1 by dict lookup.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-c. How is `output` *early_lick* aligned with the neural data?
 
@@ -491,7 +491,7 @@ out[2] = early_trials[trial]
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-a. What variables in the raw data is `output` *tongue_y_bin* derived from?
 
@@ -509,9 +509,9 @@ tongue_timestamps = tongue_group["timestamps"][:].astype(np.float64)
 
 **What this does:** Derived from the `y` column (index 1) of `BehavioralTimeSeries/Camera0_side_TongueTracking/data` plus its timestamps. The likelihood column is loaded but used only for plotting.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-b. What processing is involved in computing `output` *tongue_y_bin*?
 
@@ -541,9 +541,9 @@ tongue_discrete[tongue_y_binned > tongue_p60] = 2
 
 **What this does:** For each (trial, 50 ms bin), take the last tongue-y sample in the bin (NaN if none). Then per-session compute 40th and 60th percentiles across all valid bins and discretize into {0=low, 1=mid, 2=high}.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-c. How is `output` *tongue_y_bin* aligned with the neural data?
 
@@ -559,9 +559,9 @@ out[3] = tongue_discrete[trial]
 
 **What this does:** Tongue alignment uses the same `go_times[:, None] + bin_edges_rel[None, :]` edge grid as the neural binning, so each trial's 80 tongue bins land in the same time bins as the neural rows; the discretized array is then placed in output row 3.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -602,9 +602,9 @@ nonzero_trial_mask = np.any(neural_session > 0, axis=(1, 2))
 
 **What this does:** Sessions with zero recorded trials or zero good units are skipped. Empty unit annotations raise. Missing sample-onset events fall back to a fixed offset (`-1.85 s`). `photostim_onset == "N/A"` is treated as no stimulation. Bins with no tongue sample are NaN, but a session with no valid tongue samples raises. Trials with completely zero neural activity are dropped.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-a. What are the most time-consuming steps of the code?
 
@@ -629,9 +629,9 @@ for unit_pos, unit_idx in enumerate(good_unit_idx):
 
 **What this does:** The dominant per-session cost is reading all `spike_times` from HDF5 and the per-unit Python loop that calls `np.searchsorted` on the unit's spike train against all trial/bin edges. Pickle dump of the final dataset (~3.7 GB) is also non-trivial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -661,9 +661,9 @@ for unit_pos, unit_idx in enumerate(good_unit_idx):
 
 **What this does:** Per-trial loops over sample-onset selection, input construction, photostim window construction, and choice inference are written in pure Python; they could be vectorized with `np.searchsorted` plus broadcasting over the trial axis. The per-unit binning loop could also be done as a single multi-segment `searchsorted` on the concatenated spike arrays.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-c. What processing does the code repeat multiple times?
 
@@ -687,9 +687,9 @@ abs_edges = go_times[:, None] + bin_edges_rel[None, :]
 
 **What this does:** `np.searchsorted` against `left_lick_times` / `right_lick_times` is invoked six times per trial inside `infer_choice_for_trial`, instead of once in batch. The `abs_edges` grid `go_times[:, None] + bin_edges_rel[None, :]` is rebuilt independently in `bin_tongue_y` and in the neural-binning loop. Per-trial `event_slices_for_trials` is computed twice (once for sample, once for delay) but the delay slice indices are only used in the optional plot path.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -715,9 +715,9 @@ stats = {
 
 **What this does:** `tongue_likelihood` is loaded but only used in plotting. `delay_start_times` slicing is computed for every trial but only consumed in optional plots. Per-session `stats` dict (with many summary numbers and fallback counters) is computed even though it is not surfaced in the final pickle. `is_good_trials_raw` is loaded even when not used directly.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-e. How is memory usage optimized?
 
@@ -741,6 +741,6 @@ neural_session[:, unit_pos, :] = fr.astype(np.float16)
 
 **What this does:** Neural firing rates are stored as `float16`; categorical outputs as `int8`. HDF5 files are opened with `h5py` rather than PyNWB to avoid PyNWB's full-object materialization. Spike-time slabs are loaded once per session. Sessions are processed one at a time but all `SessionResult` objects are held in memory until the final pickle dump.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_

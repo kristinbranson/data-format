@@ -33,9 +33,9 @@ def iter_session_refs(data_dir: str, sample: bool) -> tuple[list[str], list[Sess
 
 **What this does:** Lists per-animal joblib files (no extension) in `data/`, loads each with `joblib.load`, and enumerates sessions by iterating the `envs` first dimension for each animal. Each animal file is then re-loaded once during processing and cached in `animal_cache` (lines 291-298).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -58,9 +58,9 @@ subject_lookup = {animal: idx for idx, animal in enumerate(animals)}
 
 **What this does:** Each subject corresponds to one joblib file matching `QLAK-CA1-*` with no extension. Subject IDs are the file names; `subject_idx` is the index into the sorted animal list.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -84,9 +84,9 @@ trace_day = np.asarray(dat["trace"][day], dtype=np.float64)
 
 **What this does:** Sessions are enumerated by iterating `day_index` from `0` to `dat["envs"].shape[0]-1` per animal. Per-session arrays (`position`, `trace`, `maps`) are indexed by `day`. Session ID is `f"{animal}_day{day:02d}"`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -108,9 +108,9 @@ def trial_slices(n_frames: int, trial_frames: int = TRIAL_FRAMES) -> list[slice]
 
 **What this does:** Splits each continuous session into non-overlapping 1800-frame (60 s at 30 Hz) windows via integer division; tail frames are discarded. Same slices are reused for `neural` and `output`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -126,9 +126,9 @@ if len(slices) < 2:
 
 **What this does:** No per-trial quality filtering. The only check rejects an entire session if it produces fewer than 2 full trials.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -146,9 +146,9 @@ session_trace = trace_day[present_mask].astype(np.float16, copy=False)
 
 **What this does:** `neural` is derived from the `trace` field of the per-animal joblib dictionary, indexed by `day_index`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -168,9 +168,9 @@ for trial_slice in slices:
 
 **What this does:** After NaN-cell removal, the trace is cast to `float16` and sliced per trial. No further smoothing, deconvolution, or normalization is applied.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -191,9 +191,9 @@ if not np.any(present_mask):
 
 **What this does:** A neuron is considered present in a session if its first frame in `trace` is not NaN; absent cells are dropped. No place-cell or activity-based filtering is applied.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -211,9 +211,9 @@ FPS = 30.0
 
 **What this does:** The native 30 Hz frame rate is preserved; no temporal binning or resampling is applied to `neural`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -234,9 +234,9 @@ for trial_slice in slices:
 
 **What this does:** No external event alignment; trials are 1-minute contiguous windows aligned to the start of each segment within a continuous session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -258,9 +258,9 @@ geometry_grid, geometry_vector = blocked_to_geometry_vector(dat["blocked"], day)
 
 **What this does:** Input is derived from `dat["blocked"][day]`, the per-day list of blocked partition IDs in the README's 3x3 indexing scheme.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -286,9 +286,9 @@ if not np.array_equal(geometry_grid, valid_grid):
 
 **What this does:** Builds a length-9 float32 vector with `1.0` for open partitions and `0.0` for blocked ones (`-1` means none blocked). The 3x3 grid is transposed before flattening to align with map/position axes, and is cross-checked against the valid mask of `maps['smoothed']`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -308,9 +308,9 @@ for trial_slice in slices:
 
 **What this does:** The same 9-dim geometry vector is appended once per trial in the session; it is constant across timepoints and trials within a session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -328,9 +328,9 @@ position_bins, output_class = compute_position_bins(position_day)
 
 **What this does:** Output is derived from the `position` field indexed by `day`, giving the continuous (x,y) trajectory for the session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -352,9 +352,9 @@ def compute_position_bins(position_day, n_bins=POSITION_BINS):
 
 **What this does:** Position is divided per-axis by `(session_max + 1e-5) / 3`, floored to integer bins, clipped to `[0, 2]`, and combined into a single 9-class label `xbin*3 + ybin`. Stored as `int8` with shape `(1, T)` per trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -374,9 +374,9 @@ for trial_slice in slices:
 
 **What this does:** Per-frame alignment is implicit in the raw data (both at 30 Hz); the same slice indices are applied to both `output_class` and `session_trace`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -403,9 +403,9 @@ if not np.array_equal(geometry_grid, valid_grid):
 
 **What this does:** NaN rows in `trace` (cells absent on a day) are dropped; trailing frames not filling a full 1-minute trial are discarded and recorded as `discarded_tail_frames`. Sessions with no present cells, fewer than 2 full trials, or where the blocked geometry disagrees with the maps' valid mask raise `ValueError`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -430,9 +430,9 @@ for session_index, session_ref in enumerate(session_refs):
 
 **What this does:** Per-session timing is printed; loading the per-animal joblib file is the dominant cost and is amortized via an `animal_cache` that holds one animal at a time.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -452,9 +452,9 @@ for trial_slice in slices:
 
 **What this does:** Per-trial loop slices precomputed session-wide arrays into trial chunks; binning and present-cell masking are computed once per session outside the loop.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -481,9 +481,9 @@ if session_ref.animal not in animal_cache:
 
 **What this does:** Each animal's joblib file is loaded twice — once during enumeration in `iter_session_refs` (then released) and again during processing (cached across that animal's sessions).
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** two pass is very uncessary for this dataset
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -507,8 +507,8 @@ if show_processing and session_ref.session_id in plot_session_ids:
 
 **What this does:** `aggregate_valid_map` loads and reduces the `maps['smoothed']` 15x15-per-cell array purely to validate the geometry vector; the result is not stored in the output. Plot generation is gated on `--show-processing`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

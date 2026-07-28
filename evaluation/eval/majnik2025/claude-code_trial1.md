@@ -35,9 +35,9 @@ for subj in subjects:
 
 **What this does:** Lists all directories in DATA_DIR as subjects (no `jm` filter), then lists all subdirectories within each subject as sessions. For each session, loads F, Fneu, motion energy, and interframe interval files from suite2p/plane0 and move_deve.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -57,9 +57,9 @@ subject_list = list(dict.fromkeys([s[0] for s in all_sessions]))  # unique, orde
 
 **What this does:** Each top-level directory under DATA_DIR is treated as one subject (sorted alphabetically). The subject_list preserves first-seen order from the session list, and subject_idx is assigned per session via index lookup.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -82,9 +82,9 @@ print(f"Total sessions: {len(all_sessions)}")
 
 **What this does:** Each subdirectory under a subject folder is treated as a session, sorted alphabetically. All sessions are collected into a flat (subject, session) tuple list.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -112,9 +112,9 @@ trial_frames = int(TRIAL_DURATION_SEC * FS / BIN_SIZE)  # 120 * 30 / 10 = 360
 
 **What this does:** Splits the binned continuous recording into non-overlapping 2-minute (120s) trial segments of 360 binned frames each. Remainder bins that don't fill a complete trial are dropped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -127,9 +127,9 @@ trial_frames = int(TRIAL_DURATION_SEC * FS / BIN_SIZE)  # 120 * 30 / 10 = 360
 
 **What this does:** No trial-level quality control is performed; all 2-minute segments are kept. Missing video frames are handled at the signal level (interpolation), not by discarding trials.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -146,9 +146,9 @@ Fneu = np.load(os.path.join(s2p_dir, 'Fneu.npy'))
 
 **What this does:** Neural data is derived from suite2p `F.npy` (raw fluorescence) and `Fneu.npy` (neuropil fluorescence) from the `plane0` directory.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -176,9 +176,9 @@ def _maximin_baseline(Fc, win_frames, sig_frames):
 
 **What this does:** Applies neuropil subtraction with coefficient 0.7, then computes a "maximin" baseline (rolling min over 60s window, then rolling max, then Gaussian smoothing with sigma=10 frames). dF/F is computed as baseline-subtracted (not divided) fluorescence, mirroring suite2p `dcnv.preprocess`. Re-implemented manually (not via suite2p package).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** re-implementation instead of using suite2p
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -191,9 +191,9 @@ def _maximin_baseline(Fc, win_frames, sig_frames):
 
 **What this does:** No additional neuron-level filtering is applied during conversion; all neurons in F.npy are retained. The notes argue this is acceptable because the data is already pre-filtered by track2p.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -221,9 +221,9 @@ dff_binned = bin_data(dff, bin_size)  # (n_neurons, n_bins)
 
 **What this does:** Bins dF/F by averaging consecutive groups of 10 frames, reducing the effective rate from 30 Hz to 3 Hz (333.3 ms bin size). Frames at the end that don't fill a bin are trimmed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -244,9 +244,9 @@ dff_binned = bin_data(dff, bin_size)  # (n_neurons, n_bins)
 
 **What this does:** Each trial is aligned to the start of its 2-minute block (no external stimulus event). Metadata records this with `temporal_alignment_event = 'Start of 2-minute recording block'`, off_start=0, off_end=120s.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -269,9 +269,9 @@ for session_trials in neural_all:
 
 **What this does:** Time is not derived from a raw variable but constructed from the bin index multiplied by the bin duration (10/30 = 0.333 s).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -289,9 +289,9 @@ session_inputs.append(time_input.reshape(1, -1).astype(np.float32))
 
 **What this does:** Computes elapsed time per binned timepoint as `arange(n_bins) * (BIN_SIZE / FS)`, yielding values from 0 to ~119.67s for each trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -310,9 +310,9 @@ for trial in session_trials:
 
 **What this does:** The input array length is taken directly from the per-trial neural array's last dim, ensuring index-by-index alignment with the binned neural data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -329,9 +329,9 @@ interframe = np.load(os.path.join(move_dir, 'interframe_int.npy'))
 
 **What this does:** Motion energy is loaded from `move_deve/motion_energy_glob.npy`, and `interframe_int.npy` is used to detect dropped video frames.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -363,9 +363,9 @@ def discretize_motion_energy(all_me_trials, n_bins=N_OUTPUT_BINS):
 
 **What this does:** (1) Missing video frames are interpolated to match neural length (see 4-c); (2) ME is averaged into 10-frame bins (no normalization step); (3) all binned values across all sessions and trials are pooled and split into 5 equal-percentile (quintile) bins via `np.digitize`.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** missing normalization
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -397,9 +397,9 @@ def interpolate_missing_frames(motion_energy, interframe_int, n_neural_frames):
 
 **What this does:** Uses interframe intervals normalized by the median to count how many frames were dropped at each point, builds a mapping from ME indices to neural frame positions, then linearly interpolates ME onto the full neural-frame timeline so neural and ME align frame-for-frame at 30 Hz before binning.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -424,9 +424,9 @@ n_trials = n_bins // trial_frames
 
 **What this does:** Missing video frames are detected and interpolated; if more ME frames than neural exist, they are truncated. Partial bins at the end of a session and partial trials are silently discarded via integer division. No assertions or warnings are raised.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -451,9 +451,9 @@ for i, (subj, sess) in enumerate(all_sessions):
 
 **What this does:** Per-session loop times each session (~1.5s/session, ~60s total). The dominant operations are dF/F maximin baseline (rolling min/max + Gaussian filter) on full-length F arrays, plus npy I/O.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -481,9 +481,9 @@ for session_trials in all_me_trials:
 
 **What this does:** Several Python-level loops exist: cumulative me_positions (could use cumsum), bin_edges monotonization, and per-trial discretization. All operate on small arrays so impact is minor.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -496,9 +496,9 @@ for session_trials in all_me_trials:
 
 **What this does:** Each session is loaded and processed once; ME is collected then discretized in a single global pass. No obvious redundant repetition.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -519,8 +519,8 @@ def _plot_processing(subj, sess, F, Fneu, me, interframe,
 
 **What this does:** A `_plot_processing` helper builds large diagnostic plots when `--show-processing` is set; not used by the conversion output. Otherwise, computed quantities (F0, raw me_binned values pre-discretization) are not stored.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

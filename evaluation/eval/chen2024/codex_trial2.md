@@ -28,9 +28,9 @@ for i, path in enumerate(session_files, start=1):
 
 **What this does:** Globs `/app/data/sub-*/*.nwb` to enumerate all NWB files, filters out sessions with zero classifier-good units, then iterates session-by-session calling `process_session(path)` which opens each file via `h5py.File` and reads units, trials, events, and tracking data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -53,9 +53,9 @@ for result in results:
 
 **What this does:** Reads `general/subject/subject_id` from each NWB file to get the subject for each session. In `build_dataset`, accumulates a unique sorted-order list of subjects and assigns each session a `subject_idx`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -83,9 +83,9 @@ def select_files(all_files: list[Path], sample_mode: bool) -> tuple[list[Path], 
 
 **What this does:** Each NWB file = one session; session_id is derived from the filename stem with task-suffixes stripped. Sessions with zero classifier-good units are excluded (yields 173 of 174).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -112,9 +112,9 @@ for trial_idx in range(len(trial_start)):
 
 **What this does:** Iterates rows of NWB `intervals/trials` table (one row = one trial), using each trial's `start_time`/`stop_time` to slice events within the trial interval and to anchor the go-cue alignment.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -142,9 +142,9 @@ if n_trials_dropped_all_zero:
 
 **What this does:** Drops trials whose full [-2.5, +1.5]s go-aligned window is not entirely inside a good-unit observation interval, plus a final pass dropping any trial whose neural tensor is all zeros. Early-lick, ignore, photostim, etc. are kept and exposed as decoder targets/inputs.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -167,9 +167,9 @@ obs_intervals_index = f["units"]["obs_intervals_index"][:]
 
 **What this does:** Neural data is built from NWB `units.spike_times` (per-unit ragged spike-time arrays), filtered using `units.classification == "good"`. Also reads `units.obs_intervals` to gate trial inclusion and `units.anno_name` for region labels.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -194,9 +194,9 @@ for unit_idx, spikes in enumerate(good_spike_times):
 
 **What this does:** For each unit, builds an `(n_trials, 81)` matrix of absolute bin edges (go_time + relative edges), uses `np.searchsorted` to count spikes per bin across all trials at once, divides counts by 0.05 s to obtain firing rates in Hz, stored as `float16`.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -217,9 +217,9 @@ brain_region_labels = build_region_labels(anno_name, good_unit_mask)
 
 **What this does:** Keeps only units whose `classification` field equals `"good"` (the classifier-based QC label). Sessions with zero good units are dropped entirely.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -242,9 +242,9 @@ neural_tensor[:, unit_idx, :] = (counts / BIN_WIDTH_S).astype(np.float16)
 
 **What this does:** Uses fixed 50 ms non-overlapping bins from -2.5 s to +1.5 s relative to go cue (80 bins). Spike counts per bin are computed by `np.searchsorted` on edges, then divided by 0.05 s to give Hz.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -267,9 +267,9 @@ trial_edge_matrix[keep_idx] = rec["go_time"] + BIN_EDGES_REL
 
 **What this does:** Per trial, finds the go-cue timestamp by intersecting `go_start_times` events with `[trial_start, trial_stop]` (last candidate used if multiple). Bin edges are constructed as `go_time + BIN_EDGES_REL`, placing time zero at go-cue onset.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-a. What variables in the raw data is `output` *choice* derived from?
 
@@ -297,9 +297,9 @@ choice_code, choice_source = infer_choice(
 
 **What this does:** Choice derives from `trials.trial_instruction`, `trials.outcome`, and (only for ignore-outcome trials) the lick event streams `BehavioralEvents/left_lick_times` and `right_lick_times`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-b. What processing is involved in computing `output` *choice*?
 
@@ -331,9 +331,9 @@ output_row[0, :] = choice_code
 
 **What this does:** Computes a single integer choice per trial via `infer_choice`, then broadcasts that constant value across all 80 time bins of `output[0]`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-c. How is `output` *choice* aligned with the neural data?
 
@@ -350,7 +350,7 @@ output_row[0, :] = choice_code
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-a. What variables in the raw data is `output` *outcome* derived from?
 
@@ -366,9 +366,9 @@ outcome_code = OUTCOME_MAP[trial_outcome[trial_idx]]
 
 **What this does:** Outcome is taken directly from the `intervals/trials/outcome` column of the NWB trial table.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-b. What processing is involved in computing `output` *outcome*?
 
@@ -386,9 +386,9 @@ output_row[1, :] = outcome_code
 
 **What this does:** Maps the outcome string to integer via `OUTCOME_MAP`, then broadcasts across all 80 bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-c. How is `output` *outcome* aligned with the neural data?
 
@@ -404,7 +404,7 @@ output_row[1, :] = outcome_code
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-a. What variables in the raw data is `output` *early_lick* derived from?
 
@@ -420,9 +420,9 @@ early_code = EARLY_MAP[trial_early[trial_idx]]
 
 **What this does:** Reads the `intervals/trials/early_lick` column of the NWB trial table directly.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-b. What processing is involved in computing `output` *early_lick*?
 
@@ -440,9 +440,9 @@ output_row[2, :] = early_code
 
 **What this does:** String-to-integer mapping then broadcast across all 80 time bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-c. How is `output` *early_lick* aligned with the neural data?
 
@@ -458,7 +458,7 @@ output_row[2, :] = early_code
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-a. What variables in the raw data is `output` *tongue_y_bin* derived from?
 
@@ -475,9 +475,9 @@ processed_tongue_y, tongue_info = process_tongue_trace(tongue_data, tongue_times
 
 **What this does:** Derived from `acquisition/BehavioralTimeSeries/Camera0_side_TongueTracking` — uses the y-coordinate column and likelihood column of the tracking array, plus its timestamps.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-b. What processing is involved in computing `output` *tongue_y_bin*?
 
@@ -511,9 +511,9 @@ tongue_bin[tongue_y > tongue_info["p60"]] = 2
 
 **What this does:** Session-level: detects velocity outliers (>5σ) and low-likelihood frames; fills low-likelihood with session mean tongue y; linearly interpolates outliers; computes session 40th/60th percentiles. Per trial: samples processed tongue y at each bin center via `searchsorted`, then discretizes into 3 classes by percentile thresholds.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-c. How is `output` *tongue_y_bin* aligned with the neural data?
 
@@ -536,9 +536,9 @@ output_row[3, :] = tongue_bin
 
 **What this does:** For each of the 80 go-aligned bin centers (`go_time + BIN_CENTERS_REL`), looks up the closest preceding tracking frame via `searchsorted` and reads its discretized class, producing a per-bin time-varying class series sharing the neural bin grid.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -574,9 +574,9 @@ nonzero_trial_mask = np.any(neural_tensor != 0, axis=(1, 2))
 
 **What this does:** Sessions with zero good units are skipped; missing photostim fields ("N/A", "", "nan", "None") are parsed as None and yield zero-photostim rows; missing sample-onset events fall back to `go - 1.85 s`; ignore-outcome trials get an inferred or fallback choice; low-likelihood/outlier tongue frames are mean-filled or interpolated; trials with incomplete observation windows or all-zero neural tensors are dropped. A missing go cue raises a hard error.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-a. What are the most time-consuming steps of the code?
 
@@ -601,9 +601,9 @@ for unit_idx, spikes in enumerate(good_spike_times):
 
 **What this does:** Largest per-session costs are reading the full ragged spike-times array from HDF5 and the per-unit binning loop (n_good_units × searchsorted call); also pickling the final 4.6 GB output.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -624,9 +624,9 @@ def split_ragged(flat: np.ndarray, index: np.ndarray) -> list[np.ndarray]:
 
 **What this does:** Per-trial Python loop builds records (could be vectorized over the trial dimension for input/output construction); per-unit loop for spike binning remains (cross-unit vectorization is harder due to ragged spike arrays); `split_ragged` materializes a Python list of arrays.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-c. What processing does the code repeat multiple times?
 
@@ -653,9 +653,9 @@ est_full_s = mean_session_s * max(1, len(select_files(all_files, sample_mode=Fal
 
 **What this does:** `select_files` opens every NWB file once just to read `units.classification`; `process_session` then re-opens each kept NWB file to read the same classification field (and all other data). Also `select_files` is called a second time at the end purely for the `est_full_s` print, re-scanning all files.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -683,9 +683,9 @@ plot_payload = {
 
 **What this does:** Reads the full `obs_intervals` array but only uses the slice for the first good unit (assumes session-level coverage). Builds `plot_payload` only when `--show-processing` is set, but when set retains large session-length arrays (raw tongue, timestamps) for later plotting. Stats fields (`choice_sources`, `tongue_info`, etc.) are computed but not saved into the output pickle.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-e. How is memory usage optimized?
 
@@ -710,6 +710,6 @@ gc.collect()
 
 **What this does:** Stores firing rates as `float16`, output codes as `int16`, inputs as `float32`; preallocates per-session tensors; processes one session at a time and triggers `gc.collect()` between sessions; uses h5py inside `with` blocks so file handles close after reads.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_

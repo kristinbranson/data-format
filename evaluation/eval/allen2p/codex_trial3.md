@@ -31,9 +31,9 @@ all_sessions = get_local_session_metadata(data_root)
 
 **What this does:** Reads the local `ophys_experiment_table.csv` and intersects with locally available `behavior_ophys_experiment_*.nwb` files, dropping passive experiments. Each surviving experiment file is later opened directly with `h5py` (not via AllenSDK) to access trials, neural events, running, pupil, and stimulus presentations.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -50,9 +50,9 @@ subject_to_idx = {subject: idx for idx, subject in enumerate(subjects)}
 
 **What this does:** Subjects are the sorted set of unique `mouse_id` strings drawn from the experiment metadata of kept sessions; each session is later assigned an integer `subject_idx` via this mapping.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -81,9 +81,9 @@ for row in exp_table.itertuples(index=False):
 
 **What this does:** Each `ophys_experiment_id` (one imaging plane, one NWB file) is treated as a separate session. Sessions are ordered by `ophys_experiment_id`. Multiple planes from the same `ophys_session_id` become distinct sessions in the output.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -113,9 +113,9 @@ for trial_idx, trial in trials.iterrows():
 
 **What this does:** Each trial spans the NWB trials-table `start_time` to `stop_time` window, sampled at 30 Hz bin centers (`DT = 1/30`). Only GO|CATCH trials with neither `aborted` nor `auto_rewarded` set are kept.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -143,9 +143,9 @@ if len(neural_trials) < 2:
 
 **What this does:** Drops aborted, auto-rewarded, and non-(go|catch) trials. Sessions with fewer than 2 surviving trials, no task presentations, or missing eye tracking are skipped. Trials whose `build_trial_bins` returns an empty grid are silently dropped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -166,9 +166,9 @@ def get_neural_data(f: h5py.File) -> tuple[np.ndarray, np.ndarray]:
 
 **What this does:** Neural activity is the precomputed event-detection magnitudes stored in `processing/ophys/event_detection/data` of each NWB file, paired with their timestamps. dF/F is not used.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -198,9 +198,9 @@ neural_trial = linear_resample_matrix(ophys_time, events, centers)
 
 **What this does:** Per-trial event magnitudes are vectorially linear-interpolated from native ophys timestamps onto the 30 Hz trial-bin centers, producing an `(n_neurons, n_bins)` float32 matrix. No additional smoothing or normalization.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -219,9 +219,9 @@ def get_cell_count_and_region_idx(f: h5py.File, region_index: int) -> np.ndarray
 
 **What this does:** No explicit ROI/cell filtering is applied in the converter. All ROIs in the cell-specimen table are kept and used in the order they appear in the event matrix.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -246,9 +246,9 @@ def build_trial_bins(start_time: float, stop_time: float) -> np.ndarray:
 
 **What this does:** Neural data is linearly interpolated to a fixed 30 Hz grid (`DT = 1/30 s`, ≈33.33 ms bin) of bin centers spanning each trial's `[start_time, stop_time)`. Bin centers strictly less than `stop_time + 1e-9` are kept.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -273,9 +273,9 @@ neural_trial = linear_resample_matrix(ophys_time, events, centers)
 
 **What this does:** Each trial's bin centers begin at half a 30 Hz bin past `start_time` and tile up to `stop_time`; neural events are interpolated onto this absolute-time grid. Metadata records the alignment event as `"trial start"` with `off_start = 0.0`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -295,9 +295,9 @@ def get_running_data(f: h5py.File) -> tuple[np.ndarray, np.ndarray]:
 
 **What this does:** Running speed is read from `processing/running/speed/{data, timestamps}` in each NWB file (the SDK's filtered speed stream).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -326,9 +326,9 @@ running_bin = digitize_with_edges(running_trial, running_edges)
 
 **What this does:** Pass 1 collects all per-trial resampled running speeds across kept sessions and computes 5 global equal-frequency quantile edges. Per trial, running speed is linear-interpolated to the 30 Hz grid then digitized into 5 bins (codes 0-4).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -352,9 +352,9 @@ running_trial = linear_resample_vector(running_time, running_speed, centers)
 
 **What this does:** Running speed is linearly interpolated onto the same `centers` array (30 Hz bin centers from `start_time` to `stop_time`) used for the neural matrix, so each neural bin has a paired running-bin sample at the same absolute time.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -379,9 +379,9 @@ def get_pupil_data(f: h5py.File) -> tuple[np.ndarray, np.ndarray]:
 
 **What this does:** Pupil diameter is computed from `acquisition/EyeTracking/pupil_tracking` ellipse `width` and `height` as `2 * max(width, height)`, paired with `eye_tracking/timestamps`. NaNs (e.g., from blink frames) are filled by time interpolation. Sessions without `EyeTracking` raise `KeyError` and are skipped.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -408,9 +408,9 @@ pupil_bin = digitize_with_edges(pupil_trial, pupil_edges)
 
 **What this does:** NaN pupil samples are filled by time interpolation, the diameter is linearly resampled to the 30 Hz trial grid, and a global 5-quantile binning (computed in pass 1 across all sessions/trials) maps the values to integer codes 0-4.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -432,9 +432,9 @@ pupil_bin = digitize_with_edges(pupil_trial, pupil_edges)
 
 **What this does:** Pupil diameter is interpolated onto the same 30 Hz `centers` array used for neural events, sharing absolute-time alignment within each trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -471,9 +471,9 @@ for row in trial_presentations.itertuples(index=False):
 
 **What this does:** Image identity is derived from the per-flash stimulus presentation tables in `intervals/*_presentations` (filtered to blocks whose `stimulus_block_name` contains "change_detection"), using `image_name`, `omitted`, `start_time`, `stop_time`, and `trials_id`. A `"gray"` placeholder fills bins outside any flash window.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -496,9 +496,9 @@ image_value_to_idx = {name: idx for idx, name in enumerate(image_values)}
 
 **What this does:** A global vocabulary of image names is collected across all sessions, sorted, with `"gray"` forced to index 0. Each per-bin image string is mapped to its integer index. Bin assignment uses `(centers >= row.start_time) & (centers < row.stop_time)`; omitted flashes map to `gray`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -525,9 +525,9 @@ for row in trial_presentations.itertuples(index=False):
 
 **What this does:** Image identity is assigned to each 30 Hz bin of the same `centers` array used by the neural matrix, by checking which presentation interval contains each bin center. Alignment is therefore frame-for-frame with neural data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -552,9 +552,9 @@ for row in trial_presentations.itertuples(index=False):
 
 **What this does:** Image change is derived from the `is_change` flag on each row of the same task presentation table used for image identity, marking bins inside change-flash intervals with 1.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -577,9 +577,9 @@ image_change = np.zeros(centers.shape[0], dtype=np.int64)
 
 **What this does:** Initialized to all zeros, then set to 1 only on bins overlapping a presentation row whose `is_change` is True. The 2-class vocabulary is `["no_change", "change"]`. The window equals the change flash's `[start_time, stop_time)` interval; no extra padding is added.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -601,9 +601,9 @@ for row in trial_presentations.itertuples(index=False):
 
 **What this does:** The image-change indicator is built on the same `centers` array (30 Hz bins from `start_time` to `stop_time`) as the neural matrix, so each change-flash bin lines up frame-by-frame with the neural data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -630,9 +630,9 @@ def trial_outcome_index(trial_row: pd.Series) -> int:
 
 **What this does:** Trial outcome is read from the four mutually-exclusive boolean columns `hit`, `miss`, `false_alarm`, `correct_reject` in the NWB `intervals/trials` table.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -667,9 +667,9 @@ output_trial = np.vstack(
 
 **What this does:** The four outcomes map to fixed integer codes 0=hit, 1=miss, 2=false_alarm, 3=correct_reject. The single per-trial code is broadcast across all bins and stacked as the fifth output channel.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -686,9 +686,9 @@ outcome_trace = np.full(centers.shape[0], outcome_idx, dtype=np.int64)
 
 **What this does:** The per-trial outcome is repeated across every 30 Hz bin of the trial, giving the same time-axis length as the neural matrix.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -726,9 +726,9 @@ except KeyError as exc:
 
 **What this does:** Pupil NaNs are linearly interpolated; values outside quantile edges are clipped before binning; sessions missing eye tracking or task presentations are skipped via KeyError + try/except. Sessions with <2 valid trials are skipped. Empty trial windows are skipped silently. All-zero neural trials are retained.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -751,9 +751,9 @@ events = np.asarray(event_group["data"][:], dtype=np.float32)
 
 **What this does:** Per the notes the slowest steps are reading event-detection matrices and other arrays from each NWB file. Each file is opened twice (pass 1 stats; pass 2 conversion). Full run completed in 395.58 s for 199 retained sessions; per-session pass-2 elapsed times were typically 0.7-1.0 s.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -777,9 +777,9 @@ for trial_idx, trial in trials.iterrows():
 
 **What this does:** The neural resampling is already vectorized across neurons. Two remaining Python loops are the per-trial loop in `convert_session` and the per-presentation-row loop assigning image identity/change masks per trial.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -814,9 +814,9 @@ with h5py.File(session.filepath, "r") as f:
 
 **What this does:** Each kept NWB file is opened and read twice — once in pass 1 to compute global running/pupil quantile edges and once in pass 2 to actually convert. Trial filtering, presentation loading, running, and pupil reads are repeated across the two passes.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -832,9 +832,9 @@ input_trials = [np.zeros((0, trial.shape[1]), dtype=np.float32) for trial in neu
 
 **What this does:** Decoder `input` arrays are built as empty `(0, T)` placeholders for every trial since the task specifies no decoder inputs; the diagnostic `--show-processing` plot rendering is also performed only when explicitly requested. No other clearly unused intermediate is computed.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -855,8 +855,8 @@ output_trials.append(output_trial)
 
 **What this does:** Sessions are processed one at a time inside `with h5py.File(...)` blocks, so full-session event/running/pupil arrays are released between sessions. Only the per-trial sliced arrays are kept and accumulated across sessions. Outputs use `int8`/`int64`/`float32` dtypes; raw events are cast to `float32` with `copy=False` to avoid duplication.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

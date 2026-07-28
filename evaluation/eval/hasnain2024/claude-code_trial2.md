@@ -27,9 +27,9 @@ def convert_all(session_defs, outfile, show_processing=False):
 
 **What this does:** Iterates over a hard-coded `SESSION_DEFS` list (44 entries, each a tuple of `(animal, date, probes, data_dir_key)`) and calls `load_session` on each. `load_session` opens the per-session `data_structure_<anm>_<date>.mat` (HDF5 v7.3 or v5) plus the matching `motionEnergy_*.mat`, runs the full processing pipeline, and returns a per-session dict that is appended.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -48,9 +48,9 @@ subject_idx.append(animal_to_idx[sess['animal']])
 
 **What this does:** Subject identity is the `animal` string parsed from each session tuple. After loading, unique animal codes are sorted and given integer indices; each session's `subject_idx` points into that list. Output stores `subjects` (list of names) and `subject_idx` (one int per session).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -74,9 +74,9 @@ def load_session(anm, date, probes, data_dir_key, params):
 
 **What this does:** Each entry in the manually curated `SESSION_DEFS` list (44 entries) is treated as one session, identified by `<animal>_<date>`. Sessions are kept as separate elements in the top-level `neural`/`input`/`output` lists, one list per session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -100,9 +100,9 @@ for neuron_idx, clu_idx in enumerate(good_indices):
 
 **What this does:** Trials are taken from `obj.bp` (Ntrials), filtered by `early==0 & stim_enable==0`, and indexed via the `trial` field on each unit's spike list. Each kept trial becomes its own entry in the `trialdat` array (n_neurons, n_timebins, n_trials) and ultimately one element in the per-session `neural`/`input`/`output` lists.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -121,9 +121,9 @@ if len(valid_trials) < 2:
 
 **What this does:** Two QC filters applied at the trial level: drop trials with `bp.early==1` (early lick) and trials with `bp.stim.enable==1` (photostimulation). Hit/miss/no-response and DR/WC trials are all kept (so outcome and context can be decoded). Sessions with fewer than 2 surviving trials are skipped entirely.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -151,9 +151,9 @@ for probe_num in probes:
 
 **What this does:** Neural source is the per-unit spike-time stream from `obj.clu` for each ALM probe listed in the session tuple. Per unit, the script reads `trialtm` (spike time within trial), `trial` (trial index), and `quality`. Units from multiple probes (e.g., JEB13/JEB15 dual-probe sessions) are concatenated into one neuron pool.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -184,9 +184,9 @@ for neuron_idx, clu_idx in enumerate(good_indices):
 
 **What this does:** For each (neuron, trial), spike times are re-referenced to the trial's go-cue, histogrammed into 10 ms bins over [-2.5, 2.5] s, divided by `dt` to get spikes/s, then smoothed with a causal Gaussian (window=15, reflect padding) implemented in `causal_gaussian_smooth`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -214,9 +214,9 @@ if n_neurons < params['min_units']:
 
 **What this does:** Two-stage neuron QC: (1) drop units whose `quality` string is in `{garbage, noisy, gabrga, real?, '', nan}`; (2) after binning, drop units with mean FR <= 1 Hz across all timepoints/trials. Sessions with < 10 surviving units are skipped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -245,9 +245,9 @@ def causal_gaussian_smooth(x, N, bctype='reflect'):
 
 **What this does:** Bin edges are `np.arange(-2.5, 2.5+dt, dt)` giving 500 10-ms bins; the time axis uses bin centers. Smoothing kernel is a Gaussian with the first half zeroed out (causal), normalized to sum 1, applied via 1D convolution along time with reflect padding.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -270,9 +270,9 @@ for t_idx, trial_num in enumerate(valid_trials):
 
 **What this does:** Each trial's spikes are subtracted by that trial's `obj.bp.ev.goCue` time, then histogrammed in the fixed [-2.5, 2.5] s window. All trials therefore share an identical 500-bin time axis centered on go-cue.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-a. What variables in the raw data is `output` *lick_direction* derived from?
 
@@ -288,9 +288,9 @@ lick_direction = bp['R'][valid_trial_indices].copy()
 
 **What this does:** Derived directly from `obj.bp.R` (1 if the trial's correct/instructed lick direction was right, 0 if left), one value per kept trial.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-b. What processing is involved in computing `output` *lick_direction*?
 
@@ -310,9 +310,9 @@ lick_dir = np.full((1, n_timebins), int(sess['lick_direction'][t]), dtype=np.int
 
 **What this does:** No transformation beyond cast to int and broadcast across the 500 timebins so the output array shape matches neural. Class 0 = left, 1 = right.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-c. How is `output` *lick_direction* aligned with the neural data?
 
@@ -332,9 +332,9 @@ trial_output = np.concatenate([lick_dir, context, outc, tongue_v, paw_v, me_v], 
 
 **What this does:** The scalar lick direction is `np.full`-broadcast across the same 500-bin time axis used for neural data, then concatenated with the other outputs into a (6, n_timebins) per-trial array.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-a. What variables in the raw data is `output` *behavioral_context* derived from?
 
@@ -348,9 +348,9 @@ behavioral_context = 1.0 - bp['autowater'][valid_trial_indices]
 
 **What this does:** Derived from `obj.bp.autowater`. Autowater trials (=1) are mapped to context 0 (WC, water-cued), non-autowater (=0) to context 1 (DR, delayed-response).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-b. What processing is involved in computing `output` *behavioral_context*?
 
@@ -366,9 +366,9 @@ behavioral_context = 1.0 - bp['autowater'][valid_trial_indices]
 
 **What this does:** Single arithmetic flip (`1 - autowater`) then int cast. No per-block grouping or smoothing.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-c. How is `output` *behavioral_context* aligned with the neural data?
 
@@ -382,9 +382,9 @@ context = np.full((1, n_timebins), int(sess['behavioral_context'][t]), dtype=np.
 
 **What this does:** Per-trial scalar broadcast across all 500 timebins so it matches the neural shape.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-a. What variables in the raw data is `output` *outcome* derived from?
 
@@ -398,9 +398,9 @@ outcome = bp['hit'][valid_trial_indices].copy()
 
 **What this does:** Direct copy of `obj.bp.hit` (1=correct/rewarded, 0=miss/no-response) at the kept-trial indices.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-b. What processing is involved in computing `output` *outcome*?
 
@@ -416,9 +416,9 @@ outcome = bp['hit'][valid_trial_indices].copy()
 
 **What this does:** No transformation beyond integer cast; `miss` and `no` (no-response) are both lumped into class 0.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-c. How is `output` *outcome* aligned with the neural data?
 
@@ -434,7 +434,7 @@ outc = np.full((1, n_timebins), int(sess['outcome'][t]), dtype=np.int64)
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-a. What variables in the raw data is `output` *tongue_velocity* derived from?
 
@@ -451,9 +451,9 @@ tongue_vel = _compute_feature_velocity_generic(
 
 **What this does:** Derived from `obj.traj` view 2 (bottom cam), DLC feature `top_tongue` x/y coordinates, plus `frameTimes`, `obj.sglx.bitcode/bitstart` and `obj.bp.ev.bitStart` for the video-to-neural offset, and `obj.bp.ev.goCue` for trial alignment.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-b. What processing is involved in computing `output` *tongue_velocity*?
 
@@ -481,9 +481,9 @@ disc = (data >= threshold).astype(np.int64)
 
 **What this does:** x,y of `top_tongue` are linearly interpolated onto the neural time axis, NaN-filled with zero (tongue retracted), differenced via `np.gradient`, combined as Euclidean speed, then thresholded at the per-session 50th percentile to a binary low/high label.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-c. How is `output` *tongue_velocity* aligned with the neural data?
 
@@ -507,9 +507,9 @@ xpos = interp1d(ft_a[valid], x_r[valid], kind='linear',
 
 **What this does:** Per-session `vidshift` is computed from the bitcode (falls back to 0.5 s). Each trial's `frameTimes` are corrected by `vidshift` and re-referenced to that trial's go-cue, then x/y positions are interpolated onto the same 500-bin neural time axis before differentiation.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-a. What variables in the raw data is `output` *paw_velocity* derived from?
 
@@ -526,9 +526,9 @@ paw_vel = _compute_feature_velocity_generic(
 
 **What this does:** Same source pipeline as tongue but uses DLC feature `top_paw` from `obj.traj` view 2 (bottom cam).
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-b. What processing is involved in computing `output` *paw_velocity*?
 
@@ -555,9 +555,9 @@ speed[:, trix] = np.sqrt(xvel**2 + yvel**2).astype(np.float32)
 
 **What this does:** Like tongue, but NaNs are filled with the nearest valid value (paw is usually visible) and the median per-trial drift is subtracted from x/y velocity before computing Euclidean speed; speed is then 50th-percentile-thresholded per session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7-c. How is `output` *paw_velocity* aligned with the neural data?
 
@@ -578,9 +578,9 @@ xpos = interp1d(ft_a[valid], x_r[valid], kind='linear',
 
 **What this does:** Same alignment path as tongue: bitcode-derived `vidshift` plus per-trial go-cue subtraction, then linear interpolation of paw x,y onto the neural 500-bin axis.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-a. What variables in the raw data is `output` *motion_energy* derived from?
 
@@ -600,9 +600,9 @@ me_cell = [me_h5[ref][()].flatten().astype(np.float64) for ref in me_data_refs]
 
 **What this does:** Derived from the per-session `motionEnergy_<anm>_<date>.mat` file: `me.data` is a cell array of per-trial 1-D motion-energy traces sampled at ~400 Hz.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-b. What processing is involved in computing `output` *motion_energy*?
 
@@ -629,9 +629,9 @@ for trix in range(ntrials):
 
 **What this does:** Per trial, the raw ME trace is paired with the side-cam `frameTimes`, shifted by `vidshift` and the trial go-cue, linearly interpolated to the neural time axis, NaNs filled by nearest-neighbour, and finally 50th-percentile-thresholded into a binary low/high label per session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-c. How is `output` *motion_energy* aligned with the neural data?
 
@@ -659,9 +659,9 @@ for trix in range(ntrials):
 
 **What this does:** Uses the side-cam `frameTimes` (or a synthetic 400 Hz axis if missing), subtracts `vidshift + goCue`, and interpolates onto the neural 500-bin time axis.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -711,9 +711,9 @@ disc[np.isnan(data)] = 0
 
 **What this does:** Multi-layer fallbacks: missing `.mat` files / load failures print a WARNING and skip; ME load failures default to None which becomes an all-zero discretized output; per-trial NaNs in ME and paw kinematics are filled by nearest valid neighbour; tongue NaN velocities are zeroed (treated as "tongue retracted"); empty velocity arrays default to all-zero discretization; sessions with too few trials/units are skipped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-a. What are the most time-consuming steps of the code?
 
@@ -739,9 +739,9 @@ for neuron_idx, clu_idx in enumerate(good_indices):
 
 **What this does:** The dominant cost is the nested neuron x trial loop that performs `np.histogram` and a single-trial 1-D Gaussian convolution per (neuron, trial) pair. HDF5 dereferencing per spike-cluster and the per-trial DLC interpolation also contribute. Total full-conversion runtime reported: ~163 s.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -771,9 +771,9 @@ for t in range(n_trials):
 
 **What this does:** Three vectorizable loops: (1) per-column `np.convolve` in `causal_gaussian_smooth` could be a single `scipy.signal.fftconvolve` over an axis; (2) the (neuron, trial) histogram + smoothing could be replaced by a single `np.histogram2d`/`searchsorted`-based binning followed by one batched smoothing call; (3) the per-trial output assembly in `convert_all` builds time-broadcast arrays one trial at a time.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-c. What processing does the code repeat multiple times?
 
@@ -794,9 +794,9 @@ def _compute_feature_velocity_generic(traj_data, ntrials, view, feat_name, ...):
 
 **What this does:** Per session, `_compute_feature_velocity_generic` is called twice (tongue, paw) and traverses the same `traj_data['views'][1]` cell, recomputing `ft - vidshift - align_times[trix]` each time. The motion-energy loader independently re-iterates the same per-trial frame-time pipeline. Causal-Gaussian smoothing rebuilds the kernel on every call. HDF5 string decoding is also performed per cluster even though many qualities repeat.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -815,9 +815,9 @@ sess_input.append(time_input)
 
 **What this does:** Raw (continuous) tongue/paw/ME arrays are computed and stored on the session dict for plotting but only the discretized versions are used in the saved pickle. A copy of `time_axis` is also re-built per trial as `input` even though it is identical for every trial across the dataset. Plotting code (`plot_processing`) is also gated on `--show-processing` but its precursors (raw velocities) are still produced.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 10-e. How is memory usage optimized?
 
@@ -840,6 +840,6 @@ with open(outfile, 'wb') as pkl:
 
 **What this does:** Neural and behavioural arrays are stored as `float32` (and outputs as `int64`); the per-session HDF5 file is closed after raw extraction; sessions are processed serially so only one session's intermediate buffers live at a time. The final aggregated lists are pickled with protocol 4. No explicit `del` of raw spike arrays or chunked writing is used.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_

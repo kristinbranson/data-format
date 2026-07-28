@@ -298,7 +298,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -340,7 +340,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -509,6 +509,34 @@
 
 ---
 ## Q 13-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | don't like the == 0 operation |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** All solution are the same, don't like the == 0 operation though, the manual ref uses a tiny threshold (1e-6 instead)
+
+---
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
 
 | Agent / trial | Rating | Note |
 |---|---|---|

@@ -84,19 +84,56 @@ def _to_score(cell: str) -> int | None:
 
 
 def _pick_best_rating(best_who: str | None, h, jc, jx):
+    # `best_who` is "Human" in files written before evaluators were named, and
+    # an evaluator code ("LZ") afterwards — both mean "the human was right".
     if best_who is None or best_who.lower() == "human":
         return h
     if best_who.lower().startswith("claude"):
         return jc
     if best_who.lower().startswith("codex"):
         return jx
-    return h  # unknown label → fall back to human
+    return h  # evaluator code or unknown label → fall back to human
+
+
+def _parse_header(line: str) -> dict[str, int] | None:
+    """Map an eval_summary table header → {field: column index}.
+
+    Evaluator columns are keyed by their code; the legacy single-evaluator
+    ``Human`` column is keyed ``"human"``. Returns None for non-header lines.
+    """
+    if not line.strip().startswith("|"):
+        return None
+    cells = [c.strip() for c in line.strip().strip("|").split("|")]
+    if not cells or not cells[0].lower().startswith("agent"):
+        return None
+    cols: dict[str, int] = {}
+    for i, name in enumerate(cells):
+        key = name.lower()
+        if key in ("claude judge", "claude"):
+            cols["claude"] = i
+        elif key in ("codex judge", "codex"):
+            cols["codex"] = i
+        elif key == "best":
+            cols["best"] = i
+        elif key == "why":
+            cols["why"] = i
+        elif key == "human":
+            cols["human"] = i
+        elif re.fullmatch(r"[A-Z]{2,4}", name):
+            cols[name] = i
+    return cols
+
+
+# Column layout of files written before evaluators were named.
+_LEGACY_COLS = {"human": 1, "claude": 2, "codex": 3, "best": 4, "why": 5}
 
 
 def _parse_eval_summary(path: Path) -> dict[str, dict[str, dict]]:
     """Parse one eval_summary.md → {main_qid: {sub_qid: {...}}}."""
     out: dict[str, dict[str, dict]] = defaultdict(dict)
     cur: dict | None = None  # the question dict currently being filled
+    cols: dict[str, int] = dict(_LEGACY_COLS)
+    raters: list[str] = []   # evaluator codes seen in this file, in column order
 
     for line in path.read_text().splitlines():
         m = _QID_RE.match(line)
@@ -105,6 +142,7 @@ def _parse_eval_summary(path: Path) -> dict[str, dict[str, dict]]:
             cur = {
                 "title": title,
                 "human": [], "claude": [], "codex": [],
+                "humans": defaultdict(list),
                 "best": [], "best_rating": [],
                 "agents": [], "trials": [],
                 "overall": "",
@@ -115,11 +153,18 @@ def _parse_eval_summary(path: Path) -> dict[str, dict[str, dict]]:
         if cur is None:
             continue
 
+        header = _parse_header(line)
+        if header:
+            cols = header
+            raters = [k for k in header
+                      if k not in ("claude", "codex", "best", "why", "human")]
+            continue
+
         if line.startswith("**Overall comment:**"):
             cur["overall"] = line.split("**Overall comment:**", 1)[1].strip()
             continue
 
-        # Trial row: | claude-code / trial1 | match | match | match | — | ... |
+        # Trial row: | claude-code / trial1 | match | ... | match | — | ... |
         tm = _TRIAL_RE.match(line)
         if not tm:
             continue
@@ -127,26 +172,33 @@ def _parse_eval_summary(path: Path) -> dict[str, dict[str, dict]]:
         cells = [c for c in line.strip().strip("|").split("|")]
         if len(cells) < 5:
             continue
+        cell = lambda key: (cells[cols[key]] if key in cols and cols[key] < len(cells)
+                            else "")
         cur["agents"].append(agent)
         cur["trials"].append(trial)
-        h = _to_score(cells[1])
-        jc = _to_score(cells[2])
-        jx = _to_score(cells[3])
-        best_who = _norm(cells[4]) or None
+        # Primary human series: the first evaluator column, or the legacy one.
+        per_rater = {code: _to_score(cell(code)) for code in raters}
+        h = per_rater[raters[0]] if raters else _to_score(cell("human"))
+        jc = _to_score(cell("claude"))
+        jx = _to_score(cell("codex"))
+        best_who = _norm(cell("best")) or None
         cur["human"].append(h)
+        for code, v in per_rater.items():
+            cur["humans"][code].append(v)
         cur["claude"].append(jc)
         cur["codex"].append(jx)
         cur["best"].append(best_who)
         cur["best_rating"].append(_pick_best_rating(best_who, h, jc, jx))
 
     # Convert numerical fields to numpy arrays (None → NaN, dtype=float).
+    def _arr(vals):
+        return np.array([np.nan if v is None else v for v in vals], dtype=float)
+
     for subs in out.values():
         for q in subs.values():
             for key in ("human", "claude", "codex", "best_rating"):
-                q[key] = np.array(
-                    [np.nan if v is None else v for v in q[key]],
-                    dtype=float,
-                )
+                q[key] = _arr(q[key])
+            q["humans"] = {code: _arr(v) for code, v in q["humans"].items()}
             q["trials"] = np.array(q["trials"], dtype=int)
     return {k: dict(v) for k, v in out.items()}
 

@@ -35,9 +35,9 @@ for sess_idx, sess in enumerate(sessions):
 
 **What this does:** Reads `Imaging_Exp_info.npy` to enumerate all (mouse, date, blk) recordings, deduplicates to unique recording IDs, then iterates sessions one by one, loading per-session behavior dict, neural `spks` chunks, and retinotopy file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-b. How are the data split into subjects?
 
@@ -59,9 +59,9 @@ def build_global_metadata(sessions):
 
 **What this does:** Each session's subject is taken from the `mname` field; unique mice define the subjects list and each session gets a `subject_idx` mapping it to one mouse.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -87,9 +87,9 @@ def collect_sessions(sample: bool) -> list[SessionRef]:
 
 **What this does:** Sessions are defined by unique `<mouse>_<date>_<blk>` recording IDs deduplicated from `Imaging_Exp_info.npy`; duplicate experiment-group references for the same recording are merged via `choose_canonical_behavior`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -117,9 +117,9 @@ def compute_trial_masks(beh: dict) -> list[np.ndarray]:
 
 **What this does:** Trials are split per session by iterating `ntrials` and selecting frames where `ft_trInd` equals the trial index AND the running-corridor mask holds; raises if any trial has zero retained frames.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -142,9 +142,9 @@ for trial in range(int(beh["ntrials"])):
 
 **What this does:** No trials are dropped wholesale; instead each trial's frames are filtered to running-corridor frames only. Trials with zero qualifying frames raise an error rather than being silently skipped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -165,9 +165,9 @@ kept_idx, region_idx, kept_stats = compute_selected_neurons(spk_chunks, beh, iar
 
 **What this does:** Neural data come from `spks` chunks in `<rec>_neural_data.npy` (Suite2p deconvolved traces) plus retinotopy `iarea` to select V1/mHV/lHV/aHV neurons.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -189,9 +189,9 @@ for trial_idx, frame_idx in enumerate(trial_masks):
 
 **What this does:** Concatenates `spks` chunks across the axis-0 neuron dimension, selects a curated subset of neurons (mHV stimulus-selective + aHV reward-prediction), slices to retained frames per trial, and stores as float16.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -218,9 +218,9 @@ keep_mask = mhv_mask | ahv_mask
 
 **What this does:** Restricts to mHV neurons passing the top/bottom 5% familiar-stimulus `d'` (and the corridor-vs-gray "corr_neu" criterion), unioned with aHV reward-prediction neurons (`d' >= 0.3`); has fallback to top-128 mHV neurons. Non-visual area neurons are dropped.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -236,9 +236,9 @@ keep_mask = mhv_mask | ahv_mask
 
 **What this does:** No explicit re-binning; neural data stays on the native imaging-frame grid. The metadata reports the median frame interval (`ft` diff in seconds * 1000) as the time bin size.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -260,9 +260,9 @@ for trial in range(int(beh["ntrials"])):
 
 **What this does:** Per-trial neural slices are the running-corridor frames whose `ft_trInd == trial_idx`; alignment event is corridor entry (trial start) with `off_start=0`. Cue time is encoded as the `time_to_sound_cue` input rather than as a re-alignment of the neural slice.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-a. What variables in the raw data is `output` *visual_stimulus_category* derived from?
 
@@ -282,9 +282,9 @@ stim_code = np.full(
 
 **What this does:** Derived from the per-trial behavior field `WallName`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-b. What processing is involved in computing `output` *visual_stimulus_category*?
 
@@ -301,9 +301,9 @@ stim_code = np.full(len(frame_idx), category_to_idx[str(wall_name[trial_idx])], 
 
 **What this does:** Builds a global sorted list of all unique `WallName` strings across all sessions (15 categories), maps each to an integer ID, and broadcasts the trial's category across all retained frames.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 3-c. How is `output` *visual_stimulus_category* aligned with the neural data?
 
@@ -321,7 +321,7 @@ trial_output = np.vstack([stim_code, licking, pos_bin, speed_bin]).astype(np.int
 
 **Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-a. What variables in the raw data is `output` *licking* derived from?
 
@@ -339,9 +339,9 @@ licking = np.isin(frame_idx, lick_trial_frames).astype(np.int16)
 
 **What this does:** Derived from raw `LickFr` (lick frame indices) and `LickTrind` (per-lick trial indices).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-b. What processing is involved in computing `output` *licking*?
 
@@ -356,9 +356,9 @@ licking = np.isin(frame_idx, lick_trial_frames).astype(np.int16)
 
 **What this does:** For each trial, selects lick events whose `LickTrind == trial_idx`, then marks each retained frame as 1 if it appears in those lick frame indices, else 0.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 4-c. How is `output` *licking* aligned with the neural data?
 
@@ -374,9 +374,9 @@ trial_output = np.vstack([stim_code, licking, pos_bin, speed_bin]).astype(np.int
 
 **What this does:** Licking is computed on exactly the same `frame_idx` used for the neural slice, producing a binary vector with the same temporal length as the trial's neural data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-a. What variables in the raw data is `output` *position_bin* derived from?
 
@@ -393,9 +393,9 @@ pos_bin = np.clip((pos // 10.0).astype(np.int16), 0, 3)
 
 **What this does:** Derived from frame-level position trace `ft_Pos`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-b. What processing is involved in computing `output` *position_bin*?
 
@@ -410,9 +410,9 @@ pos_bin = np.clip((pos // 10.0).astype(np.int16), 0, 3)
 
 **What this does:** Clips position to `[0, 39.999)` decimeters and integer-divides by 10 to give bins 0-3 corresponding to 0-1m, 1-2m, 2-3m, 3-4m.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 5-c. How is `output` *position_bin* aligned with the neural data?
 
@@ -429,9 +429,9 @@ trial_output = np.vstack([stim_code, licking, pos_bin, speed_bin]).astype(np.int
 
 **What this does:** Position values are read at the same `frame_idx` indices as the neural slice, ensuring identical timepoints.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-a. What variables in the raw data is `output` *running_speed_bin* derived from?
 
@@ -447,9 +447,9 @@ speed_bin = speed_to_bin(ft_speed[frame_idx], speed_edges)
 
 **What this does:** Derived from frame-level running-speed trace `ft_RunSpeed`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-b. What processing is involved in computing `output` *running_speed_bin*?
 
@@ -470,9 +470,9 @@ def speed_to_bin(values, edges):
 
 **What this does:** Pre-pass over all sessions concatenates running-speed values from all retained frames, computes global 25/50/75 quantile edges, then `np.digitize` assigns each retained frame to one of 4 bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 6-c. How is `output` *running_speed_bin* aligned with the neural data?
 
@@ -487,9 +487,9 @@ trial_output = np.vstack([stim_code, licking, pos_bin, speed_bin]).astype(np.int
 
 **What this does:** Speeds are sampled at the same `frame_idx` as the neural slice; bin assignment preserves frame-by-frame alignment.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
 
@@ -516,9 +516,9 @@ if len(frame_idx) == 0:
 
 **What this does:** NaNs/zeros in d' are converted to 0 via `np.nan_to_num`. Non-finite `ft_trInd` frames are excluded via `finite_trial`. Trials/masks with zero data raise errors rather than being silently dropped. Duplicate behavior references must agree on key fields or `ValueError` is raised. Position is clipped to `[0,39.999)`.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-a. What are the most time-consuming steps of the code?
 
@@ -545,9 +545,9 @@ spk_chunks = list(spk_obj["spks"])
 
 **What this does:** Loading per-session `spks` (multi-GB on full dataset), concatenating chunks into a full neuron x frame matrix in `compute_selected_neurons`, computing d' across all neurons, and `get_interpPos_spk` reward-prediction interpolation are the main cost centers.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
 
@@ -573,9 +573,9 @@ for trial_idx, frame_idx in enumerate(trial_masks):
 
 **What this does:** Per-trial Python loops that do `np.flatnonzero(valid & (ft_trial_int == trial))` could use `np.unique`+groupby. The double-nested per-trial-per-chunk slicing loop redoes neuron-row indexing on each chunk per trial; could be done once after concatenation.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-c. What processing does the code repeat multiple times?
 
@@ -599,9 +599,9 @@ trial_masks = compute_trial_masks(beh)
 
 **What this does:** `load_beh` is called multiple times per session (in `build_global_metadata`, in the main loop, and again in the metadata `time_bin_size` comprehension). `compute_trial_masks` runs twice per session. Behavior dicts are reparsed each call.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
@@ -620,9 +620,9 @@ if np.any(is_rew) and np.sum(areas["aHV"]) > 0:
 
 **What this does:** `stim_dp` (d') is computed for every neuron in the recording even though only mHV-area neurons are eligible for selection. Reward-prediction interpolation is skipped on unrewarded sessions but still requires the full `spk` concatenation. The full per-trial `compute_trial_masks` work in `build_global_metadata` produces masks that are recomputed (not reused) in the main loop.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_
 
 ## Q 8-e. How is memory usage optimized?
 
@@ -646,6 +646,6 @@ gc.collect()
 
 **What this does:** Loads one session's `spks` at a time, slices chunks by selected neuron indices before concatenation, casts neural arrays to `float16`, and explicitly `del` + `gc.collect()` after each session to release memory before loading the next.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_---
+**Note:** _(to be filled by evaluator)_

@@ -31,9 +31,9 @@ for animal in selected_animals:
 
 **What this does:** Lists non-`.mat`, non-`behav_dict` files in `data/` as animal IDs, then loads each animal's joblib file via `joblib.load`, indexed by animal name to retrieve the per-animal dictionary containing `trace`, `position`, `blocked`, `envs`, etc.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -52,9 +52,9 @@ subject_idx.append(animals.index(animal))
 
 **What this does:** Each filename in `data/` (e.g. `QLAK-CA1-08`) is treated as a subject ID; per-session subject indices reference the subject list by position.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -79,9 +79,9 @@ for session_idx in range(dat["position"].shape[0]):
 
 **What this does:** Iterates over the leading session axis of the per-animal arrays (`position`, `trace`, `blocked`), processing each as one output session and labeling it `<animal>_s<idx>`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -109,9 +109,9 @@ for trial_idx in range(n_full_trials):
 
 **What this does:** Splits each session into `floor(n_frames / 1800)` non-overlapping 60-second (1800-frame) chunks; trailing remainder frames are dropped. Trials with too few movement-valid frames are skipped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -137,9 +137,9 @@ if len(neural_trials) < 2:
 
 **What this does:** Drops trials whose movement-valid frame count is less than the pool size, whose pooled length is below 10 samples, or whose pooled neural activity is all zero. Sessions yielding fewer than 2 trials raise an error.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -158,9 +158,9 @@ session_neural, session_input, session_output, ... = preprocess_session(
 
 **What this does:** Final neural data derive from the per-animal `trace` array (binary rising-phase calcium events) indexed by session.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -179,9 +179,9 @@ pooled_trace = trial_average_pool(chunk_trace).astype(np.float32, copy=False)
 
 **What this does:** Per trial: select cells already filtered for finiteness/activity, apply velocity mask to keep only movement-valid frames, Gaussian smooth (sigma=3 frames) along time, then non-overlapping 3-frame average pool. Output stored as `(n_active, n_pooled)` float32.
 
-**Rating:** better
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** The agent used additional processing steps used in the paper
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -203,9 +203,9 @@ trace_active = trace_finite[activity_mask]
 
 **What this does:** Removes cells with any NaN values across the session, then drops cells whose total event count during movement-valid frames is at most `CELL_EVENT_THRESHOLD` (=5).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -231,9 +231,9 @@ def trial_average_pool(values, pool_size=POOL_SIZE):
 
 **What this does:** After velocity masking and Gaussian smoothing, frames are grouped into non-overlapping 3-frame windows and averaged, yielding ~10 Hz (100 ms) effective temporal bins.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** followed the processing in the paper
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -254,9 +254,9 @@ for trial_idx in range(n_full_trials):
 
 **What this does:** Each trial is anchored to the start of a consecutive 60-second segment of the continuous recording; no external stimulus event is used for alignment.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -288,9 +288,9 @@ def blocked_to_open_vector(blocked_entry):
 
 **What this does:** Input derives from the per-session `blocked` field (list of blocked partition indices, or `[-1]` for none) in the joblib animal file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -314,9 +314,9 @@ input_trials.append(geometry_open.copy())
 
 **What this does:** Builds a static length-9 vector per session: 1 for open partitions, 0 for blocked partitions (row-major 3x3 order). The same vector is appended once per trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -333,9 +333,9 @@ input_trials.append(geometry_open.copy())
 
 **What this does:** The geometry vector is appended once per trial with shape `(9,)`, treated as static context for the entire trial rather than time-varying.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -351,9 +351,9 @@ position_session=dat["position"][session_idx],
 
 **What this does:** Output position derives from the `position` array (x,y per frame) in each animal's joblib file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -388,9 +388,9 @@ pooled_bins = (pooled_rows * GEOMETRY_SIZE + pooled_cols)[np.newaxis, :].astype(
 
 **What this does:** Discretizes (x,y) into a 3x3 grid using a per-animal scale (`max(position)`) and a per-animal inferred rotation/flip transform that aligns occupancy with the blocked geometry; samples in blocked bins are snapped to the nearest open bin; positions are velocity-masked, pool-averaged in 3-frame windows, re-snapped if needed, and stored as `(1, n_pooled)` row-major bin indices 0..8.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -415,9 +415,9 @@ output_trials.append(pooled_bins)
 
 **What this does:** Both neural and position streams use the same trial slice, the same velocity mask, and the same 3-frame pooling, ensuring frame-by-frame alignment in the pooled output.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -446,9 +446,9 @@ if not np.any(pooled_trace):
 
 **What this does:** Cells with NaNs are dropped per session; positions falling in blocked bins are snapped to the nearest open bin; trials with too few pooled samples or no neural events are skipped; remainder frames not filling 1800 are discarded.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -467,9 +467,9 @@ print(f"  loaded in {load_seconds:.2f}s")
 
 **What this does:** Primary bottleneck is `joblib.load` of the per-animal files; per-session preprocessing is fast by comparison. Times are logged.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -492,9 +492,9 @@ for trial_idx in range(n_full_trials):
 
 **What this does:** Per-frame `snap_to_open_bins` loop and the per-trial preprocessing loop are explicit Python loops; the trial loop performs Gaussian smoothing and pooling per trial rather than vectorized across trials.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -519,9 +519,9 @@ chunk_cols = snapped_cols_all[start:end][chunk_mask]
 
 **What this does:** Position binning and snap-to-open are computed once per session over all frames; per-trial loop slices into the precomputed arrays. Occupancy matrices `occupancy_aligned` and `occupancy_snapped` are computed only for plotting payloads but always (not gated on `--show-processing`).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -547,8 +547,8 @@ def save_processing_plot(payload):
 
 **What this does:** Builds occupancy matrices and a full `SessionPlotPayload` (with copies of raw trial neural/position arrays) for every session even when `--show-processing` is off; only the first two are actually plotted. The plotting/visualization pathway is not consumed by the decoder.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

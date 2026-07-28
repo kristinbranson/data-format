@@ -34,9 +34,9 @@ me_raw = np.load(os.path.join(sess_dir, 'move_deve', 'motion_energy_glob.npy'))
 
 **What this does:** Discovers subject directories matching `jm*` and their session subdirectories under `DATA_DIR`, sorts both alphabetically. For each session, loads suite2p `F.npy` and `Fneu.npy` from `plane0`, and motion energy from `move_deve/motion_energy_glob.npy`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -63,9 +63,9 @@ subject_names = list(SUBJECT_MAP.values()) if not sample_mode else [SUBJECT_MAP[
 
 **What this does:** Each `jm*` directory is treated as one subject. A fixed mapping renames them to `Mouse_A` through `Mouse_F`, and these renamed labels are stored in the `subjects` field of the output.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -91,9 +91,9 @@ for i, session in enumerate(sessions):
 
 **What this does:** Each subdirectory of a subject's folder is treated as one session, sorted alphabetically (date-named). Sessions are processed independently and appended to per-session lists.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -123,9 +123,9 @@ for t in range(n_trials):
 
 **What this does:** Splits the continuous recording (after 10-frame binning) into non-overlapping 2-minute blocks of 360 bins each. Remainder bins not filling a full trial are dropped via integer division.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -140,9 +140,9 @@ for t in range(n_trials):
 
 **What this does:** No trial-level quality filtering is performed; all 2-minute segments are kept.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -161,9 +161,9 @@ n_neurons, n_frames = F.shape
 
 **What this does:** Neural data is derived from suite2p `F.npy` (raw fluorescence) and `Fneu.npy` (neuropil) from `plane0`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -200,9 +200,9 @@ dfof_binned = bin_timeseries(dfof, BIN_SIZE)  # (n_neurons, n_bins)
 
 **What this does:** Subtracts 0.7×neuropil from raw fluorescence, then applies suite2p `preprocess` (maximin baseline, win=60s, sig=10, prctile=8) which returns the baseline-subtracted signal (used directly as dF/F). The result is then averaged in non-overlapping 10-frame bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -217,9 +217,9 @@ dfof_binned = bin_timeseries(dfof, BIN_SIZE)  # (n_neurons, n_bins)
 
 **What this does:** No additional cell filtering is applied; all rows of `F.npy` are used. The notes state the provided data is already pre-filtered by Track2p (all `iscell=1`).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -241,9 +241,9 @@ return truncated.reshape(new_shape).mean(axis=-1)
 
 **What this does:** Averages every 10 consecutive 30 Hz frames into a single bin (~333.33 ms bin size, i.e. ~3 Hz).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -266,9 +266,9 @@ return truncated.reshape(new_shape).mean(axis=-1)
 
 **What this does:** Trials are not aligned to a stimulus event; they begin at fixed 2-minute offsets from the recording start. Metadata records the alignment event as "start of continuous recording session".
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -287,9 +287,9 @@ input_trials.append(time_sec.reshape(1, -1).astype(np.float32))
 
 **What this does:** Time is computed from bin indices times the bin width (10/30 s); not derived from any raw data variable.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -305,9 +305,9 @@ input_trials.append(time_sec.reshape(1, -1).astype(np.float32))
 
 **What this does:** Builds a per-trial time vector as `np.arange(start, end) * (BIN_SIZE/FRAME_RATE)`; values are seconds from the start of the recording (continuing across trial boundaries, not per-trial reset).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -327,9 +327,9 @@ for t in range(n_trials):
 
 **What this does:** Time and neural data share the same `start:end` bin indices, so they are aligned bin-for-bin.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -346,9 +346,9 @@ me_raw = np.load(os.path.join(sess_dir, 'move_deve', 'motion_energy_glob.npy'))
 
 **What this does:** Motion energy is loaded from `move_deve/motion_energy_glob.npy`. (Note: `interframe_int.npy` is mentioned in notes but not loaded here.)
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -382,9 +382,9 @@ me_discrete = discretize_motion_energy(me_binned, N_OUTPUT_BINS)
 
 **What this does:** Linearly interpolates motion energy to match the neural frame count, averages it in 10-frame bins, then discretizes per-session into 5 equal-percentile bins (quintiles) using `np.percentile` thresholds and `np.digitize`. Note: code does not explicitly normalize per session before discretizing (despite notes mentioning normalization).
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** missing normalization
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -408,9 +408,9 @@ me = interpolate_motion_energy(me_raw, n_frames)
 
 **What this does:** Aligns motion energy to neural frames via global linear interpolation across the entire session length (not via interframe-interval-based gap detection). After interpolation it is binned and trial-sliced with the same indices as the neural data.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** didn't find missing frames correctly
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -435,9 +435,9 @@ truncated = data[..., :n_bins * bin_size]
 
 **What this does:** Missing motion energy frames are handled via global linear interpolation to the neural length. Trailing frames not filling a complete bin/trial are truncated.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -457,9 +457,9 @@ dfof = s2p_preprocess(
 
 **What this does:** The suite2p `preprocess` (maximin baseline) call dominates runtime; it runs on GPU when available.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -480,9 +480,9 @@ for t in range(n_trials):
 
 **What this does:** The per-trial slicing loop builds trial lists by repeated slicing; could in principle be done with reshape on the binned arrays. Per-session loop in `convert_data` is inherently sequential.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -494,9 +494,9 @@ for t in range(n_trials):
 
 **What this does:** No obvious repeated computation; each session's dF/F and motion-energy pipeline is run once.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -514,8 +514,8 @@ def plot_processing(ax_list, subj, session, F, Fneu, dfof, me, me_binned,
 
 **What this does:** Optional `--show-processing` plotting routine generates verification figures; not used by downstream decoder. No clearly wasted core computation otherwise.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

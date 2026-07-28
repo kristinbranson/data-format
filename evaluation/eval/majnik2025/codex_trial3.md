@@ -35,9 +35,9 @@ tstamps = np.load(session.path / "move_deve" / "tstamps.npy", allow_pickle=True)
 
 **What this does:** Subjects are discovered as directories under `data/` starting with `jm`; sessions are subdirectories whose first four characters are digits (a date prefix). For each session, the code loads suite2p outputs (`F`, `Fneu`, `ops`) and behavior arrays (`motion_energy_glob`, `tstamps`) from `move_deve`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -60,9 +60,9 @@ converted = {
 
 **What this does:** Subjects are taken as sorted unique subject directory names matching the `jm*` prefix; each session is assigned the index of its parent subject in that sorted list.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -88,9 +88,9 @@ for session_dir in session_dirs:
 
 **What this does:** Each daily recording subdirectory under a subject (whose name begins with four digits, i.e. a date) is treated as a session. Sessions are sorted alphabetically and given an ID combining subject and session-folder name.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -119,9 +119,9 @@ output_trials = [x[None, :].astype(np.int64) for x in split_into_blocks_1d(motio
 
 **What this does:** Trials are defined as consecutive non-overlapping 2-minute blocks of the continuous recording. After 10-frame averaging (3 Hz), each trial contains 360 bins. Any leftover bins not filling a complete block are discarded.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -140,9 +140,9 @@ if len(neural_trials) < 2:
 
 **What this does:** No quality-based filtering is applied to trials. The only checks raise errors if neural/input/output trial counts disagree or if a session yields fewer than two trials.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -160,9 +160,9 @@ Fneu = np.load(session.path / "suite2p" / "plane0" / "Fneu.npy", allow_pickle=Tr
 
 **What this does:** Neural data is derived from suite2p `F.npy` (raw fluorescence), `Fneu.npy` (neuropil), and `ops.npy` (parameters) from `plane0`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -191,9 +191,9 @@ def compute_suite2p_baseline_corrected(F: np.ndarray, Fneu: np.ndarray, ops: dic
 
 **What this does:** Neuropil subtraction (`F - neucoeff*Fneu`) using each session's `ops` neucoeff (default 0.7), followed by suite2p `dcnv.preprocess` with the session's baseline parameters (`maximin`, 60 s window). Then bin-averaged in 10-frame bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -206,9 +206,9 @@ def compute_suite2p_baseline_corrected(F: np.ndarray, Fneu: np.ndarray, ops: dic
 
 **What this does:** No additional neuron-level QC filter is applied; all neurons present in the provided suite2p `F.npy` (already pre-filtered to cells matched across days) are kept.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -236,9 +236,9 @@ neural_binned = bin_average_2d(neural, MOTION_BIN_SIZE_FRAMES)
 
 **What this does:** Neural data is averaged in non-overlapping 10-frame bins, downsampling from 30 Hz to 3 Hz (resulting in `time_bin_size = 1000.0 * 10 / 30 ≈ 333.33` ms).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -256,9 +256,9 @@ neural_binned = bin_average_2d(neural, MOTION_BIN_SIZE_FRAMES)
 
 **What this does:** Each trial's neural data starts at the beginning of a 2-minute block; there is no stimulus event-based alignment. Metadata records the alignment event as the start of each block, with `off_start=0.0` and `off_end=120.0`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -278,9 +278,9 @@ time_binned = make_time_input(neural_binned.shape[1], float(ops["fs"]), MOTION_B
 
 **What this does:** Time is computed from bin indices using `ops['fs']` (30 Hz) and the 10-frame bin size; not derived from any timestamp variable in the raw data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -300,9 +300,9 @@ input_trials = [x[None, :].astype(np.float32) for x in split_into_blocks_1d(time
 
 **What this does:** Builds a per-bin elapsed-time vector starting at 0 with step `bin_size_frames/fs` (≈0.333 s), spanning all binned timepoints in the session, then splits into 360-bin blocks. Time values are absolute elapsed seconds from the session start, not reset per trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -322,9 +322,9 @@ input_trials = [x[None, :].astype(np.float32) for x in split_into_blocks_1d(time
 
 **What this does:** The time vector is constructed with the same number of bins as the binned neural array, then split into the same 360-bin blocks, ensuring index-for-index alignment with neural trials.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -341,9 +341,9 @@ tstamps = np.load(session.path / "move_deve" / "tstamps.npy", allow_pickle=True)
 
 **What this does:** Motion energy is derived from `move_deve/motion_energy_glob.npy`; `move_deve/tstamps.npy` is used to map behavior samples onto the imaging frame grid when lengths differ.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -369,9 +369,9 @@ motion_disc = motion_to_bins(motion_binned_norm, quantile_edges)
 
 **What this does:** (1) Behavior is aligned to imaging frame grid (via timestamp mapping with linear interpolation over missing frames). (2) 10-frame bin averaging. (3) Global min-max normalization across all included sessions. (4) Discretization into 5 quintile-based bins (`np.digitize` against [0.2, 0.4, 0.6, 0.8] quantile edges).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -406,9 +406,9 @@ def align_motion_to_imaging(motion, tstamps, nframes):
 
 **What this does:** If motion length equals neural frame count, no remap is needed. Otherwise, behavior timestamps are linearly mapped onto the `[0, nframes-1]` index range, samples falling on the same imaging frame are averaged, and missing-frame slots are filled by `np.interp` against the known-index/value pairs.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -439,9 +439,9 @@ if neural_binned.shape[1] % BLOCK_BINS != 0:
 
 **What this does:** Missing camera frames are detected (frames where no behavior timestamp maps) and filled by linear interpolation. Bins not filling a complete 2-minute block are truncated. Length mismatches between neural and motion arrays raise an error.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -463,9 +463,9 @@ return dcnv.preprocess(
 
 **What this does:** The dominant cost is per-session suite2p `dcnv.preprocess` baseline correction, performed on CPU. Loading large `F.npy`/`Fneu.npy` arrays per session is a secondary cost.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -485,9 +485,9 @@ for idx, session in enumerate(sessions):
 
 **What this does:** The main per-session loop could not be readily vectorized since each session must be loaded and preprocessed separately by suite2p; smaller helper operations (binning, alignment) already use vectorized numpy.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -518,9 +518,9 @@ for idx, session in enumerate(sessions):
 
 **What this does:** Each session's `ops`, `motion_energy_glob.npy`, `tstamps.npy` are loaded twice (once in pass 1 to compute global quantile edges, once in pass 2 for full conversion); `align_motion_to_imaging` is also recomputed in pass 2 even though `motion_binned_by_session` is already cached.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -536,8 +536,8 @@ motion_aligned, _ = align_motion_to_imaging(motion, tstamps, F.shape[1])
 
 **What this does:** In pass 2, `motion_aligned` is recomputed but only used when generating optional processing plots (`--show-processing`); the actual output relies on the cached `motion_binned_by_session` from pass 1. When plotting is not requested, this recomputation is unused.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

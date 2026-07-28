@@ -33,9 +33,9 @@ nwb_data = load_nwb_data(nwb_path)
 
 **What this does:** Reads the `ophys_experiment_table.csv` from the local metadata directory, intersects with NWB files actually present on disk, then drops "passive" session types. Each remaining experiment is loaded by opening its NWB file directly with h5py (rather than via the AllenSDK).
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -59,9 +59,9 @@ if mouse_id not in subject_map:
 
 **What this does:** Subjects are identified by the `mouse_id` field in the experiment table. As experiments are processed, each new `mouse_id` is appended to `all_subjects` and assigned an index in `subject_map`; per-experiment subject indices are stored in `subject_idx`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -90,9 +90,9 @@ session_metadata.append({
 
 **What this does:** Each row of the experiment table (one `ophys_experiment_id`, i.e. one imaging plane) is treated as a separate session in the output. The original `ophys_session_id` is recorded only in the per-session metadata dict, not used for grouping.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** did not combine "experiment id" based on "session id"
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -124,9 +124,9 @@ for trial_idx in valid_trial_idx:
 
 **What this does:** Trials come from the NWB `intervals/trials` table. Valid trials are those flagged as `go` or `catch` and not `aborted` or `auto_rewarded`. For each valid trial, ophys frames between `start_time` and `stop_time` are extracted as the trial window (variable length).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -155,9 +155,9 @@ if len(neural_trials) < 2:
 
 **What this does:** Filters out aborted and auto-rewarded trials at trial level. Skips trials whose ophys window contains fewer than 2 frames. Drops the entire experiment if fewer than 2 valid trials remain (both before and after processing).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -181,9 +181,9 @@ neural = dff[:, frame_mask].astype(np.float32)
 
 **What this does:** Neural data is the pre-computed dF/F traces from `processing/ophys/dff/traces/data` in each NWB file, transposed to `(n_cells, n_frames)`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -202,9 +202,9 @@ neural = dff[:, frame_mask].astype(np.float32)
 
 **What this does:** No additional processing is applied to the dF/F values beyond loading, transposing to `(n_cells, n_frames)`, casting to float32, and slicing the trial-window frames.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -223,9 +223,9 @@ if n_cells == 0:
 
 **What this does:** No explicit ROI/QC filtering is applied; the script relies on the NWB files (which the SDK exports with `exclude_invalid_rois=True`). The only check is that the experiment has at least 1 cell.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -251,9 +251,9 @@ median_dt = np.median(all_dts)
 
 **What this does:** Neural data is kept at the native ophys frame rate; no resampling. Per-session bin size is `np.median(np.diff(ophys_ts))`, and the global `time_bin_size` reported in metadata is the median across sessions (~32.3 ms).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -279,9 +279,9 @@ for trial_idx in valid_trial_idx:
 
 **What this does:** Each trial's neural slice is the dF/F columns whose ophys timestamps fall in `[start_time, stop_time)` of the trial. Alignment is to the trial start, with a variable-length window per trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -303,9 +303,9 @@ running_at_ophys = interpolate_to_ophys(
 
 **What this does:** Running speed is read directly from `processing/running/speed/data` (with companion timestamps) in each NWB file.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -346,9 +346,9 @@ running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
 
 **What this does:** Running speed is linearly interpolated from its native (~60 Hz) timebase to the ophys timestamps, then discretized into 5 percentile bins. Bin edges are computed per session (not globally across sessions). NaNs map to bin 0.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -371,9 +371,9 @@ running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
 
 **What this does:** Running speed is interpolated session-wide onto the ophys timestamps once, then sliced with the same `frame_mask` used for the neural data, guaranteeing per-frame alignment with the neural trial window.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -400,9 +400,9 @@ else:
 
 **What this does:** Pupil diameter is derived from the pupil `area` field of `acquisition/EyeTracking/pupil_tracking` (with timestamps), plus `likely_blink` flags. There is no use of `pupil_width` directly.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -432,9 +432,9 @@ pupil_binned = apply_percentile_bins(pupil_trial, pupil_edges, n_bins=5)
 
 **What this does:** Blink frames are masked to NaN in the pupil area trace. Diameter is computed as `2*sqrt(area/pi)` for valid samples. The diameter is linearly interpolated onto the ophys timestamps and discretized into 5 per-session percentile bins, with NaNs mapped to bin 0.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -453,9 +453,9 @@ pupil_binned = apply_percentile_bins(pupil_trial, pupil_edges, n_bins=5)
 
 **What this does:** Pupil diameter is interpolated session-wide to the ophys timestamps, then sliced by the same `frame_mask` used for the neural data, giving per-frame alignment within each trial window.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -500,9 +500,9 @@ def build_image_identity_trace(ophys_ts, stim_data, trial_start, trial_stop, ima
 
 **What this does:** Image identity comes from the stimulus presentations interval (`Natural_Images_*_presentations`), specifically the `image_name`, `start_time`, and `stop_time` columns (with `omitted` flashes treated as gray). Trial-level `initial_image_name`/`change_image_name` are loaded but not used to build the trace.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -541,9 +541,9 @@ trace[frame_mask] = img_idx
 
 **What this does:** A global sorted image-name list is built across all experiments, prefixed with a `'gray'` label. For each trial, a per-frame integer trace is initialized to the gray index, and frames falling within each presentation interval are overwritten with that presentation's image index. Omitted flashes are left as gray.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -567,9 +567,9 @@ img_trace, _ = build_image_identity_trace(
 
 **What this does:** The image-identity trace is built on the same set of ophys frames inside `[trial_start, trial_stop)` that the neural slice uses, so each frame of `output[0]` corresponds to the same ophys frame as the matching column of `neural`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -603,9 +603,9 @@ def build_image_change_trace(ophys_ts, stim_data, trial_start, trial_stop):
 
 **What this does:** `image_change` is derived from the `is_change` and `start_time` columns of the stimulus presentations table. Trial-level `change_time` and `go` columns are not used.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -633,9 +633,9 @@ change_trace = build_image_change_trace(ophys_ts, stim_data, t_start, t_stop)
 
 **What this does:** A zero trace is initialized over the trial's ophys frames. For each stimulus presentation flagged `is_change`, the single ophys frame at or after its `start_time` (via `np.searchsorted`) is set to 1. The "1" is one ophys frame wide, not a 750 ms window.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -656,9 +656,9 @@ if frame_idx < n_frames:
 
 **What this does:** The change trace is built on the same trial-window ophys frames used for the neural slice; `np.searchsorted(trial_ts, s_start)` places each change at the matching ophys frame index, so it shares per-frame alignment with the neural data.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -684,9 +684,9 @@ def get_trial_outcome(trial_data, idx):
 
 **What this does:** Trial outcome is derived from the four boolean columns `hit`, `miss`, `false_alarm`, `correct_reject` in the trials table, checked in that order with an `'unknown'` fallback.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -712,9 +712,9 @@ outcome_names = ['hit', 'miss', 'false_alarm', 'correct_reject']
 
 **What this does:** The string outcome is mapped to an integer index via the fixed list `['hit','miss','false_alarm','correct_reject']` (unknown falls back to 0 = hit). This per-trial scalar is broadcast across all time bins of the trial as row 4 of the `(5, T)` output array.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -732,9 +732,9 @@ output_full[4] = outcome_idx  # broadcast scalar to all timepoints
 
 **What this does:** Trial outcome is constant across the trial; it is broadcast to all `n_trial_frames` time bins so that row 4 of the per-trial output array matches the neural data's time dimension.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -772,9 +772,9 @@ except Exception as e:
 
 **What this does:** Missing pupil data falls through to an all-NaN array (later mapped to bin 0). NaN behavioral samples discretize to bin 0. Missing NWB files, zero-cell experiments, missing stimulus, fewer than 2 valid trials, and degenerate trial windows are skipped with warnings. Image-name scanning is wrapped in try/except.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -796,9 +796,9 @@ t_process = time.time() - t0 - t_load
 
 **What this does:** The script self-times each experiment with separate `t_load` (NWB read) and `t_process` (trial extraction) timers. In the full-run log, `t_load` (~1.5–3.4 s per experiment) dominates `t_process` (~0.5–1.1 s); the one-off `get_all_image_names` scan takes ~14 s.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -829,9 +829,9 @@ for trial_idx in valid_trial_idx:
 
 **What this does:** Per-trial Python loops iterate over stimulus presentations to build the image-identity and image-change traces (each presentation does its own boolean-mask assignment / `np.searchsorted`). A separate per-trial loop iterates over `valid_trial_idx`. None of these are vectorized across stimuli or trials.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -864,9 +864,9 @@ for si in range(len(stim_starts)):
 
 **What this does:** Each NWB file is opened twice — once in `get_all_image_names` to collect labels, then again in `load_nwb_data` during processing. Within a session, both `build_image_identity_trace` and `build_image_change_trace` iterate over the entire session's stimulus-presentations list separately for every trial.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -893,9 +893,9 @@ for key in ['start_time', 'stop_time', 'go', 'catch', 'aborted', 'auto_rewarded'
 
 **What this does:** `cell_roi_ids` is loaded but never used downstream. Trial columns `change_time`, `initial_image_name`, `change_image_name`, and `is_change` are loaded but never read after loading (image identity/change come from the stimulus presentations table instead).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -926,8 +926,8 @@ result = {
 
 **What this does:** Experiments are processed one at a time inside `process_experiment`; full-session dF/F and interpolated behavioral arrays are local variables that go out of scope when the function returns, leaving only the per-trial slices in memory. Per-trial neural data is cast to float32. There is no explicit `del` or chunked NWB read — full session arrays are loaded into RAM during processing.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---

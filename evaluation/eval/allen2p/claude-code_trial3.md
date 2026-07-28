@@ -44,9 +44,9 @@ def load_experiment_data(nwb_path, experiment_id):
 
 **What this does:** Reads NWB files directly with h5py (not via AllenSDK), discovering experiment IDs by globbing the `behavior_ophys_experiments/` directory and joining against `ophys_experiment_table.csv`. Filters to ACTIVE_SESSION_TYPES (OPHYS_1/3/4/6, images A and B). For each experiment, opens the NWB file and pulls cell_specimen_table, event detection traces, ophys timestamps, trials table, stimulus presentations, running speed, and pupil tracking.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -68,9 +68,9 @@ all_subject_idx.append(subject_to_idx[str(row['mouse_id'])])
 
 **What this does:** Subjects are unique `mouse_id` values from the experiment table CSV, sorted as strings. Each session (NWB experiment) is tagged with its subject index via `subject_to_idx`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -88,9 +88,9 @@ for idx, (_, row) in enumerate(exp_table.iterrows()):
 
 **What this does:** Each NWB file (one `ophys_experiment_id`) is treated as an independent session in the output. Multi-plane experiments from the same `ophys_session_id` are not grouped — each imaging plane becomes a separate output session. Iteration order follows the order of the experiment table rows after filtering.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -117,9 +117,9 @@ for trial_idx in valid_indices:
 
 **What this does:** Trials come from the NWB `intervals/trials` table. A valid trial is Go or Catch and not Aborted and not Auto-rewarded. The trial window spans `start_time` to `stop_time` (variable length); the resampled 30 Hz timestamps falling inside this window define the trial frames.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -160,9 +160,9 @@ else:
 
 **What this does:** Excludes Aborted and Auto-rewarded trials; requires Go or Catch flag. Trials with fewer than 3 resampled timepoints are skipped. Trials lacking a hit/miss/false_alarm/correct_reject outcome are skipped. Sessions with fewer than 2 valid trials before processing or fewer than 2 processed trials after the loop are dropped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -185,9 +185,9 @@ events_valid = events_data[:, valid_roi]
 
 **What this does:** Neural data comes from the NWB `processing/ophys/event_detection/data` (FastLZeroSpikeInference calcium events), restricted to ROIs flagged `valid_roi=True` in the cell_specimen_table.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -224,9 +224,9 @@ def interpolate_to_regular_grid(timestamps, data, target_timestamps):
 
 **What this does:** Per-neuron event traces are linearly interpolated from native ophys timestamps onto a regular 30 Hz grid spanning `[ophys_ts[0], ophys_ts[-1])`, then clipped to be non-negative. No additional smoothing or normalization is applied.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -247,9 +247,9 @@ if n_valid == 0:
 
 **What this does:** Neurons are filtered to those with `valid_roi=True` from the NWB cell_specimen_table (the SDK's SVM-based ROI quality flag). Experiments with zero valid ROIs are skipped entirely. No further per-neuron filtering is applied.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -272,9 +272,9 @@ events_resampled = interpolate_to_regular_grid(ophys_ts, events, regular_ts)
 
 **What this does:** Neural events are resampled (linear interpolation) to a fixed 30 Hz regular grid (~33.33 ms bin). All other streams (running, pupil) are interpolated onto the same grid, so neural and behavior share timestamps.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -300,9 +300,9 @@ for trial_idx in valid_indices:
 
 **What this does:** For each trial, neural frames are selected by indexing the 30 Hz grid with samples whose timestamps fall in `[start_time, stop_time)` of the NWB trials table. The alignment event is recorded as trial start with `off_start=0` and `off_end=None`. Trial length is variable.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -319,9 +319,9 @@ running_ts = f['processing']['running']['speed']['timestamps'][()]
 
 **What this does:** Pulled directly from the NWB `processing/running/speed/data` array (cm/s) with corresponding `timestamps`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -359,9 +359,9 @@ running_binned = digitize_to_bins(trial_data_out['running_speed'], running_bin_e
 
 **What this does:** Running speed is linearly interpolated to the 30 Hz grid. In an earlier pass, all-session running values are concatenated and used to compute 5 global percentile bin edges. Per-trial values are then digitized into those bin indices (NaNs map to bin 0).
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -384,9 +384,9 @@ running_trial = running_resampled[trial_time_indices]
 
 **What this does:** Running speed is interpolated onto the same 30 Hz `regular_ts` grid used for neural events, and the same `trial_time_indices` slice is then applied to both arrays, so they share frame indices within a trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -411,9 +411,9 @@ except (KeyError, Exception):
 
 **What this does:** Reads `acquisition/EyeTracking/pupil_tracking/area` (used as a proxy for diameter) along with its timestamps and the `likely_blink` boolean mask. If pupil tracking is missing, the experiment continues without pupil data.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** used area instead of diameter
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -451,9 +451,9 @@ pupil_binned = digitize_to_bins(trial_data_out['pupil_area'], pupil_bin_edges)
 
 **What this does:** Blink frames are set to NaN, NaNs are linearly interpolated (over sample-index, not time), then the cleaned trace is interpolated to the 30 Hz grid. Bin edges are computed globally from non-blink pupil values across all sessions, and per-trial values are digitized into 5 percentile bins.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -477,9 +477,9 @@ else:
 
 **What this does:** Pupil area is interpolated onto the same `regular_ts` 30 Hz grid as the neural data, then sliced with the same `trial_time_indices`. If pupil data is missing for an experiment, an all-NaN per-trial vector is used, which then maps to bin 0 during digitization.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -518,9 +518,9 @@ def get_image_at_timepoints(timepoints, stim_data, all_image_names):
 
 **What this does:** Image identity at each timepoint is the `image_name` of the most recent non-omitted stimulus presentation (from the NWB stimulus_presentations interval), found via `searchsorted` on stimulus start times. Omitted flashes carry forward the previous image; pre-first-stimulus timepoints get index 0.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -560,9 +560,9 @@ img_id_global = np.array([local_to_global.get(v, 0) for v in trial_data_out['ima
 
 **What this does:** A global, sorted list of all unique non-omitted image names is built by scanning every NWB file in Pass 1. Each session's per-frame image identities are mapped (via local→global index) into the shared categorical space. The mapping yields ~16 classes across image sets A and B.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -581,9 +581,9 @@ image_idx = get_image_at_timepoints(trial_ts, raw_data['stim'], all_stim_images)
 
 **What this does:** Image identity is computed per timepoint at the trial's `trial_ts` (the 30 Hz timestamps for that trial), so it is one image label per neural frame in the same trial slice.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -610,9 +610,9 @@ def get_image_change_at_timepoints(timepoints, stim_data):
 
 **What this does:** Image change is derived from the stimulus_presentations table, taking presentations where `is_change=True` and `omitted=False`. For each such presentation, a 750 ms window starting at its `start_time` is marked 1 (covering the 250 ms image flash plus 500 ms gray). Catch-trial sham changes are excluded because the stim table's `is_change` flag only fires on real changes.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -630,9 +630,9 @@ img_change = trial_data_out['image_change'].astype(np.int64)
 
 **What this does:** No further processing beyond the binary windowing in `get_image_change_at_timepoints`. The result is cast to int64 and stored as the image_change output channel.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -652,9 +652,9 @@ change_signal = get_image_change_at_timepoints(trial_ts, raw_data['stim'])
 
 **What this does:** Computed at the same per-trial 30 Hz timestamps used for neural data, so frame indices match exactly within the trial slice.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -688,9 +688,9 @@ else:
 
 **What this does:** Trial outcome is read from the four boolean columns of the NWB trials table (`hit`, `miss`, `false_alarm`, `correct_reject`) and mapped to integers 0–3. Trials with none of the four flags set are skipped.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -712,9 +712,9 @@ output_combined = np.concatenate([output_tv, outcome_broadcast], axis=0)
 
 **What this does:** Trial outcome integer (0–3) is broadcast to a constant value across all trial timepoints, producing a `(1, n_tp)` row that is concatenated with the time-varying outputs. The label vocabulary is stored in `output_values` as `['hit', 'miss', 'false_alarm', 'correct_reject']`.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -732,9 +732,9 @@ output_combined = np.concatenate([output_tv, outcome_broadcast], axis=0)  # (5, 
 
 **What this does:** Trial outcome is a per-trial constant tiled across all `n_tp` timepoints of the trial, so its shape and frame indexing match the neural data; the actual outcome value does not change within a trial.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -783,9 +783,9 @@ Also `digitize_to_bins` maps NaN values to bin 0 (lines 96-97).
 
 **What this does:** Loading and per-experiment processing are wrapped in try/except so any failure skips the experiment with a warning. Missing components (no valid ROIs, no stim table, no pupil) are gracefully skipped or substituted with NaN. Trials shorter than 3 frames or without an outcome are dropped. Sessions with fewer than 2 valid trials are dropped. Pupil blinks are NaN-filled then linearly interpolated; remaining NaNs after digitization map to bin 0. Events resampled below zero are clipped to 0.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -815,9 +815,9 @@ with open(args.output, 'wb') as f:
 
 **What this does:** Code instruments per-experiment load and process times. From the run log, NWB loading dominates for MESO multi-plane experiments (2-3s each); single-plane CAM2P loads in ~0.2s. Total conversion was 358s across 202 experiments, plus 9.1s pickling an 8.3 GB output file. Pass 1 (image-name scan) and Pass 2 (running/pupil collection) also re-open every NWB file.
 
-**Rating:** concerning
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -850,9 +850,9 @@ Also `from concurrent.futures import ProcessPoolExecutor, as_completed` is impor
 
 **What this does:** Several inner loops are present that could be vectorized: the per-cell `np.interp` loop in `interpolate_to_regular_grid`, the per-timepoint dict lookup in `get_image_at_timepoints` (could be `stim_names[insert_idx]` then a vector map), and the per-change-event mask in `get_image_change_at_timepoints`. The main per-experiment loop is also serial despite the futures import.
 
-**Rating:** ok
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -890,9 +890,9 @@ for idx, (_, row) in enumerate(exp_table.iterrows()):
 
 **What this does:** Each NWB file is opened three separate times — once to collect image names, once to collect running/pupil values for global percentile bins, and once for full per-experiment processing. Running speed and pupil arrays are read in both Pass 2 and Pass 3.
 
-**Rating:** incorrect
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -933,9 +933,9 @@ return {
 
 **What this does:** A few raw fields are loaded but never used downstream: `cell_specimen_ids` are returned in `raw_data` but never written into the output pickle; `change_time`, `is_change`, `initial_image_name`, and `change_image_name` from the trials table are loaded but the image-change signal is computed from the stim_presentations table instead, so these per-trial fields go unused.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
 
@@ -967,8 +967,8 @@ all_neural.append(session_neural)
 
 **What this does:** After computing global percentile bin edges, the bulk Pass-2 arrays (`all_running_values`, `all_pupil_values`, and their concatenations) are explicitly `del`'d. Per-experiment, the full session arrays go out of scope after the function returns; only per-trial slices are appended to the global lists. Neural per-trial arrays are cast to `float32` and outputs to `int64`, but no other explicit memory tuning is done; the final pickle is 8.3 GB.
 
-**Rating:** match
+**Rating:** _(to be filled by evaluator)_
 
-**Note:** _(no note)_
+**Note:** _(to be filled by evaluator)_
 
 ---
