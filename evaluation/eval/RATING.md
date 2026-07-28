@@ -6,80 +6,17 @@ those ratings are stored, and how they are combined with the existing ratings
 
 ## TL;DR
 
-All commands run from `evaluation/eval/`. Substitute the evaluator code and the
-dataset; `<dataset>` is one of `allen2p`, `chen2024`, `hasnain2024`, `lee2025`,
-`majnik2025`, `sosa2024`, `zhang2025`, `zhong2025`.
+From `evaluation/eval/`, per dataset:
 
 ```bash
-cd /groups/zhang/home/zhangl5/Data-Format/evaluation/eval
-
-# 1. Rate. With a reference (allen2p, lee2025, majnik2025, sosa2024):
-python3 rate.py <dataset> --rater KB
-#    Without one (chen2024, hasnain2024, zhang2025, zhong2025):
-python3 rate_blind.py <dataset> --rater KB
-#    Stop any time with Ctrl-C; re-run the same command to resume.
-
-# 2. Fold the new ratings into the combined table.
-python3 raters.py merge <dataset> --apply      # omit <dataset> for all of them
-
-# 3. Regenerate the report.
-python3 report.py <dataset>                    # --rater KB for KB's version
-
-# 4. Sanity check (optional — step 1 runs this check itself).
-python3 raters.py check
+python3 rate.py <dataset> --rater KB       # rate_blind.py for chen2024, hasnain2024, zhang2025, zhong2025
+python3 raters.py merge <dataset> --apply  # fold the ratings into eval_summary.md
+python3 report.py <dataset>                # regenerate report.md
 ```
 
-Repeat 1–3 per dataset.
-
-### Stopping, resuming, re-rating
-
-```bash
-# Resume after Ctrl-C — just run the same command again. Already-rated
-# questions are skipped silently; nothing is lost.
-python3 rate.py <dataset> --rater KB
-
-# Redo ONE question (re-prompts all 6 trials). Without --overwrite the
-# question is treated as done and skipped without a prompt.
-python3 rate.py <dataset> --rater KB --question 3-a --overwrite
-
-# Redo the WHOLE dataset.
-python3 rate.py <dataset> --rater KB --overwrite
-
-# Start that evaluator's dataset from scratch — deletes their ratings *and*
-# their summary.md for it, then reseeds blank copies from the masters.
-rm -rf <dataset>/KB
-python3 rate.py <dataset> --rater KB
-```
-
-The same flags work for `rate_blind.py`; there, pressing Enter at a rating
-prompt skips that trial without writing anything.
-
-After any re-rating, re-run steps 2 and 3 so the combined table and the report
-pick up the change:
-
-```bash
-python3 raters.py merge <dataset> --apply && python3 report.py <dataset>
-```
-
-Two things to know:
-
-- Ratings are written the moment they are entered, so Ctrl-C never loses more
-  than the question you were on.
-- Deleting an evaluator's folder removes their ratings for that dataset (they
-  survive in git history). Until they rate something again, the next merge
-  drops their column from `eval_summary.md` — `raters.py merge` prints the
-  column list on every run, so watch that line.
-
-Everything else below is detail.
-
-Evaluators are registered in [`raters.json`](raters.json):
-
-| code | role |
-|---|---|
-| `LZ` | primary — also owns the judge-comparison pass (`compare.py`) |
-| `KB` | second evaluator — solution ratings only |
-
-Add an evaluator by appending an entry there; nothing else needs changing.
+Ctrl-C is safe — re-run to resume. To redo, add `--overwrite` (with
+`--question 3-a` for just one); to start a dataset over, `rm -rf <dataset>/KB`.
+Re-run the last two commands after any re-rating.
 
 ---
 
