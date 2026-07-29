@@ -254,6 +254,11 @@ def prompt_overall_comment() -> str:
     return raw if raw else "_(no overall comment)_"
 
 
+def _qid_sort_key(q: str):
+    m = re.match(r"(\d+)", q)
+    return (int(m.group(1)) if m else 999, q.split("-")[1] if "-" in q else "")
+
+
 def write_summary(summary_path: Path, qid: str, qtitle: str,
                   results: list, overall: str, dataset: str = "", rater: str = ""):
     """
@@ -289,10 +294,18 @@ def write_summary(summary_path: Path, qid: str, qtitle: str,
     if pattern.search(text):
         new_text = pattern.sub(block + "\n", text, count=1)
     else:
-        # Append at end (after a blank line)
+        # Insert in question order, not in the order questions were rated: the
+        # two differ whenever the reference is numbered differently from the
+        # dossiers (allen2p), and a scrambled summary is hard to read against
+        # another evaluator's.
         if not text.endswith("\n"):
             text += "\n"
-        new_text = text + block
+        insert_at = len(text)
+        for m in re.finditer(r"^##\s+Q\s+(\d+(?:-[a-z])?)\.", text, re.MULTILINE):
+            if _qid_sort_key(m.group(1)) > _qid_sort_key(qid):
+                insert_at = m.start()
+                break
+        new_text = text[:insert_at] + block + "\n" + text[insert_at:]
     summary_path.write_text(new_text)
 
 

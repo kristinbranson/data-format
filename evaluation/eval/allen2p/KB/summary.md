@@ -16,6 +16,7 @@
 **Overall comment:** it would be good to understand why so many agents wanted to use not passive experiments even though the instructions clearly said "Collect and convert data under the "Visual Behavior" task."
 
 ---
+
 ## Q 1-b. How are the data split into subjects?
 
 | Agent / trial | Rating | Note |
@@ -30,6 +31,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 1-c. How are the data split into sessions?
 
 | Agent / trial | Rating | Note |
@@ -44,6 +46,7 @@
 **Overall comment:** the use of the word experiment seems to really confuse agents
 
 ---
+
 ## Q 1-d. Are the data correctly split into trials?
 
 | Agent / trial | Rating | Note |
@@ -73,6 +76,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
 | Agent / trial | Rating | Note |
@@ -87,6 +91,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 2-b. How is the `neural` data processed?
 
 | Agent / trial | Rating | Note |
@@ -101,6 +106,7 @@
 **Overall comment:** there were things that looked weird here, but they are either because of binning or confusion over plane vs experiment
 
 ---
+
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
 | Agent / trial | Rating | Note |
@@ -115,6 +121,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
 | Agent / trial | Rating | Note |
@@ -129,6 +136,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 | Agent / trial | Rating | Note |
@@ -143,6 +151,97 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
+## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 3-b. What processing is involved in computing `output` *Running speed*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 3-c. How is `output` *Running speed* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | uses pupil area to derive diameter instead of width |
+| claude-code / trial2 | ok | uses pupil area to derive diameter instead of width |
+| claude-code / trial3 | ok | uses pupil area to derive diameter instead of width |
+| codex / trial1 | ok | uses pupil area to derive diameter instead of width |
+| codex / trial2 | concerning | uses max of width and height, but doesn't filter for likely blinking |
+| codex / trial3 | ok | uses max of width and height instead of width |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
 ## Q 5-a. What variables in the raw data is `output` *Image name* derived from?
 
 | Agent / trial | Rating | Note |
@@ -157,6 +256,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 5-b. What processing is involved in computing `output` *Image name*?
 
 | Agent / trial | Rating | Note |
@@ -171,6 +271,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 5-c. How is `output` *Image name* aligned with the neural data?
 
 | Agent / trial | Rating | Note |
@@ -185,6 +286,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 6-a. What variables in the raw data is `output` *Image change* derived from?
 
 | Agent / trial | Rating | Note |
@@ -214,6 +316,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 6-c. How is `output` *Image change* aligned with the neural data?
 
 | Agent / trial | Rating | Note |
@@ -228,90 +331,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
 
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-## Q 3-b. What processing is involved in computing `output` *Running speed*?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-## Q 3-c. How is `output` *Running speed* aligned with the neural data?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | ok | uses pupil area to derive diameter instead of width |
-| claude-code / trial2 | ok | uses pupil area to derive diameter instead of width |
-| claude-code / trial3 | ok | uses pupil area to derive diameter instead of width |
-| codex / trial1 | ok | uses pupil area to derive diameter instead of width |
-| codex / trial2 | concerning | uses max of width and height, but doesn't filter for likely blinking |
-| codex / trial3 | ok | uses max of width and height instead of width |
-
-**Overall comment:** _(no overall comment)_
-
----
-## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
 ## Q 7-a. What variables in the raw data is `output` *Trial outcome* derived from?
 
 | Agent / trial | Rating | Note |
@@ -326,6 +346,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 7-b. What processing is involved in computing `output` *Trial outcome*?
 
 | Agent / trial | Rating | Note |
@@ -340,6 +361,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
 
 | Agent / trial | Rating | Note |
@@ -354,6 +376,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 8. How are minor mistakes in the data, e.g. missing data, handled?
 
 | Agent / trial | Rating | Note |
@@ -368,6 +391,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 9-a. What are the most time-consuming steps of the code?
 
 | Agent / trial | Rating | Note |
@@ -382,6 +406,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 9-b. What loops in the code could have been vectorized to improve efficiency?
 
 | Agent / trial | Rating | Note |
@@ -396,6 +421,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 9-c. What processing does the code repeat multiple times?
 
 | Agent / trial | Rating | Note |
@@ -410,6 +436,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 9-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 | Agent / trial | Rating | Note |
@@ -424,6 +451,7 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 9-e. How is memory usage optimized?
 
 | Agent / trial | Rating | Note |
