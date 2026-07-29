@@ -346,10 +346,11 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         *( [existing_comments, ""] if existing_comments else [] ),
         "## Per-question evaluations",
         "",
+        # Columns: Q, Question, one per evaluator, 2 judges, 3 comment columns.
         "| Q | Question | " + " | ".join(codes)
         + " | Claude judge | Codex judge | Solution comment "
           "| LLM judge comment | Difference categories |",
-        "|---" * (len(codes) + 6) + "|",
+        "|---" * (len(codes) + 7) + "|",
     ]
 
     placeholder_comments = {"_(no overall comment)_", "(no overall comment)",
