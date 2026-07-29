@@ -19,6 +19,9 @@
 # Per-trial decoder accuracy + dataset-scale stats pulled from `harbor-jobs/<ds>/<agent>/<trial>/verifier/metrics.json`. The pull script is `eval/pull_trial_metrics.py`; loaders live in `utils.py` (`load_trial_metrics`, `trial_metrics_df`).
 
 # %%
+# %load_ext autoreload
+# %autoreload 2
+
 from pathlib import Path
 
 import numpy as np
@@ -27,8 +30,17 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.patches import Rectangle as _Rect
 
+try:
+    # running as a script via jupytext
+    ROOT = Path(__file__).resolve().parents[2]
+except NameError:
+    # running in a notebook: use metrics.py
+    # so two levels up is data-format/
+    ROOT = Path.cwd().resolve().parents[1]
+
 # Where LaTeX table dumps land (one .tex per table for inclusion via \input).
-FIGURES_DIR = Path(__file__).resolve().parents[2] / "figures"
+FIGURES_DIR = ROOT / "figures"
+print(f"Figures will be written to {FIGURES_DIR}")
 
 
 def _emit_latex(text: str, filename: str) -> str:
@@ -48,20 +60,171 @@ mpl.rcParams['figure.dpi'] = 300
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 
-from utils import load_trial_metrics, trial_metrics_df
+_cmap     = plt.get_cmap("RdYlGn")
+_cnorm    = mcolors.TwoSlopeNorm(vmin=0.5, vcenter=1.0, vmax=1.5)
+NAN_GREY  = "#f2f2f2"
+RAW_GREY  = "#cfcfcf"
+PASS_GREEN = "#7fc97f"   # easier on the eye than full saturation
+FAIL_RED   = "#e08585"
+_cmap = mcolors.LinearSegmentedColormap.from_list(
+    "LightRdYlGn", [FAIL_RED, "#f7f1b5", PASS_GREEN]
+)
 
-mdf = trial_metrics_df(load_trial_metrics())
+from utils import load_trial_metrics, trial_metrics_df
+TRIAL_METRICS_JSON = 'trial_metrics_new.json'
+
+mdf = trial_metrics_df(load_trial_metrics(filename=TRIAL_METRICS_JSON))
 
 # Display-name mirror of analysis.ipynb's cell 9fc5189e
 DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
 def display_name(ds):
     return DISPLAY_NAME.get(ds, ds[:1].upper() + ds[1:])
 
+# --- Cell strip layout -------------------------------------------------------
+# The (agent, prompt) groups shown in each dataset's cell strip, in display
+# order. Everything downstream -- array widths, square geometry, group
+# separators, footnotes, LaTeX headers -- derives from this list, so adding an
+# arm is a single edit here.
+#
+# An arm is identified by BOTH agent and prompt: <task> and <task>_minimal read
+# the same data and differ only in how much the instruction says, so they are
+# different conditions run by the same agent. Today the two happen to be
+# disjoint (claude-code/codex ran minimal, terminus ran full) but nothing
+# enforces that, and merging them would average two conditions together.
+ARM_COLUMNS = [
+    ("claude-code",   "minimal"),
+    ("codex",         "minimal"),
+    ("terminus-opus", "full"),
+    ("terminus-gpt",  "full"),
+]
+TRIALS_PER_ARM = 3
+N_CELLS = len(ARM_COLUMNS) * TRIALS_PER_ARM
+ARM_LABEL = {
+    ("claude-code",   "minimal"): "Claude Code",
+    ("codex",         "minimal"): "Codex",
+    ("terminus-opus", "full"):    "Terminus/Opus",
+    ("terminus-gpt",  "full"):    "Terminus/GPT",
+}
+
+
+def _cell_index(row):
+    """Fixed cell position for a trial, or None if its arm is not displayed.
+
+    Args:
+        row: one row of `mdf`, carrying `agent`, `prompt` and `trial`.
+
+    Returns:
+        Index into an N_CELLS array, or None when the (agent, prompt) pair is
+        absent from ARM_COLUMNS or the trial number is outside 1..TRIALS_PER_ARM.
+
+    Position comes from the KEY, never from row order. Ordering by row would
+    pack cells left, so a dataset missing an arm -- allen2p has no terminus-gpt
+    -- would slide the following arm into the empty slot and label it wrongly.
+    Keying leaves the gap where it belongs.
+    """
+    try:
+        group = ARM_COLUMNS.index((row["agent"], row["prompt"]))
+    except (ValueError, KeyError):
+        return None
+    try:
+        trial = int(row["trial"])
+    except (TypeError, ValueError):
+        return None
+    if not 1 <= trial <= TRIALS_PER_ARM:
+        return None
+    return group * TRIALS_PER_ARM + (trial - 1)
+
+
+def _cells(ds, fn):
+    """N_CELLS array of floats for one (dataset, getter); NaN where absent.
+
+    Args:
+        ds: dataset name.
+        fn: callable taking a row and returning a number, a bool, or None.
+            None, NaN and unconvertible values leave the cell NaN.
+
+    Returns:
+        np.ndarray of shape (N_CELLS,), float.
+    """
+    out = np.full(N_CELLS, np.nan)
+    for _, row in mdf[mdf.dataset == ds].iterrows():
+        i = _cell_index(row)
+        if i is None:
+            continue
+        v = fn(row)
+        if v is None or (isinstance(v, float) and np.isnan(v)):
+            continue
+        try:
+            out[i] = float(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _cells_from_column(ds, col):
+    """N_CELLS array read straight from a dataframe column (NaN where absent)."""
+    return _cells(ds, lambda r, c=col: r.get(c))
+
+
+def unplaced_trials(frame=None):
+    """Rows whose (agent, prompt) pair is missing from ARM_COLUMNS.
+
+    A non-empty result means real trials exist that no figure will ever show --
+    the silent-drop failure this layout is meant to prevent. Call it after
+    loading a new metrics file.
+
+    Returns:
+        DataFrame of the offending rows (dataset, agent, prompt, trial).
+    """
+    f = mdf if frame is None else frame
+    mask = [_cell_index(r) is None for _, r in f.iterrows()]
+    return f.loc[mask, ["dataset", "agent", "prompt", "trial"]]
+
+
+# --- LaTeX header pieces, all derived from ARM_COLUMNS -----------------------
+# The tables previously hardcoded two arm groups in three places each (column
+# spec, \multicolumn header, \cmidrule spans). Deriving them keeps the three in
+# step -- a mismatch between colspec and cmidrule is a LaTeX error that only
+# shows up at compile time, long after the numbers are wrong.
+
+def _latex_colspec(trailing=""):
+    """`l l` plus one r-group per arm, e.g. `l l rrr rrr rrr rrr c`."""
+    groups = " ".join("r" * TRIALS_PER_ARM for _ in ARM_COLUMNS)
+    return f"l l {groups}{trailing}"
+
+
+def _latex_group_header(trailing=""):
+    r"""The \multicolumn row naming each arm; `trailing` is an extra header cell."""
+    cells = " & ".join(rf"\multicolumn{{{TRIALS_PER_ARM}}}{{c}}{{{ARM_LABEL[a]}}}"
+                       for a in ARM_COLUMNS)
+    return rf" & & {cells}{trailing} \\"
+
+
+def _latex_cmidrules():
+    r"""One \cmidrule per arm group. Data columns start at 3 (after two labels)."""
+    spans = []
+    for group in range(len(ARM_COLUMNS)):
+        lo = 3 + group * TRIALS_PER_ARM
+        spans.append(rf"\cmidrule(lr){{{lo}-{lo + TRIALS_PER_ARM - 1}}}")
+    return " ".join(spans)
+
+
+def _latex_trial_header(label, trailing=""):
+    """The T1..Tn row; `label` is the second column's title (Variable/Check/Metric)."""
+    cols = " & ".join(f"T{i}" for _ in ARM_COLUMNS
+                      for i in range(1, TRIALS_PER_ARM + 1))
+    return rf"Dataset & {label} & {cols}{trailing} \\"
+
 SUPERVISED_DS   = ["allen2p", "lee2025", "majnik2025", "sosa2024"]
 # chen2024 and zhong2025 were replaced by map and mouseland. The .tex tables in
 # figures/ dated 2026-05-12 were generated against the old set; regenerating them
 # needs a trial_metrics.json that covers the current tasks.
 UNSUPERVISED_DS = ["hasnain2024", "map", "mouseland", "zhang2025"]
+
+minimal_suffix = '_minimal'
+
+# %%
+mdf
 
 
 # %%
@@ -95,45 +258,29 @@ def _eq(row, key, target):
     return v == target
 
 def _check_values(ds, fn):
-    """6-array of bool/None for one (dataset, check)."""
-    sub = mdf[mdf.dataset == ds].sort_values(["agent", "trial"])
-    out = np.full(6, np.nan)            # NaN = NA / not applicable
-    for i, (_, row) in enumerate(sub.iterrows()):
-        res = fn(row)
-        if res is None:
-            continue                    # leave NaN
-        out[i] = 1.0 if res else 0.0
-    return out
+    """N_CELLS array of 1.0/0.0/NaN for one (dataset, check)."""
+    return _cells(ds, lambda r: None if fn(r) is None else (1.0 if fn(r) else 0.0))
 
 
 def _raw_values(ds, fn):
-    """6-array of raw numeric values (or NaN) for one (dataset, getter).
+    """N_CELLS array of raw numeric values (or NaN) for one (dataset, getter).
     Like `_check_values` but does not coerce to bool — for rows that display
     counts (e.g. dinput, doutput, total n_classes)."""
-    sub = mdf[mdf.dataset == ds].sort_values(["agent", "trial"])
-    out = np.full(6, np.nan)
-    for i, (_, row) in enumerate(sub.iterrows()):
-        if i >= 6:
-            break
-        v = fn(row)
-        if v is None:
-            continue
-        if isinstance(v, float) and np.isnan(v):
-            continue
-        try:
-            out[i] = float(v)
-        except (TypeError, ValueError):
-            continue
-    return out
+    return _cells(ds, fn)
 
 def _trial_values(ds, ratio_col, raw_col):
-    """6-array of per-trial values + is_ratio flag (claude×3 then codex×3)."""
-    sub = mdf[mdf.dataset == ds].sort_values(["agent", "trial"])
+    """N_CELLS array of per-trial values + is_ratio flag.
+
+    Prefers the ratio column when the dataset has one (supervised); falls back
+    to the raw column (unsupervised). Cells sit at their arm's fixed position,
+    so a missing arm is NaN rather than a shifted neighbour.
+    """
+    sub = mdf[mdf.dataset == ds]
     if ratio_col and ratio_col in sub.columns and not sub[ratio_col].isna().all():
-        return sub[ratio_col].values.astype(float), True
+        return _cells_from_column(ds, ratio_col), True
     if raw_col and raw_col in sub.columns and not sub[raw_col].isna().all():
-        return sub[raw_col].values.astype(float), False
-    return np.full(6, np.nan), False
+        return _cells_from_column(ds, raw_col), False
+    return np.full(N_CELLS, np.nan), False
 
 def _output_variables_match(r):
     if not _present(r, "output_fraction_mean_cost"):
@@ -254,10 +401,11 @@ def _decoder_var_rows(ds, supervised):
             # Compute informedness per trial: (acc - chance) / (1 - chance)
             raw_col = c
             ncls_col = f"output_nclasses_{var}"
-            vals = np.full(6, np.nan)
-            for i, (_, row) in enumerate(sub.iterrows()):
-                if i >= 6:
-                    break
+            vals = np.full(N_CELLS, np.nan)
+            for _, row in sub.iterrows():
+                i = _cell_index(row)
+                if i is None:
+                    continue
                 acc = row.get(raw_col)
                 if acc is None or (isinstance(acc, float) and np.isnan(acc)):
                     continue
@@ -314,10 +462,11 @@ def _decoder_avg_row(ds, supervised):
             return acc          # fall back to raw if chance unknown
         return (acc - chance) / (1 - chance)
 
-    out = np.full(6, np.nan)
-    for i, (_, row) in enumerate(sub.iterrows()):
-        if i >= 6:
-            break
+    out = np.full(N_CELLS, np.nan)
+    for _, row in sub.iterrows():
+        i = _cell_index(row)
+        if i is None:
+            continue
         agent_norms, ref_norms = [], []
         for raw_c in raw_cols:
             var = raw_c[len(raw_prefix):]
@@ -385,25 +534,17 @@ def _build_rows(datasets, supervised):
                 _var, vals, _is_r = d[idx]
                 rs.append(("Decoder", f"Output {idx+1}", vals, dec_mode))
             else:
-                rs.append(("Decoder", f"Output {idx+1}", np.full(6, np.nan), dec_mode))
+                rs.append(("Decoder", f"Output {idx+1}", np.full(N_CELLS, np.nan), dec_mode))
         # Aggregate row: per-trial mean accuracy across outputs.
         avg = _decoder_avg_row(ds, supervised)
         if avg is None:
-            avg = np.full(6, np.nan)
+            avg = np.full(N_CELLS, np.nan)
         rs.append(("Decoder", "Average", avg, dec_mode))
         rows_per_ds[ds] = rs
     return rows_per_ds
 
 
-_cmap     = plt.get_cmap("RdYlGn")
-_cnorm    = mcolors.TwoSlopeNorm(vmin=0.5, vcenter=1.0, vmax=1.5)
-NAN_GREY  = "#f2f2f2"
-RAW_GREY  = "#cfcfcf"
-PASS_GREEN = "#7fc97f"   # easier on the eye than full saturation
-FAIL_RED   = "#e08585"
-_cmap = mcolors.LinearSegmentedColormap.from_list(
-    "LightRdYlGn", [FAIL_RED, "#f7f1b5", PASS_GREEN]
-)
+
 # Informedness colour scale: 0 = chance (red), 0.5 = halfway (yellow),
 # 1 = perfect (green). Negative values (below chance) clamp to the red end.
 _inorm = mcolors.Normalize(vmin=0.0, vmax=1.0, clip=True)
@@ -430,11 +571,16 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
     n_check_rows = len(check_labels)
     n_cols = len(datasets)
 
+    # One square per (arm, trial) cell. The strip keeps roughly the width it had
+    # with six cells, so squares shrink as arms are added rather than the column
+    # growing without bound; agent_gap is inserted at every group boundary.
     square         = 0.85
-    n_squares      = 6
+    n_squares      = N_CELLS
+    n_gaps         = len(ARM_COLUMNS) - 1
     agent_gap      = 0.20
     cell_inner_pad = 0.05
-    sq_w           = (square * 6 - agent_gap - 2 * cell_inner_pad) / n_squares
+    strip_w        = square * N_CELLS * 0.62
+    sq_w           = (strip_w - n_gaps * agent_gap - 2 * cell_inner_pad) / n_squares
     sq_h           = square * 0.78
     section_gap    = 0.5
     title_pad      = 1.4
@@ -447,7 +593,7 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
     y_dec_top   = y_scale_bot - section_gap
     y_dec_bot   = y_dec_top - n_decoder_rows * square
     data_y_range = (y_top - y_dec_bot) + title_pad + 0.4
-    data_x_range = square * 6 + 0.30
+    data_x_range = strip_w + 0.30
 
     left, right, top, bottom, wspace = 0.02, 0.99, 0.92, 0.05, 0.05
     label_w_ratio     = 0.9
@@ -478,7 +624,8 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
         sq_y = y_top_cell - (square - sq_h) / 2 - sq_h
         x = x_left + cell_inner_pad
         for k, v in enumerate(vals):
-            if k == 3:
+            # Gap before each arm group, not just after the first three.
+            if k and k % TRIALS_PER_ARM == 0:
                 x += agent_gap
             if mode == "bool":
                 if np.isnan(v):
@@ -579,15 +726,17 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
 render_metric_table(
     SUPERVISED_DS, supervised=True,
     suptitle="Supervised datasets",
-    footnote="Each cell: 6 squares (3 claude-code + 3 codex). Cell colour "
-             "(RdYlGn centred at 1.0) = per-trial agent / reference ratio.",
+    footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+              f"({', '.join(ARM_LABEL[a] for a in ARM_COLUMNS)}). Cell colour "
+              "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
 )
 
 render_metric_table(
     UNSUPERVISED_DS, supervised=False,
     suptitle="Unsupervised datasets",
-    footnote="Each cell: 6 squares (3 claude-code + 3 codex). Values are "
-             "raw per-trial measurements (no reference solution exists).",
+    footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+              f"({', '.join(ARM_LABEL[a] for a in ARM_COLUMNS)}). Values are "
+              "raw per-trial measurements (no reference solution exists)."),
 )
 
 # %% [markdown]
@@ -756,12 +905,11 @@ def _latex_supervised_table(datasets, *, label, caption):
         r"\begin{table}[t]",
         r"\centering",
         r"\setlength{\tabcolsep}{4pt}",
-        r"\begin{tabular}{l l rrr rrr c}",
+        r"\begin{tabular}{" + _latex_colspec(" c") + r"}",
         r"\toprule",
-        (r" & & \multicolumn{3}{c}{Claude Code} "
-         r"& \multicolumn{3}{c}{Codex} & Reference \\"),
-        r"\cmidrule(lr){3-5} \cmidrule(lr){6-8}",
-        r"Dataset & Variable & T1 & T2 & T3 & T1 & T2 & T3 & (chance) \\",
+        _latex_group_header(r" & Reference"),
+        _latex_cmidrules(),
+        _latex_trial_header("Variable", r" & (chance)"),
         r"\midrule",
     ]
     for di, ds in enumerate(datasets):
@@ -808,12 +956,11 @@ def _latex_unsupervised_table(datasets, *, label, caption):
         r"\begin{table}[t]",
         r"\centering",
         r"\setlength{\tabcolsep}{4pt}",
-        r"\begin{tabular}{l l rrr rrr}",
+        r"\begin{tabular}{" + _latex_colspec() + r"}",
         r"\toprule",
-        (r" & & \multicolumn{3}{c}{Claude Code} "
-         r"& \multicolumn{3}{c}{Codex} \\"),
-        r"\cmidrule(lr){3-5} \cmidrule(lr){6-8}",
-        r"Dataset & Variable & T1 & T2 & T3 & T1 & T2 & T3 \\",
+        _latex_group_header(),
+        _latex_cmidrules(),
+        _latex_trial_header("Variable"),
         r"\midrule",
     ]
     for di, ds in enumerate(datasets):
@@ -899,12 +1046,11 @@ def _latex_checks_table(datasets, *, supervised, label, caption):
         r"\begin{table}[t]",
         r"\centering",
         r"\setlength{\tabcolsep}{4pt}",
-        r"\begin{tabular}{l l rrr rrr}",
+        r"\begin{tabular}{" + _latex_colspec() + r"}",
         r"\toprule",
-        (r" & & \multicolumn{3}{c}{Claude Code} "
-         r"& \multicolumn{3}{c}{Codex} \\"),
-        r"\cmidrule(lr){3-5} \cmidrule(lr){6-8}",
-        r"Dataset & Check & T1 & T2 & T3 & T1 & T2 & T3 \\",
+        _latex_group_header(),
+        _latex_cmidrules(),
+        _latex_trial_header("Check"),
         r"\midrule",
     ]
     for di, ds in enumerate(datasets):
@@ -1018,8 +1164,8 @@ def _scale_supervised_row(ds, key):
     sub = mdf[mdf.dataset == ds].sort_values(["agent", "trial"])
     ratio_col = f"{key}_ratio"
     if ratio_col not in sub.columns or sub[ratio_col].isna().all():
-        return np.full(6, np.nan), float("nan")
-    ratios = sub[ratio_col].values.astype(float)
+        return np.full(N_CELLS, np.nan), float("nan")
+    ratios = _cells_from_column(ds, ratio_col)
     ref = REFERENCE_SCALE.get(ds, {}).get(key, float("nan"))
     return ratios, ref
 
@@ -1030,8 +1176,8 @@ def _scale_unsupervised_row(ds, key):
     (not ratios-to-row-mean as a previous version of this LaTeX did)."""
     sub = mdf[mdf.dataset == ds].sort_values(["agent", "trial"])
     if key not in sub.columns or sub[key].isna().all():
-        return np.full(6, np.nan), float("nan")
-    raws = sub[key].values.astype(float)
+        return np.full(N_CELLS, np.nan), float("nan")
+    raws = _cells_from_column(ds, key)
     mean = float(np.nanmean(raws)) if not np.all(np.isnan(raws)) else float("nan")
     return raws, mean
 
@@ -1043,12 +1189,11 @@ def _latex_scale_table(datasets, *, supervised, label, caption):
         r"\begin{table}[t]",
         r"\centering",
         r"\setlength{\tabcolsep}{4pt}",
-        r"\begin{tabular}{l l rrr rrr c}",
+        r"\begin{tabular}{" + _latex_colspec(" c") + r"}",
         r"\toprule",
-        (r" & & \multicolumn{3}{c}{Claude Code} "
-         r"& \multicolumn{3}{c}{Codex} & " + last_col + r" \\"),
-        r"\cmidrule(lr){3-5} \cmidrule(lr){6-8}",
-        r"Dataset & Metric & T1 & T2 & T3 & T1 & T2 & T3 & \\",
+        _latex_group_header(" & " + last_col),
+        _latex_cmidrules(),
+        _latex_trial_header("Metric", " &"),
         r"\midrule",
     ]
     for di, ds in enumerate(datasets):

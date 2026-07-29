@@ -60,6 +60,9 @@ class TrialRating(NamedTuple):
 
 EVAL_DIR = Path(__file__).resolve().parent
 
+TRIAL_METRICS_JSON = 'trial_metrics.json'
+EVAL_SUMMARY_MD = 'eval_summary.md'
+
 RATING_SCALE = {
     "incorrect": -2,
     "concerning": -1,
@@ -203,16 +206,16 @@ def _parse_eval_summary(path: Path) -> dict[str, dict[str, dict]]:
     return {k: dict(v) for k, v in out.items()}
 
 
-def load_all(eval_dir: Path = EVAL_DIR) -> dict[str, dict[str, dict[str, dict]]]:
+def load_all(eval_dir: Path = EVAL_DIR, filename: str = EVAL_SUMMARY_MD) -> dict[str, dict[str, dict[str, dict]]]:
     """Load every eval_summary.md under eval_dir → {dataset: {main: {sub: {...}}}}."""
     datasets: dict[str, dict[str, dict[str, dict]]] = {}
-    for path in sorted(eval_dir.glob("*/eval_summary.md")):
+    for path in sorted(eval_dir.glob(f"*/{filename}")):
         datasets[path.parent.name] = _parse_eval_summary(path)
     return datasets
 
 
-def load_dataset(dataset: str, eval_dir: Path = EVAL_DIR) -> dict[str, dict[str, dict]]:
-    return _parse_eval_summary(eval_dir / dataset / "eval_summary.md")
+def load_dataset(dataset: str, eval_dir: Path = EVAL_DIR, filename: str = EVAL_SUMMARY_MD) -> dict[str, dict[str, dict]]:
+    return _parse_eval_summary(eval_dir / dataset / filename)
 
 
 # ---------------------------------------------------------------------------
@@ -221,12 +224,12 @@ def load_dataset(dataset: str, eval_dir: Path = EVAL_DIR) -> dict[str, dict[str,
 # ---------------------------------------------------------------------------
 
 
-def load_trial_metrics(eval_dir: Path = EVAL_DIR) -> dict:
+def load_trial_metrics(eval_dir: Path = EVAL_DIR, filename: str = TRIAL_METRICS_JSON) -> dict:
     """Load `trial_metrics.json` -> {dataset: {agent: {trial_str: {...}}}}.
 
     Run `python eval/pull_trial_metrics.py` first to (re)generate the file.
     """
-    path = eval_dir / "trial_metrics.json"
+    path = eval_dir / filename
     if not path.exists():
         raise FileNotFoundError(
             f"{path} not found. Run `python eval/pull_trial_metrics.py` first."
