@@ -19,9 +19,12 @@
 # Per-trial decoder accuracy + dataset-scale stats pulled from `harbor-jobs/<ds>/<agent>/<trial>/verifier/metrics.json`. The pull script is `eval/pull_trial_metrics.py`; loaders live in `utils.py` (`load_trial_metrics`, `trial_metrics_df`).
 
 # %%
+# imports and constants/parameters
+
 # %load_ext autoreload
 # %autoreload 2
 
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -77,8 +80,7 @@ mdf = trial_metrics_df(load_trial_metrics(filename=TRIAL_METRICS_JSON))
 
 # Display-name mirror of analysis.ipynb's cell 9fc5189e
 DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
-def display_name(ds):
-    return DISPLAY_NAME.get(ds, ds[:1].upper() + ds[1:])
+
 
 # --- Cell strip layout -------------------------------------------------------
 # The (agent, prompt) groups shown in each dataset's cell strip, in display
@@ -99,12 +101,201 @@ ARM_COLUMNS = [
 ]
 TRIALS_PER_ARM = 3
 N_CELLS = len(ARM_COLUMNS) * TRIALS_PER_ARM
+
+# The full set, kept so set_arms() can restore it after a subset plot.
+ALL_ARMS = list(ARM_COLUMNS)
 ARM_LABEL = {
     ("claude-code",   "minimal"): "Claude Code",
     ("codex",         "minimal"): "Codex",
     ("terminus-opus", "full"):    "Terminus/Opus",
     ("terminus-gpt",  "full"):    "Terminus/GPT",
 }
+
+# Short forms for the in-figure group headers, where each arm gets only
+# TRIALS_PER_ARM squares of width -- roughly 1.4 data units at the default
+# geometry, so the full ARM_LABEL does not fit.
+ARM_SHORT = {
+    ("claude-code",   "minimal"): "Claude",
+    ("codex",         "minimal"): "Codex",
+    ("terminus-opus", "full"):    "T-Opus",
+    ("terminus-gpt",  "full"):    "T-GPT",
+}
+
+# The task variant an arm ran. "maximal" mirrors submit_harbor_cluster.py's
+# --minimal/--maximal flags; the underlying metrics field says "full".
+PROMPT_SHORT = {"minimal": "minimal", "full": "maximal"}
+
+SUPERVISED_DS   = ["allen2p", "lee2025", "majnik2025", "sosa2024"]
+# chen2024 and zhong2025 were replaced by map and mouseland. The .tex tables in
+# figures/ dated 2026-05-12 were generated against the old set; regenerating them
+# needs a trial_metrics.json that covers the current tasks.
+UNSUPERVISED_DS = ["hasnain2024", "map", "mouseland", "zhang2025"]
+
+SCALE_FIELDS = [
+    ("Sessions",  "nsessions"),
+    ("Trials",    "ntrials_total"),
+    ("Subjects",  "nsubjects"),
+    ("Neurons",   "nneurons_total"),
+    ("T median",  "T_median"),
+]
+
+#"check" rows (boolean pass/fail)
+
+
+CHECK_FIELDS = [
+    # (display label, fn(row: pd.Series) -> bool or None)
+    ("Required files",          lambda r: _empty_list(r, "required_files_missing")
+                                        and _empty_list(r, "required_files_empty")),
+    #("Expected files",          lambda r: _eq(r, "expected_files_found", r.get("expected_files_total"))),
+    ("Data format",             lambda r: _truthy(r, "full_data_format_valid")),
+    # ("No contamination",        lambda r: not _truthy(r, "contamination_detected")),
+    # The three below require a reference (NA for unsupervised tasks):
+    ("Input variables match", lambda r: None if not _present(r, "input_range_mean_cost") else _below(r, "input_range_mean_cost", 1.0)),
+    ("Output variables match", lambda r: _output_variables_match(r)),
+    ("N output classes",     lambda r: _output_ranges_match(r)),
+]
+
+
+
+
+# For unsupervised figures the "Checks" section shows raw counts instead of
+# match-against-reference bools. Each entry: (label, fn(row) -> number-or-bool-or-None, mode).
+UNSUPERVISED_CHECK_FIELDS = [
+    ("Required files",
+        lambda r: _empty_list(r, "required_files_missing")
+                  and _empty_list(r, "required_files_empty"),
+        "bool"),
+    ("Data format",
+        lambda r: _truthy(r, "full_data_format_valid"),
+        "bool"),
+    ("N inputs",        lambda r: r.get("dinput"),  "int"),
+    ("N outputs",       lambda r: r.get("doutput"), "int"),
+    ("N output classes (total)",
+        _total_n_output_classes, "int"),
+]
+
+
+# %%
+# helpers
+
+def display_name(ds):
+    """Human-readable dataset name for figure and table labels.
+
+    Args:
+        ds: dataset key, e.g. "sosa2024".
+
+    Returns:
+        The DISPLAY_NAME override if one exists, else the key capitalised.
+    """
+    return DISPLAY_NAME.get(ds, ds[:1].upper() + ds[1:])
+
+def arm_header(arm, short=True):
+    """Two-line label for one arm group: agent on the first line, prompt on the second.
+
+    Args:
+        arm: (agent, prompt) tuple, a member of ARM_COLUMNS.
+        short: use ARM_SHORT (for the narrow in-figure headers) rather than the
+            full ARM_LABEL (for captions and LaTeX).
+
+    Returns:
+        e.g. "Claude\nminimal" -- the prompt variant is on its own line because a
+        group is only ~3 squares wide.
+    """
+    agent = (ARM_SHORT if short else ARM_LABEL)[arm]
+    return f"{agent}\n{PROMPT_SHORT[arm[1]]}"
+
+
+def arm_list():
+    """Comma-joined "Agent (variant)" description of ARM_COLUMNS, for captions.
+
+    Returns:
+        e.g. "Claude Code (minimal), Codex (minimal), Terminus/Opus (maximal), ..."
+        in the same left-to-right order the squares appear in.
+    """
+    return ", ".join(f"{ARM_LABEL[a]} ({PROMPT_SHORT[a[1]]})" for a in ARM_COLUMNS)
+
+
+def set_arms(arms=None, *, agents=None, prompts=None):
+    """Restrict every figure and table to a subset of arms.
+
+    ARM_COLUMNS drives array widths, square geometry, group headers, LaTeX
+    column specs and captions, so changing it here changes all of them
+    consistently. N_CELLS is recomputed alongside -- reassigning ARM_COLUMNS
+    directly would leave the two disagreeing and the cell arrays the wrong size.
+
+    Args:
+        arms: explicit list of (agent, prompt) tuples, in the display order you
+            want. Takes precedence over the filters below.
+        agents: keep only these agent names, e.g. ["terminus-opus", "terminus-gpt"].
+        prompts: keep only these variants, "minimal" and/or "full". Note the
+            metrics field says "full" even though the CLI flag is --maximal.
+
+    With no arguments, restores ALL_ARMS.
+
+    Returns:
+        The new ARM_COLUMNS.
+
+    Raises:
+        KeyError: an arm that has no ARM_LABEL entry -- almost always a typo,
+            and it would otherwise fail later inside the header drawing.
+        ValueError: the selection is empty, which would render a figure of
+            zero-width cells rather than telling you the filter was wrong.
+
+    Examples:
+        set_arms(prompts=["minimal"])            # the claude/codex sweep only
+        set_arms(agents=["terminus-opus"])       # one arm
+        set_arms()                               # back to all four
+    """
+    if arms is None:
+        arms = [a for a in ALL_ARMS
+                if (agents is None or a[0] in agents)
+                and (prompts is None or a[1] in prompts)]
+    arms = [tuple(a) for a in arms]
+    missing = [a for a in arms if a not in ARM_LABEL]
+    if missing:
+        raise KeyError(f"no ARM_LABEL/ARM_SHORT entry for {missing}; "
+                       f"known arms are {list(ARM_LABEL)}")
+    if not arms:
+        raise ValueError(
+            f"empty arm selection (agents={agents}, prompts={prompts}); "
+            f"available: {ALL_ARMS}")
+
+    global ARM_COLUMNS, N_CELLS
+    ARM_COLUMNS = arms
+    N_CELLS = len(ARM_COLUMNS) * TRIALS_PER_ARM
+    return ARM_COLUMNS
+
+
+@contextmanager
+def arms_subset(arms=None, *, agents=None, prompts=None):
+    """Restrict the arms for the duration of a block, then restore them.
+
+    Same selection rules as set_arms(); this only adds the scope. Restores on the
+    way out even if the body raises -- which is the point, because ARM_COLUMNS is
+    module state and a leaked subset fails silently: re-running the LaTeX cells
+    with one active overwrites figures/*.tex with narrower tables and nothing
+    complains.
+
+    Args:
+        arms, agents, prompts: as set_arms().
+
+    Yields:
+        The restricted ARM_COLUMNS.
+
+    Note this protects what is inside the block, not a bare set_arms() call typed
+    into a cell. Removing the hidden state entirely would mean passing `arms`
+    through every consumer instead.
+
+    Example:
+        with arms_subset(prompts=["minimal"]):
+            render_metric_table(SUPERVISED_DS, supervised=True, ...)
+        # back to all arms here
+    """
+    saved = list(ARM_COLUMNS)
+    try:
+        yield set_arms(arms, agents=agents, prompts=prompts)
+    finally:
+        set_arms(saved)
 
 
 def _cell_index(row):
@@ -195,8 +386,11 @@ def _latex_colspec(trailing=""):
 
 def _latex_group_header(trailing=""):
     r"""The \multicolumn row naming each arm; `trailing` is an extra header cell."""
-    cells = " & ".join(rf"\multicolumn{{{TRIALS_PER_ARM}}}{{c}}{{{ARM_LABEL[a]}}}"
-                       for a in ARM_COLUMNS)
+    # Agent AND variant: <task> and <task>_minimal are different conditions, so a
+    # column group headed only "Claude Code" would be ambiguous once both are run.
+    cells = " & ".join(
+        rf"\multicolumn{{{TRIALS_PER_ARM}}}{{c}}{{{ARM_LABEL[a]} ({PROMPT_SHORT[a[1]]})}}"
+        for a in ARM_COLUMNS)
     return rf" & & {cells}{trailing} \\"
 
 
@@ -215,34 +409,36 @@ def _latex_trial_header(label, trailing=""):
                       for i in range(1, TRIALS_PER_ARM + 1))
     return rf"Dataset & {label} & {cols}{trailing} \\"
 
-SUPERVISED_DS   = ["allen2p", "lee2025", "majnik2025", "sosa2024"]
-# chen2024 and zhong2025 were replaced by map and mouseland. The .tex tables in
-# figures/ dated 2026-05-12 were generated against the old set; regenerating them
-# needs a trial_metrics.json that covers the current tasks.
-UNSUPERVISED_DS = ["hasnain2024", "map", "mouseland", "zhang2025"]
-
-minimal_suffix = '_minimal'
-
-# %%
-mdf
-
-
-# %%
-# helpers
-
 def _truthy(row, key):
+    """True if `key` holds a truthy, recorded value; False if absent or NaN.
+
+    Never returns None -- use for checks where "not recorded" and "false" mean
+    the same thing to the reader.
+    """
     v = row.get(key)
     return bool(v) if v is not None and not (isinstance(v, float) and np.isnan(v)) else False
 
 def _present(row, key):
+    """True if `key` was recorded at all (not missing, not NaN).
+
+    Distinguishes "the test never ran" from "the test ran and said no", which
+    matters because a skipped test leaves the field absent rather than false.
+    """
     v = row.get(key)
     return v is not None and not (isinstance(v, float) and np.isnan(v))
 
 def _below(row, key, thresh):
+    """True if `key` was recorded and is strictly below `thresh`."""
     v = row.get(key)
     return _present(row, key) and v < thresh
 
 def _empty_list(row, key):
+    """Whether a list-valued field is empty, or None if it was never recorded.
+
+    Used for the "missing files" fields, where an EMPTY list is the pass case.
+    Returns None (rendered as NA, not as a failure) when the verifier never got
+    far enough to write the field, and None for a non-list value.
+    """
     v = row.get(key)
     if v is None or (isinstance(v, float) and np.isnan(v)):
         return None        # field never recorded for this trial → NA
@@ -252,6 +448,10 @@ def _empty_list(row, key):
         return None
 
 def _eq(row, key, target):
+    """Whether `key` equals `target`, or None if either is missing/NaN.
+
+    None propagates so an unrecorded field shows as NA rather than a mismatch.
+    """
     v = row.get(key)
     if v is None or target is None or (isinstance(v, float) and np.isnan(v)):
         return None
@@ -283,11 +483,24 @@ def _trial_values(ds, ratio_col, raw_col):
     return np.full(N_CELLS, np.nan), False
 
 def _output_variables_match(r):
+    """Whether the agent's output variables matched the reference set.
+
+    Reads the Hungarian matcher's mean cost from test_data_stats: below 1.0
+    means every reference output found a partner with a plausible range and
+    class distribution. None when the matcher never ran (unsupervised tasks,
+    or a trial that failed earlier).
+    """
     if not _present(r, "output_fraction_mean_cost"):
         return None
     return _below(r, "output_fraction_mean_cost", 1.0)
 
 def _output_ranges_match(r):
+    """Whether every matched output variable's [min, max] range matched exactly.
+
+    Gated on _output_variables_match: an exact range comparison is meaningless
+    if the variables were not paired up in the first place, so that case is NA
+    rather than a failure.
+    """
     if not _output_variables_match(r):
         return None
     if not _present(r, "output_range_error_max"):
@@ -311,6 +524,17 @@ def _total_n_output_classes(row):
     return total if found else None
 
 def _fmt(v, is_ratio):
+    """Format one cell's number for printing inside its square.
+
+    Args:
+        v: the value, or NaN for an empty cell.
+        is_ratio: True for agent/reference ratios (2 decimals); False for raw
+            counts, which are thousands-separated and shortened as they grow so
+            the text still fits a square.
+
+    Returns:
+        Display string; "" for NaN.
+    """
     if np.isnan(v):
         return ""
     if is_ratio:
@@ -325,51 +549,10 @@ def _fmt(v, is_ratio):
 # %% [markdown]
 # ### Per-dataset metric table (figure)
 #
-# Two figures (supervised / unsupervised). Layout mirrors the rating-square summary from `analysis.ipynb`: rows = metric, columns = dataset, each cell is a 6-square strip (3 claude-code + 3 codex). Supervised cells are coloured by ratio (RdYlGn centred at 1.0); unsupervised cells are flat grey raw values. Decoder section breaks out one row per decoded variable; variables differ per dataset, so shorter columns leave bottom slots empty.
+# Two figures (supervised / unsupervised). Layout mirrors the rating-square summary from `analysis.ipynb`: rows = metric, columns = dataset, each cell is a strip of `N_CELLS` squares -- one per (arm, trial), `TRIALS_PER_ARM` per arm in `ARM_COLUMNS` order, with a gap between arms. An arm a dataset never ran leaves its squares blank rather than shifting the others left. Supervised cells are coloured by ratio (RdYlGn centred at 1.0); unsupervised cells are flat grey raw values. Decoder section breaks out one row per decoded variable; variables differ per dataset, so shorter columns leave bottom slots empty.
 
 # %%
-SCALE_FIELDS = [
-    ("Sessions",  "nsessions"),
-    ("Trials",    "ntrials_total"),
-    ("Subjects",  "nsubjects"),
-    ("Neurons",   "nneurons_total"),
-    ("T median",  "T_median"),
-]
 
-#"check" rows (boolean pass/fail)
-
-
-CHECK_FIELDS = [
-    # (display label, fn(row: pd.Series) -> bool or None)
-    ("Required files",          lambda r: _empty_list(r, "required_files_missing")
-                                        and _empty_list(r, "required_files_empty")),
-    #("Expected files",          lambda r: _eq(r, "expected_files_found", r.get("expected_files_total"))),
-    ("Data format",             lambda r: _truthy(r, "full_data_format_valid")),
-    # ("No contamination",        lambda r: not _truthy(r, "contamination_detected")),
-    # The three below require a reference (NA for unsupervised tasks):
-    ("Input variables match", lambda r: None if not _present(r, "input_range_mean_cost") else _below(r, "input_range_mean_cost", 1.0)),
-    ("Output variables match", lambda r: _output_variables_match(r)),
-    ("N output classes",     lambda r: _output_ranges_match(r)),
-]
-
-
-
-
-# For unsupervised figures the "Checks" section shows raw counts instead of
-# match-against-reference bools. Each entry: (label, fn(row) -> number-or-bool-or-None, mode).
-UNSUPERVISED_CHECK_FIELDS = [
-    ("Required files",
-        lambda r: _empty_list(r, "required_files_missing")
-                  and _empty_list(r, "required_files_empty"),
-        "bool"),
-    ("Data format",
-        lambda r: _truthy(r, "full_data_format_valid"),
-        "bool"),
-    ("N inputs",        lambda r: r.get("dinput"),  "int"),
-    ("N outputs",       lambda r: r.get("doutput"), "int"),
-    ("N output classes (total)",
-        _total_n_output_classes, "int"),
-]
 
 def _decoder_var_rows(ds, supervised):
     """[(var_name, values, is_ratio), ...] for one dataset's decoder vars.
@@ -583,7 +766,8 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
     sq_w           = (strip_w - n_gaps * agent_gap - 2 * cell_inner_pad) / n_squares
     sq_h           = square * 0.78
     section_gap    = 0.5
-    title_pad      = 1.4
+    # Room above the grid for the two-line arm headers plus the dataset title.
+    title_pad      = 2.1
 
     y_top       = 0.0
     y_check_top = y_top
@@ -660,6 +844,33 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
                         color=txt_color, zorder=2)
             x += sq_w
 
+    def _group_centers(x_left):
+        """x of each arm group's centre, using _draw_cell's own advance rules.
+
+        Kept in step with _draw_cell by construction: same cell_inner_pad start,
+        same sq_w advance, same agent_gap at every group boundary. If the header
+        drifts from the squares it labels, it is because these two disagree.
+        """
+        centers = []
+        x = x_left + cell_inner_pad
+        for _ in ARM_COLUMNS:
+            start = x
+            x += TRIALS_PER_ARM * sq_w
+            centers.append((start + x) / 2)
+            x += agent_gap
+        return centers
+
+    def _draw_arm_headers(ax, x_left, y):
+        """Label each arm group above the strip: agent name and prompt variant.
+
+        Drawn once per dataset column rather than once per row -- the group
+        positions are identical in every cell, so one header row at the top
+        labels the whole column.
+        """
+        for arm, cx in zip(ARM_COLUMNS, _group_centers(x_left)):
+            ax.text(cx, y, arm_header(arm), ha="center", va="bottom",
+                    fontsize=5.5, linespacing=1.15, color="#333")
+
     # --- Label axes ---
     ax_lbl = axes[0]
     ax_lbl.set_xlim(0, 1)
@@ -715,7 +926,8 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
         ax.set_xticks([]); ax.set_yticks([])
         for spine in ax.spines.values():
             spine.set_visible(False)
-        ax.text(data_x_range / 2, y_top + 0.5, display_name(ds),
+        _draw_arm_headers(ax, 0.05, y_top + 0.12)
+        ax.text(data_x_range / 2, y_top + 0.92, display_name(ds),
                 ha="center", va="bottom", fontsize=11, fontweight="bold")
 
     fig.text(0.5, 0.005, footnote,
@@ -727,7 +939,7 @@ render_metric_table(
     SUPERVISED_DS, supervised=True,
     suptitle="Supervised datasets",
     footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
-              f"({', '.join(ARM_LABEL[a] for a in ARM_COLUMNS)}). Cell colour "
+              f"({arm_list()}). Cell colour "
               "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
 )
 
@@ -735,14 +947,14 @@ render_metric_table(
     UNSUPERVISED_DS, supervised=False,
     suptitle="Unsupervised datasets",
     footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
-              f"({', '.join(ARM_LABEL[a] for a in ARM_COLUMNS)}). Values are "
+              f"({arm_list()}). Values are "
               "raw per-trial measurements (no reference solution exists)."),
 )
 
 # %% [markdown]
 # ### Decoder accuracy LaTeX tables
 #
-# Two tables (supervised + unsupervised) showing the per-trial decoder values. Rows = (Dataset, Variable). Columns = the 3 claude-code trials and the 3 codex trials. Numbers match exactly what's plotted above; the table makes them easier to read off and copy into the paper. For supervised datasets the values are agent/reference ratios; for unsupervised they're raw validation balanced accuracy.
+# Two tables (supervised + unsupervised) showing the per-trial decoder values. Rows = (Dataset, Variable). Columns = `TRIALS_PER_ARM` per arm, one arm group per entry in `ARM_COLUMNS` (headers and \cmidrule spans are generated from it). Numbers match exactly what's plotted above; the table makes them easier to read off and copy into the paper. For supervised datasets the values are agent/reference ratios; for unsupervised they're raw validation balanced accuracy.
 
 # %%
 # LaTeX tables — one per dataset family. Reuses _decoder_var_rows from
@@ -1243,7 +1455,7 @@ _emit_latex(_latex_scale_table(
     caption=("Dataset-scale statistics, unsupervised datasets. No reference "
              "manual solution exists for these datasets, so each cell shows "
              "the absolute raw value reported by that trial (T1--T3 of each "
-             "agent). The Average column shows the mean across the 6 trial "
+             "agent). The Average column shows the mean across all trial "
              "runs."),
 ), "scale_unsupervised.tex")
 

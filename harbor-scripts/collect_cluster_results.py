@@ -181,12 +181,21 @@ def find_trials(source: Path) -> list[dict]:
                     "stamp": stamp_dir.name,
                     "has_metrics": (trial_dir / "verifier" / "metrics.json").is_file(),
                     "raw": True,
-                    # harbor writes result.json for the run only once it is done.
-                    # metrics.json is NOT a completion marker: pytest creates it and
-                    # each LLM judge then merges into it, so it appears well before
-                    # the trial ends. Moving a live trial would break the job still
-                    # writing to it.
-                    "finished": (stamp_dir / "result.json").is_file(),
+                    # A run is over when EITHER marker is present:
+                    #   result.json  -- harbor wrote it on a clean finish;
+                    #   exception.txt -- harbor recorded a failure instead.
+                    # result.json alone is not enough. Under SIGKILL harbor often
+                    # gets the exception out and dies before the result, so trials
+                    # killed by bkill or the wall clock have one and not the other.
+                    # Keying only on result.json reported those as "still running"
+                    # and told the reader to wait for something that had already
+                    # ended hours earlier.
+                    #
+                    # metrics.json is NOT a completion marker either: pytest creates
+                    # it and each LLM judge then merges into it, so it appears well
+                    # before the trial ends. Moving a live trial would corrupt it.
+                    "finished": ((stamp_dir / "result.json").is_file()
+                                 or (trial_dir / "exception.txt").is_file()),
                 })
     return trials
 
