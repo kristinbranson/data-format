@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Submit harbor trials for the _minimal tasks to the Janelia cluster.
+"""Submit harbor trials to the Janelia cluster.
 
 One bsub job per (task, agent, trial), each taking a whole gpu_l4_large node:
 64 slots + 1 GPU is an entire l4_larges host (64 physical cores, 1006 GB, one
@@ -10,9 +10,15 @@ owning the node is the only way to bound a trial.
 Usage:
     python submit_harbor_cluster.py --check          # validate, submit nothing
     python submit_harbor_cluster.py --dry-run        # print the bsub commands
-    python submit_harbor_cluster.py                  # all 8 tasks x 2 agents x 3 trials
+    python submit_harbor_cluster.py                  # every task, both variants
+    python submit_harbor_cluster.py --minimal        # only the *_minimal tasks
+    python submit_harbor_cluster.py --maximal        # only the full-size tasks
     python submit_harbor_cluster.py --tasks sosa2024_minimal --agents claude --trials 1
     python submit_harbor_cluster.py --start 0 --limit 1
+
+Scope defaults to every benchmark task in both size variants. `debug` is a harness
+smoke test, not a benchmark task, so it is never swept -- name it explicitly
+(--tasks debug) to run it.
 """
 
 import argparse
@@ -71,9 +77,38 @@ def config_arms() -> list[str]:
 DEFAULT_TRIALS = 3
 
 
-def discover_tasks() -> list[str]:
-    return sorted(p.name for p in (REPO_ROOT / "harbor-tasks").iterdir()
-                  if p.is_dir() and p.name.endswith("_minimal"))
+# Task directories that are not benchmark tasks and so never enter a sweep by
+# default. `debug` is a harness smoke test on a small sosa2024 subset -- useful to
+# submit deliberately (--tasks debug) after changing the environment, wasteful to
+# submit as part of a sweep, since it takes a whole node like any other job.
+NON_BENCHMARK_TASKS = {"debug"}
+
+# Suffix marking the reduced-scope variant of a task. Each benchmark task exists
+# as both <task> (full dataset) and <task>_minimal (reduced), so a scope filter is
+# just a test on the name.
+MINIMAL_SUFFIX = "_minimal"
+
+
+def discover_tasks(scope: str = "all") -> list[str]:
+    """Return the benchmark task directory names for a scope.
+
+    Args:
+        scope: which size variants to include --
+            "all"     both variants of every task (the default sweep),
+            "minimal" only the reduced-scope <task>_minimal directories,
+            "maximal" only the full-size <task> directories.
+
+    Returns:
+        Sorted task directory names, excluding NON_BENCHMARK_TASKS. Those can
+        still be run by naming them explicitly with --tasks.
+    """
+    names = sorted(p.name for p in (REPO_ROOT / "harbor-tasks").iterdir()
+                   if p.is_dir() and p.name not in NON_BENCHMARK_TASKS)
+    if scope == "minimal":
+        return [n for n in names if n.endswith(MINIMAL_SUFFIX)]
+    if scope == "maximal":
+        return [n for n in names if not n.endswith(MINIMAL_SUFFIX)]
+    return names
 
 
 def newest_versions_config() -> Path | None:
@@ -133,7 +168,7 @@ def submit(bsub_cmd: str, login_host: str = "login1") -> int:
     return subprocess.call(cmd, stdin=subprocess.DEVNULL)
 
 
-def check() -> bool:
+def check(scope: str = "all") -> bool:
     errs = []
     if not RUN_HARBOR.is_file():
         errs.append(f"missing {RUN_HARBOR}")
@@ -165,7 +200,7 @@ def check() -> bool:
     for d in (CLUSTER_LOG_DIR, CLUSTER_JOBS_DIR):
         report(d.is_dir() or os.access(d.parent, os.W_OK), f"writable: {d}")
 
-    for task in discover_tasks():
+    for task in discover_tasks(scope):
         d = REPO_ROOT / "harbor-tasks" / task
         compose = d / "environment" / "docker-compose.yaml"
         ok = (d / "task.toml").is_file() and compose.is_file()
@@ -218,16 +253,30 @@ def check() -> bool:
     if errs:
         print(f"{len(errs)} check(s) FAILED", file=sys.stderr)
     else:
+        n_tasks = len(discover_tasks(scope))
         print(f"all checks passed — ready to submit "
-              f"{len(discover_tasks())} tasks x {len(config_arms())} arms x {DEFAULT_TRIALS} trials "
-              f"= {len(discover_tasks()) * len(config_arms()) * DEFAULT_TRIALS} jobs")
+              f"{n_tasks} tasks ({scope}) x {len(config_arms())} arms x {DEFAULT_TRIALS} trials "
+              f"= {n_tasks * len(config_arms()) * DEFAULT_TRIALS} jobs")
     return not errs
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--tasks", nargs="*", help="task names (default: all *_minimal)")
+    parser.add_argument("--tasks", nargs="*",
+                        help="explicit task names; overrides --minimal/--maximal "
+                             "and may name a non-benchmark task such as debug "
+                             "(default: every benchmark task, both variants)")
+    # Mutually exclusive: a sweep is over one size variant or both, never a
+    # contradictory pair. Both flags write the same `scope` destination.
+    scope_group = parser.add_mutually_exclusive_group()
+    scope_group.add_argument("--minimal", dest="scope", action="store_const",
+                             const="minimal",
+                             help="only the reduced-scope *_minimal tasks")
+    scope_group.add_argument("--maximal", dest="scope", action="store_const",
+                             const="maximal",
+                             help="only the full-size tasks (no *_minimal)")
+    parser.set_defaults(scope="all")
     arms = config_arms()
     parser.add_argument("--agents", nargs="*", default=arms,
                         help=f"arms from the versions config; default: {arms}")
@@ -242,7 +291,7 @@ def main():
     args = parser.parse_args()
 
     if args.check:
-        sys.exit(0 if check() else 1)
+        sys.exit(0 if check(args.scope) else 1)
 
     # Resolve once so every job in this sweep gets the same pins, even if a
     # newer config lands while the sweep is still submitting.
@@ -261,7 +310,7 @@ def main():
         if rc != 0:
             sys.exit(f"apply_versions.py failed ({rc}); not submitting")
 
-    tasks = args.tasks or discover_tasks()
+    tasks = args.tasks or discover_tasks(args.scope)
     jobs = [(t, a, i) for t in tasks for a in args.agents
             for i in range(1, args.trials + 1)]
     jobs = jobs[args.start:]

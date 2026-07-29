@@ -1,7 +1,12 @@
 services:
   main:
     volumes:
-      - /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/<TASKNAME>/data:/app/data
+      # Absolute, built from DATA_ROOT, which run_harbor.sh exports. NOT a relative
+      # path: compose resolves those against the project directory (the first -f
+      # file's directory -- harbor's own), not against this file. `:?` makes an
+      # unset DATA_ROOT fail loudly, because a bad bind source is otherwise
+      # CREATED as an empty directory and mounts with no error at all.
+      - "${DATA_ROOT:?DATA_ROOT must be set - run via harbor-scripts/run_harbor.sh}/<TASKNAME>:/app/data"
     deploy:
       resources:
         reservations:

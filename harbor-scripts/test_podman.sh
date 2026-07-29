@@ -42,6 +42,10 @@ echo "Testing podman-compose up -d for task: $TASK"
 echo "Compose files: ${COMPOSE_FILES[*]}"
 echo ""
 
+# DATA_ROOT is what the task compose substitutes into the /app/data mount. This
+# script exists to reproduce harbor's podman invocation, so it must pass it too --
+# and checking the mount landed on real data is exactly what it is useful for.
+DATA_ROOT="${DATA_ROOT:-$(cd "$(dirname "$0")/.." && pwd)/data}" \
 MAIN_IMAGE_NAME="hb__${TASK}" \
 CONTEXT_DIR="$TASK_DIR" \
 CPUS=16 \

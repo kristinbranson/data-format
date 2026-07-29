@@ -150,6 +150,48 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HARBOR_TASKS="$(cd "$SCRIPT_DIR/../harbor-tasks" && pwd)"
 
+# Root of the datasets bind-mounted to /app/data. Every task's docker-compose.yaml
+# builds its mount as "${DATA_ROOT:?...}/<task>", so this must be exported for
+# compose to substitute it -- harbor forwards os.environ to the compose subprocess.
+#
+# Absolute, not relative: compose resolves a relative volume source against the
+# *project directory*, which is the first -f file's directory (harbor's own compose
+# dir), not the task file that declares it. Harbor's docker path compensates with
+# --project-directory, but podman-compose 1.5.0 has no such flag, so every cluster
+# run resolved ../../../data/<task> inside the harbor checkout instead. The runtime
+# then CREATED that missing source as an empty directory and mounted it read-only,
+# with no error anywhere -- the whole 2026-07-27 sweep ran against an empty
+# /app/data. Hence the checks below: this must never fail quietly again.
+#
+# Overridable from the environment so the data can live on faster local disk:
+#   DATA_ROOT=/scratch/data bash run_harbor.sh --agent claude --task sosa2024
+if [ -z "${DATA_ROOT:-}" ]; then
+  DATA_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)/data"
+fi
+if [ ! -d "$DATA_ROOT" ]; then
+  echo "ERROR: DATA_ROOT=$DATA_ROOT is not a directory."
+  echo "       Set DATA_ROOT to the directory holding the per-task dataset dirs."
+  exit 1
+fi
+if [ -z "$(ls -A "$DATA_ROOT" 2>/dev/null)" ]; then
+  echo "ERROR: DATA_ROOT=$DATA_ROOT is empty."
+  echo "       An empty data root is what the 2026-07-27 sweep silently ran on."
+  exit 1
+fi
+export DATA_ROOT
+echo "data root: $DATA_ROOT"
+
+# Verify the bind source each task actually mounts, not just that DATA_ROOT exists.
+# The tasks' own test_data_dir_accessible checks this too, but only in the verifier
+# -- after the agent has burned its full timeout. Checking here costs a second and
+# is what would have stopped the 2026-07-27 sweep on its first job instead of its
+# 48th. Scoped to the task being run when -t was given, so a single-task run is not
+# blocked by an unrelated dataset that happens to be missing.
+if ! python3 "$SCRIPT_DIR/check_data_mounts.py" $TASK; then
+  echo "ERROR: data mounts are not usable -- refusing to start."
+  exit 1
+fi
+
 # Resolve the versions config: explicit --versions, else the newest dated one.
 # Defaulting to newest keeps existing callers working, but the file used is
 # echoed so a run log always records which pins were in force.

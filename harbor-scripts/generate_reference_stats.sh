@@ -21,6 +21,11 @@ fi
 source /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
 conda activate eval-data-format
 
+# Every task compose builds its /app/data mount as "${DATA_ROOT:?...}/<task>", so
+# this must be exported or compose refuses to start. See run_harbor.sh for why the
+# mount is absolute rather than relative.
+export DATA_ROOT="${DATA_ROOT:-$(cd "$(dirname "$0")/.." && pwd)/data}"
+
 harbor run \
     -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks \
     -a "oracle" \

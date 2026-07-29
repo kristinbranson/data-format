@@ -107,14 +107,43 @@ def test_gpu_available(metrics):
 
 
 def test_data_dir_accessible(metrics):
-    """Test that the source data directory is mounted and readable."""
+    """Test that the source data directory is mounted and contains real data.
+
+    Checks for an actual file, not merely a non-empty directory listing. A bad
+    bind source is CREATED by the container runtime and mounted without error, so
+    the failure this guards against looks like a perfectly normal empty tree. For
+    a nested mount such as allen2p's
+    (${DATA_ROOT}/allen2p/visual-behavior-ophys-1.1.0 -> /app/data/...) the
+    runtime creates the intermediate directory too, so /app/data would list one
+    entry and an entry-count check would pass on entirely empty data.
+
+    Args:
+        metrics: shared dict written to /logs/verifier/metrics.json by the fixture.
+
+    Side effects:
+        Sets data_dir_exists (bool), data_dir_readable (bool: at least one file
+        is present anywhere beneath the mount) and data_dir_first_file (str path
+        of the file found, or None) in `metrics`.
+    """
     data_dir = WORKDIR / "data"
+
+    # next() short-circuits on the first file, so this stays cheap even for
+    # zhang2025, whose ONE cache holds tens of thousands of files.
+    first_file = None
+    if data_dir.is_dir():
+        first_file = next((p for p in data_dir.rglob("*") if p.is_file()), None)
+
     metrics["data_dir_exists"] = data_dir.exists()
-    metrics["data_dir_readable"] = data_dir.exists() and len(list(data_dir.iterdir())) > 0 if data_dir.exists() else False
+    metrics["data_dir_readable"] = first_file is not None
+    metrics["data_dir_first_file"] = str(first_file) if first_file else None
+
     assert data_dir.exists(), f"Data directory {data_dir} does not exist"
     assert data_dir.is_dir(), f"{data_dir} is not a directory"
-    contents = list(data_dir.iterdir())
-    assert len(contents) > 0, f"Data directory {data_dir} is empty"
+    assert first_file is not None, (
+        f"Data directory {data_dir} contains no files. It exists but holds no "
+        f"data, which is what a mis-resolved bind mount looks like: the runtime "
+        f"creates the missing source and mounts it silently."
+    )
 
 
 def test_required_files_exist(metrics):
