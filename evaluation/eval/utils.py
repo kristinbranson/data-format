@@ -304,18 +304,32 @@ def trial_metrics_df(metrics: dict | None = None, eval_dir: Path = EVAL_DIR):
 
     rows = []
     for ds, agents in metrics.items():
-        for agent, trials in agents.items():
-            for trial_str, m in trials.items():
-                rec = {"dataset": ds, "agent": agent, "trial": int(trial_str)}
-                for k, v in m.items():
-                    if isinstance(v, dict):
-                        for sub_k, sub_v in v.items():
-                            canonical = DECODER_VAR_ALIASES.get(sub_k, sub_k)
-                            rec[f"{k}.{canonical}"] = sub_v
-                    else:
-                        rec[_canonicalize_top_level_key(k)] = v
-                rows.append(rec)
-    return pd.DataFrame(rows).sort_values(["dataset", "agent", "trial"]).reset_index(drop=True)
+        for agent, variants in agents.items():
+            # Layout is dataset -> agent -> prompt -> trial. The prompt level
+            # separates <task> from <task>_minimal: they read the SAME data and
+            # differ only in how much the instruction says, so merging them onto
+            # one key silently drops one of the two. Files written before that
+            # level existed nest one deeper-in (agent -> trial), and their keys
+            # are trial numbers; treat those as the full-prompt variant.
+            if all(k.isdigit() for k in variants):
+                by_prompt = {"full": variants}
+            else:
+                by_prompt = variants
+            for prompt, trials in by_prompt.items():
+                for trial_str, m in trials.items():
+                    rec = {"dataset": ds, "agent": agent, "prompt": prompt,
+                           "trial": int(trial_str)}
+                    for k, v in m.items():
+                        if isinstance(v, dict):
+                            for sub_k, sub_v in v.items():
+                                canonical = DECODER_VAR_ALIASES.get(sub_k, sub_k)
+                                rec[f"{k}.{canonical}"] = sub_v
+                        else:
+                            rec[_canonicalize_top_level_key(k)] = v
+                    rows.append(rec)
+    return (pd.DataFrame(rows)
+            .sort_values(["dataset", "agent", "prompt", "trial"])
+            .reset_index(drop=True))
 
 
 def iter_trials(data):

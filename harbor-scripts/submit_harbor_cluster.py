@@ -11,14 +11,16 @@ Usage:
     python submit_harbor_cluster.py --check          # validate, submit nothing
     python submit_harbor_cluster.py --dry-run        # print the bsub commands
     python submit_harbor_cluster.py                  # every task, both variants
-    python submit_harbor_cluster.py --minimal        # only the *_minimal tasks
-    python submit_harbor_cluster.py --maximal        # only the full-size tasks
+    python submit_harbor_cluster.py --minimal        # only the minimal-prompt tasks
+    python submit_harbor_cluster.py --maximal        # only the full-prompt tasks
     python submit_harbor_cluster.py --tasks sosa2024_minimal --agents claude --trials 1
     python submit_harbor_cluster.py --start 0 --limit 1
 
-Scope defaults to every benchmark task in both size variants. `debug` is a harness
-smoke test, not a benchmark task, so it is never swept -- name it explicitly
-(--tasks debug) to run it.
+Scope defaults to every benchmark task in both prompt variants. <task> and
+<task>_minimal read the SAME dataset and differ only in how much the instruction
+tells the agent, so a full sweep is 2x the jobs for the same data. `debug` is a
+harness smoke test, not a benchmark task, so it is never swept -- name it
+explicitly (--tasks debug) to run it.
 """
 
 import argparse
@@ -39,13 +41,51 @@ if hasattr(signal, "SIGPIPE"):
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RUN_HARBOR = REPO_ROOT / "harbor-scripts" / "run_harbor.sh"
 
-# Queue geometry, matching rerun_decoder_accuracy.py:197-221. l4_larges hosts
-# carry exactly one GPU, so 64 slots at the queue's 64-slots/GPU ratio is the
-# whole machine and LSF never raises its over-ratio prompt.
-QUEUE = "gpu_l4_large"
-SLOTS = 64
+# Queue geometry, from the Janelia cluster docs (GPU Queues table). The slot count
+# is each queue's slots-per-GPU ratio, so requesting it alongside -gpu "num=1" asks
+# for exactly one GPU's share and LSF never raises its over-ratio prompt.
+#
+# These are NOT interchangeable between queues, which is why this is a table rather
+# than one constant: gpu_l4_large hosts carry 64 slots and gpu_t4 hosts 48, so a
+# 64-slot request on gpu_t4 cannot be satisfied by any node in the queue and the job
+# sits PENDING forever rather than failing.
+#
+# For the single-GPU queues (gpu_l4_large, gpu_t4) one GPU's share IS the whole node,
+# which is deliberate: podman on this cluster does not enforce --cpus/--memory
+# (measured: /sys/fs/cgroup/memory.max reads "max"), so owning the node is the only
+# way to bound a trial. The dense queues (gpu_l4, gpu_l4_16) put several GPUs on a
+# node and give no such isolation -- usable, but trials will contend.
+QUEUE_SPECS = {
+    # queue:        (slots per GPU, RAM per slot in GB)
+    "gpu_l4_large": (64, 15),
+    "gpu_t4":       (48, 15),
+    "gpu_l4":       (8, 15),
+    "gpu_l4_16":    (16, 15),
+    "gpu_a100":     (12, 40),
+    "gpu_h100":     (12, 40),
+    "gpu_h200":     (12, 40),
+}
+DEFAULT_QUEUE = "gpu_l4_large"
 GPUS = 1
-RAM_PER_SLOT_GB = 15
+
+
+def queue_geometry(queue: str, slots: int | None = None) -> tuple[int, int]:
+    """Return the slot count and per-slot memory to request on a queue.
+
+    Args:
+        queue: LSF GPU queue name; must be a key of QUEUE_SPECS.
+        slots: explicit slot count that overrides the queue's ratio, or None to
+            use the ratio. Overriding is for the rare case of wanting less than a
+            whole node; going above the ratio makes the job unschedulable.
+
+    Returns:
+        (slots, ram_per_slot_gb) -- the second is informational, used to report
+        the resulting node memory.
+    """
+    ratio_slots, ram_per_slot_gb = QUEUE_SPECS[queue]
+    return (ratio_slots if slots is None else slots), ram_per_slot_gb
+
+
 # Observed agent+verify time: 1.25 h median, 6.06 h max (mouseland). The two LLM
 # judges add roughly another hour on top of that (measured: ~25 min for the Claude
 # judge alone on sosa2024), which left almost no headroom at the previous 8:00.
@@ -83,9 +123,11 @@ DEFAULT_TRIALS = 3
 # submit as part of a sweep, since it takes a whole node like any other job.
 NON_BENCHMARK_TASKS = {"debug"}
 
-# Suffix marking the reduced-scope variant of a task. Each benchmark task exists
-# as both <task> (full dataset) and <task>_minimal (reduced), so a scope filter is
-# just a test on the name.
+# Suffix marking the minimal-PROMPT variant of a task. The two variants read the
+# SAME dataset -- only instruction.md, task.toml and tests/instruction_reference.md
+# differ (sosa2024: 877 instruction lines vs 219). They measure how much the
+# prompt's detail matters, not how much data the agent gets, so neither variant is
+# cheaper to run than the other.
 MINIMAL_SUFFIX = "_minimal"
 
 
@@ -93,10 +135,10 @@ def discover_tasks(scope: str = "all") -> list[str]:
     """Return the benchmark task directory names for a scope.
 
     Args:
-        scope: which size variants to include --
+        scope: which prompt variants to include --
             "all"     both variants of every task (the default sweep),
-            "minimal" only the reduced-scope <task>_minimal directories,
-            "maximal" only the full-size <task> directories.
+            "minimal" only the minimal-prompt <task>_minimal directories,
+            "maximal" only the full-prompt <task> directories.
 
     Returns:
         Sorted task directory names, excluding NON_BENCHMARK_TASKS. Those can
@@ -121,18 +163,27 @@ def newest_versions_config() -> Path | None:
 
 
 def build_job(task: str, agent: str, trial: int,
-              versions: Path | None = None) -> tuple[str, str, Path]:
+              versions: Path | None = None,
+              queue: str = DEFAULT_QUEUE,
+              slots: int | None = None,
+              exclude_hosts: list[str] | None = None) -> tuple[str, str, Path]:
     """Return (job_name, bsub command line, log path) for one trial.
 
     Args:
         task: harbor task directory name.
-        agent: "claude" or "codex".
+        agent: arm name from the versions config (e.g. claude, terminus-opus).
         trial: 1-based repeat number, used only in the job name.
         versions: harness/model pin config to pass through to run_harbor.sh.
             Resolved once by the caller and passed explicitly to every job --
             run_harbor.sh would otherwise pick the newest config itself, so a new
             one appearing mid-sweep would silently split the run across two
             configurations.
+        queue: LSF GPU queue; determines the slot count via QUEUE_SPECS.
+        slots: explicit slot count overriding the queue's ratio, or None.
+        exclude_hosts: node names to keep this job off, or None. A node whose
+            /scratch is broken fails every trial in ~13 s, and since LSF then
+            frees it and hands it the next pending job, one bad host can eat a
+            whole sweep in minutes (h06u02 took out 29 of 48 on 2026-07-28).
     """
     job_name = f"hb_{task}_{agent}_t{trial}"
     log_path = CLUSTER_LOG_DIR / f"{job_name}.log"
@@ -145,8 +196,16 @@ def build_job(task: str, agent: str, trial: int,
         f"--ntrials 1 --nconcurrent 1 --podman --apikeys "
         f"--jobs-dir {shlex.quote(str(jobs_dir))}{versions_flag}"
     )
+    n_slots, _ = queue_geometry(queue, slots)
+    # LSF has no "exclude host" flag, so exclusion is a resource requirement:
+    # every named host must differ from the one the job lands on.
+    exclude_flag = ""
+    if exclude_hosts:
+        conditions = " && ".join(f"hname!='{h}'" for h in exclude_hosts)
+        exclude_flag = f'-R "select[{conditions}]" '
     bsub = (
-        f'bsub -n {SLOTS} -gpu "num={GPUS}" -q {QUEUE} -W {WALL} '
+        f'bsub -n {n_slots} -gpu "num={GPUS}" -q {queue} -W {WALL} '
+        f'{exclude_flag}'
         f'-J {job_name} -o {shlex.quote(str(log_path))} '
         f'"{inner}"'
     )
@@ -168,7 +227,8 @@ def submit(bsub_cmd: str, login_host: str = "login1") -> int:
     return subprocess.call(cmd, stdin=subprocess.DEVNULL)
 
 
-def check(scope: str = "all") -> bool:
+def check(scope: str = "all", queue: str = DEFAULT_QUEUE,
+          slots: int | None = None) -> bool:
     errs = []
     if not RUN_HARBOR.is_file():
         errs.append(f"missing {RUN_HARBOR}")
@@ -177,9 +237,9 @@ def check(scope: str = "all") -> bool:
         if not ok:
             errs.append(label)
 
-    ram = SLOTS * RAM_PER_SLOT_GB
-    print(f"queue {QUEUE}: {SLOTS} slots x {RAM_PER_SLOT_GB} GB = {ram} GB, "
-          f"{GPUS} GPU, -W {WALL}\n")
+    n_slots, ram_per_slot_gb = queue_geometry(queue, slots)
+    print(f"queue {queue}: {n_slots} slots x {ram_per_slot_gb} GB = "
+          f"{n_slots * ram_per_slot_gb} GB, {GPUS} GPU, -W {WALL}\n")
 
     # --- local ---
     report(RUN_HARBOR.is_file(), "run_harbor.sh present", str(RUN_HARBOR))
@@ -267,16 +327,32 @@ def main():
                         help="explicit task names; overrides --minimal/--maximal "
                              "and may name a non-benchmark task such as debug "
                              "(default: every benchmark task, both variants)")
-    # Mutually exclusive: a sweep is over one size variant or both, never a
+    # Mutually exclusive: a sweep is over one prompt variant or both, never a
     # contradictory pair. Both flags write the same `scope` destination.
     scope_group = parser.add_mutually_exclusive_group()
     scope_group.add_argument("--minimal", dest="scope", action="store_const",
                              const="minimal",
-                             help="only the reduced-scope *_minimal tasks")
+                             help="only the minimal-prompt *_minimal tasks")
     scope_group.add_argument("--maximal", dest="scope", action="store_const",
                              const="maximal",
-                             help="only the full-size tasks (no *_minimal)")
+                             help="only the full-prompt tasks (no *_minimal)")
     parser.set_defaults(scope="all")
+    parser.add_argument("--queue", choices=sorted(QUEUE_SPECS), default=DEFAULT_QUEUE,
+                        help=f"LSF GPU queue; sets the slot count from its "
+                             f"slots-per-GPU ratio (default: {DEFAULT_QUEUE}). "
+                             f"Use a second queue to run arms in parallel with a "
+                             f"sweep -- the per-user GPU cap is per queue.")
+    parser.add_argument("--slots", type=int, default=None,
+                        help="override the queue's slot ratio; going above it "
+                             "makes jobs permanently unschedulable")
+    parser.add_argument("--exclude-hosts", nargs="*", default=None, metavar="HOST",
+                        help="keep jobs off these nodes (e.g. a host with broken "
+                             "/scratch, which otherwise fails every job in ~13s "
+                             "and burns through the whole pending queue)")
+    parser.add_argument("--jobs", nargs="*", default=None, metavar="JOB_NAME",
+                        help="submit only these job names (hb_<task>_<arm>_t<N>); "
+                             "use to resubmit an exact failed set without "
+                             "colliding with trials that are still running")
     arms = config_arms()
     parser.add_argument("--agents", nargs="*", default=arms,
                         help=f"arms from the versions config; default: {arms}")
@@ -291,7 +367,7 @@ def main():
     args = parser.parse_args()
 
     if args.check:
-        sys.exit(0 if check(args.scope) else 1)
+        sys.exit(0 if check(args.scope, args.queue, args.slots) else 1)
 
     # Resolve once so every job in this sweep gets the same pins, even if a
     # newer config lands while the sweep is still submitting.
@@ -313,6 +389,15 @@ def main():
     tasks = args.tasks or discover_tasks(args.scope)
     jobs = [(t, a, i) for t in tasks for a in args.agents
             for i in range(1, args.trials + 1)]
+    if args.jobs:
+        # Match on the job name build_job() would produce, so the names copied
+        # out of a failure report can be pasted straight back in.
+        wanted = set(args.jobs)
+        jobs = [(t, a, i) for t, a, i in jobs if f"hb_{t}_{a}_t{i}" in wanted]
+        missing = wanted - {f"hb_{t}_{a}_t{i}" for t, a, i in jobs}
+        if missing:
+            sys.exit(f"--jobs named {len(missing)} job(s) outside the selected "
+                     f"tasks/agents/trials: {sorted(missing)}")
     jobs = jobs[args.start:]
     if args.limit is not None:
         jobs = jobs[:args.limit]
@@ -321,12 +406,15 @@ def main():
         CLUSTER_LOG_DIR.mkdir(parents=True, exist_ok=True)
         CLUSTER_JOBS_DIR.mkdir(parents=True, exist_ok=True)
 
+    n_slots, _ = queue_geometry(args.queue, args.slots)
     print(f"{'Would submit' if args.dry_run else 'Submitting'} {len(jobs)} jobs "
-          f"to {QUEUE} (-n {SLOTS} -gpu num={GPUS} -W {WALL})")
+          f"to {args.queue} (-n {n_slots} -gpu num={GPUS} -W {WALL})")
     print(f"versions: {versions}")
     failed = 0
     for task, agent, trial in jobs:
-        job_name, bsub_cmd, _ = build_job(task, agent, trial, versions)
+        job_name, bsub_cmd, _ = build_job(task, agent, trial, versions,
+                                          args.queue, args.slots,
+                                          args.exclude_hosts)
         if args.dry_run:
             print(f"  {bsub_cmd}")
             continue

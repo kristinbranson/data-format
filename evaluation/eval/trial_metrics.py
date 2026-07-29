@@ -175,7 +175,7 @@ _LAYOUT_GLOBS = (
 )
 
 
-def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str] | None:
+def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str, str] | None:
     """Derive (dataset, agent, trial_num, timestamp) from a metrics.json path.
 
     Args:
@@ -183,9 +183,18 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str]
         root: the jobs root `metrics_path` was globbed under.
 
     Returns:
-        (dataset, agent, trial_num, timestamp), or None if the path doesn't
-        parse. `dataset` has any `_minimal` suffix stripped so minimal and
-        full-prompt runs share dataset keys and can be compared directly.
+        (dataset, agent, trial_num, timestamp, prompt), or None if the path
+        doesn't parse.
+
+        `dataset` has any `_minimal` suffix stripped so the two prompt variants
+        of a task share a dataset key and can be compared directly, and `prompt`
+        records which variant this trial actually was ("minimal" or "full").
+        Keeping the variant is not cosmetic: <task> and <task>_minimal read the
+        SAME data and differ only in how much the instruction says, so without
+        it the merged key silently collapses two different conditions into one
+        and the newest timestamp wins. That is invisible today only because the
+        arms happen to be disjoint -- claude/codex ran minimal, terminus ran
+        full -- and would start dropping trials the moment they overlap.
     """
     # parts[-1] is `verifier`, parts[-2] the trial dir, then agent, then task.
     parts = metrics_path.relative_to(root).parts[:-1]  # drop 'metrics.json'
@@ -194,6 +203,7 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str]
     trial_dir, agent, task = parts[-2], parts[-3], parts[-4]
 
     dataset = task.removesuffix("_minimal")
+    prompt = "minimal" if task.endswith("_minimal") else "full"
     timestamp = trial_dir.split("_trial")[0]
 
     # Prefer the job directory's `_tN`; fall back to the `_trialN` suffix, which
@@ -207,7 +217,7 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str]
         m = _TRIAL_SUFFIX_RE.search(trial_dir)
         trial_num = int(m.group(1)) if m else 1
 
-    return dataset, agent, trial_num, timestamp
+    return dataset, agent, trial_num, timestamp, prompt
 
 
 def collect_from_jobs_roots(roots: list[Path]) -> dict:
@@ -236,7 +246,7 @@ def collect_from_jobs_roots(roots: list[Path]) -> dict:
                 ident = _identify_trial(metrics_path, root)
                 if ident is None:
                     continue
-                dataset, agent, trial_num, timestamp = ident
+                dataset, agent, trial_num, timestamp, prompt = ident
                 n_seen += 1
                 try:
                     raw = json.loads(metrics_path.read_text())
@@ -246,15 +256,26 @@ def collect_from_jobs_roots(roots: list[Path]) -> dict:
                     print(f"  ! unreadable {metrics_path}: {e}")
                     n_skipped += 1
                     continue
-                key = (dataset, agent, trial_num)
+                # prompt is part of the key: the two variants of a task are
+                # separate conditions, not duplicate runs of one.
+                key = (dataset, agent, prompt, trial_num)
                 if key not in best or timestamp > best[key][0]:
-                    best[key] = (timestamp, _curate(raw))
+                    curated = _curate(raw)
+                    curated["prompt"] = prompt
+                    best[key] = (timestamp, curated)
 
     out: dict[str, dict[str, dict[str, dict]]] = {}
-    for (dataset, agent, trial_num), (_ts, curated) in sorted(best.items()):
-        out.setdefault(dataset, {}).setdefault(agent, {})[str(trial_num)] = curated
+    # Nest by prompt variant so a dataset/agent pair can hold both without one
+    # overwriting the other: dataset -> agent -> prompt -> trial -> metrics.
+    for (dataset, agent, prompt, trial_num), (_ts, curated) in sorted(best.items()):
+        variants = out.setdefault(dataset, {}).setdefault(agent, {})
+        variants.setdefault(prompt, {})[str(trial_num)] = curated
 
-    n_kept = sum(len(t) for a in out.values() for t in a.values())
+    # Four levels now: dataset -> agent -> prompt -> trial.
+    n_kept = sum(len(trials)
+                 for agents in out.values()
+                 for variants in agents.values()
+                 for trials in variants.values())
     print(f"  found: {n_seen}, kept: {n_kept} (newest per task/agent/trial), "
           f"unreadable: {n_skipped}")
     return out

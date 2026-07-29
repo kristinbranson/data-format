@@ -72,7 +72,15 @@ if [ "$USE_PODMAN" = true ]; then
   if [ -n "${LSB_JOBID:-}" ]; then
     PODMAN_JOB_DIR="/scratch/$USER/podman-$LSB_JOBID"
     PODMAN_GRAPHROOT="/scratch/$USER/podman-storage"
-    mkdir -p "$PODMAN_JOB_DIR/run" "$PODMAN_JOB_DIR/tmp" "$PODMAN_GRAPHROOT"
+
+    # ---- NEW (1): do not let a failed mkdir become a podman error 13 s later ----
+    if ! mkdir -p "$PODMAN_JOB_DIR/run" "$PODMAN_JOB_DIR/tmp" "$PODMAN_GRAPHROOT"; then
+      echo "ERROR: cannot create podman dirs under /scratch/$USER on $(hostname)"
+      ls -ld /scratch "/scratch/$USER" 2>&1
+      exit 1
+    fi
+    # ---- end new (1) ----
+
     cat > "$PODMAN_JOB_DIR/storage.conf" <<EOF
 [storage]
 driver = "overlay"
@@ -92,7 +100,8 @@ EOF
     export CONTAINERS_STORAGE_CONF="$PODMAN_JOB_DIR/storage.conf"
     export CONTAINERS_CONF="$PODMAN_JOB_DIR/containers.conf"
     export XDG_RUNTIME_DIR="$PODMAN_JOB_DIR/run"
-    echo "podman: runroot=$PODMAN_JOB_DIR/run graphroot=$PODMAN_GRAPHROOT"
+    echo "podman: host=$(hostname) runroot=$PODMAN_JOB_DIR/run graphroot=$PODMAN_GRAPHROOT"
+
     # Rootless podman leaves a `catatonit -P` pause process holding the user
     # namespace. It reparents to init and never exits, so LSF keeps the job in
     # RUN long after the work is done -- a whole node held until the wall clock
@@ -112,6 +121,65 @@ EOF
       rm -rf "$PODMAN_JOB_DIR"
     }
     trap cleanup_podman_job EXIT
+
+    # ---- NEW (2): prove podman works, and repair it, before harbor starts ----
+    # Once harbor is running, a broken podman becomes a per-trial exception and the
+    # job still exits 0, so LSF records DONE, frees the node, and hands it the next
+    # pending job to kill. Probing here turns that into a job that EXITs, and gives
+    # the repair a chance first.
+    #
+    # Escalate in the order that costs least:
+    #   a. podman system migrate      -- rebuilds the userns state; podman's own advice
+    #   b. kill leftover catatonit    -- a pause process from a job that died without
+    #                                    running its cleanup trap holds the old userns
+    #   c. reset the shared graphroot -- the only other state carried between jobs;
+    #                                    costs a ~7 min image rebuild
+    # Anything printed here is the diagnosis for the next occurrence: today's logs
+    # contain only podman's misleading message, which is why three hosts' worth of
+    # failures took an hour to attribute.
+    podman_healthy() { podman info >/dev/null 2>&1; }
+
+    if ! podman_healthy; then
+      echo "WARNING: podman unhealthy on $(hostname) before any work -- attempting repair"
+      podman info 2>&1 | tail -5
+      pgrep -u "$USER" -a catatonit 2>/dev/null | sed 's/^/  stale: /'
+
+      podman system migrate >/dev/null 2>&1 || true
+      if ! podman_healthy; then
+        pkill -u "$USER" -x catatonit 2>/dev/null || true
+        podman system migrate >/dev/null 2>&1 || true
+      fi
+      if ! podman_healthy; then
+        # The graphroot is the only state carried between jobs on a node, and on
+        # 2026-07-28 wiping it was the ONLY step that ever repaired a poisoned host
+        # -- migrate and killing catatonit both failed first. Confirmed on h06u10.
+        #
+        # Remove it from inside the user namespace. Image layers under overlay/*/diff
+        # are owned by subuid-mapped UIDs, so a plain `rm -rf` as the invoking user
+        # gets "Permission denied" on most of the tree and leaves debris behind (it
+        # removed just enough to let podman re-init, which is luck, not a fix).
+        # `podman unshare` enters the same mapping that created those files.
+        echo "podman: resetting shared image store $PODMAN_GRAPHROOT"
+        podman unshare rm -rf "$PODMAN_GRAPHROOT" 2>/dev/null \
+          || rm -rf "$PODMAN_GRAPHROOT" 2>/dev/null \
+          || true
+        # Anything left is subuid-owned debris a later job cannot read either;
+        # move it aside so the fresh store starts clean. /scratch is node-local
+        # and wiped between allocations, so the leftovers cost nothing.
+        if [ -d "$PODMAN_GRAPHROOT" ] && [ -n "$(ls -A "$PODMAN_GRAPHROOT" 2>/dev/null)" ]; then
+          mv "$PODMAN_GRAPHROOT" "$PODMAN_GRAPHROOT.broken-$LSB_JOBID" 2>/dev/null || true
+          echo "podman: could not fully remove the old store; moved it aside"
+        fi
+        mkdir -p "$PODMAN_GRAPHROOT"
+      fi
+      if ! podman_healthy; then
+        echo "ERROR: podman unusable on $(hostname); refusing the job so LSF marks it EXIT"
+        podman info 2>&1 | tail -20
+        exit 1
+      fi
+      echo "podman: recovered on $(hostname)"
+    fi
+    # ---- end new (2) ----
   fi
 fi
 
@@ -133,7 +201,7 @@ if [ "$USE_APIKEYS" = true ]; then
   fi
 else
   # Use OAuth tokens from CLI credentials
-  export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+  export CLAUDE_CODE_OAUTH_TOKEN=$(jq -r '.claudeAiOauth.accessToken' "$HOME/.claude/.credentials.json")
   export CODEX_AUTH_JSON_B64=$(base64 -w0 $HOME/.codex/auth.json 2>/dev/null || true)
 fi
 
@@ -279,30 +347,87 @@ chmod -R a+rX "$JOBS_DIR" 2>/dev/null || true
 
 # Post-process: reorganize outputs into jobs/<task>/<agent>/<timestamp>_trial<N>/
 LATEST_JOB=$(ls -td "$JOBS_DIR"/20* 2>/dev/null | head -1)
+# Diagnostics for a live puzzle: on 2026-07-28 every terminus job exited 0 with its
+# trial left in raw/ and produced NO output from this block, while claude and codex
+# jobs in the same sweep reorganised normally. Replaying these exact commands by
+# hand against those directories afterwards works, so record the inputs and find out
+# what differs at run time. Cheap, and it prints on every job.
+echo "reorg: JOBS_DIR=$JOBS_DIR"
+echo "reorg: candidates=$(ls -d "$JOBS_DIR"/20* 2>/dev/null | tr '\n' ' ')"
+echo "reorg: LATEST_JOB=${LATEST_JOB:-<empty>}"
+[ -n "$LATEST_JOB" ] && echo "reorg: trials=$(ls -d "$LATEST_JOB"/*__*/ 2>/dev/null | tr '\n' ' ')"
 if [ -n "$LATEST_JOB" ]; then
-  TIMESTAMP=$(basename "$LATEST_JOB")
   declare -A task_trial_num
   REORG_DIRS=()
-  for trial_dir in "$LATEST_JOB"/*__*/; do
-    [ -d "$trial_dir" ] || continue
-    task_name=$(basename "$trial_dir" | sed 's/__[^_]*$//')
-    # Infer agent name: config.json (most reliable) > trajectory.json > $AGENT
-    trial_agent=""
-    if [ -f "$trial_dir/config.json" ]; then
-      trial_agent=$(python3 -c "import json; d=json.load(open('$trial_dir/config.json')); print(d.get('agent',{}).get('name',''))" 2>/dev/null)
-    fi
-    if [ -z "$trial_agent" ] && [ -f "$trial_dir/agent/trajectory.json" ]; then
-      trial_agent=$(python3 -c "import json; d=json.load(open('$trial_dir/agent/trajectory.json')); print(d.get('agent',{}).get('name',''))" 2>/dev/null)
-    fi
-    [ -z "$trial_agent" ] && trial_agent="$AGENT"
-    task_trial_key="${task_name}__${trial_agent}"
-    task_trial_num[$task_trial_key]=$(( ${task_trial_num[$task_trial_key]:-0} + 1 ))
-    dest="$REORG_BASE/$task_name/$trial_agent/${TIMESTAMP}_trial${task_trial_num[$task_trial_key]}"
-    mkdir -p "$(dirname "$dest")"
-    mv "$trial_dir" "$dest"
-    echo "Results moved to $dest"
-    REORG_DIRS+=("$dest")
+  # EVERY run directory, not just the newest. Two bugs fixed by this:
+  #   * Stranding. A run whose reorganization never happened stays in raw/ forever,
+  #     because the old code only ever looked at the newest directory. Every
+  #     terminus job on 2026-07-28 exited 0 with its trial left in raw/. Looping
+  #     over all of them makes this self-healing: a later job in the same jobs dir
+  #     picks up whatever an earlier one left.
+  #   * Sibling theft. `ls -td | head -1` returns the NEWEST run in the jobs dir,
+  #     which for two jobs sharing one (a duplicate --jobs-dir) is the other job's
+  #     run -- confirmed on hb_sosa2024_terminus-opus_t1, where it resolved to the
+  #     sibling's 22-19-22 rather than its own 22-00-04.
+  for run_dir in "$JOBS_DIR"/20*/; do
+    [ -d "$run_dir" ] || continue
+    TIMESTAMP=$(basename "$run_dir")
+    for trial_dir in "$run_dir"*__*/; do
+      [ -d "$trial_dir" ] || continue
+      task_name=$(basename "$trial_dir" | sed 's/__[^_]*$//')
+      # Infer agent name: config.json (most reliable) > trajectory.json > $AGENT
+      trial_agent=""
+      if [ -f "$trial_dir/config.json" ]; then
+        trial_agent=$(jq -r '.agent.name // empty' "$trial_dir/config.json" 2>/dev/null)
+      fi
+      if [ -z "$trial_agent" ] && [ -f "$trial_dir/agent/trajectory.json" ]; then
+        trial_agent=$(jq -r '.agent.name // empty' "$trial_dir/agent/trajectory.json" 2>/dev/null)
+      fi
+      [ -z "$trial_agent" ] && trial_agent="$AGENT"
+      # Subscript QUOTED. Unquoted, it is only safe while `declare -A` is in scope:
+      # an indexed array evaluates the subscript arithmetically, so a hyphenated
+      # agent name makes "sosa2024__terminus-2" mean 0 - 2 = -2 and bash aborts the
+      # loop with "bad array subscript". claude-code and codex both evaluate to a
+      # harmless 0, so the breakage would be terminus-only and easy to miss.
+      task_trial_key="${task_name}__${trial_agent}"
+      task_trial_num["$task_trial_key"]=$(( ${task_trial_num["$task_trial_key"]:-0} + 1 ))
+      dest="$REORG_BASE/$task_name/$trial_agent/${TIMESTAMP}_trial${task_trial_num["$task_trial_key"]}"
+      mkdir -p "$(dirname "$dest")"
+      mv "$trial_dir" "$dest"
+      echo "Results moved to $dest"
+      REORG_DIRS+=("$dest")
+    done
   done
+
+  # Report helpers. Both read JSON the trial produced; jq rather than an embedded
+  # python heredoc, so the shell is not interpolating paths into program source
+  # (a path containing a quote used to be enough to break it).
+
+  # An agent that died early -- auth failure, immediate crash -- leaves a trajectory
+  # of one or two steps whose last message carries the reason. A healthy run has
+  # hundreds of steps, so the length test is what separates the two.
+  agent_error() {  # $1 = trajectory.json, $2 = max chars to report
+    jq -r --argjson n "$2" '
+      .steps as $s
+      | if ($s|length) > 0 and ($s|length) <= 2 then ($s[-1].message // "") else "" end
+      | if (test("401") or (ascii_downcase | test("error"))) then .[0:$n] else empty end
+    ' "$1" 2>/dev/null
+  }
+
+  # One judge's cell in the summary: its score, ERR if it recorded an error, an
+  # em dash if it produced neither. jq has no fixed-decimal format, so it returns
+  # the raw number and printf rounds it.
+  judge_cell() {  # $1 = metrics.json, $2 = claude|codex
+    local reward
+    reward=$(jq -r --arg m "$2" '.["llm_judge_" + $m + "_reward"] // empty' "$1" 2>/dev/null)
+    if [ -n "$reward" ]; then
+      printf '%.3f' "$reward"
+    elif jq -e --arg m "$2" 'has("llm_judge_" + $m + "_error")' "$1" >/dev/null 2>&1; then
+      echo "ERR"
+    else
+      echo "—"
+    fi
+  }
 
   # --- Summary table ---
   echo ""
@@ -316,15 +441,7 @@ if [ -n "$LATEST_JOB" ]; then
     # Agent status
     agent_ok="ok"
     if [ -f "$dest/agent/trajectory.json" ]; then
-      agent_err=$(python3 -c "
-import json
-d = json.load(open('$dest/agent/trajectory.json'))
-steps = d.get('steps', [])
-if len(steps) <= 2 and len(steps) > 0:
-    msg = steps[-1].get('message','')
-    if '401' in msg or 'error' in msg.lower():
-        print(msg[:60])
-" 2>/dev/null)
+      agent_err=$(agent_error "$dest/agent/trajectory.json" 60)
       if [ -n "$agent_err" ]; then
         agent_ok="FAIL"
       fi
@@ -335,33 +452,13 @@ if len(steps) <= 2 and len(steps) > 0:
     # Claude judge
     claude_j="—"
     if [ -f "$dest/verifier/metrics.json" ]; then
-      claude_j=$(python3 -c "
-import json
-d = json.load(open('$dest/verifier/metrics.json'))
-r = d.get('llm_judge_claude_reward')
-if r is not None:
-    print(f'{r:.3f}')
-elif 'llm_judge_claude_error' in d:
-    print('ERR')
-else:
-    print('—')
-" 2>/dev/null || echo "?")
+      claude_j=$(judge_cell "$dest/verifier/metrics.json" claude)
     fi
 
     # Codex judge
     codex_j="—"
     if [ -f "$dest/verifier/metrics.json" ]; then
-      codex_j=$(python3 -c "
-import json
-d = json.load(open('$dest/verifier/metrics.json'))
-r = d.get('llm_judge_codex_reward')
-if r is not None:
-    print(f'{r:.3f}')
-elif 'llm_judge_codex_error' in d:
-    print('ERR')
-else:
-    print('—')
-" 2>/dev/null || echo "?")
+      codex_j=$(judge_cell "$dest/verifier/metrics.json" codex)
     fi
 
     # Reward
@@ -382,15 +479,7 @@ else:
 
     # Agent error (auth failure or crash)
     if [ -f "$dest/agent/trajectory.json" ]; then
-      agent_err=$(python3 -c "
-import json
-d = json.load(open('$dest/agent/trajectory.json'))
-steps = d.get('steps', [])
-if len(steps) <= 2 and len(steps) > 0:
-    msg = steps[-1].get('message','')
-    if '401' in msg or 'error' in msg.lower():
-        print(msg[:200])
-" 2>/dev/null)
+      agent_err=$(agent_error "$dest/agent/trajectory.json" 200)
       if [ -n "$agent_err" ]; then
         has_issues=true
         echo "ERROR $label agent: $agent_err"
@@ -412,21 +501,25 @@ if len(steps) <= 2 and len(steps) > 0:
       echo "ERROR $label: no metrics.json"
     else
       # Check for judge errors or missing rewards
-      python3 -c "
-import json
-d = json.load(open('$dest/verifier/metrics.json'))
-label = '$label'
-for model in ['claude', 'codex']:
-    e = d.get(f'llm_judge_{model}_error')
-    r = d.get(f'llm_judge_{model}_reward')
-    if e:
-        print(f'ERROR {label} {model} judge: {e[:200]}')
-    elif r is None:
-        print(f'WARN  {label} {model} judge: no reward produced')
-" 2>/dev/null | while read line; do
+      # Captured, not piped: `... | while read` runs the loop in a SUBSHELL, so
+      # the has_issues=true inside it was discarded and a judge failure never
+      # reached the "No errors detected." decision below.
+      # NB: --arg trial_label, not --arg label -- `label` is a jq keyword
+      # (label $out | break) and shadowing it is a compile error.
+      judge_issues=$(jq -r --arg trial_label "$label" '
+        ["claude", "codex"][] as $m
+        | (.["llm_judge_" + $m + "_error"]) as $err
+        | (.["llm_judge_" + $m + "_reward"]) as $reward
+        | if ($err != null and $err != "") then
+            "ERROR \($trial_label) \($m) judge: \($err[0:200])"
+          elif $reward == null then
+            "WARN  \($trial_label) \($m) judge: no reward produced"
+          else empty end
+      ' "$dest/verifier/metrics.json" 2>/dev/null)
+      if [ -n "$judge_issues" ]; then
         has_issues=true
-        echo "$line"
-      done
+        echo "$judge_issues"
+      fi
     fi
 
     # Check for permission errors in judge logs (e.g. NFS issues)
