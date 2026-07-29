@@ -98,7 +98,25 @@ fi
 
 # Read data directory from docker-compose.yaml (the host path mounted to /app/data)
 COMPOSE="$TASK_DIR/environment/docker-compose.yaml"
-DATA_DIR=$(grep ':/app/data' "$COMPOSE" | sed 's|.*- ||; s|:/app/data.*||; s|^ *||')
+# The compose volume source is "${DATA_ROOT:?<message>}/<task>", absolute so that
+# podman-compose resolves it correctly (see run_harbor.sh). This script bypasses
+# compose and builds its own -v, so it must expand DATA_ROOT itself.
+#
+# The old parse was `sed 's|.*- ||'`, which is GREEDY: it matched the last "- " in
+# the line, and the :? message contains one ("must be set - run via ..."), so the
+# path came out as ".../environment/run via harbor-scripts/run_harbor.sh}/<task>".
+# Anchor the strip to the start of the line instead, and drop the surrounding
+# quotes the compose entry now carries.
+#
+# NOTE: duplicated verbatim in rerun_verifier.sh, which parses the same line the
+# same way. Change both together.
+DATA_ROOT="${DATA_ROOT:-$REPO_DIR/data}"
+DATA_DIR=$(grep ':/app/data' "$COMPOSE" | head -1 \
+    | sed 's|^[[:space:]]*-[[:space:]]*||; s|:/app/data.*||; s|^"||; s|"$||')
+# Expand a leading ${DATA_ROOT...} by replacing everything up to its closing brace.
+case "$DATA_DIR" in
+    '${DATA_ROOT'*) DATA_DIR="$DATA_ROOT${DATA_DIR#*\}}" ;;
+esac
 if [ ! -d "$DATA_DIR" ]; then
     echo "Error: Data directory not found: $DATA_DIR (from $COMPOSE)"
     exit 1

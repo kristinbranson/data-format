@@ -11,6 +11,9 @@
 #   --judges-only         Rerun both judges and update metrics.json
 #   --verifier-dir DIR    Use DIR as the verifier directory (default: newest
 #                         verifier_rerun_* if one exists, otherwise verifier/)
+#   --no-gpu              Do not request a GPU. Use when the host's CDI spec does
+#                         not declare the device podman asks for; test_gpu_available
+#                         then fails and decoder training runs on CPU.
 #   --podman              Use rootless podman instead of docker. REQUIRED for
 #                         trials stored on /groups or /nrs: docker runs the
 #                         container as real root, and those NFS mounts are
@@ -36,6 +39,7 @@ set -euo pipefail
 RUN_CLAUDE_JUDGE=false
 RUN_CODEX_JUDGE=false
 JUDGE_ONLY=false
+NO_GPU=false
 VERIFIER_DIR_OVERRIDE=""
 CONTAINER_CMD="docker"
 # docker and podman spell GPU passthrough differently: docker uses its own
@@ -48,6 +52,7 @@ while [[ "${1:-}" == --* ]]; do
         --judges-only)       RUN_CLAUDE_JUDGE=true; RUN_CODEX_JUDGE=true; JUDGE_ONLY=true; shift ;;
         --verifier-dir)      VERIFIER_DIR_OVERRIDE="$2"; shift 2 ;;
         --podman)            CONTAINER_CMD="podman"; GPU_FLAG="--device nvidia.com/gpu=all"; shift ;;
+        --no-gpu)            NO_GPU=true; shift ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -62,10 +67,27 @@ if [ "$JUDGE_ONLY" = true ]; then
     GPU_FLAG=""
 fi
 
+# --no-gpu: same suppression, requested explicitly. Needed when the host has GPUs
+# but its CDI spec does not declare the name podman is asked for -- the run then
+# dies with "unresolvable CDI devices nvidia.com/gpu=all" before the container
+# starts, even though nvidia-smi lists the cards. test_gpu_available will fail
+# without one (it asserts torch.cuda.is_available()), and the decoder training
+# falls back to CPU, so use this when the judge scores are what you are after.
+if [ "${NO_GPU:-false}" = true ]; then
+    GPU_FLAG=""
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 TRIAL_DIR="${1:?Usage: $0 [--claude-judge-only|--codex-judge-only|--judges-only] <trial_dir>}"
+# Absolute, and without a trailing slash. The -v flags below pass $TRIAL_DIR
+# straight to podman/docker, which treat a RELATIVE bind source as a NAMED VOLUME
+# -- the run dies with `creating named volume "harbor-jobs-new/..."` instead of
+# mounting anything. DATA_DIR is resolved for the same reason further down; this
+# is that hazard for the trial path, and it also keeps the task-name inference
+# (basename of the grandparent) working from any cwd.
+TRIAL_DIR="$(cd "$TRIAL_DIR" && pwd)"
 
 # Infer task name from trial directory path: .../jobs/<task>/<agent>/<timestamp>/
 TASK_NAME="$(basename "$(dirname "$(dirname "$TRIAL_DIR")")")"
@@ -101,7 +123,25 @@ fi
 
 # Read data directory from docker-compose.yaml (the host path mounted to /app/data)
 COMPOSE="$TASK_DIR/environment/docker-compose.yaml"
-DATA_DIR=$(grep ':/app/data' "$COMPOSE" | sed 's|.*- ||; s|:/app/data.*||; s|^ *||')
+# The compose volume source is "${DATA_ROOT:?<message>}/<task>", absolute so that
+# podman-compose resolves it correctly (see run_harbor.sh). This script bypasses
+# compose and builds its own -v, so it must expand DATA_ROOT itself.
+#
+# The old parse was `sed 's|.*- ||'`, which is GREEDY: it matched the last "- " in
+# the line, and the :? message contains one ("must be set - run via ..."), so the
+# path came out as ".../environment/run via harbor-scripts/run_harbor.sh}/<task>".
+# Anchor the strip to the start of the line instead, and drop the surrounding
+# quotes the compose entry now carries.
+#
+# NOTE: duplicated verbatim in run_unsupervised_judges.sh, which parses the same
+# line the same way. Change both together.
+DATA_ROOT="${DATA_ROOT:-$REPO_DIR/data}"
+DATA_DIR=$(grep ':/app/data' "$COMPOSE" | head -1 \
+    | sed 's|^[[:space:]]*-[[:space:]]*||; s|:/app/data.*||; s|^"||; s|"$||')
+# Expand a leading ${DATA_ROOT...} by replacing everything up to its closing brace.
+case "$DATA_DIR" in
+    '${DATA_ROOT'*) DATA_DIR="$DATA_ROOT${DATA_DIR#*\}}" ;;
+esac
 # Volume sources in docker-compose.yaml are relative to the compose file's own
 # directory (compose defines them that way, and it keeps the task portable across
 # the workstation and cluster paths). This script bypasses compose and builds its
