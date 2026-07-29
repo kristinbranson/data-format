@@ -18,8 +18,7 @@ import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path("/groups/zhang/home/zhangl5/Data-Format")
-EVAL_DIR = REPO_ROOT / "evaluation" / "eval"
+EVAL_DIR = Path(__file__).resolve().parent
 
 # Canonical 6-trial order: cc1, cc2, cc3, cx1, cx2, cx3
 TRIAL_KEYS = [("claude-code", n) for n in (1, 2, 3)] + [("codex", n) for n in (1, 2, 3)]
