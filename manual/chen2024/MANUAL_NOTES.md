@@ -3,7 +3,9 @@
 ### Step 2: Dataset Exploration
 
 One session has to be dropped due to all units being "NaN".
-Also filter out the "free-water" trials
+Also filter out 
+- the "free-water" trials
+- trials where recording hasn't started
 
 *Behavioral Variables*
 - Each file correspond to one session from one subject in NWB format
@@ -14,5 +16,5 @@ Also filter out the "free-water" trials
 - The final tongue y position category label is generated with an "-1" label for "not visible".
 
 *Neural Data*
-- Use 'classification' = 'good' as defined in the methods
+- Use 'classification' = 'good' as defined in the methods paper
 - Spike time recorded in aligned temporal axis, so simply compute spike counts -> rate within each binned window
