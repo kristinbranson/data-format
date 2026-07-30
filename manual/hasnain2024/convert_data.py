@@ -15,6 +15,9 @@ import pandas as pd
 import scipy.io
 from scipy.ndimage import gaussian_filter1d
 
+_hasnain2024_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _hasnain2024_seed) % 2**31)
+
 # ---------------------------------------------------------------- constants --
 # Everything is aligned to the go cue and binned at 5 ms, matching params.dt = 1/200
 # and params.tmin/tmax in the reference getDefaultParams.m.
