@@ -1,0 +1,319 @@
+# Evaluation summary — majnik2025 · evaluator KB
+
+---
+
+## Q 1-a. How are **all the data** for all subjects, sessions, and trials loaded in?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 1-b. How are the data split into subjects?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 1-c. How are the data split into sessions?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 1-d. Are the data correctly split into trials?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | better | 2 min is listed in the methods, manual uses 1 min |
+| claude-code / trial2 | better | 2 min is listed in the methods, manual uses 1 min |
+| claude-code / trial3 | better | 2 min is listed in the methods, manual uses 1 min |
+| codex / trial1 | better | 2 min is listed in the methods, manual uses 1 min |
+| codex / trial2 | better | 2 min is listed in the methods, manual uses 1 min |
+| codex / trial3 | better | 2 min is listed in the methods, manual uses 1 min |
+
+**Overall comment:** 2 min is listed in the methods, manual uses 1 min
+
+---
+
+## Q 1-e. How are trials filtered based on quality controls?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-b. How is the `neural` data processed?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | reimplements suite2p preprocess manually |
+| claude-code / trial2 | incorrect | i think this double subtracts the baseline |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-c. How is the `neural` data filtered based on quality controls?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-d. How is the `neural` data temporally binned/resampled?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | agent is closer to the paper which says it averages 10 timepoints |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | agent is closer to the paper which says it averages 10 timepoints |
+| codex / trial1 | ok | agent is closer to the paper which says it averages 10 timepoints |
+| codex / trial2 | ok | agent is closer to the paper which says it averages 10 timepoints |
+| codex / trial3 | ok | agent is closer to the paper which says it averages 10 timepoints |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 3-a. What variables in the raw data is `input` *Time* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | concerning | agent uses time from start of trial not start of experiment |
+| claude-code / trial2 | concerning | agent uses time from start of trial not start of experiment |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 3-b. What processing is involved in computing `input` *Time*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 3-c. How is `input` *Time* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-a. What variables in the raw data is `output` *Motion energy* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-b. What processing is involved in computing `output` *Motion energy*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | incorrect | does not normalize per session, interpolation problematic with dropped frames |
+| claude-code / trial2 | incorrect | does not normalize per session |
+| claude-code / trial3 | incorrect | does not normalize per session, does not properly account for missing frames |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | incorrect | incorrect interpolation when frames are dropped |
+| claude-code / trial3 | incorrect | incorrect interpolation when frames are dropped |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | incorrect | doesn't detect missing video frames |
+| claude-code / trial3 | incorrect | doesn't detect missing video frames |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | incorrect | doesn't detect missing video frames |
+| codex / trial3 | concerning | not sure that no behavior timestamp maps is equivalent |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 8-a. What are the most time-consuming steps of the code?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 8-c. What processing does the code repeat multiple times?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
