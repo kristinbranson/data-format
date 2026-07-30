@@ -400,18 +400,13 @@ class Neural:
 
     def spike_count(self, cluster):
         """Spikes of one cluster per trial and bin, aligned to the go cue."""
-        trial_of_spike = np.asarray(cluster['trial'], int) - 1      # trial numbers are 1 based
-        aligned = np.asarray(cluster['trialtm'], float) - self.go_cue[trial_of_spike]
+        spike_trial = np.asarray(cluster['trial'], int) - 1         # trial numbers are 1 based
+        spike_time = np.asarray(cluster['trialtm'], float) - self.go_cue[spike_trial]
 
-        row_of_trial = np.full(self.go_cue.size, -1)
-        row_of_trial[self.trials] = np.arange(self.trials.size)
-        row = row_of_trial[trial_of_spike]
-        column = np.searchsorted(BIN_EDGES, aligned, side='right') - 1
-
-        inside = (row >= 0) & (column >= 0) & (column < N_BINS)
-        flat = np.bincount(row[inside] * N_BINS + column[inside],
-                           minlength=self.trials.size * N_BINS)
-        return flat.reshape(self.trials.size, N_BINS)
+        # count spikes into a trial by bin grid; those outside the window fall off the edges
+        trial_edges = np.arange(self.go_cue.size + 1) - 0.5
+        counts, _, _ = np.histogram2d(spike_trial, spike_time, bins=[trial_edges, BIN_EDGES])
+        return counts[self.trials]                                  # only the trials we keep
 
     def rates(self):
         """Firing rate of every unit above MIN_RATE, as (n_units, n_trials, N_BINS)."""
