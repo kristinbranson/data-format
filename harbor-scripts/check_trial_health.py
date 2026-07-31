@@ -83,6 +83,43 @@ def parse_metrics_json(path):
     return json.loads(txt)
 
 
+def judge_issues(verifier_dir, metrics, subdir="judge", suffix="", verbose=False, label=None):
+    """Problems with the judge outputs under `verifier_dir/subdir/`.
+
+    A judge is only healthy if it BOTH left no error in metrics.json and actually
+    wrote llm_judge_eval.json. The two are independent: a judge that hits an API
+    quota records an error and writes nothing, while one that finishes but resolves
+    its output path against /app writes nothing and records only the resulting
+    "[Errno 2]" — so checking one alone misses half the failures.
+
+    Args:
+        verifier_dir: directory holding metrics.json and the judge subdirectory.
+        metrics: parsed metrics.json, the source of the recorded error fields.
+        subdir: "judge" for the verifier's own pass, "judge_unsupervised" for the
+            separate reference-hidden pass run by run_unsupervised_judges.sh.
+        suffix: "" or "_unsupervised", matching how the metrics.json keys are named.
+        verbose: print each problem as it is found.
+        label: what to call this trial in verbose output.
+
+    Returns:
+        list[str] of problems, empty when both judges are healthy.
+    """
+    label = label or verifier_dir
+    what = " unsupervised" if suffix else ""
+    issues = []
+    for model in ("claude", "codex"):
+        err = metrics.get(f"llm_judge_{model}{suffix}_error", "")
+        if err:
+            issues.append(f"{model}{what} judge error")
+            if verbose:
+                print(f"{label} has {model}{what} judge error: {err}")
+        if not os.path.exists(os.path.join(verifier_dir, subdir, model, "llm_judge_eval.json")):
+            issues.append(f"{model}{what} no llm_judge_eval.json")
+            if verbose:
+                print(f"{label} missing {model}{what} llm_judge_eval.json")
+    return issues
+
+
 def check_verifier_dir(verifier_dir, verbose=False, label=None):
     """Check a verifier directory for valid metrics.json and judge results.
     Returns (ok: bool, issues: list[str])."""
@@ -104,18 +141,7 @@ def check_verifier_dir(verifier_dir, verbose=False, label=None):
         issues.append(f"bad metrics.json: {e}")
         return False, issues
 
-    for model in ["claude", "codex"]:
-        err = metrics.get(f"llm_judge_{model}_error", "")
-        eval_path = os.path.join(verifier_dir, "judge", model, "llm_judge_eval.json")
-        if err:
-            issues.append(f"{model} judge error")
-            if verbose:
-                print(f"{label} has {model} judge error: {err}")
-        if not os.path.exists(eval_path):
-            issues.append(f"{model} no llm_judge_eval.json")
-            if verbose:
-                print(f"{label} missing {model} llm_judge_eval.json")
-
+    issues.extend(judge_issues(verifier_dir, metrics, verbose=verbose, label=label))
     return len(issues) == 0, issues
 
 
@@ -392,6 +418,24 @@ def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
     result["verifier_ran"] = ok
     result["verifier_issues"] = issues
 
+    # Split the verifier's two halves so the summary can show them separately: pytest
+    # writing a parseable metrics.json, and the two judges producing their verdicts.
+    # They fail independently and for unrelated reasons -- an API quota kills the
+    # judges while pytest is fine -- so a single combined column hid which half broke.
+    metrics_path = os.path.join(verifier_dir, "metrics.json")
+    metrics = None
+    if os.path.exists(metrics_path):
+        try:
+            metrics = parse_metrics_json(metrics_path)
+        except Exception:
+            metrics = None
+    result["metrics_ok"] = metrics is not None
+    # Unknown, not False, when metrics.json is unreadable: the error fields live in it,
+    # so there is no basis to judge the judges.
+    result["judges_ok"] = (
+        not judge_issues(verifier_dir, metrics) if metrics is not None else None
+    )
+
     # Check unsupervised judges if applicable
     if task_has_unsupervised:
         ok, issues = check_unsupervised_judges(
@@ -610,6 +654,8 @@ def main():
                 "convert_py_ok": 0,
                 "no_snapshot": 0,
                 "verifier_ok": 0,
+                "metrics_ok": 0,
+                "judges_ok": 0,
                 "unsupervised_ok": 0,
                 "unsupervised_applicable": 0,
                 "reruns_unmerged": 0,
@@ -641,6 +687,10 @@ def main():
             c["verifier_ok"] += 1
         else:
             c["verifier_issues"].append(f"trial{trial_num} verifier: {'; '.join(h['verifier_issues'])}")
+        if h.get("metrics_ok"):
+            c["metrics_ok"] += 1
+        if h.get("judges_ok"):
+            c["judges_ok"] += 1
         # Unsupervised
         if h["unsupervised_ran"] is not None:
             # Skip "not run" — task supports unsupervised but this trial hasn't been processed
@@ -671,15 +721,15 @@ def main():
     # agent column is sized for them rather than for "codex".
     # Task column fits the longest name (hasnain2024_minimal, 19); agent fits
     # terminus-opus (13). Both used to be sized for the shortest names and wrapped.
-    sum_widths = [20, 14, 9, 9, 12, 12, 8, 40]
-    sum_aligns = ["<", "<", ">", ">", ">", ">", ">", "<"]
+    sum_widths = [20, 14, 9, 9, 9, 8, 12, 8, 34]
+    sum_aligns = ["<", "<", ">", ">", ">", ">", ">", ">", "<"]
     sum_total = sum(sum_widths) + 2 * (len(sum_widths) - 1)
     print("=" * sum_total)
     print("Summary")
     print("=" * sum_total)
     print_wrapped_row(
-        ["Task", "Agent", "convert.py", "data.pkl", "Verifier ran", "Unsupervised",
-         "Reruns", "Notes"],
+        ["Task", "Agent", "convert.py", "data.pkl", "metrics", "judges",
+         "Unsupervised", "Reruns", "Notes"],
         sum_widths, sum_aligns,
     )
     print("-" * sum_total)
@@ -690,14 +740,15 @@ def main():
             task_col = task if first else ""
             if ta not in counts:
                 print_wrapped_row(
-                    [task_col, agent, "—", "—", "—", "—", "—", ""],
+                    [task_col, agent, "—", "—", "—", "—", "—", "—", ""],
                     sum_widths, sum_aligns,
                 )
             else:
                 c = counts[ta]
                 convert_str = f"{c['convert_py_ok']}/{c['n']}"
                 agent_str = f"{c['agent_ok']}/{c['n']}"
-                verifier_str = f"{c['verifier_ok']}/{c['n']}"
+                metrics_str = f"{c['metrics_ok']}/{c['n']}"
+                judges_str = f"{c['judges_ok']}/{c['n']}"
                 if c["unsupervised_applicable"] > 0:
                     unsup_str = f"{c['unsupervised_ok']}/{c['unsupervised_applicable']}"
                 else:
@@ -711,8 +762,8 @@ def main():
                 notes.extend(c["verifier_issues"])
                 notes_str = "; ".join(notes) if notes else ""
                 print_wrapped_row(
-                    [task_col, agent, convert_str, agent_str, verifier_str, unsup_str,
-                     rerun_str, notes_str],
+                    [task_col, agent, convert_str, agent_str, metrics_str, judges_str,
+                     unsup_str, rerun_str, notes_str],
                     sum_widths, sum_aligns,
                 )
             first = False
