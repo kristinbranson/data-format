@@ -34,8 +34,15 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# `pwd -P`, not plain `pwd`: plain pwd is logical and echoes back whatever symlinked
+# path the caller happened to be standing in. Invoked from
+# /home/<user>@hhmi.org/behavioranalysis/... -- a symlink to /groups/branson/... that
+# exists only on the workstation -- every path baked into the bsub command pointed at
+# a directory the compute node cannot see, and the job died in 1 s with
+# "podman_env.sh: No such file or directory". -P resolves to the real path, which is
+# the same on both.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 
 # Slots per GPU for each queue, mirroring submit_harbor_cluster.py's QUEUE_SPECS.
 # Not interchangeable: gpu_l4_large hosts carry 64 slots and gpu_t4 hosts 48, so a
@@ -83,7 +90,8 @@ for trial in "${TRIALS[@]}"; do
     [ -d "$trial" ] || { echo "  SKIP (not a directory): $trial"; continue; }
     # Absolute: rerun_verifier.sh mounts this path into the container, and podman
     # treats a relative bind source as a NAMED VOLUME rather than a bind mount.
-    trial_abs="$(cd "$trial" && pwd)"
+    # -P for the same reason as SCRIPT_DIR above: the node has to be able to see it.
+    trial_abs="$(cd "$trial" && pwd -P)"
     # Name from the trial's own path: <task>/<agent>/<timestamp>_trialN
     task="$(basename "$(dirname "$(dirname "$trial_abs")")")"
     agent="$(basename "$(dirname "$trial_abs")")"
@@ -94,11 +102,17 @@ for trial in "${TRIALS[@]}"; do
     # because it calls podman. The trap podman_env.sh installs reaps the catatonit
     # pause process -- without it LSF keeps the job RUN until the wall clock even
     # after the work is done, holding a whole node.
+    # --apikeys, always: the OAuth route reads $HOME/.claude/.credentials.json, and
+    # $HOME on a compute node is /groups/branson/home/<user>, not the workstation
+    # home where that file lives. It used to fail silently -- empty token, judges
+    # run unauthenticated, empty judge/ dirs and "[Errno 2] ... llm_judge_eval.json"
+    # sitting beside a reward that looked complete. --env is absolute so the node
+    # reads the same file regardless of cwd.
     inner="source \$HOME/miniforge3/etc/profile.d/conda.sh \
 && conda activate ${CONDA_ENV} \
 && export USE_PODMAN=true \
 && source ${SCRIPT_DIR}/podman_env.sh \
-&& bash ${SCRIPT_DIR}/rerun_verifier.sh --podman ${PASSTHROUGH[*]+${PASSTHROUGH[*]} }${trial_abs}"
+&& bash ${SCRIPT_DIR}/rerun_verifier.sh --podman --env ${REPO_DIR}/.env ${PASSTHROUGH[*]+${PASSTHROUGH[*]} }${trial_abs}"
 
     bsub_cmd="bsub -n ${SLOTS} -gpu \"num=1\" -q ${QUEUE} -W ${WALL} \
 -J ${job_name} -o ${LOG_DIR}/${job_name}.log \"${inner}\""

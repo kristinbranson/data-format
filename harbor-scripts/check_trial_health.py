@@ -2,17 +2,32 @@
 """
 Check the health of harbor trial runs.
 
-For each trial, checks:
-  - Agent ran: converted_data.pkl exists in verifier/snapshot/
-  - Verifier ran: metrics.json is valid JSON, and both claude and codex judges
-    produced llm_judge_eval.json without errors
+For each trial, checks the artifacts a complete trial must have:
+  - verifier/snapshot/convert_data.py   the agent's conversion script
+  - verifier/snapshot/converted_data.pkl the converted dataset ("agent ran")
+  - verifier/metrics.json                valid JSON
+  - verifier/judge/{claude,codex}/llm_judge_eval.json, with no error recorded
+    in metrics.json
+
+A missing snapshot DIRECTORY is reported separately from a missing file inside it.
+The distinction matters: without a snapshot there is no converted_data.pkl, so no
+verifier rerun or metrics recompute can ever recover the trial -- it has to be run
+again from scratch.
 
 Usage:
     python check_trial_health.py [--job-dirs DIR [DIR ...]] [--no-oracle] [--summary-only]
 
-Defaults to scanning:
-    ~/harbor-tasks/data-format/jobs
+Defaults to scanning the two analysis trees:
     <repo>/harbor-jobs
+    <repo>/harbor-jobs-new
+
+Not scanned: harbor-cluster-jobs, whose raw per-job layout is one level deeper
+(hb_<task>_<arm>_t<N>/<task>/<agent>/<trial>). Use
+`python collect_cluster_results.py` (dry run) for that tree -- it already reports
+what is finished, still running, and failed.
+
+The legacy tree ~/harbor-tasks/data-format/jobs is no longer scanned by default;
+pass it via --job-dirs if you need it.
 """
 
 import argparse
@@ -314,6 +329,11 @@ def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
         "agent_ran": False,
         "agent_issue": None,
         "agent_warnings": [],  # non-fatal warnings (rate limits, transient auth errors)
+        # Per-artifact state, separate from agent_ran so the summary can show which
+        # specific file is missing rather than a single pass/fail.
+        "has_convert_py": False,   # verifier/snapshot/convert_data.py
+        "has_converted_pkl": False,  # verifier/snapshot/converted_data.pkl
+        "no_snapshot": False,      # snapshot dir absent entirely -- unrecoverable
         "verifier_ran": False,
         "verifier_issues": [],
         "unsupervised_ran": None,  # None = not applicable
@@ -328,14 +348,31 @@ def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
         result["verifier_issues"].append("no verifier dir")
         return result
 
-    # Agent check: did it produce converted_data.pkl?
-    pkl_path = os.path.join(verifier_dir, "snapshot", "converted_data.pkl")
-    if os.path.exists(pkl_path):
-        result["agent_ran"] = True
-    else:
+    # Agent check: which of the agent's outputs made it into the snapshot?
+    # A missing snapshot DIRECTORY is called out separately from a missing file: with
+    # no snapshot there is no converted_data.pkl to re-read, so rerun_verifier.sh and
+    # rerun_metrics.py can do nothing and the trial has to be run again from scratch.
+    snapshot_dir = os.path.join(verifier_dir, "snapshot")
+    if not os.path.isdir(snapshot_dir):
+        result["no_snapshot"] = True
+        result["agent_issue"] = "no snapshot dir"
         if verbose:
-            print(f"Trial {trial_path} missing converted_data.pkl")
-        result["agent_issue"] = "no converted_data.pkl"
+            print(f"Trial {trial_path} has no verifier/snapshot/")
+    else:
+        result["has_convert_py"] = os.path.exists(
+            os.path.join(snapshot_dir, "convert_data.py"))
+        result["has_converted_pkl"] = os.path.exists(
+            os.path.join(snapshot_dir, "converted_data.pkl"))
+        # agent_ran keeps its original meaning -- produced converted_data.pkl -- so the
+        # existing per-trial rows and counters are unaffected by the new fields.
+        result["agent_ran"] = result["has_converted_pkl"]
+        missing = [n for n, ok in (("convert_data.py", result["has_convert_py"]),
+                                   ("converted_data.pkl", result["has_converted_pkl"]))
+                   if not ok]
+        if missing:
+            result["agent_issue"] = "no " + ", ".join(missing)
+            if verbose:
+                print(f"Trial {trial_path} missing {', '.join(missing)}")
 
     # Check for usage/auth limit hits in agent log
     limit_issues = check_agent_usage_limit(trial_path, verbose=verbose)
@@ -422,9 +459,12 @@ def main():
     parser = argparse.ArgumentParser(description="Check harbor trial health")
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_dir = os.path.dirname(script_dir)
+    # The two analysis trees. Results are split across them -- harbor-jobs holds the
+    # archive (on /nearline), harbor-jobs-new everything collected from the cluster --
+    # so scanning only one hides whole arms: every terminus trial lives in the latter.
     default_dirs = [
-        os.path.expanduser("~/harbor-tasks/data-format/jobs"),
         os.path.join(repo_dir, "harbor-jobs"),
+        os.path.join(repo_dir, "harbor-jobs-new"),
     ]
     parser.add_argument(
         "--job-dirs",
@@ -554,7 +594,9 @@ def main():
 
     # Summary table: by task, show claude and codex columns
     tasks = sorted(set(k[0] for k in results))
-    agents = ["claude", "codex"]
+    # Derived, not hardcoded: a fixed ["claude", "codex"] silently omitted the whole
+    # terminus-opus and terminus-gpt arms once those runs started.
+    agents = sorted(set(k[1] for k in results))
 
     # Gather counts
     counts = {}  # (task, agent) -> {n, agent_ok, verifier_ok, ...}
@@ -565,6 +607,8 @@ def main():
             counts[ta] = {
                 "n": 0,
                 "agent_ok": 0,
+                "convert_py_ok": 0,
+                "no_snapshot": 0,
                 "verifier_ok": 0,
                 "unsupervised_ok": 0,
                 "unsupervised_applicable": 0,
@@ -575,9 +619,19 @@ def main():
             }
         c = counts[ta]
         c["n"] += 1
+        if h["has_convert_py"]:
+            c["convert_py_ok"] += 1
+        if h["no_snapshot"]:
+            c["no_snapshot"] += 1
+            # Unrecoverable, so name the trial rather than only counting it.
+            c["agent_issues"].append(f"trial{trial_num}: NO SNAPSHOT (unrecoverable)")
         if h["agent_ran"]:
             c["agent_ok"] += 1
-        else:
+            # agent_ran only tracks the pickle, so a missing script would otherwise be
+            # invisible on a trial that is otherwise fine.
+            if not h["has_convert_py"]:
+                c["agent_issues"].append(f"trial{trial_num}: no convert_data.py")
+        elif not h["no_snapshot"]:
             c["agent_issues"].append(f"trial{trial_num}: {h['agent_issue']}")
         if h["agent_warnings"]:
             c["agent_issues"].append(
@@ -613,14 +667,19 @@ def main():
                             f"trial{trial_num} rerun({rerun_name}): {'; '.join(rh['verifier_issues'])}"
                         )
 
-    sum_widths = [12, 8, 9, 12, 12, 8, 60]
-    sum_aligns = ["<", "<", ">", ">", ">", ">", "<"]
+    # Agent names are now derived, and terminus-opus / terminus-gpt are 13 chars, so the
+    # agent column is sized for them rather than for "codex".
+    # Task column fits the longest name (hasnain2024_minimal, 19); agent fits
+    # terminus-opus (13). Both used to be sized for the shortest names and wrapped.
+    sum_widths = [20, 14, 9, 9, 12, 12, 8, 40]
+    sum_aligns = ["<", "<", ">", ">", ">", ">", ">", "<"]
     sum_total = sum(sum_widths) + 2 * (len(sum_widths) - 1)
     print("=" * sum_total)
     print("Summary")
     print("=" * sum_total)
     print_wrapped_row(
-        ["Task", "Agent", "Agent ran", "Verifier ran", "Unsupervised", "Reruns", "Notes"],
+        ["Task", "Agent", "convert.py", "data.pkl", "Verifier ran", "Unsupervised",
+         "Reruns", "Notes"],
         sum_widths, sum_aligns,
     )
     print("-" * sum_total)
@@ -631,11 +690,12 @@ def main():
             task_col = task if first else ""
             if ta not in counts:
                 print_wrapped_row(
-                    [task_col, agent, "—", "—", "—", "—", ""],
+                    [task_col, agent, "—", "—", "—", "—", "—", ""],
                     sum_widths, sum_aligns,
                 )
             else:
                 c = counts[ta]
+                convert_str = f"{c['convert_py_ok']}/{c['n']}"
                 agent_str = f"{c['agent_ok']}/{c['n']}"
                 verifier_str = f"{c['verifier_ok']}/{c['n']}"
                 if c["unsupervised_applicable"] > 0:
@@ -651,7 +711,8 @@ def main():
                 notes.extend(c["verifier_issues"])
                 notes_str = "; ".join(notes) if notes else ""
                 print_wrapped_row(
-                    [task_col, agent, agent_str, verifier_str, unsup_str, rerun_str, notes_str],
+                    [task_col, agent, convert_str, agent_str, verifier_str, unsup_str,
+                     rerun_str, notes_str],
                     sum_widths, sum_aligns,
                 )
             first = False

@@ -163,6 +163,17 @@ def collect_trial_metrics(eval_dir: Path = EVAL_DIR) -> dict:
 # Cluster sweeps put one trial in each job directory, and every trial inside is
 # named `<timestamp>_trial1` regardless of which repeat it is -- the real trial
 # number lives in the job directory name, e.g. `hb_sosa2024_minimal_codex_t3`.
+# The same agent appears under two directory names across the archive: harbor wrote
+# `claude` for the March/April runs and `claude-code` later. They are one arm, so
+# canonicalise to the name evaluation/eval/report.py and raters.py match literally.
+# check_trial_health.py:409 normalises the same pair, in the other direction.
+AGENT_ALIASES = {"claude": "claude-code"}
+
+# Not agent arms. `oracle` runs the reference solution, so its ratios are ~1.0 by
+# construction -- keeping it would put a column in every figure that measures
+# nothing about an agent.
+SKIP_AGENTS = {"oracle"}
+
 _JOB_DIR_TRIAL_RE = re.compile(r"_t(\d+)$")
 _TRIAL_SUFFIX_RE = re.compile(r"_trial(\d+)$")
 
@@ -189,6 +200,8 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
         `dataset` has any `_minimal` suffix stripped so the two prompt variants
         of a task share a dataset key and can be compared directly, and `prompt`
         records which variant this trial actually was ("minimal" or "full").
+        `agent` is canonicalised through AGENT_ALIASES, and trials belonging to
+        SKIP_AGENTS return None rather than entering the output at all.
         Keeping the variant is not cosmetic: <task> and <task>_minimal read the
         SAME data and differ only in how much the instruction says, so without
         it the merged key silently collapses two different conditions into one
@@ -201,6 +214,9 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
     if len(parts) < 4:
         return None
     trial_dir, agent, task = parts[-2], parts[-3], parts[-4]
+    if agent in SKIP_AGENTS:
+        return None
+    agent = AGENT_ALIASES.get(agent, agent)
 
     dataset = task.removesuffix("_minimal")
     prompt = "minimal" if task.endswith("_minimal") else "full"

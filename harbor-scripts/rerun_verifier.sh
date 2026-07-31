@@ -11,6 +11,11 @@
 #   --judges-only         Rerun both judges and update metrics.json
 #   --verifier-dir DIR    Use DIR as the verifier directory (default: newest
 #                         verifier_rerun_* if one exists, otherwise verifier/)
+#   --apikeys             Take judge credentials from ANTHROPIC_API_KEY and
+#                         OPENAI_API_KEY in <repo>/.env instead of the OAuth
+#                         credential files. REQUIRED on a batch node, where $HOME
+#                         is not the workstation home holding those files.
+#   --env FILE            Env file for --apikeys (implies it; default <repo>/.env).
 #   --no-gpu              Do not request a GPU. Use when the host's CDI spec does
 #                         not declare the device podman asks for; test_gpu_available
 #                         then fails and decoder training runs on CPU.
@@ -40,6 +45,8 @@ RUN_CLAUDE_JUDGE=false
 RUN_CODEX_JUDGE=false
 JUDGE_ONLY=false
 NO_GPU=false
+USE_APIKEYS=false
+ENV_FILE=""
 VERIFIER_DIR_OVERRIDE=""
 CONTAINER_CMD="docker"
 # docker and podman spell GPU passthrough differently: docker uses its own
@@ -53,6 +60,8 @@ while [[ "${1:-}" == --* ]]; do
         --verifier-dir)      VERIFIER_DIR_OVERRIDE="$2"; shift 2 ;;
         --podman)            CONTAINER_CMD="podman"; GPU_FLAG="--device nvidia.com/gpu=all"; shift ;;
         --no-gpu)            NO_GPU=true; shift ;;
+        --apikeys)           USE_APIKEYS=true; shift ;;
+        --env)               ENV_FILE="$2"; USE_APIKEYS=true; shift 2 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -170,15 +179,48 @@ else
     echo "Using existing Docker image $IMAGE_NAME"
 fi
 
-# Get Claude OAuth token for LLM judge
-export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
-
-# Codex auth (uses OAuth tokens, not a plain API key)
-if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
-    export CODEX_AUTH_JSON_B64=$(base64 -w0 $HOME/.codex/auth.json 2>/dev/null || true)
-fi
-if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
-    echo "Warning: Codex auth not available. Codex judge will be skipped."
+# --- Judge credentials ---
+# Two routes, and the container accepts either: tests/test.sh uses
+# CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY for the Claude judge, and
+# CODEX_AUTH_JSON_B64 or OPENAI_API_KEY for Codex.
+#
+# --apikeys is REQUIRED on a batch node. The OAuth route reads
+# $HOME/.claude/.credentials.json, and $HOME on a compute node is
+# /groups/branson/home/<user>, not the workstation home where those files live.
+# Worse, it fails silently: `export VAR=$(cmd)` does not trip `set -e`, because
+# export itself succeeds, so the token became the empty string and the judges ran
+# UNAUTHENTICATED -- producing empty judge/ directories and
+# "[Errno 2] ... llm_judge_eval.json" in metrics.json, next to a reward that
+# looked fine. Both cluster reruns on 2026-07-29 failed that way.
+if [ "$USE_APIKEYS" = true ]; then
+    ENV_FILE="${ENV_FILE:-$REPO_DIR/.env}"
+    [ -f "$ENV_FILE" ] || { echo "Error: env file not found: $ENV_FILE"; exit 1; }
+    # shellcheck disable=SC1090
+    source "$ENV_FILE"
+    for var in ANTHROPIC_API_KEY OPENAI_API_KEY; do
+        [ -n "${!var:-}" ] || { echo "Error: $var not set in $ENV_FILE"; exit 1; }
+    done
+    export ANTHROPIC_API_KEY OPENAI_API_KEY
+    echo "Judge auth: API keys from $ENV_FILE"
+else
+    # Checked, not assumed: an unreadable credentials file used to yield an empty
+    # token and an unauthenticated judge run rather than an error.
+    CRED="$HOME/.claude/.credentials.json"
+    if [ -f "$CRED" ]; then
+        export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; print(json.load(open('$CRED'))['claudeAiOauth']['accessToken'])")
+    fi
+    if [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+        echo "Error: no Claude credentials. $CRED is missing or has no token;" >&2
+        echo "       pass --apikeys to use ANTHROPIC_API_KEY from .env instead." >&2
+        exit 1
+    fi
+    if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+        export CODEX_AUTH_JSON_B64=$(base64 -w0 "$HOME/.codex/auth.json" 2>/dev/null || true)
+    fi
+    if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+        echo "Warning: Codex auth not available. Codex judge will be skipped."
+    fi
+    echo "Judge auth: OAuth credential files from \$HOME"
 fi
 
 # Harbor copies test files into the container (upload_dir) rather than bind-mounting.
@@ -314,6 +356,8 @@ echo "=== Judge rerun complete ==="
         $GPU_FLAG \
         -e CLAUDE_CODE_OAUTH_TOKEN \
         -e CODEX_AUTH_JSON_B64 \
+        -e ANTHROPIC_API_KEY \
+        -e OPENAI_API_KEY \
         -v "$SNAPSHOT_DIR":/app \
         -v "$DATA_DIR":/app/data:ro \
         -v "$TESTS_TMPDIR":/tests:ro \
@@ -352,6 +396,8 @@ else
         $GPU_FLAG \
         -e CLAUDE_CODE_OAUTH_TOKEN \
         -e CODEX_AUTH_JSON_B64 \
+        -e ANTHROPIC_API_KEY \
+        -e OPENAI_API_KEY \
         -v "$SNAPSHOT_DIR":/app \
         -v "$DATA_DIR":/app/data:ro \
         -v "$TESTS_TMPDIR":/tests:ro \

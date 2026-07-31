@@ -74,7 +74,7 @@ _cmap = mcolors.LinearSegmentedColormap.from_list(
 )
 
 from utils import load_trial_metrics, trial_metrics_df
-TRIAL_METRICS_JSON = 'trial_metrics_new.json'
+TRIAL_METRICS_JSON = 'trial_metrics_all.json'
 
 mdf = trial_metrics_df(load_trial_metrics(filename=TRIAL_METRICS_JSON))
 
@@ -93,9 +93,22 @@ DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
 # different conditions run by the same agent. Today the two happen to be
 # disjoint (claude-code/codex ran minimal, terminus ran full) but nothing
 # enforces that, and merging them would average two conditions together.
+# The full menu of real arms, ordered so an agent's two prompt variants sit next to
+# each other -- that adjacency is the comparison the _minimal tasks exist to make.
+#
+# Six arms is 18 squares per cell, too wide to read, so this is what arms_subset()
+# picks FROM rather than a layout to plot whole.
+#
+# `claude` and `claude-code` are ONE arm under two directory names: harbor wrote the
+# first for the March/April runs and the second later. trial_metrics.py folds them
+# together via AGENT_ALIASES, so only claude-code appears here. `oracle` is absent
+# deliberately -- it runs the reference solution, so its ratios are ~1.0 by
+# construction and it is dropped at collection by SKIP_AGENTS.
 ARM_COLUMNS = [
     ("claude-code",   "minimal"),
+    ("claude-code",   "full"),
     ("codex",         "minimal"),
+    ("codex",         "full"),
     ("terminus-opus", "full"),
     ("terminus-gpt",  "full"),
 ]
@@ -106,7 +119,9 @@ N_CELLS = len(ARM_COLUMNS) * TRIALS_PER_ARM
 ALL_ARMS = list(ARM_COLUMNS)
 ARM_LABEL = {
     ("claude-code",   "minimal"): "Claude Code",
+    ("claude-code",   "full"):    "Claude Code",
     ("codex",         "minimal"): "Codex",
+    ("codex",         "full"):    "Codex",
     ("terminus-opus", "full"):    "Terminus/Opus",
     ("terminus-gpt",  "full"):    "Terminus/GPT",
 }
@@ -116,9 +131,11 @@ ARM_LABEL = {
 # geometry, so the full ARM_LABEL does not fit.
 ARM_SHORT = {
     ("claude-code",   "minimal"): "Claude",
+    ("claude-code",   "full"):    "Claude",
     ("codex",         "minimal"): "Codex",
-    ("terminus-opus", "full"):    "T-Opus",
-    ("terminus-gpt",  "full"):    "T-GPT",
+    ("codex",         "full"):    "Codex",
+    ("terminus-opus", "full"):    "Terminus-Opus",
+    ("terminus-gpt",  "full"):    "Terminus-GPT",
 }
 
 # The task variant an arm ran. "maximal" mirrors submit_harbor_cluster.py's
@@ -153,25 +170,6 @@ CHECK_FIELDS = [
     ("Input variables match", lambda r: None if not _present(r, "input_range_mean_cost") else _below(r, "input_range_mean_cost", 1.0)),
     ("Output variables match", lambda r: _output_variables_match(r)),
     ("N output classes",     lambda r: _output_ranges_match(r)),
-]
-
-
-
-
-# For unsupervised figures the "Checks" section shows raw counts instead of
-# match-against-reference bools. Each entry: (label, fn(row) -> number-or-bool-or-None, mode).
-UNSUPERVISED_CHECK_FIELDS = [
-    ("Required files",
-        lambda r: _empty_list(r, "required_files_missing")
-                  and _empty_list(r, "required_files_empty"),
-        "bool"),
-    ("Data format",
-        lambda r: _truthy(r, "full_data_format_valid"),
-        "bool"),
-    ("N inputs",        lambda r: r.get("dinput"),  "int"),
-    ("N outputs",       lambda r: r.get("doutput"), "int"),
-    ("N output classes (total)",
-        _total_n_output_classes, "int"),
 ]
 
 
@@ -545,14 +543,25 @@ def _fmt(v, is_ratio):
     return f"{v:.2f}"
 
 
+# For unsupervised figures the "Checks" section shows raw counts instead of
+# match-against-reference bools. Each entry: (label, fn(row) -> number-or-bool-or-None, mode).
+UNSUPERVISED_CHECK_FIELDS = [
+    ("Required files",
+        lambda r: _empty_list(r, "required_files_missing")
+                  and _empty_list(r, "required_files_empty"),
+        "bool"),
+    ("Data format",
+        lambda r: _truthy(r, "full_data_format_valid"),
+        "bool"),
+    ("N inputs",        lambda r: r.get("dinput"),  "int"),
+    ("N outputs",       lambda r: r.get("doutput"), "int"),
+    ("N output classes (total)",
+        _total_n_output_classes, "int"),
+]
 
-# %% [markdown]
-# ### Per-dataset metric table (figure)
-#
-# Two figures (supervised / unsupervised). Layout mirrors the rating-square summary from `analysis.ipynb`: rows = metric, columns = dataset, each cell is a strip of `N_CELLS` squares -- one per (arm, trial), `TRIALS_PER_ARM` per arm in `ARM_COLUMNS` order, with a gap between arms. An arm a dataset never ran leaves its squares blank rather than shifting the others left. Supervised cells are coloured by ratio (RdYlGn centred at 1.0); unsupervised cells are flat grey raw values. Decoder section breaks out one row per decoded variable; variables differ per dataset, so shorter columns leave bottom slots empty.
 
 # %%
-
+# functions for building the figure
 
 def _decoder_var_rows(ds, supervised):
     """[(var_name, values, is_ratio), ...] for one dataset's decoder vars.
@@ -869,7 +878,7 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
         """
         for arm, cx in zip(ARM_COLUMNS, _group_centers(x_left)):
             ax.text(cx, y, arm_header(arm), ha="center", va="bottom",
-                    fontsize=5.5, linespacing=1.15, color="#333")
+                    fontsize=8, linespacing=1.15, color="#333")
 
     # --- Label axes ---
     ax_lbl = axes[0]
@@ -935,21 +944,69 @@ def render_metric_table(datasets, *, supervised, footnote, suptitle=None):
     plt.show()
 
 
-render_metric_table(
-    SUPERVISED_DS, supervised=True,
-    suptitle="Supervised datasets",
-    footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
-              f"({arm_list()}). Cell colour "
-              "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
-)
+# %% [markdown]
+# ### Per-dataset metric table (figure)
+#
+# Two figures (supervised / unsupervised). Layout mirrors the rating-square summary from `analysis.ipynb`: rows = metric, columns = dataset, each cell is a strip of `N_CELLS` squares -- one per (arm, trial), `TRIALS_PER_ARM` per arm in `ARM_COLUMNS` order, with a gap between arms. An arm a dataset never ran leaves its squares blank rather than shifting the others left. Supervised cells are coloured by ratio (RdYlGn centred at 1.0); unsupervised cells are flat grey raw values. Decoder section breaks out one row per decoded variable; variables differ per dataset, so shorter columns leave bottom slots empty.
 
-render_metric_table(
-    UNSUPERVISED_DS, supervised=False,
-    suptitle="Unsupervised datasets",
-    footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
-              f"({arm_list()}). Values are "
-              "raw per-trial measurements (no reference solution exists)."),
-)
+# %%
+# compare all agents
+with arms_subset(prompts=["full"]):
+
+    render_metric_table(
+        SUPERVISED_DS, supervised=True,
+        suptitle="Supervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Cell colour "
+                "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
+    )
+
+    render_metric_table(
+        UNSUPERVISED_DS, supervised=False,
+        suptitle="Unsupervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Values are "
+                "raw per-trial measurements (no reference solution exists)."),
+    )
+
+# %%
+# compare harnesses
+
+with arms_subset(agents=['claude-code','terminus-opus'], prompts=["full"]):
+
+    render_metric_table(
+        SUPERVISED_DS, supervised=True,
+        suptitle="Supervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Cell colour "
+                "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
+    )
+
+    render_metric_table(
+        UNSUPERVISED_DS, supervised=False,
+        suptitle="Unsupervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Values are "
+                "raw per-trial measurements (no reference solution exists)."),
+    )
+    
+with arms_subset(agents=['codex','terminus-gpt'], prompts=["full"]):
+
+    render_metric_table(
+        SUPERVISED_DS, supervised=True,
+        suptitle="Supervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Cell colour "
+                "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
+    )
+
+    render_metric_table(
+        UNSUPERVISED_DS, supervised=False,
+        suptitle="Unsupervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Values are "
+                "raw per-trial measurements (no reference solution exists)."),
+    )
 
 # %% [markdown]
 # ### Decoder accuracy LaTeX tables
