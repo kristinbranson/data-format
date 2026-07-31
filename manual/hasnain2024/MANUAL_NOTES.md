@@ -6,7 +6,7 @@
 - Load the data from the Ephys_behavior and RandomizedDelay_Ephys_Behavior
 
 ## Behavioral variables
-- Outcome can be {incorrect = 0, correct = 1, and no reponse}. Can choose to filter out the no reponse trial, or record them as a seperate category outcome.
+- Outcome can be {incorrect = 0, correct = 1, and no reponse}. Can choose to filter out the no reponse trial, or record them as a seperate category outcome. (Here we included them)
 - Filter out the early lick trials and stimulation trials, following the steps in the paper.
 
 *Camera*
