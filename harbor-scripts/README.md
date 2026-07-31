@@ -126,18 +126,65 @@ a run where agents use the new harness and judges the old one. Covers `allen2p`/
 `sync_template.py` excludes. Only layers below the CLI installs rebuild
 (~1-2 min); the pip layers above them stay cached.
 
+**check_data_mounts.py** — Verify every task's `/app/data` bind source exists and
+holds a real file, *before* running anything.
+```
+python check_data_mounts.py                 # all tasks
+python check_data_mounts.py --task map
+```
+The tasks' own `test_data_dir_accessible` asserts the same thing, but it runs in
+the verifier — after the agent has spent its entire timeout. On 2026-07-27, 47
+trials ran to completion against an empty `/app/data`, because compose resolved
+the then-relative mount inside the harbor checkout and the container runtime
+silently *created* the missing source. This is that check moved to the host and
+to before the run, where it costs seconds instead of a sweep. It reads the mount
+out of each `docker-compose.yaml` rather than hardcoding a path.
+
+**collect_cluster_results.py** — Regroup finished cluster trials into the analysis
+tree. Cluster sweeps produce one bsub job per trial, so every trial is named
+`trial1` and an arm's repeats are scattered across N job directories:
+`harbor-cluster-jobs/hb_<task>_<arm>_t<N>/<task>/<agent>/<timestamp>_trial1/`.
+```
+python collect_cluster_results.py              # dry run: report, move nothing
+python collect_cluster_results.py --apply
+python collect_cluster_results.py --tasks map_minimal --apply
+python collect_cluster_results.py --include-failed --apply
+```
+Moves rather than copies (same filesystem, so a rename regardless of trial size),
+and takes only trials with a `verifier/metrics.json` — a trial without one did not
+produce a result, and filing wreckage where results are expected is worse than
+leaving it. `run_harbor.sh` does this shape of move at the end of its own run, but
+only within one job; this works across jobs and can be re-run, which also makes it
+the tool for rescuing trials whose job died before reorganising.
+
+It doubles as the status report for that tree: the dry run prints how many trials
+are ready, still running, and finished without metrics.
+
 ### Checking health
 
-**check_trial_health.py** — Check agent and verifier health across all trials.
+**check_trial_health.py** — Which artifacts each task x arm actually has. The main
+"what is finished?" report.
 ```
-python check_trial_health.py                # full output
+python check_trial_health.py                # per-trial rows, then the summary
 python check_trial_health.py --summary-only # summary table only
 python check_trial_health.py --verbose      # show error details
 python check_trial_health.py --include-oracle
+python check_trial_health.py --job-dirs ~/harbor-tasks/data-format/jobs
 ```
-Checks: agent produced `converted_data.pkl`, metrics.json is valid, both judges
-produced `llm_judge_eval.json`, unsupervised judges ran (for supervised tasks).
-Shows unmerged verifier reruns.
+Per trial it checks `verifier/snapshot/convert_data.py`, `converted_data.pkl`, that
+`metrics.json` parses, and that both judges wrote `llm_judge_eval.json` with no
+error recorded — plus the separate unsupervised judge pass and any unmerged
+verifier reruns. The summary aggregates those into one row per (task, arm).
+
+`metrics` and `judges` are separate columns because they fail independently: an API
+quota kills the judges while pytest is fine. A missing snapshot *directory* is
+reported distinctly from a missing file inside it — with no snapshot there is
+nothing to re-read, so no verifier rerun or metrics recompute can recover the
+trial, and it has to be run again.
+
+Scans `harbor-jobs` and `harbor-jobs-new` by default; arms are derived from what is
+found rather than hardcoded. Not `harbor-cluster-jobs`, whose raw layout is one
+level deeper — use `collect_cluster_results.py` for that tree.
 
 **check_status.sh** — Quick status overview of all trials.
 ```
@@ -244,6 +291,84 @@ size via `PKL_RAM_FACTOR * pkl_gb + BASE_OVERHEAD_GB`, and GPU count scales
 with slots so `gpu_a100`'s 12-slots/GPU ratio is never exceeded (extra GPUs
 are reserved-but-unused). Logs are written to
 `/groups/branson/home/bransonk/cluster_logs/rerun_decoder/`.
+
+**rerun_metrics.py** — Rerun selected `test_outputs.py` tests against a trial's
+snapshot and merge new metrics into `metrics.json`. **Prefer this** over the three
+single-purpose scripts below, which it consolidates: it loads each snapshot pickle
+once even when several tests are requested, which on multi-GB pickles is the whole
+cost.
+```
+conda activate test-decoder-data-format     # NOT decoder-data-format, see below
+python rerun_metrics.py                                   # list candidates
+python rerun_metrics.py --trial <trial> --write --force
+python rerun_metrics.py --all --write --force             # cheap suite
+python rerun_metrics.py --all --decoder --write --force   # + decoder training (slow)
+python rerun_metrics.py --all --task map --reference-only --write --force
+```
+By default it runs the cheap tests (file/format/contamination checks and
+`test_data_stats`, which self-skips on unsupervised tasks). `--decoder` adds
+`test_decoder_accuracy`, which trains and takes minutes to hours per trial.
+
+`--reference-only` is the mode for "the reference solution changed, refresh what
+depends on it". It runs `test_data_stats` and then *derives*
+`validation_balanced_accuracy_{reference,ratio}` from the agent accuracy already in
+`metrics.json` rather than retraining — legitimate because everything
+`test_decoder_accuracy` does after training depends only on that stored accuracy,
+the reference's accuracy, and the output matching. The pickle is still loaded,
+because `test_data_stats` needs the submitted `output_range`/`output_fractions` for
+the Hungarian matching and those are not recorded in `metrics.json`.
+
+Merging ADDS missing keys only; `--force` also overwrites existing keys that
+differ, which is what you want after a reference or matcher change. Tests are
+invoked by fresh-importing the task's own `tests/test_outputs.py`, so changes there
+flow through automatically — which is also why this needs an env with
+`sentence_transformers` (`test-decoder-data-format`), unlike most scripts here.
+
+**rerun_data_stats.py**, **rerun_file_format_checks.py**, **rerun_decoder_accuracy.py**
+— the single-test predecessors of `rerun_metrics.py`, each rerunning one slice
+(data stats / the cheap file+format+contamination checks / decoder accuracy). Still
+useful when you want exactly one of those and nothing else; otherwise reach for
+`rerun_metrics.py`.
+
+**submit_rerun_verifier.sh** — Submit verifier reruns to the cluster, one bsub job
+per trial.
+```
+./submit_rerun_verifier.sh harbor-jobs-new/mouseland/terminus-gpt/*_trial1
+./submit_rerun_verifier.sh --queue gpu_t4 --judges-only <trial_dir>
+./submit_rerun_verifier.sh --dry-run <trial_dir>
+```
+Use it when a rerun will not fit on the workstation: the verifier holds the whole
+converted dataset in memory twice over (`test_verify_data_format` and
+`test_data_stats` share the module-scoped full fixture while the sample fixture
+stays resident), and mouseland/terminus-gpt's 348 GB pickle OOM-killed pytest on a
+503 GB host. A `gpu_l4_large` node has 960 GB.
+
+Always passes `--apikeys`: the OAuth route reads `$HOME/.claude/.credentials.json`,
+and `$HOME` on a compute node is `/groups/branson/home/<user>`, not the workstation
+home that holds it. Slots come from the queue's slots-per-GPU ratio — asking for
+more leaves the job PEND forever. Unknown flags are forwarded to
+`rerun_verifier.sh`.
+
+**add_output_nclasses.py** — Backfill `output_nclasses_<var>` into `metrics.json`
+without running any test. Loads the pickle but touches only `output_names` /
+`output_values` / `output_range` / `output`, so there is no `print_data_summary`
+walk over every trial, no Hungarian matching and no decoder.
+```
+python add_output_nclasses.py                          # list candidates
+python add_output_nclasses.py --trial <trial> --write
+python add_output_nclasses.py --all --task mouseland --write
+```
+Downstream chance-baselined plots need the class count per output; the supervised
+companion `output_nclasses_reference_<var>` is read from the task's
+`reference_stats_full.json`.
+
+**rerun_supervised_verifiers_20260406.sh** / **merge_supervised_verifiers_20260406.sh**
+— A dated pair from the 2026-04-06 sweep: rerun the verifier for every supervised
+(non-oracle) trial, then merge the resulting `verifier_rerun_*` directories.
+Supervised means the task has `tests/reference_stats_full.json`; the rerun skips
+trials that already have an unmerged rerun directory. Both take `--dry-run`. Kept
+for reference — they hardcode `$HOME/harbor-tasks/data-format/jobs` and predate
+`--podman`, so they do not run against the current job trees as-is.
 
 ### Unsupervised judges
 
@@ -451,6 +576,22 @@ python summarize_conversion_timing.py --out /path/to/summary.csv
 **install_codex.sh** — Install the Codex CLI, used on the cluster where we didn't have npm
 
 **test_podman.sh** — Test podman container setup.
+
+**podman_env.sh** — Not an entry point: `source` it before running a container on a
+batch node. `run_harbor.sh` and `submit_rerun_verifier.sh` both do.
+```
+export USE_PODMAN=true
+source harbor-scripts/podman_env.sh
+```
+Everything in it is a workaround for a specific batch-node failure, each found the
+hard way — a per-job runroot (a shared one goes stale when the node reboots), a
+node-shared graphroot so a second job reuses cached layers instead of repeating a
+~7 min image build, `cgroup_manager = "cgroupfs"` (crun's systemd default needs a
+D-Bus session bus that batch nodes lack), an EXIT trap that reaps the `catatonit`
+pause process (without it LSF holds the node in RUN until the wall clock long after
+the work is done), and a health probe that repairs or fails fast, because a broken
+podman otherwise becomes a per-trial exception while the job still exits 0 and LSF
+hands the freed node to the next job to kill.
 
 ## Directory structure
 

@@ -45,17 +45,6 @@ except NameError:
 FIGURES_DIR = ROOT / "figures"
 print(f"Figures will be written to {FIGURES_DIR}")
 
-
-def _emit_latex(text: str, filename: str) -> str:
-    """Print to stdout AND write to figures/<filename>; return the text."""
-    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    (FIGURES_DIR / filename).write_text(text + "\n")
-    print(text)
-    return text
-
-# %load_ext autoreload
-# %autoreload 2
-
 import seaborn as sns
 sns.set_theme(style="ticks", rc={"axes.spines.right": False, "axes.spines.top": False})
 import matplotlib as mpl
@@ -175,6 +164,13 @@ CHECK_FIELDS = [
 
 # %%
 # helpers
+
+def _emit_latex(text: str, filename: str) -> str:
+    """Print to stdout AND write to figures/<filename>; return the text."""
+    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+    (FIGURES_DIR / filename).write_text(text + "\n")
+    print(text)
+    return text
 
 def display_name(ds):
     """Human-readable dataset name for figure and table labels.
@@ -991,6 +987,45 @@ with arms_subset(agents=['claude-code','terminus-opus'], prompts=["full"]):
     )
     
 with arms_subset(agents=['codex','terminus-gpt'], prompts=["full"]):
+
+    render_metric_table(
+        SUPERVISED_DS, supervised=True,
+        suptitle="Supervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Cell colour "
+                "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
+    )
+
+    render_metric_table(
+        UNSUPERVISED_DS, supervised=False,
+        suptitle="Unsupervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Values are "
+                "raw per-trial measurements (no reference solution exists)."),
+    )
+
+# %%
+# compare maximal vs minimal prompt
+
+with arms_subset(agents=['claude-code'], prompts=["full",'minimal']):
+
+    render_metric_table(
+        SUPERVISED_DS, supervised=True,
+        suptitle="Supervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Cell colour "
+                "(RdYlGn centred at 1.0) = per-trial agent / reference ratio."),
+    )
+
+    render_metric_table(
+        UNSUPERVISED_DS, supervised=False,
+        suptitle="Unsupervised datasets",
+        footnote=(f"Each cell: {N_CELLS} squares, {TRIALS_PER_ARM} per arm "
+                f"({arm_list()}). Values are "
+                "raw per-trial measurements (no reference solution exists)."),
+    )
+    
+with arms_subset(agents=['codex'], prompts=["full",'minimal']):
 
     render_metric_table(
         SUPERVISED_DS, supervised=True,
