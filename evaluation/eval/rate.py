@@ -46,8 +46,8 @@ except ImportError:
     _RICH = False
     _CONSOLE = None
 
-REPO_ROOT = Path("/groups/zhang/home/zhangl5/Data-Format")
 EVAL_DIR = R.EVAL_DIR
+REPO_ROOT = EVAL_DIR.parents[1]
 MANUAL_DIR = REPO_ROOT / "manual"
 
 VALID_RATINGS = ["better", "match", "ok", "concerning", "incorrect", "missing"]
