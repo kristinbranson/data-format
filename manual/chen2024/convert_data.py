@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Convert the Brain-wide Activity Map dataset (DANDI 000363) to the decoder format.
 
-    python -u convert_data.py <outpicklefile> [--full | --sample]
+    python -u convert_data.py <outpicklefile> [--full | --sample] [--datadir DIR]
 """
 
 import argparse
@@ -19,6 +19,9 @@ _chen2024_seed = 'x5cidj2hy87s'
 np.random.seed(sum(ord(c) for c in _chen2024_seed) % 2**31)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# Default only, for running this by hand from manual/chen2024/. The oracle arm runs
+# the script from /solution while the dataset is mounted read-only at /app/data, so
+# solve.sh overrides this with --datadir.
 DATA_DIR = os.path.join(HERE, 'data')
 
 # trial window relative to the go cue, and bin width, in seconds
@@ -258,11 +261,13 @@ def main():
     ap.add_argument('outfile', help='output pickle path')
     ap.add_argument('--full', action='store_true', help='process all sessions (default)')
     ap.add_argument('--sample', action='store_true', help='process only 2 sessions')
+    ap.add_argument('--datadir', default=DATA_DIR,
+                    help='directory holding the sub-*/ NWB files (default: %(default)s)')
     args = ap.parse_args()
 
-    files = sorted(glob.glob(os.path.join(DATA_DIR, 'sub-*', '*.nwb')))
+    files = sorted(glob.glob(os.path.join(args.datadir, 'sub-*', '*.nwb')))
     if not files:
-        sys.exit('no NWB files under %s' % DATA_DIR)
+        sys.exit('no NWB files under %s' % args.datadir)
     if args.sample:
         files = files[:2]
     print('%d session files' % len(files), flush=True)
