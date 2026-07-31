@@ -36,6 +36,40 @@ mkdir -p "$JUDGE_DIR"
 
 echo "=== [4/6] Setting up judge ==="
 
+# Marker for relocate_stray_judge_output below: only files created after this
+# point can be judge output, so a genuine agent file of the same name is safe.
+JUDGE_START_MARKER=/logs/verifier/.judge_start
+touch "$JUDGE_START_MARKER"
+
+# judge_instructions.md tells the judge to write DECISIONS.md and
+# llm_judge_eval.json "to the directory you are currently in, not to /app/", and
+# test.sh cds into that directory first. The Claude CLI obeys; Codex resolves
+# relative paths against its workspace (/app) and writes there regardless. Two
+# separate harms, both fixed by moving the files back:
+#
+#   * compute_reward.py only looks in the judge's own directory, so the score was
+#     lost and recorded as "[Errno 2] ... llm_judge_eval.json" beside a reward that
+#     looked complete.
+#   * On a RERUN, /app is bind-mounted from the trial's own verifier/snapshot
+#     (rerun_verifier.sh does `-v "$SNAPSHOT_DIR":/app`), so the judge's verdict
+#     lands in the record of what the AGENT produced -- and the next judge to run
+#     reads a previous judge's conclusions as if the agent had written them.
+#     Snapshots in the archive have carried judge output this way since March.
+#
+# A normal harbor run is unaffected (its /app is container-local, and the snapshot
+# is taken in step 2 before any judge runs), but relocating unconditionally is
+# cheaper than reasoning about which mode we are in.
+relocate_stray_judge_output() {   # $1 = this judge's output directory
+  local f
+  for f in llm_judge_eval.json DECISIONS.md; do
+    if [ -f "/app/$f" ] && [ "/app/$f" -nt "$JUDGE_START_MARKER" ]; then
+      mv "/app/$f" "$1/$f" 2>/dev/null \
+        && echo "relocated stray /app/$f -> $1/" \
+        || echo "WARNING: could not relocate /app/$f (is /app read-only?)"
+    fi
+  done
+}
+
 # Judge models come from /tests/versions.json, shipped in with the tests so the
 # container has them (it cannot read the host config). Pinning the exact model
 # rather than an alias matters: `opus` is repointed as new models ship -- it
@@ -71,6 +105,7 @@ env $CLAUDE_ENV \
     --verbose \
   2>&1 | tee judge_log.txt || true
 
+relocate_stray_judge_output "$CLAUDE_DIR"
 cd /
 
 # --- Codex GPT 5.4 ---
@@ -99,6 +134,7 @@ codex exec "$(cat /tests/judge_instructions.md)" \
     --skip-git-repo-check \
   2>&1 | tee judge_log.txt || true
 
+relocate_stray_judge_output "$CODEX_DIR"
 cd /
 
 # --- Compute rewards and merge into metrics.json ---
