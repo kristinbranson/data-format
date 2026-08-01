@@ -133,12 +133,7 @@ cp <harbor-jobs>/oracle/<timestamp>/<task>_<hash>/verifier/snapshot/stats_full.j
 cp <harbor-jobs>/oracle/<timestamp>/<task>_<hash>/verifier/snapshot/stats_full.json harbor-tasks/<task>_minimal/tests/reference_stats_full.json
 ```
 
-Compare its key set against an existing one: `data_summary`, per-output
-`validation_balanced_accuracy`, `chance_uniform`, `chance_majority`, `rng_state`.
-
-## 6. 
-
-Update the metrics.json:
+## 6. Update the metrics.json
 
 ```bash
 # dry-run

@@ -35,9 +35,14 @@ from pathlib import Path
 EVAL_DIR = Path(__file__).resolve().parent
 OUT_FILE = EVAL_DIR / "trial_metrics.json"
 
-# The results archive at the repo root (a symlink to /nearline). Cluster sweeps
-# live elsewhere and are passed explicitly via --jobs-root.
-DEFAULT_JOBS_ROOT = EVAL_DIR.parents[1] / "harbor-jobs"
+# Both analysis trees: harbor-jobs is the archive (a symlink to /nearline),
+# harbor-jobs-new holds everything collected from the cluster. Results are split
+# across them -- every terminus trial and the whole minimal-prompt sweep are in the
+# second -- so scanning only the first silently drops most arms.
+DEFAULT_JOBS_ROOTS = [
+    EVAL_DIR.parents[1] / "harbor-jobs",
+    EVAL_DIR.parents[1] / "harbor-jobs-new",
+]
 
 # Fields kept from each metrics.json. Missing fields are silently skipped
 # so the same curated list works for both supervised and unsupervised
@@ -169,6 +174,14 @@ def collect_trial_metrics(eval_dir: Path = EVAL_DIR) -> dict:
 # check_trial_health.py:409 normalises the same pair, in the other direction.
 AGENT_ALIASES = {"claude": "claude-code"}
 
+# Task directories are named after the dataset; the manual reference and the human
+# rating folders are named after the paper's first author. Both names refer to the
+# same task, and the association exists only as a hand-carried `Trial path:` line in
+# each rating file. Canonicalising to the manual vocabulary here means the metrics
+# key matches manual/<name>/ and eval/<name>/, so ratings and metrics can be joined
+# on the dataset name instead of by resolving those paths.
+DATASET_ALIASES = {"map": "chen2024", "mouseland": "zhong2025"}
+
 # Not agent arms. `oracle` runs the reference solution, so its ratios are ~1.0 by
 # construction -- keeping it would put a column in every figure that measures
 # nothing about an agent.
@@ -219,6 +232,7 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
     agent = AGENT_ALIASES.get(agent, agent)
 
     dataset = task.removesuffix("_minimal")
+    dataset = DATASET_ALIASES.get(dataset, dataset)
     prompt = "minimal" if task.endswith("_minimal") else "full"
     timestamp = trial_dir.split("_trial")[0]
 
@@ -302,19 +316,19 @@ def main() -> None:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--jobs-root", nargs="*", type=Path, default=None,
-        help="Scan these job directories instead of the eval rating markdown. "
-             f"With no value, uses {DEFAULT_JOBS_ROOT}.")
+        help="Job directories to scan. Default: "
+             + ", ".join(str(p) for p in DEFAULT_JOBS_ROOTS))
     parser.add_argument(
         "--out", type=Path, default=None,
         help=f"Output file; relative paths resolve under {EVAL_DIR}. "
              f"Default: {OUT_FILE.name}")
     args = parser.parse_args()
 
-    if args.jobs_root is None:
-        metrics = collect_trial_metrics()
-    else:
-        roots = args.jobs_root or [DEFAULT_JOBS_ROOT]
-        metrics = collect_from_jobs_roots(roots)
+    # Always the jobs roots. The other collector, collect_trial_metrics(), indexes
+    # trials through the human rating markdown under eval/<dataset>/ -- so it sees
+    # only trials someone opened a rating file for, and only on the machine whose
+    # paths those files record. It is kept for that purpose, not as a default.
+    metrics = collect_from_jobs_roots(args.jobs_root or DEFAULT_JOBS_ROOTS)
 
     out_file = args.out or OUT_FILE
     if not out_file.is_absolute():
