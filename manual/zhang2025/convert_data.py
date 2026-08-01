@@ -10,6 +10,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 # the loader always pulls these four spike arrays
 import brainbox.io.one as bio
@@ -162,7 +163,9 @@ def load_neural(eid):
     times, units, regions = [], [], []
     for pid, name in zip(*one.eid2pid(eid)):
         loader = SpikeSortingLoader(pid=pid, one=one, eid=eid, pname=name)
-        spikes, clusters, channels = loader.load_spike_sorting()
+
+        # skip the md5 check, which rereads every spike file and draws its own progress bar
+        spikes, clusters, channels = loader.load_spike_sorting(check_hash=False)
         clusters = loader.merge_clusters(spikes, clusters, channels)   # attaches metrics and histology
 
         good = np.flatnonzero(clusters['label'] >= QC_LABEL)
@@ -299,14 +302,12 @@ def main():
 
     t0 = time.time()
     results = []
-    for i, (eid, subject) in enumerate(pairs, 1):
-        t1 = time.time()
+    progress = tqdm(pairs, unit='session')
+    for eid, subject in progress:
         res = process_session(eid, subject)
         results.append(res)
-        elapsed = time.time() - t0
-        print('[%3d/%d] %s %-10s %4d trials %4d units  %5.1fs  (elapsed %6.1fs, total ~%6.1fs)'
-              % (i, len(pairs), res['session_id'][:8], subject, res['n_trials'], res['n_units'],
-                 time.time() - t1, elapsed, elapsed / i * len(pairs)), flush=True)
+        progress.set_postfix_str('%s %s %d trials %d units'
+                                 % (res['session_id'][:8], subject, res['n_trials'], res['n_units']))
 
     data = assemble(results)
     print('\nconverted in %.1f s' % (time.time() - t0), flush=True)
