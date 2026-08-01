@@ -32,6 +32,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.patches import Rectangle as _Rect
+from utils import TASK_DISPLAY_NAME, ARM_COLUMNS, ARM_AGENT, AGENT_SHORT, PROMPT_LABEL, SUPERVISED_DS, UNSUPERVISED_DS
 
 try:
     # running as a script via jupytext
@@ -67,75 +68,11 @@ TRIAL_METRICS_JSON = 'trial_metrics_all.json'
 
 mdf = trial_metrics_df(load_trial_metrics(filename=TRIAL_METRICS_JSON))
 
-# Display-name mirror of analysis.ipynb's cell 9fc5189e
-DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
-
-
-# --- Cell strip layout -------------------------------------------------------
-# The (agent, prompt) groups shown in each dataset's cell strip, in display
-# order. Everything downstream -- array widths, square geometry, group
-# separators, footnotes, LaTeX headers -- derives from this list, so adding an
-# arm is a single edit here.
-#
-# An arm is identified by BOTH agent and prompt: <task> and <task>_minimal read
-# the same data and differ only in how much the instruction says, so they are
-# different conditions run by the same agent. Today the two happen to be
-# disjoint (claude-code/codex ran minimal, terminus ran full) but nothing
-# enforces that, and merging them would average two conditions together.
-# The full menu of real arms, ordered so an agent's two prompt variants sit next to
-# each other -- that adjacency is the comparison the _minimal tasks exist to make.
-#
-# Six arms is 18 squares per cell, too wide to read, so this is what arms_subset()
-# picks FROM rather than a layout to plot whole.
-#
-# `claude` and `claude-code` are ONE arm under two directory names: harbor wrote the
-# first for the March/April runs and the second later. trial_metrics.py folds them
-# together via AGENT_ALIASES, so only claude-code appears here. `oracle` is absent
-# deliberately -- it runs the reference solution, so its ratios are ~1.0 by
-# construction and it is dropped at collection by SKIP_AGENTS.
-ARM_COLUMNS = [
-    ("claude-code",   "minimal"),
-    ("claude-code",   "full"),
-    ("codex",         "minimal"),
-    ("codex",         "full"),
-    ("terminus-opus", "full"),
-    ("terminus-gpt",  "full"),
-]
 TRIALS_PER_ARM = 3
 N_CELLS = len(ARM_COLUMNS) * TRIALS_PER_ARM
 
 # The full set, kept so set_arms() can restore it after a subset plot.
 ALL_ARMS = list(ARM_COLUMNS)
-ARM_LABEL = {
-    ("claude-code",   "minimal"): "Claude Code",
-    ("claude-code",   "full"):    "Claude Code",
-    ("codex",         "minimal"): "Codex",
-    ("codex",         "full"):    "Codex",
-    ("terminus-opus", "full"):    "Terminus/Opus",
-    ("terminus-gpt",  "full"):    "Terminus/GPT",
-}
-
-# Short forms for the in-figure group headers, where each arm gets only
-# TRIALS_PER_ARM squares of width -- roughly 1.4 data units at the default
-# geometry, so the full ARM_LABEL does not fit.
-ARM_SHORT = {
-    ("claude-code",   "minimal"): "Claude",
-    ("claude-code",   "full"):    "Claude",
-    ("codex",         "minimal"): "Codex",
-    ("codex",         "full"):    "Codex",
-    ("terminus-opus", "full"):    "Terminus-Opus",
-    ("terminus-gpt",  "full"):    "Terminus-GPT",
-}
-
-# The task variant an arm ran. "maximal" mirrors submit_harbor_cluster.py's
-# --minimal/--maximal flags; the underlying metrics field says "full".
-PROMPT_SHORT = {"minimal": "minimal", "full": "maximal"}
-
-SUPERVISED_DS   = ["allen2p", "lee2025", "majnik2025", "sosa2024"]
-# chen2024 and zhong2025 were replaced by map and mouseland. The .tex tables in
-# figures/ dated 2026-05-12 were generated against the old set; regenerating them
-# needs a trial_metrics.json that covers the current tasks.
-UNSUPERVISED_DS = ["hasnain2024", "map", "mouseland", "zhang2025"]
 
 SCALE_FIELDS = [
     ("Sessions",  "nsessions"),
@@ -146,7 +83,6 @@ SCALE_FIELDS = [
 ]
 
 #"check" rows (boolean pass/fail)
-
 
 CHECK_FIELDS = [
     # (display label, fn(row: pd.Series) -> bool or None)
@@ -181,22 +117,24 @@ def display_name(ds):
     Returns:
         The DISPLAY_NAME override if one exists, else the key capitalised.
     """
-    return DISPLAY_NAME.get(ds, ds[:1].upper() + ds[1:])
+    return TASK_DISPLAY_NAME.get(ds, ds[:1].upper() + ds[1:])
 
 def arm_header(arm, short=True):
     """Two-line label for one arm group: agent on the first line, prompt on the second.
 
     Args:
         arm: (agent, prompt) tuple, a member of ARM_COLUMNS.
-        short: use ARM_SHORT (for the narrow in-figure headers) rather than the
-            full ARM_LABEL (for captions and LaTeX).
+        short: use AGENT_SHORT (for the narrow in-figure headers) rather than the
+            full ARM_AGENT (for captions and LaTeX).
 
     Returns:
         e.g. "Claude\nminimal" -- the prompt variant is on its own line because a
         group is only ~3 squares wide.
     """
-    agent = (ARM_SHORT if short else ARM_LABEL)[arm]
-    return f"{agent}\n{PROMPT_SHORT[arm[1]]}"
+    agent = ARM_AGENT[arm]
+    if short:
+        agent = AGENT_SHORT[agent]
+    return f"{agent}\n{PROMPT_LABEL[arm[1]]}"
 
 
 def arm_list():
@@ -206,7 +144,7 @@ def arm_list():
         e.g. "Claude Code (minimal), Codex (minimal), Terminus/Opus (maximal), ..."
         in the same left-to-right order the squares appear in.
     """
-    return ", ".join(f"{ARM_LABEL[a]} ({PROMPT_SHORT[a[1]]})" for a in ARM_COLUMNS)
+    return ", ".join(f"{ARM_AGENT[a]} ({PROMPT_LABEL[a[1]]})" for a in ARM_COLUMNS)
 
 
 def set_arms(arms=None, *, agents=None, prompts=None):
@@ -245,10 +183,10 @@ def set_arms(arms=None, *, agents=None, prompts=None):
                 if (agents is None or a[0] in agents)
                 and (prompts is None or a[1] in prompts)]
     arms = [tuple(a) for a in arms]
-    missing = [a for a in arms if a not in ARM_LABEL]
+    missing = [a for a in arms if a not in ARM_AGENT]
     if missing:
-        raise KeyError(f"no ARM_LABEL/ARM_SHORT entry for {missing}; "
-                       f"known arms are {list(ARM_LABEL)}")
+        raise KeyError(f"no ARM_LABEL entry for {missing}; "
+                       f"known arms are {list(ARM_AGENT)}")
     if not arms:
         raise ValueError(
             f"empty arm selection (agents={agents}, prompts={prompts}); "
@@ -383,7 +321,7 @@ def _latex_group_header(trailing=""):
     # Agent AND variant: <task> and <task>_minimal are different conditions, so a
     # column group headed only "Claude Code" would be ambiguous once both are run.
     cells = " & ".join(
-        rf"\multicolumn{{{TRIALS_PER_ARM}}}{{c}}{{{ARM_LABEL[a]} ({PROMPT_SHORT[a[1]]})}}"
+        rf"\multicolumn{{{TRIALS_PER_ARM}}}{{c}}{{{ARM_AGENT[a]} ({PROMPT_SHORT[a[1]]})}}"
         for a in ARM_COLUMNS)
     return rf" & & {cells}{trailing} \\"
 

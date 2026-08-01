@@ -60,8 +60,42 @@ class TrialRating(NamedTuple):
 
 EVAL_DIR = Path(__file__).resolve().parent
 
-TRIAL_METRICS_JSON = 'trial_metrics.json'
+TRIAL_METRICS_JSON = 'trial_metrics_all.json'
 EVAL_SUMMARY_MD = 'eval_summary.md'
+
+TASK_DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
+
+# The (agent, prompt) groups shown in each dataset's cell strip, in display
+# order. Everything downstream -- array widths, square geometry, group
+# separators, footnotes, LaTeX headers -- derives from this list, so adding an
+# arm is a single edit here.
+#
+# An arm is identified by BOTH agent and prompt: <task> and <task>_minimal read
+# the same data and differ only in how much the instruction says, so they are
+# different conditions run by the same agent. Today the two happen to be
+# disjoint (claude-code/codex ran minimal, terminus ran full) but nothing
+# enforces that, and merging them would average two conditions together.
+# The full menu of real arms, ordered so an agent's two prompt variants sit next to
+# each other -- that adjacency is the comparison the _minimal tasks exist to make.
+#
+# Six arms is 18 squares per cell, too wide to read, so this is what arms_subset()
+# picks FROM rather than a layout to plot whole.
+#
+# `claude` and `claude-code` are ONE arm under two directory names: harbor wrote the
+# first for the March/April runs and the second later. trial_metrics.py folds them
+# together via AGENT_ALIASES, so only claude-code appears here. `oracle` is absent
+# deliberately -- it runs the reference solution, so its ratios are ~1.0 by
+# construction and it is dropped at collection by SKIP_AGENTS.
+ARM_AGENT = {
+    ("claude-code",   "minimal"): "Claude Code",
+    ("claude-code",   "full"):    "Claude Code",
+    ("codex",         "minimal"): "Codex",
+    ("codex",         "full"):    "Codex",
+    ("terminus-opus", "full"):    "Terminus/Opus",
+    ("terminus-gpt",  "full"):    "Terminus/GPT",
+}
+
+ARM_COLUMNS = list(ARM_AGENT.keys())
 
 RATING_SCALE = {
     "incorrect": -2,
@@ -70,6 +104,20 @@ RATING_SCALE = {
     "match": 1,
     "better": 2,
 }
+
+AGENT_SHORT = {
+    "Claude Code": "Claude",
+    "Codex": "Codex",
+    "Terminus/Opus": "Terminus-Opus",
+    "Terminus/GPT": "Terminus-GPT",
+}
+
+SUPERVISED_DS   = ["allen2p", "chen2024", "hasnain2024", "lee2025", "majnik2025", "sosa2024"]
+UNSUPERVISED_DS = ["zhong2025", "zhang2025"]
+
+# The task variant an arm ran. "maximal" mirrors submit_harbor_cluster.py's
+# --minimal/--maximal flags; the underlying metrics field says "full".
+PROMPT_LABEL = {"minimal": "minimal", "full": "maximal"}
 
 _QID_RE = re.compile(r"^##\s+Q\s+([0-9]+)(?:-([a-z]))?\.\s+(.*)$")
 _TRIAL_RE = re.compile(r"^\|\s*([a-z\-]+)\s*/\s*trial(\d+)\s*\|")
@@ -1053,6 +1101,9 @@ def insert_end_to_end(rows, e2e_rows):
     post = [r for r in rows if r["category"] == "Code Efficiency"]
     return pre + list(e2e_rows) + post
 
+def load_trial_metrics_summary(path):
+    """Load the trial_metrics_summary.json file from the eval directory."""
+    return json.loads(Path(path).read_text())
 
 if __name__ == "__main__":
     import json
