@@ -7,6 +7,8 @@ import argparse
 import os
 import pickle
 import time
+import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
 import pandas as pd
@@ -17,8 +19,13 @@ import brainbox.io.one as bio
 bio.SPIKES_ATTRIBUTES = ['clusters', 'times']
 
 from one.api import ONE
+from one.alf.exceptions import ALFWarning
 from brainbox.io.one import SessionLoader, SpikeSortingLoader
 from iblatlas.regions import BrainRegions
+
+# the trials table and the spike sorting are each listed at two revisions, and ONE warns
+# once per load that it is taking the later one, which is the one we want
+warnings.filterwarnings('ignore', category=ALFWarning)
 
 # --- constants ---
 
@@ -166,6 +173,11 @@ def load_neural(eid):
 
         # skip the md5 check, which rereads every spike file and draws its own progress bar
         spikes, clusters, channels = loader.load_spike_sorting(check_hash=False)
+
+        # a session can hold an insertion whose spike sorting was never released
+        if not clusters:
+            continue
+
         clusters = loader.merge_clusters(spikes, clusters, channels)   # attaches metrics and histology
 
         good = np.flatnonzero(clusters['label'] >= QC_LABEL)
@@ -287,28 +299,57 @@ def assemble(results):
     }
 
 
+def worker_setup():
+    """Give each process its own database connection, which cannot be shared across a fork."""
+    global one
+    one = ONE(base_url='https://openalyx.internationalbrainlab.org', password='international',
+              silent=True, cache_dir=CACHE_DIR)
+    one.load_cache(tag=RELEASE)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('outfile', help='output pickle path')
     ap.add_argument('--full', action='store_true', help='process all sessions (default)')
     ap.add_argument('--sample', action='store_true', help='process only 2 sessions')
+    ap.add_argument('--workers', type=int, default=8, help='sessions to process in parallel')
     args = ap.parse_args()
 
     selected = select_sessions()
     pairs = [(eid, subject) for subject, eids in selected.items() for eid in eids]
     if args.sample:
         pairs = pairs[:2]
-    print('%d sessions, %d subjects' % (len(pairs), len({s for _, s in pairs})), flush=True)
+    print('%d sessions, %d subjects, %d workers'
+          % (len(pairs), len({s for _, s in pairs}), args.workers), flush=True)
 
     t0 = time.time()
-    results = []
-    progress = tqdm(pairs, unit='session')
-    for eid, subject in progress:
-        res = process_session(eid, subject)
-        results.append(res)
-        progress.set_postfix_str('%s %s %d trials %d units'
-                                 % (res['session_id'][:8], subject, res['n_trials'], res['n_units']))
 
+    # sessions are independent, so they are processed out of order and put back by index
+    ordered = [None] * len(pairs)
+    with ProcessPoolExecutor(max_workers=args.workers, initializer=worker_setup) as pool:
+        futures = {pool.submit(process_session, eid, subject): index
+                   for index, (eid, subject) in enumerate(pairs)}
+
+        progress = tqdm(as_completed(futures), total=len(futures), unit='session')
+        for future in progress:
+            eid, subject = pairs[futures[future]]
+            try:
+                res = future.result()
+            except Exception as error:
+                print('failed %s: %s: %s' % (eid[:8], type(error).__name__, error), flush=True)
+                continue
+
+            # a session with no surviving unit or trial will be skipped
+            if res['n_units'] == 0 or res['n_trials'] < 2:
+                print('skipped %s: %d trials, %d units'
+                      % (res['session_id'][:8], res['n_trials'], res['n_units']), flush=True)
+                continue
+
+            ordered[futures[future]] = res
+            progress.set_postfix_str('%s %s %d trials %d units'
+                                     % (res['session_id'][:8], subject, res['n_trials'], res['n_units']))
+
+    results = [res for res in ordered if res is not None]
     data = assemble(results)
     print('\nconverted in %.1f s' % (time.time() - t0), flush=True)
     print('sessions %d | subjects %d | regions %d | trials %d | units %d'
