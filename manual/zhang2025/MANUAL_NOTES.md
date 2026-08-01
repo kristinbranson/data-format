@@ -35,5 +35,4 @@ keep = set(one.search(query_type='local', datasets=required))
 - Apply quality filter
 ```python 
 good = np.flatnonzero(clusters['label'] >= 1)
-keep = np.isin(spikes['clusters'], good)
 ```

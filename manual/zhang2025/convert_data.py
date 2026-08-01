@@ -14,6 +14,9 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+_zhang2025_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _zhang2025_seed) % 2**31)
+
 # the loader always pulls these four spike arrays
 import brainbox.io.one as bio
 bio.SPIKES_ATTRIBUTES = ['clusters', 'times']
@@ -180,15 +183,18 @@ def load_neural(eid):
 
         clusters = loader.merge_clusters(spikes, clusters, channels)   # attaches metrics and histology
 
-        good = np.flatnonzero(clusters['label'] >= QC_LABEL)
-        keep = np.isin(spikes['clusters'], good)
+        # spikes.clusters holds the row of the cluster table, so a per cluster flag
+        # can be indexed by it directly to say whether each spike survives
+        is_good = clusters['label'] >= QC_LABEL
+        keep = is_good[spikes['clusters']]
 
         # renumber the surviving clusters, continuing the count from the previous probe
-        units.append(np.searchsorted(good, spikes['clusters'][keep]) + len(regions))
+        new_index = np.cumsum(is_good) - 1
+        units.append(new_index[spikes['clusters'][keep]] + len(regions))
         times.append(spikes['times'][keep])
 
         # Beryl is the coarser atlas the reference code uses, e.g. DG-sg and DG-mo both become DG
-        regions.extend(brain_regions.acronym2acronym(clusters['acronym'][good], mapping='Beryl'))
+        regions.extend(brain_regions.acronym2acronym(clusters['acronym'][is_good], mapping='Beryl'))
 
     times, units = np.concatenate(times), np.concatenate(units)
 
@@ -236,11 +242,21 @@ def process_session(eid, subject):
     variables = variables[keep]
     stim_on = trials.stimOn_times.to_numpy()[keep]
 
+    # no trial survived the mask, so there is nothing to load or bin
+    if stim_on.size == 0:
+        return {'session_id': str(eid), 'subject': subject, 'camera': view,
+                'neural': [], 'input': [], 'output': [],
+                'n_trials': 0, 'n_units': 0, 'regions': np.array([])}
+
     speed = trial_traces(wheel.times, np.abs(wheel.velocity), stim_on)
     whisker = trial_traces(motion_energy.times, motion_energy.iloc[:, 1], stim_on)
 
     spike_times, spike_units, regions = load_neural(eid)
     rate = spike_counts(spike_times, spike_units, regions.size, stim_on) / BIN
+
+    # the split is over the whole session, so both traces are discretized once, not per trial
+    speed_class = discretize(speed)
+    whisker_class = discretize(whisker)
 
     neural = [trial.astype(np.float32) for trial in rate]
     inputs, outputs = [], []
@@ -248,7 +264,7 @@ def process_session(eid, subject):
         row = variables.iloc[trial]
         inputs.append(np.stack([TIME, np.full(N_BINS, row.trial_in_block)]).astype(np.float32))
         outputs.append(np.stack([np.full(N_BINS, row.choice), np.full(N_BINS, row.prior),
-                                 discretize(speed)[trial], discretize(whisker)[trial]]).astype(np.int8))
+                                 speed_class[trial], whisker_class[trial]]).astype(np.int8))
 
     return {'session_id': str(eid), 'subject': subject, 'camera': view,
             'neural': neural, 'input': inputs, 'output': outputs,
@@ -312,7 +328,7 @@ def main():
     ap.add_argument('outfile', help='output pickle path')
     ap.add_argument('--full', action='store_true', help='process all sessions (default)')
     ap.add_argument('--sample', action='store_true', help='process only 2 sessions')
-    ap.add_argument('--workers', type=int, default=8, help='sessions to process in parallel')
+    ap.add_argument('--workers', type=int, default=10, help='sessions to process in parallel')
     args = ap.parse_args()
 
     selected = select_sessions()
