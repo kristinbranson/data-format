@@ -1,0 +1,76 @@
+# Lesion analysis: what the scores mean
+
+Companion to `lesion_analysis.ipynb` / `lesion_analysis.py`.
+
+This analysis re-expresses summarizes the verifier metrics as nine ordered **categories** for all **supervised** datasets:
+
+Every category is a number in `[0, 1]`, or NaN if N/A or inaccurate. Higher is always better.
+
+| # | key / label | what it means | how it is scored |
+|---|---|---|---|
+| 1 | `core_files_exist`<br>*Core files exist* | the agent produced the two files without which nothing else can be judged | 1 when both `converted_data.pkl` and `convert_data.py` are present and non-empty |
+| 2 | `other_files_exist`<br>*Other files exist* | the rest of `REQUIRED_FILES` | 1 when `CONVERSION_NOTES.md`, `sample_data.pkl` and `README.md` are all present and non-empty |
+| 3 | `full_data_format_valid`<br>*Converted data format* | `converted_data.pkl` satisfies the required structure | the `full_data_format_valid` flag from `test_verify_data_format`, i.e. `decoder.verify_data_format` returned valid |
+| 4 | `nneurons_total_matches`<br>*N neurons* | the conversion kept the right number of neurons | `nneurons_total_ratio` (agent / reference) inside `1 ± STATLIMITS['nneurons_total_ratio']` = ±10% |
+| 5 | `scale_matches`<br>*N replicates* | the conversion kept the right amount of data | fraction of `nsubjects`, `nsessions`, `ntrials_total` whose ratio is inside its own `STATLIMITS` band. `nsubjects` has tolerance 0, so it must match exactly; the other two allow ±10% |
+| 6 | `input_range_matches`<br>*Input ranges* | the input variables span the right values | fraction of reference input variables whose recorded endpoint error is within 10% of that variable's reference span |
+| 7 | `output_nclasses_matches`<br>*Output N classes* | the output variables were discretised into the right number of classes | fraction where `output_nclasses_<v>` equals `output_nclasses_reference_<v>` |
+| 8 | `output_fraction_matches`<br>*Output distributions* | the classes are populated in the right proportions | fraction where `output_fraction_error_<v>` ≤ 0.1. That field is the L1 distance between the sorted class-fraction vectors, so it ignores a relabelling of the classes and ranges 0-2 |
+| 9 | `decoder_accuracy_matches`<br>*Decoder accuracy* | a decoder trained on the conversion recovers the behaviour as well as it does from the reference | fraction of output variables with `validation_balanced_accuracy_ratio` ≥ `MIN_ACCURACY_FRAC` = 0.95, the same test `test_decoder_accuracy` asserts |
+
+### Failure propagation
+
+`propagate_failures` converts NaN to 0 where an earlier failure by the agentmakes the later check a certain failure. It keys on **which required file is recorded missing**, never on a metric merely being absent:
+
+| trigger | forces to 0 |
+|---|---|
+| `converted_data.pkl` missing or empty | categories 3-9 |
+| `full_data_format_valid` is 0 | categories 4-9 |
+
+Nothing propagates into categories 1-2, and `undefined_categories` blocks propagation into a category with no meaning for the dataset — allen2p has `dinput == 0`, so forcing its input-range score to 0 would invent a failure the agent could not have committed.
+
+## How averaging is done
+
+Four levels, each built from the one above:
+
+```
+trial score        one number per trial per category — no averaging
+
+per category       mean over trials (usually 3), NaN dropped
+
+per trial          mean over the 9 categories, within one trial
+
+per arm            mean over trials of the per-trial number, std over trials
+```
+
+Two rules applied throughout:
+
+- **NaN is dropped, never treated as zero.** A category that could not be measured shrinks the denominator rather than dragging the mean down.
+- **`ddof=1` for every standard deviation.** The trials are a sample of what an arm does, not the population. Undefined for a single observation, so NaN rather than a misleading 0.
+
+### Per output
+
+| output | shows | averaging |
+|---|---|---|
+| `minimal_vs_full_prompt_{claude,codex}_table.pdf`<br>`agent_vs_model_{gpt,opus}_table.pdf` | one square per (arm, trial) × category, per dataset | **none** — raw per-trial category scores |
+| `agent_vs_model_table.md` | the same, as text | **none** — same values, `lesion_score_table` and `render_lesion_table` share `category_matrix` |
+| `lesion_scores_table.{md,tex}` | one cell per (arm, dataset) | mean over categories within a trial, then **mean ± std over the 3 trials** |
+| `minimal_vs_full_prompt_difference.pdf` | bars per (category, agent) | per-category minimal−maximal per dataset, then **mean ± std over the 6 datasets**; the scattered points are the per-dataset values |
+| `LLM_vs_harness_difference_{gpt,opus}.pdf` | the same, for arm pairs | as above |
+| `LLM_vs_harness_difference_{gpt,opus}.md`<br>`minimal_vs_maximal_difference.md` | table form of those figures | as above — verified equal to the drawn bar heights |
+| printed "Average minimal−maximal … one point per dataset" | one line per agent | per-category minimal−maximal per dataset, averaged over categories to one number per dataset, then **mean ± std over the 6 datasets** |
+
+### Why differences average over datasets
+
+A difference is taken **within a dataset**, between the two arms' trial-averaged scores — `compute_diff_per_category` reads `mean_scores_per_category`, which is keyed `(dataset, agent, prompt)` and has already collapsed the trials. Trials are not paired across arms, and could not be: trial 1 under one arm is an independent run from trial 1 under another, and the index is only a repeat counter. Pairing is by dataset, which is what makes the dataset's own difficulty cancel.
+
+The spread is then taken **between datasets**, n = 6. Three trials of one agent on one dataset are not independent evidence that a prompt or model matters: they share the dataset's quirks, its reference statistics and the agent's characteristic approach to it. Pooling all ~100 (dataset, trial, category) differences would give a much smaller error bar by treating correlated observations as independent.
+
+`compute_diff_per_category(arm1, arm2)` is the general form and works for any two arms — a prompt comparison is just an arm pair that shares an agent.
+
+## Known caveats
+
+- **The overall arm score weights all nine categories equally.** "Core files   exist" counts as much as "Decoder accuracy", and a boolean counts as much as a  fraction. It is a summary of breadth, not of quality.
+- **Ragged NaN makes the two marginals differ.** Because `input_range_matches` is  NaN for allen2p, a per-category mean averages over 5 datasets while every other  category uses 6. The mean of the per-category means therefore does not exactly equal the mean of the per-dataset means.
+- **Row means and column means can disagree in sign.** Averaging the same difference matrix across datasets or across categories gives different
+  marginals; one strong dataset can make every per-category mean positive while several per-dataset means stay negative. Prefer the per-dataset view for claims about whether one arm beats another.
