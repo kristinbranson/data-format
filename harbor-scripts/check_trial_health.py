@@ -120,6 +120,124 @@ def judge_issues(verifier_dir, metrics, subdir="judge", suffix="", verbose=False
     return issues
 
 
+# pytest -rA ends its run with one "FAILED <nodeid> - <ExceptionType>: <msg>" line
+# per failure. That summary is the only place the exception type survives; the
+# ctrf.json records status but not why.
+_PYTEST_FAILED_RE = re.compile(
+    r"^FAILED\s+(\S+)\s+-\s+([A-Za-z_.]*(?:Error|Exception))\b[:\s]*(.*)$", re.M
+)
+
+# Substrings that mark a failure as the machine's fault rather than the data's.
+# Matched against both the exception type and its message.
+_ENVIRONMENT_MARKERS = ("CUDA", "OutOfMemory", "MemoryError", "Timeout", "Cancelled")
+
+# What each test is responsible for recording. A failed test is only worth
+# rerunning if these are still absent: several April trials died on CUDA and were
+# repaired later by rerun_metrics.py, leaving a stale ctrf.json beside a complete
+# metrics.json. Keyed on metrics, not on test status, for exactly that reason.
+TEST_METRICS = {
+    "test_required_files_exist": ("required_files_missing",),
+    "test_verify_data_format": ("full_data_format_valid",),
+    "test_data_stats": ("input_range_mean_cost", "output_fraction_mean_cost"),
+    "test_decoder_accuracy": ("validation_balanced_accuracy",),
+}
+
+
+def classify_failure(exception, message):
+    """Whose fault a pytest failure was.
+
+    Args:
+        exception: exception type name from the pytest FAILED summary line.
+        message: the truncated message that followed it.
+
+    Returns:
+        "agent" when the verifier ran correctly and the submitted data missed a
+        limit -- an AssertionError is the measurement working, not a fault.
+        "environment" for a GPU or memory fault, which a rerun can clear.
+        "verifier" for anything else: the verifier crashed on input it should
+        have handled, so a rerun reproduces it and the code needs the fix. The
+        known case is `ValueError: cost matrix is infeasible`, raised by
+        linear_sum_assignment when every variable pairing costs inf.
+    """
+    if exception == "AssertionError":
+        return "agent"
+    if any(marker in exception or marker in message
+           for marker in _ENVIRONMENT_MARKERS):
+        return "environment"
+    return "verifier"
+
+
+def pytest_failures(verifier_dir):
+    """Failing tests for one trial, with the cause of each.
+
+    Args:
+        verifier_dir: directory holding test-stdout.txt.
+
+    Returns:
+        list of (test_name, category, "Exception: message") where category is
+        from classify_failure(). Empty when the file is absent or nothing failed.
+    """
+    stdout_path = os.path.join(verifier_dir, "test-stdout.txt")
+    if not os.path.exists(stdout_path):
+        return []
+    try:
+        with open(stdout_path, errors="ignore") as f:
+            text = f.read()
+    except OSError:
+        return []
+    failures = []
+    for nodeid, exception, message in _PYTEST_FAILED_RE.findall(text):
+        failures.append((nodeid.split("::")[-1],
+                         classify_failure(exception, message),
+                         f"{exception}: {message.strip()[:60]}"))
+    return failures
+
+
+def rerun_reasons(verifier_dir, metrics, task_is_supervised):
+    """Split this trial's problems into ones a rerun fixes and ones it does not.
+
+    The gate on both is metrics still missing AND a cause worth acting on.
+    Either half alone is misleading: a trial can fail a test and be repaired
+    afterwards by one of the rerun_*.py backfills, and a trial can be missing
+    metrics simply because the task has no reference solution to compare against.
+
+    Args:
+        verifier_dir: the trial's verifier directory.
+        metrics: parsed metrics.json, or None if absent or unreadable.
+        task_is_supervised: whether the task ships reference_stats_full.json.
+            test_data_stats legitimately skips without one, recording nothing.
+
+    Returns:
+        (rerun, bugs), both list[str] of human-readable reasons.
+        `rerun` is recoverable by resubmitting the verifier: a GPU or memory
+        fault, or a run that never finished. `bugs` is not -- the verifier
+        crashed on input it should have handled, so a rerun reproduces it and
+        the fix belongs in the code.
+    """
+    if not os.path.exists(os.path.join(verifier_dir, "ctrf.json")):
+        return ["pytest never finished (no ctrf.json)"], []
+    if metrics is None:
+        return ["metrics.json missing or unparseable"], []
+    if "required_files_missing" not in metrics:
+        return ["pytest wrote nothing (judges-only metrics.json)"], []
+
+    rerun, bugs = [], []
+    for test, category, detail in pytest_failures(verifier_dir):
+        if category == "agent":
+            continue          # the verifier worked; this is the result, not a fault
+        if not task_is_supervised and test in ("test_data_stats", "test_decoder_accuracy"):
+            continue          # nothing to compare against, so nothing to recover
+        still_missing = [key for key in TEST_METRICS.get(test, ())
+                         if key not in metrics or metrics[key] is None]
+        if not still_missing:
+            # A later backfill already supplied what this test failed to record,
+            # so there is nothing to recover even though ctrf still says failed.
+            continue
+        target = rerun if category == "environment" else bugs
+        target.append(f"{test}: {detail} -> missing {', '.join(still_missing)}")
+    return rerun, bugs
+
+
 def check_verifier_dir(verifier_dir, verbose=False, label=None):
     """Check a verifier directory for valid metrics.json and judge results.
     Returns (ok: bool, issues: list[str])."""
@@ -348,7 +466,8 @@ def check_unsupervised_judges(verifier_dir, verbose=False, label=None):
     return len(issues) == 0, issues
 
 
-def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
+def check_trial(trial_path, task_has_unsupervised=False, verbose=False,
+                task_is_supervised=True):
     """Check a single trial directory. Returns a dict of health info."""
     result = {
         "path": trial_path,
@@ -364,6 +483,9 @@ def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
         "verifier_issues": [],
         "unsupervised_ran": None,  # None = not applicable
         "unsupervised_issues": [],
+        "failures": [],        # (test, cause, "Exception: msg") for each failing test
+        "rerun_reasons": [],   # non-empty when rerunning the verifier would help
+        "verifier_bugs": [],   # verifier crashed on input it should have handled
     }
 
     verifier_dir = os.path.join(trial_path, "verifier")
@@ -435,6 +557,49 @@ def check_trial(trial_path, task_has_unsupervised=False, verbose=False):
     result["judges_ok"] = (
         not judge_issues(verifier_dir, metrics) if metrics is not None else None
     )
+
+    # Did pytest run at all? test_required_files_exist is the first test in the file
+    # and records required_files_missing before anything expensive happens, so its
+    # absence means pytest contributed nothing to this metrics.json -- the file is
+    # then purely what compute_reward.py merged in from the judges afterwards.
+    result["pytest_ok"] = (
+        "required_files_missing" in metrics if metrics is not None else None
+    )
+
+    # Did the decoder actually produce a result? metrics.json existing is not enough:
+    # pytest writes its metrics incrementally, and compute_reward.py merges the judge
+    # scores in afterwards, independently. So a run whose pytest died early still
+    # leaves a parseable metrics.json holding nothing but llm_judge_* keys -- which
+    # looked healthy here while contributing nothing to any figure.
+    #
+    # Three states, because they mean different things:
+    #   missing  the test never ran (pytest died first, or no converted_data.pkl)
+    #   None     it ran and failed -- test_decoder_accuracy sets None up front and
+    #            only overwrites it once training and scoring succeed
+    #   dict     per-output accuracies, the only healthy case
+    if metrics is None:
+        result["decoder_ok"] = None
+        result["decoder_issue"] = None
+    elif "validation_balanced_accuracy" not in metrics:
+        result["decoder_ok"] = False
+        result["decoder_issue"] = "no validation_balanced_accuracy (test never ran)"
+    elif not metrics["validation_balanced_accuracy"]:
+        result["decoder_ok"] = False
+        result["decoder_issue"] = "validation_balanced_accuracy is null (decoder failed)"
+    else:
+        result["decoder_ok"] = True
+        result["decoder_issue"] = None
+
+    # Why the verifier fell over, and whether rerunning it would help. decoder_ok
+    # and pytest_ok say a metric is missing; these say whose fault that was, which
+    # is what decides between resubmitting the job and recording the result.
+    result["failures"] = pytest_failures(verifier_dir)
+    result["rerun_reasons"], result["verifier_bugs"] = rerun_reasons(
+        verifier_dir, metrics, task_is_supervised)
+    if verbose and result["rerun_reasons"]:
+        print(f"Trial {trial_path} needs a rerun:")
+        for reason in result["rerun_reasons"]:
+            print(f"    {reason}")
 
     # Check unsupervised judges if applicable
     if task_has_unsupervised:
@@ -537,6 +702,12 @@ def main():
         action="store_true",
         help="Show more detailed output (currently no-op)",
     )
+    parser.add_argument(
+        "--needs-rerun",
+        action="store_true",
+        help="Print only the trials whose verifier should be rerun, one path per "
+             "line, for piping into submit_rerun_verifier.sh",
+    )
     args = parser.parse_args()
     skip_oracle = not args.include_oracle
 
@@ -554,6 +725,15 @@ def main():
         if os.path.exists(unsup_path):
             tasks_with_unsupervised.add(task)
 
+    # Tasks with a reference solution. Without reference_stats_full.json,
+    # test_data_stats skips and test_decoder_accuracy records no ratio, so their
+    # metrics are absent by design and must not be read as something to recover.
+    supervised_tasks = {
+        task for task in {key[0] for key in trials}
+        if os.path.exists(os.path.join(harbor_tasks_dir, task, "tests",
+                                       "reference_stats_full.json"))
+    }
+
     # Check each trial
     results = {}
     rerun_results = {}  # key -> list of (rerun_path, is_merged, health)
@@ -564,6 +744,7 @@ def main():
             trial_path,
             task_has_unsupervised=task in tasks_with_unsupervised,
             verbose=args.verbose,
+            task_is_supervised=task in supervised_tasks,
         )
         health["source"] = source
         results[key] = health
@@ -576,6 +757,48 @@ def main():
                 rh = check_rerun(rerun_path, verbose=args.verbose)
                 rh["is_merged"] = is_merged
                 rerun_results[key].append((rerun_path, rh))
+
+    # --needs-rerun is meant to be piped, so it prints paths and nothing else.
+    if args.needs_rerun:
+        for key in sorted(results):
+            if results[key]["rerun_reasons"]:
+                print(results[key]["path"])
+        return
+
+    # Trials worth resubmitting, and why. Printed before the tables because it is
+    # the actionable part: an AssertionError is a result to keep, while a CUDA
+    # fault or a killed run is a measurement that never happened.
+    needs_rerun = {k: v for k, v in results.items() if v["rerun_reasons"]}
+    if needs_rerun:
+        print("=" * 78)
+        print(f"NEEDS RERUN ({len(needs_rerun)} of {len(results)} trials)")
+        print("=" * 78)
+        for key in sorted(needs_rerun):
+            print(f"  {needs_rerun[key]['path']}")
+            for reason in needs_rerun[key]["rerun_reasons"]:
+                print(f"      {reason}")
+        print()
+
+    # Failures the verifier measured correctly. Counted rather than listed: these
+    # are the benchmark's results, not its problems.
+    # Crashes a rerun cannot fix: the verifier itself needs the repair.
+    has_bugs = {k: v for k, v in results.items() if v["verifier_bugs"]}
+    if has_bugs:
+        print("=" * 78)
+        print(f"VERIFIER BUGS ({len(has_bugs)} trials) -- rerunning reproduces these")
+        print("=" * 78)
+        for key in sorted(has_bugs):
+            print(f"  {has_bugs[key]['path']}")
+            for reason in has_bugs[key]["verifier_bugs"]:
+                print(f"      {reason}")
+        print()
+
+    n_agent_failures = sum(
+        1 for health in results.values()
+        for _test, cause, _detail in health["failures"] if cause == "agent"
+    )
+    print(f"{n_agent_failures} assertion failures across {len(results)} trials "
+          f"(agent results, not faults)\n")
 
     # Detect duplicate (task, agent, trial_num) combinations across timestamps,
     # so we can disambiguate them in the per-trial label.
@@ -656,6 +879,8 @@ def main():
                 "verifier_ok": 0,
                 "metrics_ok": 0,
                 "judges_ok": 0,
+                "pytest_ok": 0,
+                "decoder_ok": 0,
                 "unsupervised_ok": 0,
                 "unsupervised_applicable": 0,
                 "reruns_unmerged": 0,
@@ -691,6 +916,15 @@ def main():
             c["metrics_ok"] += 1
         if h.get("judges_ok"):
             c["judges_ok"] += 1
+        if h.get("pytest_ok"):
+            c["pytest_ok"] += 1
+        elif h.get("pytest_ok") is False:
+            c["verifier_issues"].append(
+                f"trial{trial_num}: pytest wrote nothing (judges only)")
+        if h.get("decoder_ok"):
+            c["decoder_ok"] += 1
+        elif h.get("decoder_issue"):
+            c["verifier_issues"].append(f"trial{trial_num}: {h['decoder_issue']}")
         # Unsupervised
         if h["unsupervised_ran"] is not None:
             # Skip "not run" — task supports unsupervised but this trial hasn't been processed
@@ -721,15 +955,15 @@ def main():
     # agent column is sized for them rather than for "codex".
     # Task column fits the longest name (hasnain2024_minimal, 19); agent fits
     # terminus-opus (13). Both used to be sized for the shortest names and wrapped.
-    sum_widths = [20, 14, 9, 9, 9, 8, 12, 8, 34]
-    sum_aligns = ["<", "<", ">", ">", ">", ">", ">", ">", "<"]
+    sum_widths = [20, 14, 9, 9, 8, 9, 8, 8, 12, 7, 26]
+    sum_aligns = ["<", "<", ">", ">", ">", ">", ">", ">", ">", ">", "<"]
     sum_total = sum(sum_widths) + 2 * (len(sum_widths) - 1)
     print("=" * sum_total)
     print("Summary")
     print("=" * sum_total)
     print_wrapped_row(
-        ["Task", "Agent", "convert.py", "data.pkl", "metrics", "judges",
-         "Unsupervised", "Reruns", "Notes"],
+        ["Task", "Agent", "convert.py", "data.pkl", "metrics", "req_files", "judges",
+         "val_acc", "Unsupervised", "Reruns", "Notes"],
         sum_widths, sum_aligns,
     )
     print("-" * sum_total)
@@ -740,7 +974,7 @@ def main():
             task_col = task if first else ""
             if ta not in counts:
                 print_wrapped_row(
-                    [task_col, agent, "—", "—", "—", "—", "—", "—", ""],
+                    [task_col, agent, "—", "—", "—", "—", "—", "—", "—", "—", ""],
                     sum_widths, sum_aligns,
                 )
             else:
@@ -749,6 +983,8 @@ def main():
                 agent_str = f"{c['agent_ok']}/{c['n']}"
                 metrics_str = f"{c['metrics_ok']}/{c['n']}"
                 judges_str = f"{c['judges_ok']}/{c['n']}"
+                pytest_str = f"{c['pytest_ok']}/{c['n']}"
+                decoder_str = f"{c['decoder_ok']}/{c['n']}"
                 if c["unsupervised_applicable"] > 0:
                     unsup_str = f"{c['unsupervised_ok']}/{c['unsupervised_applicable']}"
                 else:
@@ -762,8 +998,8 @@ def main():
                 notes.extend(c["verifier_issues"])
                 notes_str = "; ".join(notes) if notes else ""
                 print_wrapped_row(
-                    [task_col, agent, convert_str, agent_str, metrics_str, judges_str,
-                     unsup_str, rerun_str, notes_str],
+                    [task_col, agent, convert_str, agent_str, metrics_str, pytest_str,
+                     judges_str, decoder_str, unsup_str, rerun_str, notes_str],
                     sum_widths, sum_aligns,
                 )
             first = False
