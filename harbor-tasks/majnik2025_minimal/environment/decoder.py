@@ -650,44 +650,96 @@ def _prepare_session_data(neural: list, input: list, output: list, device, doutp
                     doutput = output[sess][0].shape[0]
             break
 
-    # Process input/output: replicate 1D along time axis
-    input_processed = []
-    output_processed = []
-    for session in range(nsessions):
-        input_session = []
-        output_session = []
-        for trial in range(len(neural[session])):
-            T = neural[session][trial].shape[1]
-            if input[session][trial].ndim == 1:
-                input_trial = np.tile(input[session][trial][:, np.newaxis], (1, T))
-            else:
-                input_trial = input[session][trial]
-            input_session.append(input_trial)
-            if output[session][trial].ndim == 1:
-                output_trial = np.tile(output[session][trial][:, np.newaxis], (1, T))
-            else:
-                output_trial = output[session][trial]
-            output_session.append(output_trial)
-        input_processed.append(input_session)
-        output_processed.append(output_session)
+    return SessionData(neural, input, output, dinput, doutput), dinput, doutput
 
-    # Create session data tensors
-    session_data = []
-    for session in range(nsessions):
-        if len(neural[session]) == 0:
-            session_data.append(None)
-            continue
-        neural_concat = np.concatenate([neural[session][trial].T.astype(np.float32) for trial in range(len(neural[session]))], axis=0)
-        input_concat = np.concatenate([input_processed[session][trial].T for trial in range(len(input_processed[session]))], axis=0).astype(np.float32)
-        output_concat = np.concatenate([output_processed[session][trial].T for trial in range(len(output_processed[session]))], axis=0).astype(np.int64)
-        session_data.append({
+
+class SessionData(torch.utils.data.Dataset):
+    """Per-session tensors, converted on demand instead of all at once.
+
+    Indexed like the list this used to return: ``session_data[session]['neural']``.
+    Converts on every call, so bind it once per session:
+    ``batch = session_data[session]``.
+
+    Why: the previous version built every session's float32 tensors up front while
+    the caller's numpy arrays stayed alive -- two full copies of the dataset. The
+    source copy cannot be freed, because test_decoder_accuracy receives it from
+    pytest's module-scoped `submitted_data_full` fixture, which pins it for the whole
+    test module. So this second copy is the only one that can be avoided. On
+    mouseland/claude-code trial3 it took a 422 GB run to 984 GB and got it
+    OOM-killed on a 960 GB node.
+
+    Args:
+        neural: length nsessions; neural[session][trial] is (nneurons, T), any float
+            dtype.
+        input: length nsessions; input[session][trial] is (dinput,) for a per-trial
+            value or (dinput, T) for a time-varying one.
+        output: same convention as input, integer class labels.
+        dinput: input dimension, already inferred by the caller.
+        doutput: output dimension, already inferred by the caller.
+    """
+
+    def __init__(self, neural: list, input: list, output: list,
+                 dinput: int, doutput: int):
+        self._neural, self._input, self._output = neural, input, output
+        self.dinput, self.doutput = dinput, doutput
+
+    def __len__(self) -> int:
+        return len(self._neural)
+
+    def n_nonempty(self) -> int:
+        """Sessions holding at least one trial, counted without converting any."""
+        return sum(1 for session in self._neural if len(session) > 0)
+
+    def __getitem__(self, session: int):
+        """Build one session's tensors from its per-trial arrays.
+
+        Args:
+            session: index into the per-session lists.
+
+        Returns:
+            {'neural': float32 (rows, nneurons), 'input': float32 (rows, dinput),
+             'output': int64 (rows, doutput), 'nneurons': int}, where rows is the
+            session's total timepoints; or None when the session has no trials,
+            which is what the previous version stored for it.
+        """
+        trials = self._neural[session]
+        if len(trials) == 0:
+            return None
+
+        rows = sum(trial.shape[1] for trial in trials)
+        nneurons = trials[0].shape[0]
+
+        # Preallocate and fill, rather than
+        # np.concatenate([trial.T.astype(np.float32) for trial in trials]): that
+        # holds a converted copy of every trial AND the concatenated result at the
+        # same moment. Assigning into the destination casts in place, so neither
+        # temporary is ever allocated. Per-trial inputs and outputs are broadcast
+        # into their row block instead of being np.tile'd first -- tile built a
+        # (d, T) array per trial only to transpose and copy it again.
+        neural_concat = np.empty((rows, nneurons), np.float32)
+        input_concat = np.empty((rows, self.dinput), np.float32)
+        output_concat = np.empty((rows, self.doutput), np.int64)
+
+        row = 0
+        for trial in range(len(trials)):
+            T = trials[trial].shape[1]
+            neural_concat[row:row + T] = trials[trial].T
+            input_trial = self._input[session][trial]
+            output_trial = self._output[session][trial]
+            # A 1-D per-trial value broadcasts across the block's T rows.
+            input_concat[row:row + T] = (input_trial.T if input_trial.ndim == 2
+                                         else input_trial)
+            output_concat[row:row + T] = (output_trial.T if output_trial.ndim == 2
+                                          else output_trial)
+            row += T
+
+        # from_numpy wraps these buffers rather than copying them.
+        return {
             'neural': torch.from_numpy(neural_concat),
             'input': torch.from_numpy(input_concat),
             'output': torch.from_numpy(output_concat),
-            'nneurons': neural_concat.shape[1]
-        })
-
-    return session_data, dinput, doutput
+            'nneurons': nneurons,
+        }
 
 
 def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, **kwargs):
@@ -762,29 +814,40 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
     if 'ncategories' in kwargs:
         ncategories = kwargs['ncategories']
     else:
-        ncategories = []
-        for out_dim in range(doutput):
-            max_cat = 0
-            for session in range(nsessions):
-                if session_data[session] is None:
-                    continue
-                max_cat = max(max_cat, int(session_data[session]['output'][:, out_dim].max().item()))
-            ncategories.append(max_cat + 1)
+        # Session is the OUTER loop so each one is fetched once for all output
+        # dimensions. With session inner, session_data[session] would rebuild the
+        # same session's tensors doutput times. The result does not depend on the
+        # order.
+        max_cat = [0] * doutput
+        for session in range(nsessions):
+            batch = session_data[session]
+            if batch is None:
+                continue
+            for out_dim in range(doutput):
+                max_cat[out_dim] = max(max_cat[out_dim],
+                                       int(batch['output'][:, out_dim].max().item()))
+        ncategories = [m + 1 for m in max_cat]
 
     model['ncategories'] = ncategories
 
     # Compute class weights (always, for use in chance computation and optionally for balanced loss)
     class_weights = []
     class_fractions = []  # Store fractions for chance computation
-    for out_dim in range(doutput):
-        # Count occurrences of each class across all sessions
-        class_counts = np.zeros(ncategories[out_dim])
-        for session in range(nsessions):
-            if session_data[session] is None:
-                continue
-            outputs = session_data[session]['output'][:, out_dim].cpu().numpy()
+    # Session outer, output dimension inner, for the same reason as ncategories
+    # above: one fetch per session instead of doutput of them. Summation order
+    # within a class count is unchanged.
+    class_counts_all = [np.zeros(ncategories[out_dim]) for out_dim in range(doutput)]
+    for session in range(nsessions):
+        batch = session_data[session]
+        if batch is None:
+            continue
+        for out_dim in range(doutput):
+            outputs = batch['output'][:, out_dim].cpu().numpy()
             for c in range(ncategories[out_dim]):
-                class_counts[c] += np.sum(outputs == c)
+                class_counts_all[out_dim][c] += np.sum(outputs == c)
+
+    for out_dim in range(doutput):
+        class_counts = class_counts_all[out_dim]
         # Store class fractions for chance computation
         total = np.sum(class_counts)
         fractions = class_counts / total
@@ -808,21 +871,24 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
     svd_max_neurons = kwargs.get('svd_max_neurons', 2000)   # Max neurons to use for SVD initialization
     projection_layers = []
     for session in range(nsessions):
-        nneurons = session_data[session]['nneurons']
+        # Bound once: session_data converts on every subscript, so the four reads
+        # below would otherwise rebuild this session's tensors four times.
+        batch = session_data[session]
+        nneurons = batch['nneurons']
         proj = nn.Linear(nneurons, npcs, bias=False).to(device)
 
         # Initialize with SVD for stability (use V from SVD of neural data)
         # For neural data with shape (n_timepoints, n_neurons), SVD gives principal components in V
         # Use random subsets if data is too large
-        n_timepoints = session_data[session]['neural'].shape[0]
+        n_timepoints = batch['neural'].shape[0]
 
         # Sample timepoints if needed
         if n_timepoints > svd_max_samples:
             time_indices = torch.randperm(n_timepoints)[:svd_max_samples]
-            neural_subset = session_data[session]['neural'][time_indices, :]
+            neural_subset = batch['neural'][time_indices, :]
             print(f"Session {session}: Using {svd_max_samples} of {n_timepoints} timepoints for SVD initialization")
         else:
-            neural_subset = session_data[session]['neural']
+            neural_subset = batch['neural']
 
         # Use random projection if too many neurons
         if nneurons > svd_max_neurons:
@@ -879,12 +945,13 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         optimizer.zero_grad()
 
         for session in range(nsessions):
-            if session_data[session] is None:
+            batch = session_data[session]
+            if batch is None:
                 continue
             # Move this session's data to device
-            neural_batch = session_data[session]['neural'].to(device)
-            input_batch = session_data[session]['input'].to(device)
-            output_batch = session_data[session]['output'].to(device)
+            neural_batch = batch['neural'].to(device)
+            input_batch = batch['input'].to(device)
+            output_batch = batch['output'].to(device)
 
             # Forward pass - shared projection
             projected = projection_layers[session](neural_batch)
@@ -1377,17 +1444,20 @@ def train_validate_decoder(neural: list, input: list, output: list, metadata: st
     # Compute test loss (using reduction='none' for consistency with training)
     device = model['device']
     test_session_data, _, doutput = _prepare_session_data(test_neural, test_input, test_output, device)
-    n_test_sessions = sum(1 for s in range(nsessions) if test_session_data[s] is not None)
+    # n_nonempty() reads only the list lengths. Subscripting to count would convert
+    # every session's tensors and throw them away.
+    n_test_sessions = test_session_data.n_nonempty()
 
     criterion = nn.CrossEntropyLoss(reduction='none')
     test_loss = 0
     with torch.no_grad():
         for session in range(nsessions):
-            if test_session_data[session] is None:
+            batch = test_session_data[session]
+            if batch is None:
                 continue
-            neural_test = test_session_data[session]['neural'].to(device)
-            input_test = test_session_data[session]['input'].to(device)
-            output_test = test_session_data[session]['output'].to(device)
+            neural_test = batch['neural'].to(device)
+            input_test = batch['input'].to(device)
+            output_test = batch['output'].to(device)
 
             projection = model['projection'][session]
             projected = torch.matmul(neural_test, projection.T)
