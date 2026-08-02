@@ -38,6 +38,8 @@ ret = np.load(RET_ROOT / f"{candidate.db['mname']}_{candidate.db['datexp']}_tran
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 1-b. How are the data split into subjects?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
@@ -60,6 +62,8 @@ subject_to_idx = {subject: idx for idx, subject in enumerate(subjects_all)}
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -93,6 +97,8 @@ def build_session_catalog():
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 1-d. Are the data correctly split into trials?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
@@ -115,6 +121,8 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 1-e. How are trials filtered based on quality controls?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
@@ -135,6 +143,8 @@ for trial_idx in range(int(beh["ntrials"])):
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
@@ -157,6 +167,8 @@ region_sel = region_idx_all[selected_mask]
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-b. How is the `neural` data processed?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
@@ -175,6 +187,8 @@ neural = spk_sel[:, frames].astype(np.float32, copy=False)
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -206,6 +220,8 @@ selected = stim_selective | reward_pred
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
@@ -227,6 +243,8 @@ neural = spk_sel[:, frames].astype(np.float32, copy=False)
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -253,7 +271,295 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-a. What variables in the raw data is `output` *visual_stimulus_category* derived from?
+---
+
+## Q 3-a. What variables in the raw data is `input` *time_to_sound_cue* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "| `beh['SoundTime']`, `beh['ft']`, `StartFr:GrayFr` running frames | `input[0]` = `time_to_sound_cue_sec` | For each retained frame, `(SoundTime[trial] - ft[frame]) * 86400` ... |" (CONVERSION_NOTES.md:240); "- `time_to_sound_cue_sec`" (README.md:36)
+
+**Code** (convert_data.py:285-295, 315-317):
+```python
+    ft = np.asarray(beh["ft"][:nfr], dtype=float)
+    dft = np.diff(ft)
+    dft = dft[np.isfinite(dft) & (dft > 0)]
+    frame_dt = float(np.median(dft) * SECONDS_PER_DAY)
+    ...
+    start_fr = np.asarray(beh["StartFr"], dtype=int)
+    gray_fr = np.asarray(beh["GrayFr"], dtype=int)
+    sound_fr = np.asarray(beh["SoundFr"], dtype=int)
+...
+        cue_idx = float(np.searchsorted(frames, sound_fr[trial_idx], side="left"))
+        t_since = (retained_idx * frame_dt).astype(np.float32)
+        t_to_cue = ((cue_idx - retained_idx) * frame_dt).astype(np.float32)
+```
+
+**What this does:** The trial produces this input as `time_to_sound_cue_sec` (`input[0]`). In code it is derived from the trial-level cue frame index `SoundFr`, the retained running-frame list (built from `StartFr`, `GrayFr`, `ft_move`), and a session-level median frame interval computed from `ft`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_to_sound_cue*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Use actual frame times in seconds, not just frame index: Because non-running frames are dropped, elapsed time inputs must come from `ft` timestamps rather than assuming contiguous native-frame spacing." (CONVERSION_NOTES.md:259); "verify `time_since_trial_start_sec + time_to_sound_cue_sec` equals the trial's cue time-from-start at every retained frame" (CONVERSION_NOTES.md:264); "`time_to_sound_cue_sec` range | ... | Derived from running texture-frame axis in raw behavior files | `[-51.3, 23.3]`" (CONVERSION_NOTES.md:386)
+
+**Code** (convert_data.py:307-317, 376-383):
+```python
+    for trial_idx in range(int(beh["ntrials"])):
+        frames = np.arange(start_fr[trial_idx], gray_fr[trial_idx], dtype=int)
+        frames = frames[ft_move[frames] > 0]
+        ...
+        retained_idx = np.arange(frames.size, dtype=np.float32)
+        cue_idx = float(np.searchsorted(frames, sound_fr[trial_idx], side="left"))
+        t_to_cue = ((cue_idx - retained_idx) * frame_dt).astype(np.float32)
+...
+            input_arr = np.vstack(
+                [
+                    input_raw["time_to_sound_cue_sec"],
+                    ...
+```
+
+**What this does:** The cue frame `SoundFr` is located within the retained running-frame list via `searchsorted` to give a cue index on the retained axis; the signed difference between that index and each retained frame's ordinal position is multiplied by the session median frame interval `frame_dt` (seconds). Values are positive before the cue and negative after; the array becomes row 0 of the `(4, T)` float32 input.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-c. How is `input` *time_to_sound_cue* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "temporal_alignment_event: corridor entry (trial start / StartFr)", "off_start: 0.0", "off_end: None", "frame_selection: running-only frames within texture area" (convert_data.py:688-692); "Temporal alignment: corridor entry (`StartFr`)" (README.md:21)
+
+**Code** (convert_data.py:308-317, 374-394):
+```python
+        frames = np.arange(start_fr[trial_idx], gray_fr[trial_idx], dtype=int)
+        frames = frames[ft_move[frames] > 0]
+        neural = spk_sel[:, frames].astype(np.float32, copy=False)
+        retained_idx = np.arange(frames.size, dtype=np.float32)
+        cue_idx = float(np.searchsorted(frames, sound_fr[trial_idx], side="left"))
+        t_to_cue = ((cue_idx - retained_idx) * frame_dt).astype(np.float32)
+...
+            T = neural_trial.shape[1]
+            input_arr = np.vstack([...]).astype(np.float32)
+            if input_arr.shape[1] != T or output_arr.shape[1] != T:
+                raise ValueError(f"Time dimension mismatch in session {session.session_id}.")
+```
+
+**What this does:** The same `frames` array selects the neural columns and defines the retained-frame axis on which the cue time is computed, so column t of the input corresponds to column t of the neural matrix. `finalize_io` explicitly asserts the input and neural time dimensions match.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-a. What variables in the raw data is `input` *day_of_training* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "| Session recording date / optional `db['days']` | `input[1]` = `day_of_training` | Use elapsed calendar days since the mouse's first recording date; repeat across retained frames in the trial | `Imaging_Exp_info.npy` | Chosen because a complete per-session training-day label is not available for all sessions. |" (CONVERSION_NOTES.md:241)
+
+**Code** (convert_data.py:156-167):
+```python
+def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
+    by_subject: dict[str, list[datetime]] = defaultdict(list)
+    session_dates: dict[str, datetime] = {}
+    for cand in catalog:
+        date = datetime.strptime(cand.db["datexp"], "%Y_%m_%d")
+        by_subject[cand.db["mname"]].append(date)
+        session_dates[cand.session_id] = date
+    first_dates = {subject: min(dates) for subject, dates in by_subject.items()}
+    return {
+        cand.session_id: float((session_dates[cand.session_id] - first_dates[cand.db["mname"]]).days)
+        for cand in catalog
+    }
+```
+
+**What this does:** The trial produces this input as `day_of_training` (`input[1]`). It is derived from the `datexp` (experiment date) and `mname` (mouse name) fields of the session records in `data/beh/Imaging_Exp_info.npy`; no explicit training-day field from the raw data is used.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-b. What processing is involved in computing `input` *day_of_training*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Represent all decoder inputs as time-varying arrays: Even trial-constant variables (`day_of_training`, `reward_available`) will be repeated across timepoints..." (CONVERSION_NOTES.md:258); "`day_of_training` range | ... | `0` to `92` from canonical session order per mouse | `[0.0, 92.0]` | Yes" (CONVERSION_NOTES.md:387)
+
+**Code** (convert_data.py:163-167, 319, 495-500):
+```python
+    first_dates = {subject: min(dates) for subject, dates in by_subject.items()}
+    return {
+        cand.session_id: float((session_dates[cand.session_id] - first_dates[cand.db["mname"]]).days)
+        for cand in catalog
+    }
+...
+        day = np.full(frames.shape, session_day, dtype=np.float32)
+...
+    neural_trials, input_trials, output_trials, speed_values, trial_summary = build_trial_arrays(
+        spk_sel,
+        beh,
+        session_day=day_offsets[candidate.session_id],
+```
+
+**What this does:** Session date strings are parsed to `datetime`; for each mouse the earliest date across the whole catalog is day 0, and each session's offset is the integer day difference as a float. That per-session scalar is broadcast with `np.full` across all retained timepoints of every trial, forming row 1 of the input array.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-a. What variables in the raw data is `input` *time_since_trial_start* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "| `beh['ft']`, `StartFr` | `input[2]` = `time_since_trial_start_sec` | `(ft[frame] - ft[StartFr[trial]]) * 86400` for each retained frame | Behavior frame timing fields | Continuous time-varying input in seconds. |" (CONVERSION_NOTES.md:242); "- `time_since_trial_start_sec`" (README.md:38)
+
+**Code** (convert_data.py:285-294, 308-316):
+```python
+    ft = np.asarray(beh["ft"][:nfr], dtype=float)
+    dft = np.diff(ft)
+    dft = dft[np.isfinite(dft) & (dft > 0)]
+    frame_dt = float(np.median(dft) * SECONDS_PER_DAY)
+    ft_move = np.asarray(beh["ft_move"][:nfr], dtype=float)
+    ...
+    start_fr = np.asarray(beh["StartFr"], dtype=int)
+    gray_fr = np.asarray(beh["GrayFr"], dtype=int)
+...
+        frames = np.arange(start_fr[trial_idx], gray_fr[trial_idx], dtype=int)
+        frames = frames[ft_move[frames] > 0]
+        retained_idx = np.arange(frames.size, dtype=np.float32)
+        t_since = (retained_idx * frame_dt).astype(np.float32)
+```
+
+**What this does:** The trial produces this input as `time_since_trial_start_sec` (`input[2]`). In code it is derived from the count of retained running frames in the trial (defined by `StartFr`, `GrayFr`, `ft_move`) together with the session median frame interval computed from `ft`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-b. What processing is involved in computing `input` *time_since_trial_start*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Keep running frames only inside the texture segment ... Actual elapsed time is still preserved through the continuous time inputs." (CONVERSION_NOTES.md:252); "Use actual frame times in seconds, not just frame index: Because non-running frames are dropped, elapsed time inputs must come from `ft` timestamps rather than assuming contiguous native-frame spacing." (CONVERSION_NOTES.md:259); "`time_since_trial_start_sec` range | ... | Derived from retained running-frame intervals in raw behavior files | `[0.0, 56.0]`" (CONVERSION_NOTES.md:388)
+
+**Code** (convert_data.py:286-288, 308-316):
+```python
+    dft = np.diff(ft)
+    dft = dft[np.isfinite(dft) & (dft > 0)]
+    frame_dt = float(np.median(dft) * SECONDS_PER_DAY)
+...
+        frames = np.arange(start_fr[trial_idx], gray_fr[trial_idx], dtype=int)
+        frames = frames[ft_move[frames] > 0]
+        if frames.size == 0:
+            continue
+        neural = spk_sel[:, frames].astype(np.float32, copy=False)
+        retained_idx = np.arange(frames.size, dtype=np.float32)
+        t_since = (retained_idx * frame_dt).astype(np.float32)
+```
+
+**What this does:** A session-level `frame_dt` is computed as the median positive `ft` difference converted to seconds. Per trial, the retained running frames are numbered 0, 1, 2, ... and multiplied by `frame_dt`, so the value starts at exactly 0 at the first retained frame and increments uniformly, without re-reading the per-frame timestamps of the dropped non-running frames.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-c. How is `input` *time_since_trial_start* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "temporal_alignment_event: corridor entry (trial start / StartFr)", "off_start: 0.0", "off_end: None", "trial_end_event: entry into gray space (GrayFr)" (convert_data.py:688-691); "Use the texture segment only (`StartFr:GrayFr`)" (CONVERSION_NOTES.md:251)
+
+**Code** (convert_data.py:308-316, 374-397):
+```python
+        frames = np.arange(start_fr[trial_idx], gray_fr[trial_idx], dtype=int)
+        frames = frames[ft_move[frames] > 0]
+        neural = spk_sel[:, frames].astype(np.float32, copy=False)
+        retained_idx = np.arange(frames.size, dtype=np.float32)
+        t_since = (retained_idx * frame_dt).astype(np.float32)
+...
+        for neural_trial, input_raw, output_raw in zip(session.neural, session.input_raw, session.output_raw):
+            T = neural_trial.shape[1]
+            ...
+            if input_arr.shape[1] != T or output_arr.shape[1] != T:
+                raise ValueError(f"Time dimension mismatch in session {session.session_id}.")
+```
+
+**What this does:** The input is defined on the same retained-frame index axis used to slice the neural matrix, so it is column-for-column aligned with the neural data. Its value is 0 at the first retained (running) frame of the trial, which is the corridor-entry alignment event recorded in metadata.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-a. What variables in the raw data is `input` *reward_availability* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "| `beh['isRew']` | `input[3]` = `reward_available` | Trialwise 0/1 repeated across retained frames | Behavior session dict | Uses rewarded-corridor identity even in unsupervised sessions, matching reference use of `isRew`. |" (CONVERSION_NOTES.md:243); "- `reward_available`" (README.md:39)
+
+**Code** (convert_data.py:297, 318, 664-669):
+```python
+    is_rew = np.asarray(beh["isRew"]).astype(np.float32)
+...
+        reward = np.full(frames.shape, is_rew[trial_idx], dtype=np.float32)
+...
+        "input_names": [
+            "time_to_sound_cue_sec",
+            "day_of_training",
+            "time_since_trial_start_sec",
+            "reward_available",
+        ],
+```
+
+**What this does:** The trial produces this input as `reward_available` (`input[3]`). It is read directly from the trial-level `isRew` array in the per-session behavior dict, indexed by trial.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-b. What processing is involved in computing `input` *reward_availability*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Represent all decoder inputs as time-varying arrays: Even trial-constant variables (`day_of_training`, `reward_available`) will be repeated across timepoints so the dataset is uniform..." (CONVERSION_NOTES.md:258); "`reward_available` range | Binary rewarded vs unrewarded corridors | ... | `[0.0, 1.0]` | Yes" (CONVERSION_NOTES.md:389)
+
+**Code** (convert_data.py:297, 318, 331-338):
+```python
+    is_rew = np.asarray(beh["isRew"]).astype(np.float32)
+...
+        reward = np.full(frames.shape, is_rew[trial_idx], dtype=np.float32)
+...
+        input_trials.append(
+            {
+                "time_to_sound_cue_sec": t_to_cue,
+                "day_of_training": day,
+                "time_since_trial_start_sec": t_since,
+                "reward_available": reward,
+            }
+        )
+```
+
+**What this does:** `isRew` is cast to float32 and the per-trial scalar is broadcast with `np.full` over all retained running frames of that trial, becoming row 3 of the `(4, T)` input array. No time-windowing or reward-delivery timing is applied; the flag is constant for the whole trial.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 7-a. What variables in the raw data is `output` *visual_stimulus* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "`beh['WallName']` -> `output[0]` = `visual_stimulus_category` ... Use `WallName` directly so swap sessions and non-leaf/circle stimuli are preserved correctly." (CONVERSION_NOTES.md:244)
@@ -271,7 +577,9 @@ stim_val = np.full(frames.shape, stimulus_to_idx[wall_name[trial_idx]], dtype=np
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-b. What processing is involved in computing `output` *visual_stimulus_category*?
+---
+
+## Q 7-b. What processing is involved in computing `output` *visual_stimulus*?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Use exact `WallName` strings as stimulus labels: This avoids ambiguity from `stim_id` NaNs in swap sessions and preserves non-leaf/circle texture pairs (`rock*`, `wood*`)." (CONVERSION_NOTES.md:257)
@@ -296,23 +604,9 @@ stimulus_to_idx = {name: idx for idx, name in enumerate(stimulus_values)}
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-c. How is `output` *visual_stimulus_category* aligned with the neural data?
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Represent all decoder inputs as time-varying arrays: Even trial-constant variables ... will be repeated across timepoints" (CONVERSION_NOTES.md:258)
-
-**Code** (convert_data.py:328):
-```python
-stim_val = np.full(frames.shape, stimulus_to_idx[wall_name[trial_idx]], dtype=np.int64)
-```
-
-**What this does:** The single trial-constant stimulus index is broadcast (`np.full`) across the same `frames` array used to build the neural data, ensuring per-frame alignment.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
-## Q 4-a. What variables in the raw data is `output` *licking* derived from?
+## Q 8-a. What variables in the raw data is `output` *licking* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "`beh['LickFr']`, `beh['LickTrind']` -> `output[1]` = `licking` ... Binary per retained frame: 1 if one or more licks occur on that imaging frame, else 0" (CONVERSION_NOTES.md:245)
@@ -333,7 +627,9 @@ licking = np.isin(frames, lick_frames_trial).astype(np.int64)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 4-b. What processing is involved in computing `output` *licking*?
+---
+
+## Q 8-b. What processing is involved in computing `output` *licking*?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Binary per retained frame: 1 if one or more licks occur on that imaging frame, else 0" (CONVERSION_NOTES.md:245)
@@ -353,7 +649,9 @@ licking = np.isin(frames, lick_frames_trial).astype(np.int64)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 4-c. How is `output` *licking* aligned with the neural data?
+---
+
+## Q 8-c. How is `output` *licking* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none — alignment is implicit via shared `frames` index)"
@@ -369,7 +667,9 @@ licking = np.isin(frames, lick_frames_trial).astype(np.int64)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 5-a. What variables in the raw data is `output` *position_bin* derived from?
+---
+
+## Q 9-a. What variables in the raw data is `output` *position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "`beh['ft_Pos']` on retained frames -> `output[2]` = `position_bin` ... Discretize `0–40 dm` into 4 equal bins" (CONVERSION_NOTES.md:246)
@@ -388,7 +688,9 @@ pos_bin = np.clip(np.floor(pos / 10.0).astype(np.int64), 0, 3)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 5-b. What processing is involved in computing `output` *position_bin*?
+---
+
+## Q 9-b. What processing is involved in computing `output` *position*?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Discretize `0–40 dm` into 4 equal bins: `[0,10), [10,20), [20,30), [30,40]`" (CONVERSION_NOTES.md:246)
@@ -407,7 +709,9 @@ pos_bin = np.clip(np.floor(pos / 10.0).astype(np.int64), 0, 3)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 5-c. How is `output` *position_bin* aligned with the neural data?
+---
+
+## Q 9-c. How is `output` *position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none — alignment is implicit via shared `frames` index)"
@@ -424,7 +728,9 @@ pos_bin = np.clip(np.floor(pos / 10.0).astype(np.int64), 0, 3)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-a. What variables in the raw data is `output` *running_speed_bin* derived from?
+---
+
+## Q 10-a. What variables in the raw data is `output` *running_speed* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "`beh['ft_RunSpeed']` on retained frames -> `output[3]` = `running_speed_bin` ... Compute global quartile edges over all retained running frames in all sessions; assign bin 0–3" (CONVERSION_NOTES.md:247)
@@ -442,7 +748,9 @@ raw_speed = ft_speed[frames].astype(np.float32)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-b. What processing is involved in computing `output` *running_speed_bin*?
+---
+
+## Q 10-b. What processing is involved in computing `output` *running_speed*?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Compute global quartile edges over all retained running frames in all sessions; assign bin 0–3" (CONVERSION_NOTES.md:247)
@@ -464,7 +772,9 @@ speed_bin = np.searchsorted(thresholds, output_raw["running_speed_raw"], side="r
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-c. How is `output` *running_speed_bin* aligned with the neural data?
+---
+
+## Q 10-c. How is `output` *running_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none — alignment is implicit via shared `frames` index)"
@@ -482,7 +792,9 @@ speed_bin = np.searchsorted(thresholds, output_raw["running_speed_raw"], side="r
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+---
+
+## Q 11. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Sessions with no finite aHV reward `d′` values are now handled explicitly by assigning an infinite reward threshold, preventing accidental over-selection." (CONVERSION_NOTES.md:419)
@@ -516,7 +828,9 @@ if selected.sum() < MIN_NEURONS_FALLBACK:
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-a. What are the most time-consuming steps of the code?
+---
+
+## Q 12-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Full conversion estimate (size-weighted over 404.36 GB raw spike files) | ~2.10 s / GB | ~870 s (~14.5 min) plus modest validation overhead" (CONVERSION_NOTES.md:347)
@@ -551,7 +865,9 @@ print(f"[session] {candidate.session_id} ... time={elapsed:.1f}s")
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+---
+
+## Q 12-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"
@@ -585,7 +901,9 @@ for trial_idx, (s, g) in enumerate(zip(start, gray)):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-c. What processing does the code repeat multiple times?
+---
+
+## Q 12-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Full-mode metadata currently recomputes frame-interval medians by reloading behavior files." (CONVERSION_NOTES.md:298)
@@ -618,7 +936,9 @@ time_bin_ms = compute_time_bin_ms(full_catalog)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+---
+
+## Q 12-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"
@@ -653,7 +973,9 @@ def plot_processing(session, speed_edges):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-e. How is memory usage optimized?
+---
+
+## Q 12-e. How is memory usage optimized?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Session processing loads each large spike file only once, computes the neuron mask, then immediately drops the full matrix after subsetting." (CONVERSION_NOTES.md:302)
@@ -677,3 +999,5 @@ neural_session.append(neural_trial.astype(np.float32, copy=False))
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---

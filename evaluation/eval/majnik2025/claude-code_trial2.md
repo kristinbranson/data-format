@@ -399,7 +399,7 @@ me_interp = interpolate_motion_energy(me, n_frames, tstamps)
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Missing ME frames: handled via interpolation (affects 7 sessions); Partial bins at end of sessions: discarded (consistent with integer division)" (CONVERSION_NOTES.md:274-275)
@@ -427,7 +427,7 @@ n_trials = n_bins // bins_per_trial
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Processing time: ~1s per session" (CONVERSION_NOTES.md:179); "Sample: 2.5s for 2 sessions (~1.25s/session); Estimated full: ~50s for 41 sessions" (CONVERSION_NOTES.md:202-203)
@@ -448,7 +448,7 @@ F_subtracted = preprocess(
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Vectorized binning (reshape + mean)" (CONVERSION_NOTES.md:178)
@@ -477,7 +477,7 @@ for neural_t, me_t in zip(neural_trials, me_trials):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none specific)
@@ -504,7 +504,7 @@ dff_binned, me_binned, n_neurons, n_frames_raw = process_session(
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none specific)
@@ -517,6 +517,43 @@ me_interp = interpolate_motion_energy(me, n_frames, tstamps)
 ```
 
 **What this does:** `tstamps.npy` is loaded and passed into `interpolate_motion_energy`, but the function body never uses the `tstamps` argument (interpolation is purely length-based). Beyond that, no other clearly unused processing is present; the `me_disc_trials` accumulation is only used when plotting is enabled.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — the notes report only timing, e.g. CONVERSION_NOTES.md:180 "Processing time: ~1s per session"; no memory, dtype, or streaming discussion)
+
+**Code** (convert_data.py:68-88, with the dtype cast at :200):
+```python
+    # Neuropil subtraction
+    F_corr = F - NEUCOEFF * Fneu
+
+    F_corr_copy = F_corr.copy()
+    F_subtracted = preprocess(
+        F_corr_copy, BASELINE, WIN_BASELINE, SIG_BASELINE, FS,
+        prctile_baseline=PRCTILE_BASELINE, device=device
+    )
+    # F_subtracted = F_corr - baseline => baseline = F_corr - F_subtracted
+    baseline = F_corr - F_subtracted
+
+    # Avoid division by zero (clip baseline to small positive value)
+    baseline_safe = np.clip(baseline, 1e-6, None)
+
+    # dF/F = (F_corr - baseline) / baseline = F_subtracted / baseline
+    dff = F_subtracted / baseline_safe
+
+    return dff.astype(np.float32)
+
+# :200  neural_trials.append(dff_binned[:, start:end].astype(np.float32))
+```
+
+**What this does:** Sessions are loaded and processed one at a time (`process_session`, lines 146-179), and only 10-frame-binned results are accumulated into `session_data` (line 358); stored trials are cast to `float32` at line 200. Inside `compute_dff` five full `(n_neurons, n_frames)` intermediates are live at once (`F_corr`, `F_corr_copy`, `F_subtracted`, `baseline`, `baseline_safe`) with no in-place operations or `del`; the Suite2p `preprocess` call is optionally routed to CUDA (lines 65-66). No memory-mapping or chunked reads — `np.load` reads each array in full (lines 160-165) — and the motion-energy path works in `float64` (lines 102-120).
 
 **Rating:** _(to be filled by evaluator)_
 

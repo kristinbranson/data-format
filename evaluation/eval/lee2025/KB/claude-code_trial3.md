@@ -318,25 +318,6 @@ input_names = [f'partition_{i}' for i in range(9)]
 
 ---
 
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Static per trial (doesn't change within a trial). Shape: (9,) per trial — no time dimension since static." (lines 201-202)
-
-**Code** (convert_data.py:147):
-```python
-# Input: environment geometry, static per trial (9,)
-trial_input = env_mat.astype(np.float32)
-```
-
-**What this does:** Input has no time axis — it is a single (9,) static vector per trial. No frame-by-frame alignment with the neural data is needed.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
@@ -417,7 +398,7 @@ for trial_idx in range(n_trials):
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "~1666 frames discarded per session (last partial minute) — acceptable" (line 369); "Replace any remaining NaN with 0 (shouldn't happen for active cells, but safety)" (convert_data.py:123)
@@ -443,7 +424,7 @@ n_trials = n_frames_total // trial_duration_frames
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Load 1 animal | ~13s; Process 31 sessions | ~9s; Total per animal | ~22s; Estimated full (7 animals) | ~3-4 min" (lines 277-281); actual full conversion "215s (~3.6 min)" (line 327)
@@ -466,7 +447,7 @@ print(f"  Loaded in {t_load:.1f}s", flush=True)
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Direct numpy array slicing for trial splitting (no loops over frames). Vectorized position discretization." (lines 240, 242)
@@ -492,7 +473,7 @@ for trial_idx in range(n_trials):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md): (none directly addressing repeated processing)
 
@@ -510,7 +491,7 @@ trial_input = env_mat.astype(np.float32)
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md): (none)
 
@@ -528,5 +509,35 @@ def plot_processing(animal_name, raw_data, sessions_neural, sessions_input,
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:239-242 — "### Code efficiencies / - Direct numpy array slicing for trial splitting (no loops over frames) / - Memory freed after each animal with `del` / - Vectorized position discretization"
+>
+> CONVERSION_NOTES.md:383 — "Used --cpu flag (GPU insufficient memory)" (decoder training, not conversion)
+
+**Code** (convert_data.py:143-151, 178):
+```python
+            # Neural: (n_active, trial_duration_frames)
+            trial_neural = active_trace[:, start:end].astype(np.float32)
+
+            # Input: environment geometry, static per trial (9,)
+            trial_input = env_mat.astype(np.float32)
+
+            # Output: position bin, time-varying (1, trial_duration_frames)
+            # Must be integer-valued for indexing into output_values
+            trial_output = bin_ids[start:end].reshape(1, -1).astype(np.int64)
+...
+    del dat, d  # Free memory
+```
+
+**What this does:** One animal file is loaded per iteration and released with `del dat, d` once its sessions are converted; no `gc.collect()`, memmap, or chunked read. Neural trials are cast to `float32` and outputs to `int64`, and trials are sliced directly out of the session array rather than built by concatenation. Trials are stored at the native 30 Hz rate (1800 frames per trial, no temporal pooling), and all sessions accumulate in memory until the final pickle dump.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

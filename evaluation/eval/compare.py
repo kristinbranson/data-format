@@ -305,6 +305,32 @@ def _warn_number_fallback(dataset: str | None, qid: str,
           file=sys.stderr)
 
 
+def _same_variable(a: str, b: str) -> bool:
+    """Do two normalised variable names refer to the same thing?
+
+    Naming drifts between a reference and an answer — `photostim` /
+    `photostimulation`, `time_from_tone_onset` / `time_from_tone_onset_in_seconds`
+    — so one name containing the other counts as agreement. Unrelated names
+    (`time_from_go_cue` vs `lick_direction`) share no stem and do not.
+    """
+    if a == b:
+        return True
+    return a in b or b in a
+
+
+def _warn_number_refused(dataset: str | None, qid: str, ref_title: str,
+                         llm_title: str, ref_var: str, llm_var: str) -> None:
+    """Warn that a number pairing was refused because the variables disagree."""
+    key = (dataset, qid, ref_title, llm_title, "refused")
+    if key in _warned_number_fallbacks:
+        return
+    _warned_number_fallbacks.add(key)
+    clip = lambda s: s if len(s) <= WARN_TITLE_CHARS else s[:WARN_TITLE_CHARS - 1] + "…"
+    print(f"WARNING: {dataset or '?'} Q {qid} left unpaired — the number matches but the "
+          f"variables do not ({ref_var} vs {llm_var}): reference asks {clip(ref_title)!r}, "
+          f"answer is titled {clip(llm_title)!r}", file=sys.stderr)
+
+
 def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[str, str | None]:
     """Pair each reference question with the question that answers it.
 
@@ -348,10 +374,21 @@ def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[st
     for qid, matched in list(qmap.items()):
         if matched is not None or qid not in llm or qid in claimed:
             continue
+        h_title, l_title = human[qid].get("title", ""), llm[qid].get("title", "")
+        h_fp = fingerprint(qid, h_title, dataset=dataset)
+        l_fp = fingerprint(qid, l_title, dataset=dataset)
+        # Both sides name a variable, and they disagree about which one: the
+        # shared number is a coincidence, not a pairing. hasnain2024 asked
+        # "input time_from_go_cue aligned" as 3-c while its dossiers had
+        # "output lick_direction filtered" under the same number, and pairing
+        # them put six ratings against the wrong question.
+        if (h_fp[0] == "var" and l_fp[0] == "var"
+                and not _same_variable(h_fp[2], l_fp[2])):
+            _warn_number_refused(dataset, qid, h_title, l_title, h_fp[2], l_fp[2])
+            continue
         qmap[qid] = qid
         claimed.add(qid)
-        _warn_number_fallback(dataset, qid, human[qid].get("title", ""),
-                              llm[qid].get("title", ""))
+        _warn_number_fallback(dataset, qid, h_title, l_title)
     return qmap
 
 

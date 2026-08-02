@@ -220,7 +220,7 @@
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -233,7 +233,7 @@
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -246,7 +246,7 @@
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -261,7 +261,7 @@
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -274,7 +274,7 @@
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|

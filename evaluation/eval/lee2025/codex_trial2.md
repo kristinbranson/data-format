@@ -320,25 +320,6 @@ input_trials.append(geometry_open.copy())
 
 ---
 
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Same vector repeated conceptually for every time point, but stored as static per-trial input." (CONVERSION_NOTES.md:198).
-
-**Code** (convert_data.py:285-286):
-```python
-neural_trials.append(pooled_trace)
-input_trials.append(geometry_open.copy())
-```
-
-**What this does:** The geometry vector is appended once per trial with shape `(9,)`, treated as static context for the entire trial rather than time-varying.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -421,7 +402,7 @@ output_trials.append(pooled_bins)
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Drop cells with any NaNs within a session"; "Snap blocked-bin position samples to the nearest open partition before export" (CONVERSION_NOTES.md:209-210); "excluding trials with fewer than 10 pooled samples or no processed neural signal" (CONVERSION_NOTES.md:342).
@@ -452,7 +433,7 @@ if not np.any(pooled_trace):
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Animal joblib loads are relatively slow (roughly tens of seconds per animal)" (CONVERSION_NOTES.md:249); "first animal load ~62.46 s; ~1.67 s/session afterward" (CONVERSION_NOTES.md:292).
@@ -473,7 +454,7 @@ print(f"  loaded in {load_seconds:.2f}s")
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Moved heavy preprocessing to vectorized NumPy/Scipy operations." (CONVERSION_NOTES.md:251). No explicit residual loops flagged.
@@ -498,7 +479,7 @@ for trial_idx in range(n_full_trials):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Performs one transform inference per animal instead of per session." (CONVERSION_NOTES.md:252).
@@ -525,7 +506,7 @@ chunk_cols = snapped_cols_all[start:end][chunk_mask]
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > No explicit notes about unnecessary discarded processing.
@@ -546,6 +527,41 @@ def save_processing_plot(payload):
 ```
 
 **What this does:** Builds occupancy matrices and a full `SessionPlotPayload` (with copies of raw trial neural/position arrays) for every session even when `--show-processing` is off; only the first two are actually plotted. The plotting/visualization pathway is not consumed by the decoder.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:249 — "Animal joblib loads are relatively slow (roughly tens of seconds per animal), so the script processes animals sequentially and frees memory between animals."
+>
+> CONVERSION_NOTES.md:206 — "Exporting this processed representation is both closer to the reference decoder and substantially more memory-efficient."
+>
+> CONVERSION_NOTES.md:286 — "Session-level movement filtering + 3-frame pooling | Reduces exported trial length from 1800 raw frames to ~289 pooled valid samples on average in sample"
+
+**Code** (convert_data.py:227, 259-283, 540-541):
+```python
+    trace_finite = trace_session[finite_cells].astype(np.float32, copy=False)
+...
+        chunk_mask = velocity_mask[start:end]
+        if int(chunk_mask.sum()) < POOL_SIZE:
+            continue
+        chunk_trace = trace_active[:, start:end][:, chunk_mask]
+        ...
+        chunk_trace = gaussian_filter1d(chunk_trace, sigma=TRACE_SMOOTH_SIGMA, axis=1, mode="nearest")
+        pooled_trace = trial_average_pool(chunk_trace).astype(np.float32, copy=False)
+        ...
+        pooled_bins = (pooled_rows * GEOMETRY_SIZE + pooled_cols)[np.newaxis, :].astype(np.int64)
+...
+        del dat
+        gc.collect()
+```
+
+**What this does:** Animals are loaded one at a time and released with `del dat` followed by an explicit `gc.collect()` between animals; there is no memmap or chunked read. Casts use `astype(..., copy=False)` and stored arrays are `float32` neural / `int64` output. Two upstream filters shrink what is retained per trial: cells with NaNs or fewer than the activity threshold are dropped session-wide, and within each 1-minute chunk only movement-valid frames are kept and then average-pooled in groups of 3, so exported trials hold ~289 samples instead of 1800 frames.
 
 **Rating:** _(to be filled by evaluator)_
 

@@ -329,32 +329,6 @@ input_trials.append(open_mask.copy())
 
 ---
 
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md:223-224):
-> "Static input representation: store geometry as a 1D length-9 vector per trial. Rationale: the validator will automatically tile 1D inputs across time. Static 1D storage is compact and faithful because geometry is constant within each trial."
-
-**Code** (convert_data.py:204-212, 260):
-```python
-for start, end in trial_slices:
-    neural_raw = trace_valid[:, start:end]
-    ...
-    neural_binned = temporal_bin_mean(neural_raw, TEMPORAL_BIN_FRAMES).astype(np.float32, copy=False)
-    ...
-    neural_trials.append(neural_binned)
-    input_trials.append(open_mask.copy())
-...
-"input_names": [f"open_partition_{idx}" for idx in range(9)],
-```
-
-**What this does:** The same length-9 open-mask vector is appended once per trial alongside the neural trial. It is a static (non-time-varying) per-trial input that the downstream framework tiles across the trial's bins.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:77, 196):
@@ -437,7 +411,7 @@ for start, end in trial_slices:
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:67, 209, 366-368):
 > "Registration quality is encoded by `NaN` traces/maps for cells absent on a given day."
@@ -467,7 +441,7 @@ session_max_xy = np.nanmax(position_valid[:, :usable_frames], axis=1)
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md:256, 287-294):
 > "Full-data runtime will be dominated by decompressing the 7 large joblib animal files."
@@ -499,7 +473,7 @@ for animal in animals:
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md:258-261):
 > "Code speedups added: Per-animal streaming instead of loading all animals at once. Vectorized 3-frame temporal binning with reshape/mean. Static per-trial inputs stored as 1D arrays so the validator can tile them automatically."
@@ -527,7 +501,7 @@ for start, end in trial_slices:
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md:258-260):
 > "Per-animal streaming instead of loading all animals at once."
@@ -554,7 +528,7 @@ for start, end in trial_slices:
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md:368-369):
 > "Full-mode inefficiency: The first full conversion attempt did an unnecessary preload over all animal files before conversion. Resolution: removed the redundant `select_sessions()` full-data pass."
@@ -582,5 +556,39 @@ debug_info = {
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:242 — "Streams animal files one at a time from `data/` to limit memory use."
+>
+> CONVERSION_NOTES.md:258-260 — "Code speedups added: / - Per-animal streaming instead of loading all animals at once. / - Vectorized 3-frame temporal binning with reshape/mean."
+>
+> CONVERSION_NOTES.md:212 — "Using 100 ms bins matches this scale, reduces computation substantially for the validator, and preserves alignment across neural and behavior streams."
+
+**Code** (convert_data.py:191-213, 295-299):
+```python
+    trace_valid = trace_day[valid_cells].astype(np.float32, copy=False)
+    position_valid = position_day.astype(np.float32, copy=False)
+...
+    for start, end in trial_slices:
+        neural_raw = trace_valid[:, start:end]
+        position_raw = position_valid[:, start:end]
+        neural_binned = temporal_bin_mean(neural_raw, TEMPORAL_BIN_FRAMES).astype(np.float32, copy=False)
+        position_binned = temporal_bin_mean(position_raw, TEMPORAL_BIN_FRAMES)
+        output_binned = discretize_position_3x3(position_binned, session_max_xy).astype(np.int64, copy=False)
+...
+        animal_data = load_animal(data_dir, animal)
+        ndays = animal_data["trace"].shape[0]
+        for day_idx in range(ndays):
+```
+
+**What this does:** One animal joblib file is loaded per outer-loop iteration and rebound on the next iteration; there is no explicit `del`, `gc.collect()`, memmap, or chunked read (the module imports no `gc`). Arrays are cast to `float32`/`int64` with `copy=False` so no-op casts avoid duplicating buffers, and 3-frame temporal binning reduces each stored trial from 1800 frames to 600 bins. Per-trial neural slices are views into the session array until `temporal_bin_mean` materializes the binned copy; all converted sessions accumulate in the `converted` dict until the final pickle dump.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

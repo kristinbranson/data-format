@@ -310,26 +310,6 @@ input_trials.append(env_input)  # (9,) static
 
 ---
 
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md:167):
-> Static per trial (same for all timepoints).
-
-**Code** (convert_data.py:170-172):
-```python
-neural_trials.append(trial_neural)
-input_trials.append(env_input)  # (9,) static
-output_trials.append(trial_output)
-```
-
-**What this does:** The 9-element environment vector is appended once per trial (one (9,) array per trial), constant across the trial; no per-timepoint alignment.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:60, 168):
@@ -403,7 +383,7 @@ trial_output = pos_bins[start:end].reshape(1, -1).astype(np.int64)  # (1, 600)
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:176):
 > Cell filtering: Include only registered cells per session (not NaN).
@@ -434,7 +414,7 @@ if len(neural_trials) < 2:
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md:215-219):
 > Per animal (avg) ~37s; Full (7 animals) ~4.3 min. Output `converted_data.pkl`: 6353.3 MB.
@@ -457,7 +437,7 @@ with open(args.output, 'wb') as f:
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (none)
 
@@ -486,7 +466,7 @@ for a_idx, animal in enumerate(animals_to_process):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (none)
 
@@ -511,7 +491,7 @@ binned_trace = temporal_bin_trace(valid_trace)
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (none)
 
@@ -533,5 +513,37 @@ if show_processing and fig_axes is not None and n_trials > 0:
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none) — no memory/RAM/dtype-sizing discussion appears in CONVERSION_NOTES.md or README.md. The "Run Time Estimates" table (CONVERSION_NOTES.md:215-220) reports wall-clock only (~37 s/animal, ~4.3 min full). README.md:37-38 documents the stored dtypes: "Each trial: (n_neurons, 600) float32" and "(9,) float32".
+
+**Code** (convert_data.py:77-84, 146-168, 302):
+```python
+    # Gaussian smooth along time axis (axis=1 for cells x time)
+    smoothed = gaussian_filter1d(trace_2d.astype(np.float64), sigma=sigma, axis=1)
+    # Average pool: reshape and mean
+    n_cells, n_frames = smoothed.shape
+    n_bins = n_frames // bin_size
+    trimmed = smoothed[:, :n_bins * bin_size]
+    binned = trimmed.reshape(n_cells, n_bins, bin_size).mean(axis=2)
+    return binned.astype(np.float32)
+...
+    binned_trace = temporal_bin_trace(valid_trace)  # (n_valid, n_total_bins)
+...
+        trial_neural = binned_trace[:, start:end]  # (n_valid, 600)
+        trial_output = pos_bins[start:end].reshape(1, -1).astype(np.int64)  # (1, 600)
+...
+        del dat
+```
+
+**What this does:** Animals are processed sequentially with `del dat` at the end of each animal's loop iteration; no `gc.collect()`, memmap, or chunked reading. The 3-frame temporal pooling reduces each stored trial from 1800 frames to 600 bins before it is appended, and the pooled result is cast down to `float32` (the smoothing intermediate is computed in `float64`); outputs are `int64`, static inputs are shared `(9,)` arrays reused across trials of a session. All converted sessions accumulate in memory until the final pickle write.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

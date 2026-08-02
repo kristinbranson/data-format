@@ -558,34 +558,7 @@ def compute_distance_to_reward_zone(position, rz_start, rz_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "distance_to_reward_zone | 7 bins, range [0,6], well-distributed" (CONVERSION_NOTES.md:196)
-
-**Code** (convert_data.py:151-169):
-```python
-def discretize_distance(distance):
-    bins = np.zeros(len(distance), dtype=np.int64)
-    bins[distance < -50] = 0
-    bins[(distance >= -50) & (distance < -10)] = 1
-    bins[(distance >= -10) & (distance < 0)] = 2
-    bins[distance == 0] = 3
-    bins[(distance > 0) & (distance <= 10)] = 4
-    bins[(distance > 10) & (distance <= 50)] = 5
-    bins[distance > 50] = 6
-    return bins
-```
-
-**What this does:** Manual masking into 7 bins matching the spec edges (-inf,-50,-10,0, exact 0, 10, 50, inf). The "in zone" bin is `distance == 0`.
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none explicit)
@@ -649,28 +622,7 @@ pos_bins = discretize_position(trial_pos)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "absolute_position | 5 bins, roughly equal (~15-23% each)" (CONVERSION_NOTES.md:197); "0-90cm', '90-180cm', ..." (convert_data.py:658)
-
-**Code** (convert_data.py:172-175):
-```python
-def discretize_position(position):
-    """Discretize absolute position into 5 equal bins (0-90, 90-180, 180-270, 270-360, 360-450)."""
-    bins = np.clip(np.floor(position / 90.0).astype(np.int64), 0, 4)
-    return bins
-```
-
-**What this does:** Floor-divides position by 90 cm and clips to [0,4], yielding 5 equal-width bins covering 0–450 cm.
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none explicit)
@@ -1013,5 +965,54 @@ speed_bins.reshape(1, -1),
 **Rating:** ok
 
 **Note:** _(no note)_
+
+---
+
+## Q 13-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — CONVERSION_NOTES.md contains no mention of memory, RAM, dtype sizing, chunking, streaming or memory-mapping; there is no README.md in the snapshot)
+
+**Code** (convert_data.py:219-240):
+```python
+        # Load and concatenate data from all planes
+        deconv_list = []
+        flu_list = []
+        neu_list = []
+        plane_cell_offset = 0
+        plane_offsets = {}
+        for plane in planes:
+            plane_num = int(plane.replace('plane', ''))
+            plane_mask = planeIdx == plane_num
+            plane_offsets[plane_num] = np.where(plane_mask)[0]
+
+            d = f[f'processing/ophys/Deconvolved/{plane}/data'][:]  # (n_timepoints, n_rois_plane)
+            fl = f[f'processing/ophys/Fluorescence/{plane}/data'][:]
+            ne = f[f'processing/ophys/Neuropil/{plane}/data'][:]
+            deconv_list.append(d)
+            flu_list.append(fl)
+            neu_list.append(ne)
+
+        # Concatenate across planes: (n_timepoints, n_rois_total_in_data)
+        deconv = np.concatenate(deconv_list, axis=1)
+        fluorescence = np.concatenate(flu_list, axis=1)
+        neuropil_data = np.concatenate(neu_list, axis=1)
+```
+
+Cell filtering and the float32 cast happen after the full matrix is materialized (convert_data.py:316-317), and trial arrays carry explicit dtypes (convert_data.py:465-467):
+```python
+    neural_all = deconv[:, final_cell_mask].T  # (n_neurons, n_timepoints)
+    neural_all = neural_all.astype(np.float32)
+    ...
+        neural_trials.append(trial_neural.astype(np.float32))
+        input_trials.append(trial_input.astype(np.float32))
+        output_trials.append(trial_output.astype(np.int64))
+```
+
+**What this does:** Each session's Deconvolved, Fluorescence and Neuropil matrices are read in full per plane with `[:]` and concatenated, so the whole session (all ROIs, including ones later discarded) is resident before filtering; there is no chunked or memory-mapped read, no `del`/`gc.collect()`, and no explicit release of `fluorescence`/`neuropil_data` after the interneuron check. Dtypes are set explicitly at storage time — float32 for neural and inputs, int64 for outputs — and per-trial arrays use `np.full`/preallocated stacks rather than repeated concatenation.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

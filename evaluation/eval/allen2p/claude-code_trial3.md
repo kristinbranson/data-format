@@ -306,184 +306,7 @@ for trial_idx in valid_indices:
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:202 "`running/speed/data` → output[2]: running_speed"
-
-**Code** (convert_data.py:194-195):
-```python
-running_speed = f['processing']['running']['speed']['data'][()]
-running_ts = f['processing']['running']['speed']['timestamps'][()]
-```
-
-**What this does:** Pulled directly from the NWB `processing/running/speed/data` array (cm/s) with corresponding `timestamps`.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 3-b. What processing is involved in computing `output` *Running speed*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:202 "Interpolate to 30 Hz, discretize into 5 percentile bins, time-varying"; CONVERSION_NOTES.md:238 "3-pass approach: ... (2) compute global percentile bins for running/pupil"
-
-**Code** (convert_data.py:67-97, 324-325, 540-547, 612):
-```python
-def compute_percentile_bins(values, n_bins=5):
-    valid = values[~np.isnan(values)]
-    ...
-    percentiles = np.linspace(0, 100, n_bins + 1)
-    edges = np.percentile(valid, percentiles)
-    for i in range(1, len(edges)):
-        if edges[i] <= edges[i-1]:
-            edges[i] = edges[i-1] + 1e-10
-    return edges
-
-def digitize_to_bins(values, bin_edges):
-    n_bins = len(bin_edges) - 1
-    binned = np.digitize(values, bin_edges[1:-1])
-    binned = np.clip(binned, 0, n_bins - 1)
-    binned[np.isnan(values)] = 0
-    return binned.astype(np.int64)
-...
-running_resampled = np.interp(regular_ts, raw_data['running_ts'], raw_data['running_speed'])
-...
-all_running_cat = np.concatenate(all_running_values) if all_running_values else np.array([0.0])
-running_bin_edges = compute_percentile_bins(all_running_cat, n_bins=5)
-...
-running_binned = digitize_to_bins(trial_data_out['running_speed'], running_bin_edges)
-```
-
-**What this does:** Running speed is linearly interpolated to the 30 Hz grid. In an earlier pass, all-session running values are concatenated and used to compute 5 global percentile bin edges. Per-trial values are then digitized into those bin indices (NaNs map to bin 0).
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 3-c. How is `output` *Running speed* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> (none)
-
-**Code** (convert_data.py:325, 354-378):
-```python
-running_resampled = np.interp(regular_ts, raw_data['running_ts'], raw_data['running_speed'])
-...
-trial_mask = (regular_ts >= t_trial_start) & (regular_ts < t_trial_stop)
-trial_time_indices = np.where(trial_mask)[0]
-...
-neural_trial = events_resampled[trial_time_indices, :].T.astype(np.float32)
-...
-running_trial = running_resampled[trial_time_indices]
-```
-
-**What this does:** Running speed is interpolated onto the same 30 Hz `regular_ts` grid used for neural events, and the same `trial_time_indices` slice is then applied to both arrays, so they share frame indices within a trial.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:203 "`EyeTracking/pupil_tracking/area` → output[3]: pupil_diameter ... Use pupil area as proxy for diameter"
-
-**Code** (convert_data.py:198-208):
-```python
-pupil_area = None
-pupil_ts = None
-likely_blink = None
-try:
-    pupil_tracking = f['acquisition']['EyeTracking']['pupil_tracking']
-    pupil_area = pupil_tracking['area'][()]
-    pupil_ts = pupil_tracking['timestamps'][()]
-    likely_blink = f['acquisition']['EyeTracking']['likely_blink']['data'][()].astype(bool)
-except (KeyError, Exception):
-    print(f"  WARNING: No pupil tracking data in {experiment_id}")
-```
-
-**What this does:** Reads `acquisition/EyeTracking/pupil_tracking/area` (used as a proxy for diameter) along with its timestamps and the `likely_blink` boolean mask. If pupil tracking is missing, the experiment continues without pupil data.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:215 "Pupil NaN handling: During blinks (likely_blink=True or NaN), linearly interpolate. Compute percentile bins from non-blink data."; CONVERSION_NOTES.md:241 "Pupil blinks (likely_blink=True) set to NaN and interpolated before resampling"
-
-**Code** (convert_data.py:100-110, 327-342, 528-544, 615):
-```python
-def interpolate_nans(arr):
-    nans = np.isnan(arr)
-    if not nans.any():
-        return arr.copy()
-    if nans.all():
-        return np.zeros_like(arr)
-    result = arr.copy()
-    x = np.arange(len(arr))
-    result[nans] = np.interp(x[nans], x[~nans], arr[~nans])
-    return result
-...
-pupil_area = raw_data['pupil_area'].copy().astype(float)
-if likely_blink is not None:
-    pupil_area[likely_blink] = np.nan
-pupil_area = interpolate_nans(pupil_area)
-pupil_resampled = np.interp(regular_ts, pupil_ts, pupil_area)
-...
-pupil_area[blink] = np.nan
-valid_pupil = pupil_area[~np.isnan(pupil_area)]
-...
-pupil_bin_edges = compute_percentile_bins(all_pupil_cat, n_bins=5)
-...
-pupil_binned = digitize_to_bins(trial_data_out['pupil_area'], pupil_bin_edges)
-```
-
-**What this does:** Blink frames are set to NaN, NaNs are linearly interpolated (over sample-index, not time), then the cleaned trace is interpolated to the 30 Hz grid. Bin edges are computed globally from non-blink pupil values across all sessions, and per-trial values are digitized into 5 percentile bins.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> (none)
-
-**Code** (convert_data.py:342, 354-385):
-```python
-pupil_resampled = np.interp(regular_ts, pupil_ts, pupil_area)
-...
-trial_mask = (regular_ts >= t_trial_start) & (regular_ts < t_trial_stop)
-trial_time_indices = np.where(trial_mask)[0]
-...
-if pupil_resampled is not None:
-    pupil_trial = pupil_resampled[trial_time_indices]
-else:
-    pupil_trial = np.full(n_tp, np.nan)
-```
-
-**What this does:** Pupil area is interpolated onto the same `regular_ts` 30 Hz grid as the neural data, then sliced with the same `trial_time_indices`. If pupil data is missing for an experiment, an all-NaN per-trial vector is used, which then maps to bin 0 during digitization.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 5-a. What variables in the raw data is `output` *Image name* derived from?
+## Q 3-a. What variables in the raw data is `output` *Image identity* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:201 "`stimulus_presentations.image_name` → output[0]: image_identity"; CONVERSION_NOTES.md:213 "Image identity during gray screen: Use the identity of the image that was just shown (last presented image)."; CONVERSION_NOTES.md:214 "Image identity for omitted flashes: Continue with previous image identity."
@@ -524,7 +347,7 @@ def get_image_at_timepoints(timepoints, stim_data, all_image_names):
 
 ---
 
-## Q 5-b. What processing is involved in computing `output` *Image name*?
+## Q 3-b. What processing is involved in computing `output` *Image identity*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:238 "(1) collect global image names"; CONVERSION_NOTES.md:331 "Image identity classes | 16 (8 per image set, 2 image sets)"
@@ -566,7 +389,7 @@ img_id_global = np.array([local_to_global.get(v, 0) for v in trial_data_out['ima
 
 ---
 
-## Q 5-c. How is `output` *Image name* aligned with the neural data?
+## Q 3-c. How is `output` *Image identity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -587,7 +410,7 @@ image_idx = get_image_at_timepoints(trial_ts, raw_data['stim'], all_stim_images)
 
 ---
 
-## Q 6-a. What variables in the raw data is `output` *Image change* derived from?
+## Q 4-a. What variables in the raw data is `output` *Image change* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:201 "`trials.is_change` + stimulus timing → output[1]: image_change ... Binary 1 at change timepoint, 0 otherwise, time-varying ... 1 for one 750ms window at change"; CONVERSION_NOTES.md:243 "Image change signal: 1 during 750ms window starting at change onset"
@@ -616,7 +439,7 @@ def get_image_change_at_timepoints(timepoints, stim_data):
 
 ---
 
-## Q 6-b. What processing is involved in computing `output` *Image change*?
+## Q 4-b. What processing is involved in computing `output` *Image change*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -636,7 +459,7 @@ img_change = trial_data_out['image_change'].astype(np.int64)
 
 ---
 
-## Q 6-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-c. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -651,6 +474,183 @@ change_signal = get_image_change_at_timepoints(trial_ts, raw_data['stim'])
 ```
 
 **What this does:** Computed at the same per-trial 30 Hz timestamps used for neural data, so frame indices match exactly within the trial slice.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *Running speed* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:202 "`running/speed/data` → output[2]: running_speed"
+
+**Code** (convert_data.py:194-195):
+```python
+running_speed = f['processing']['running']['speed']['data'][()]
+running_ts = f['processing']['running']['speed']['timestamps'][()]
+```
+
+**What this does:** Pulled directly from the NWB `processing/running/speed/data` array (cm/s) with corresponding `timestamps`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-b. What processing is involved in computing `output` *Running speed*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:202 "Interpolate to 30 Hz, discretize into 5 percentile bins, time-varying"; CONVERSION_NOTES.md:238 "3-pass approach: ... (2) compute global percentile bins for running/pupil"
+
+**Code** (convert_data.py:67-97, 324-325, 540-547, 612):
+```python
+def compute_percentile_bins(values, n_bins=5):
+    valid = values[~np.isnan(values)]
+    ...
+    percentiles = np.linspace(0, 100, n_bins + 1)
+    edges = np.percentile(valid, percentiles)
+    for i in range(1, len(edges)):
+        if edges[i] <= edges[i-1]:
+            edges[i] = edges[i-1] + 1e-10
+    return edges
+
+def digitize_to_bins(values, bin_edges):
+    n_bins = len(bin_edges) - 1
+    binned = np.digitize(values, bin_edges[1:-1])
+    binned = np.clip(binned, 0, n_bins - 1)
+    binned[np.isnan(values)] = 0
+    return binned.astype(np.int64)
+...
+running_resampled = np.interp(regular_ts, raw_data['running_ts'], raw_data['running_speed'])
+...
+all_running_cat = np.concatenate(all_running_values) if all_running_values else np.array([0.0])
+running_bin_edges = compute_percentile_bins(all_running_cat, n_bins=5)
+...
+running_binned = digitize_to_bins(trial_data_out['running_speed'], running_bin_edges)
+```
+
+**What this does:** Running speed is linearly interpolated to the 30 Hz grid. In an earlier pass, all-session running values are concatenated and used to compute 5 global percentile bin edges. Per-trial values are then digitized into those bin indices (NaNs map to bin 0).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none)
+
+**Code** (convert_data.py:325, 354-378):
+```python
+running_resampled = np.interp(regular_ts, raw_data['running_ts'], raw_data['running_speed'])
+...
+trial_mask = (regular_ts >= t_trial_start) & (regular_ts < t_trial_stop)
+trial_time_indices = np.where(trial_mask)[0]
+...
+neural_trial = events_resampled[trial_time_indices, :].T.astype(np.float32)
+...
+running_trial = running_resampled[trial_time_indices]
+```
+
+**What this does:** Running speed is interpolated onto the same 30 Hz `regular_ts` grid used for neural events, and the same `trial_time_indices` slice is then applied to both arrays, so they share frame indices within a trial.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:203 "`EyeTracking/pupil_tracking/area` → output[3]: pupil_diameter ... Use pupil area as proxy for diameter"
+
+**Code** (convert_data.py:198-208):
+```python
+pupil_area = None
+pupil_ts = None
+likely_blink = None
+try:
+    pupil_tracking = f['acquisition']['EyeTracking']['pupil_tracking']
+    pupil_area = pupil_tracking['area'][()]
+    pupil_ts = pupil_tracking['timestamps'][()]
+    likely_blink = f['acquisition']['EyeTracking']['likely_blink']['data'][()].astype(bool)
+except (KeyError, Exception):
+    print(f"  WARNING: No pupil tracking data in {experiment_id}")
+```
+
+**What this does:** Reads `acquisition/EyeTracking/pupil_tracking/area` (used as a proxy for diameter) along with its timestamps and the `likely_blink` boolean mask. If pupil tracking is missing, the experiment continues without pupil data.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-b. What processing is involved in computing `output` *Pupil diameter*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:215 "Pupil NaN handling: During blinks (likely_blink=True or NaN), linearly interpolate. Compute percentile bins from non-blink data."; CONVERSION_NOTES.md:241 "Pupil blinks (likely_blink=True) set to NaN and interpolated before resampling"
+
+**Code** (convert_data.py:100-110, 327-342, 528-544, 615):
+```python
+def interpolate_nans(arr):
+    nans = np.isnan(arr)
+    if not nans.any():
+        return arr.copy()
+    if nans.all():
+        return np.zeros_like(arr)
+    result = arr.copy()
+    x = np.arange(len(arr))
+    result[nans] = np.interp(x[nans], x[~nans], arr[~nans])
+    return result
+...
+pupil_area = raw_data['pupil_area'].copy().astype(float)
+if likely_blink is not None:
+    pupil_area[likely_blink] = np.nan
+pupil_area = interpolate_nans(pupil_area)
+pupil_resampled = np.interp(regular_ts, pupil_ts, pupil_area)
+...
+pupil_area[blink] = np.nan
+valid_pupil = pupil_area[~np.isnan(pupil_area)]
+...
+pupil_bin_edges = compute_percentile_bins(all_pupil_cat, n_bins=5)
+...
+pupil_binned = digitize_to_bins(trial_data_out['pupil_area'], pupil_bin_edges)
+```
+
+**What this does:** Blink frames are set to NaN, NaNs are linearly interpolated (over sample-index, not time), then the cleaned trace is interpolated to the 30 Hz grid. Bin edges are computed globally from non-blink pupil values across all sessions, and per-trial values are digitized into 5 percentile bins.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none)
+
+**Code** (convert_data.py:342, 354-385):
+```python
+pupil_resampled = np.interp(regular_ts, pupil_ts, pupil_area)
+...
+trial_mask = (regular_ts >= t_trial_start) & (regular_ts < t_trial_stop)
+trial_time_indices = np.where(trial_mask)[0]
+...
+if pupil_resampled is not None:
+    pupil_trial = pupil_resampled[trial_time_indices]
+else:
+    pupil_trial = np.full(n_tp, np.nan)
+```
+
+**What this does:** Pupil area is interpolated onto the same `regular_ts` 30 Hz grid as the neural data, then sliced with the same `trial_time_indices`. If pupil data is missing for an experiment, an all-NaN per-trial vector is used, which then maps to bin 0 during digitization.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -711,26 +711,6 @@ output_combined = np.concatenate([output_tv, outcome_broadcast], axis=0)
 ```
 
 **What this does:** Trial outcome integer (0–3) is broadcast to a constant value across all trial timepoints, producing a `(1, n_tp)` row that is concatenated with the time-varying outputs. The label vocabulary is stored in `output_values` as `['hit', 'miss', 'false_alarm', 'correct_reject']`.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> (none)
-
-**Code** (convert_data.py:625-630):
-```python
-output_tv = np.stack([img_id_global, img_change, running_binned, pupil_binned], axis=0)  # (4, n_tp)
-outcome_broadcast = np.full((1, n_tp), trial_data_out['trial_outcome'], dtype=np.int64)
-output_combined = np.concatenate([output_tv, outcome_broadcast], axis=0)  # (5, n_tp)
-```
-
-**What this does:** Trial outcome is a per-trial constant tiled across all `n_tp` timepoints of the trial, so its shape and frame indexing match the neural data; the actual outcome value does not change within a trial.
 
 **Rating:** _(to be filled by evaluator)_
 

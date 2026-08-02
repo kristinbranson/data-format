@@ -285,181 +285,7 @@ for trial_idx in valid_trial_idx:
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:72 — "Running: `processing/running/speed` (270K samples @ 60 Hz)"
-> CONVERSION_NOTES.md:194 — "`running_speed` | `output[2]`: running_speed_bin"
-
-**Code** (convert_data.py:85-86, 341-343):
-```python
-data['running_timestamps'] = f['processing']['running']['speed']['timestamps'][:]
-data['running_speed'] = f['processing']['running']['speed']['data'][:]
-...
-running_at_ophys = interpolate_to_ophys(
-    nwb_data['running_speed'], nwb_data['running_timestamps'], ophys_ts
-)
-```
-
-**What this does:** Running speed is read directly from `processing/running/speed/data` (with companion timestamps) in each NWB file.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 3-b. What processing is involved in computing `output` *Running speed*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:209 — "Percentile bins for running/pupil: Compute percentiles across the entire session (all valid timepoints), then apply per-trial. Use 5 equal bins (0-20th, 20-40th, ..., 80-100th percentile)."
-
-**Code** (convert_data.py:247-254, 281-301, 341-343, 365, 398-399):
-```python
-def interpolate_to_ophys(signal, signal_ts, ophys_ts_trial):
-    ...
-    f = interpolate.interp1d(signal_ts, signal, kind='linear',
-                             bounds_error=False, fill_value=np.nan)
-    return f(ophys_ts_trial)
-
-def compute_session_percentile_edges(values, n_bins=5):
-    ...
-    percentiles = np.linspace(0, 100, n_bins + 1)
-    edges = np.percentile(valid, percentiles)
-    edges[0] = -np.inf
-    edges[-1] = np.inf
-    return edges
-
-def apply_percentile_bins(values, edges, n_bins=5):
-    ...
-    result[valid] = np.clip(np.digitize(values[valid], edges[1:-1]), 0, n_bins - 1)
-    result[~valid] = 0
-    return result
-
-running_at_ophys = interpolate_to_ophys(
-    nwb_data['running_speed'], nwb_data['running_timestamps'], ophys_ts
-)
-running_edges = compute_session_percentile_edges(running_at_ophys, n_bins=5)
-...
-running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
-```
-
-**What this does:** Running speed is linearly interpolated from its native (~60 Hz) timebase to the ophys timestamps, then discretized into 5 percentile bins. Bin edges are computed per session (not globally across sessions). NaNs map to bin 0.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 3-c. How is `output` *Running speed* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:208 — "Running speed: Interpolate from 60 Hz to ophys timestamps using linear interpolation."
-
-**Code** (convert_data.py:341-343, 379, 398-399):
-```python
-running_at_ophys = interpolate_to_ophys(
-    nwb_data['running_speed'], nwb_data['running_timestamps'], ophys_ts
-)
-...
-frame_mask = (ophys_ts >= t_start) & (ophys_ts < t_stop)
-...
-running_trial = running_at_ophys[frame_mask]
-running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
-```
-
-**What this does:** Running speed is interpolated session-wide onto the ophys timestamps once, then sliced with the same `frame_mask` used for the neural data, guaranteeing per-frame alignment with the neural trial window.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:73-74 — "Eye tracking: `acquisition/EyeTracking/pupil_tracking` (area, height, width @ 30 Hz). Blinks: `acquisition/EyeTracking/likely_blink`"
-> CONVERSION_NOTES.md:207 — "Pupil diameter: Compute from pupil area as `2*sqrt(area/pi)`."
-
-**Code** (convert_data.py:88-99):
-```python
-if 'EyeTracking' in f.get('acquisition', {}):
-    et = f['acquisition']['EyeTracking']
-    if 'pupil_tracking' in et:
-        pt = et['pupil_tracking']
-        data['pupil_area'] = pt['area']['data'][:] if 'data' in pt['area'] else pt['area'][:]
-        data['pupil_timestamps'] = pt['timestamps'][:]
-        data['likely_blink'] = et['likely_blink']['data'][:]
-    else:
-        data['pupil_area'] = None
-else:
-    data['pupil_area'] = None
-```
-
-**What this does:** Pupil diameter is derived from the pupil `area` field of `acquisition/EyeTracking/pupil_tracking` (with timestamps), plus `likely_blink` flags. There is no use of `pupil_width` directly.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:207 — "Compute diameter from area as `2*sqrt(area/pi)`. Set blink frames to NaN, then interpolate. Discretize non-NaN values."
-
-**Code** (convert_data.py:346-366, 402-403):
-```python
-if nwb_data['pupil_area'] is not None:
-    pupil_area = nwb_data['pupil_area'].copy()
-    likely_blink = nwb_data['likely_blink']
-    pupil_ts = nwb_data['pupil_timestamps']
-    pupil_area[likely_blink] = np.nan
-    pupil_diameter = np.full_like(pupil_area, np.nan)
-    valid_pupil = ~np.isnan(pupil_area) & (pupil_area > 0)
-    pupil_diameter[valid_pupil] = 2.0 * np.sqrt(pupil_area[valid_pupil] / np.pi)
-    pupil_at_ophys = interpolate_to_ophys(pupil_diameter, pupil_ts, ophys_ts)
-else:
-    pupil_at_ophys = np.full(len(ophys_ts), np.nan)
-...
-pupil_edges = compute_session_percentile_edges(pupil_at_ophys, n_bins=5)
-...
-pupil_binned = apply_percentile_bins(pupil_trial, pupil_edges, n_bins=5)
-```
-
-**What this does:** Blink frames are masked to NaN in the pupil area trace. Diameter is computed as `2*sqrt(area/pi)` for valid samples. The diameter is linearly interpolated onto the ophys timestamps and discretized into 5 per-session percentile bins, with NaNs mapped to bin 0.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> (none — same approach as running speed; not separately documented)
-
-**Code** (convert_data.py:360, 402-403):
-```python
-pupil_at_ophys = interpolate_to_ophys(pupil_diameter, pupil_ts, ophys_ts)
-...
-pupil_trial = pupil_at_ophys[frame_mask]
-pupil_binned = apply_percentile_bins(pupil_trial, pupil_edges, n_bins=5)
-```
-
-**What this does:** Pupil diameter is interpolated session-wide to the ophys timestamps, then sliced by the same `frame_mask` used for the neural data, giving per-frame alignment within each trial window.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 5-a. What variables in the raw data is `output` *Image name* derived from?
+## Q 3-a. What variables in the raw data is `output` *Image identity* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:76 — "Stimulus: `intervals/Natural_Images_*_presentations` (image_name, is_change, omitted, start_time, stop_time)"
@@ -506,7 +332,7 @@ def build_image_identity_trace(ophys_ts, stim_data, trial_start, trial_stop, ima
 
 ---
 
-## Q 5-b. What processing is involved in computing `output` *Image name*?
+## Q 3-b. What processing is involved in computing `output` *Image identity*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:192 — "Map to categorical integer, time-varying at ophys rate. 8 images + gray screen."
@@ -547,7 +373,7 @@ trace[frame_mask] = img_idx
 
 ---
 
-## Q 5-c. How is `output` *Image name* aligned with the neural data?
+## Q 3-c. How is `output` *Image identity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none specifically; alignment via shared ophys timestamps is implied)
@@ -573,7 +399,7 @@ img_trace, _ = build_image_identity_trace(
 
 ---
 
-## Q 6-a. What variables in the raw data is `output` *Image change* derived from?
+## Q 4-a. What variables in the raw data is `output` *Image change* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:193 — "`is_change` from stimulus presentations | `output[1]`: image_change | Binary, 1 at change onset frame, 0 otherwise"
@@ -609,7 +435,7 @@ def build_image_change_trace(ophys_ts, stim_data, trial_start, trial_stop):
 
 ---
 
-## Q 6-b. What processing is involved in computing `output` *Image change*?
+## Q 4-b. What processing is involved in computing `output` *Image change*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:193 — "Binary, 1 at change onset frame, 0 otherwise"
@@ -639,7 +465,7 @@ change_trace = build_image_change_trace(ophys_ts, stim_data, t_start, t_stop)
 
 ---
 
-## Q 6-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-c. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none — same alignment scheme as image identity)
@@ -655,6 +481,180 @@ if frame_idx < n_frames:
 ```
 
 **What this does:** The change trace is built on the same trial-window ophys frames used for the neural slice; `np.searchsorted(trial_ts, s_start)` places each change at the matching ophys frame index, so it shares per-frame alignment with the neural data.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *Running speed* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:72 — "Running: `processing/running/speed` (270K samples @ 60 Hz)"
+> CONVERSION_NOTES.md:194 — "`running_speed` | `output[2]`: running_speed_bin"
+
+**Code** (convert_data.py:85-86, 341-343):
+```python
+data['running_timestamps'] = f['processing']['running']['speed']['timestamps'][:]
+data['running_speed'] = f['processing']['running']['speed']['data'][:]
+...
+running_at_ophys = interpolate_to_ophys(
+    nwb_data['running_speed'], nwb_data['running_timestamps'], ophys_ts
+)
+```
+
+**What this does:** Running speed is read directly from `processing/running/speed/data` (with companion timestamps) in each NWB file.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-b. What processing is involved in computing `output` *Running speed*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:209 — "Percentile bins for running/pupil: Compute percentiles across the entire session (all valid timepoints), then apply per-trial. Use 5 equal bins (0-20th, 20-40th, ..., 80-100th percentile)."
+
+**Code** (convert_data.py:247-254, 281-301, 341-343, 365, 398-399):
+```python
+def interpolate_to_ophys(signal, signal_ts, ophys_ts_trial):
+    ...
+    f = interpolate.interp1d(signal_ts, signal, kind='linear',
+                             bounds_error=False, fill_value=np.nan)
+    return f(ophys_ts_trial)
+
+def compute_session_percentile_edges(values, n_bins=5):
+    ...
+    percentiles = np.linspace(0, 100, n_bins + 1)
+    edges = np.percentile(valid, percentiles)
+    edges[0] = -np.inf
+    edges[-1] = np.inf
+    return edges
+
+def apply_percentile_bins(values, edges, n_bins=5):
+    ...
+    result[valid] = np.clip(np.digitize(values[valid], edges[1:-1]), 0, n_bins - 1)
+    result[~valid] = 0
+    return result
+
+running_at_ophys = interpolate_to_ophys(
+    nwb_data['running_speed'], nwb_data['running_timestamps'], ophys_ts
+)
+running_edges = compute_session_percentile_edges(running_at_ophys, n_bins=5)
+...
+running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
+```
+
+**What this does:** Running speed is linearly interpolated from its native (~60 Hz) timebase to the ophys timestamps, then discretized into 5 percentile bins. Bin edges are computed per session (not globally across sessions). NaNs map to bin 0.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:208 — "Running speed: Interpolate from 60 Hz to ophys timestamps using linear interpolation."
+
+**Code** (convert_data.py:341-343, 379, 398-399):
+```python
+running_at_ophys = interpolate_to_ophys(
+    nwb_data['running_speed'], nwb_data['running_timestamps'], ophys_ts
+)
+...
+frame_mask = (ophys_ts >= t_start) & (ophys_ts < t_stop)
+...
+running_trial = running_at_ophys[frame_mask]
+running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
+```
+
+**What this does:** Running speed is interpolated session-wide onto the ophys timestamps once, then sliced with the same `frame_mask` used for the neural data, guaranteeing per-frame alignment with the neural trial window.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:73-74 — "Eye tracking: `acquisition/EyeTracking/pupil_tracking` (area, height, width @ 30 Hz). Blinks: `acquisition/EyeTracking/likely_blink`"
+> CONVERSION_NOTES.md:207 — "Pupil diameter: Compute from pupil area as `2*sqrt(area/pi)`."
+
+**Code** (convert_data.py:88-99):
+```python
+if 'EyeTracking' in f.get('acquisition', {}):
+    et = f['acquisition']['EyeTracking']
+    if 'pupil_tracking' in et:
+        pt = et['pupil_tracking']
+        data['pupil_area'] = pt['area']['data'][:] if 'data' in pt['area'] else pt['area'][:]
+        data['pupil_timestamps'] = pt['timestamps'][:]
+        data['likely_blink'] = et['likely_blink']['data'][:]
+    else:
+        data['pupil_area'] = None
+else:
+    data['pupil_area'] = None
+```
+
+**What this does:** Pupil diameter is derived from the pupil `area` field of `acquisition/EyeTracking/pupil_tracking` (with timestamps), plus `likely_blink` flags. There is no use of `pupil_width` directly.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-b. What processing is involved in computing `output` *Pupil diameter*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:207 — "Compute diameter from area as `2*sqrt(area/pi)`. Set blink frames to NaN, then interpolate. Discretize non-NaN values."
+
+**Code** (convert_data.py:346-366, 402-403):
+```python
+if nwb_data['pupil_area'] is not None:
+    pupil_area = nwb_data['pupil_area'].copy()
+    likely_blink = nwb_data['likely_blink']
+    pupil_ts = nwb_data['pupil_timestamps']
+    pupil_area[likely_blink] = np.nan
+    pupil_diameter = np.full_like(pupil_area, np.nan)
+    valid_pupil = ~np.isnan(pupil_area) & (pupil_area > 0)
+    pupil_diameter[valid_pupil] = 2.0 * np.sqrt(pupil_area[valid_pupil] / np.pi)
+    pupil_at_ophys = interpolate_to_ophys(pupil_diameter, pupil_ts, ophys_ts)
+else:
+    pupil_at_ophys = np.full(len(ophys_ts), np.nan)
+...
+pupil_edges = compute_session_percentile_edges(pupil_at_ophys, n_bins=5)
+...
+pupil_binned = apply_percentile_bins(pupil_trial, pupil_edges, n_bins=5)
+```
+
+**What this does:** Blink frames are masked to NaN in the pupil area trace. Diameter is computed as `2*sqrt(area/pi)` for valid samples. The diameter is linearly interpolated onto the ophys timestamps and discretized into 5 per-session percentile bins, with NaNs mapped to bin 0.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — same approach as running speed; not separately documented)
+
+**Code** (convert_data.py:360, 402-403):
+```python
+pupil_at_ophys = interpolate_to_ophys(pupil_diameter, pupil_ts, ophys_ts)
+...
+pupil_trial = pupil_at_ophys[frame_mask]
+pupil_binned = apply_percentile_bins(pupil_trial, pupil_edges, n_bins=5)
+```
+
+**What this does:** Pupil diameter is interpolated session-wide to the ophys timestamps, then sliced by the same `frame_mask` used for the neural data, giving per-frame alignment within each trial window.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -711,26 +711,6 @@ outcome_names = ['hit', 'miss', 'false_alarm', 'correct_reject']
 ```
 
 **What this does:** The string outcome is mapped to an integer index via the fixed list `['hit','miss','false_alarm','correct_reject']` (unknown falls back to 0 = hit). This per-trial scalar is broadcast across all time bins of the trial as row 4 of the `(5, T)` output array.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:196 — "Categorical, static per trial"
-
-**Code** (convert_data.py:423-428):
-```python
-output_full = np.zeros((5, n_trial_frames), dtype=np.int64)
-...
-output_full[4] = outcome_idx  # broadcast scalar to all timepoints
-```
-
-**What this does:** Trial outcome is constant across the trial; it is broadcast to all `n_trial_frames` time bins so that row 4 of the per-trial output array matches the neural data's time dimension.
 
 **Rating:** _(to be filled by evaluator)_
 

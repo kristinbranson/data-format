@@ -136,85 +136,7 @@
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | match | — |  |
-| claude-code / trial2 | match | match | match | match | — |  |
-| claude-code / trial3 | match | match | match | match | — |  |
-| codex / trial1 | match | match | match | match | — |  |
-| codex / trial2 | match | match | match | match | — |  |
-| codex / trial3 | match | match | match | match | — |  |
-
----
-
-## Q 3-b. What processing is involved in computing `output` *Running speed*?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | concerning | incorrect | Claude judge | Claude caught a minor bug |
-| claude-code / trial2 | incorrect | match | concerning | incorrect | — |  |
-| claude-code / trial3 | match | match | concerning | incorrect | LZ |  |
-| codex / trial1 | match | match | concerning | incorrect | LZ |  |
-| codex / trial2 | match | match | match | incorrect | LZ |  |
-| codex / trial3 | match | match | match | incorrect | LZ |  |
-
----
-
-## Q 3-c. How is `output` *Running speed* aligned with the neural data?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | match | — |  |
-| claude-code / trial2 | match | match | ok | incorrect | LZ |  |
-| claude-code / trial3 | match | match | match | incorrect | LZ |  |
-| codex / trial1 | match | match | match | incorrect | LZ |  |
-| codex / trial2 | match | match | match | incorrect | LZ |  |
-| codex / trial3 | match | match | match | incorrect | LZ |  |
-
----
-
-## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | concerning | ok | concerning | incorrect | — |  |
-| claude-code / trial2 | concerning | ok | concerning | concerning | — |  |
-| claude-code / trial3 | concerning | ok | incorrect | incorrect | — |  |
-| codex / trial1 | concerning | ok | concerning | incorrect | — |  |
-| codex / trial2 | ok | concerning | concerning | incorrect | LZ |  |
-| codex / trial3 | ok | ok | incorrect | incorrect | LZ |  |
-
----
-
-## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | concerning | incorrect | LZ |  |
-| claude-code / trial2 | match | ok | concerning | incorrect | LZ |  |
-| claude-code / trial3 | match | match | concerning | incorrect | LZ |  |
-| codex / trial1 | match | match | concerning | incorrect | LZ |  |
-| codex / trial2 | match | match | concerning | incorrect | LZ |  |
-| codex / trial3 | match | match | concerning | incorrect | LZ |  |
-
----
-
-## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | match | — |  |
-| claude-code / trial2 | incorrect | match | ok | incorrect | LZ |  |
-| claude-code / trial3 | match | match | match | incorrect | LZ |  |
-| codex / trial1 | match | match | match | incorrect | LZ |  |
-| codex / trial2 | match | match | match | incorrect | LZ |  |
-| codex / trial3 | match | match | match | incorrect | LZ |  |
-
----
-
-## Q 5-a. What variables in the raw data is `output` *Image name* derived from?
+## Q 3-a. What variables in the raw data is `output` *Image identity* derived from?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -227,7 +149,7 @@
 
 ---
 
-## Q 5-b. What processing is involved in computing `output` *Image name*?
+## Q 3-b. What processing is involved in computing `output` *Image identity*?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -240,7 +162,7 @@
 
 ---
 
-## Q 5-c. How is `output` *Image name* aligned with the neural data?
+## Q 3-c. How is `output` *Image identity* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -253,7 +175,7 @@
 
 ---
 
-## Q 6-a. What variables in the raw data is `output` *Image change* derived from?
+## Q 4-a. What variables in the raw data is `output` *Image change* derived from?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -266,7 +188,7 @@
 
 ---
 
-## Q 6-b. What processing is involved in computing `output` *Image change*?
+## Q 4-b. What processing is involved in computing `output` *Image change*?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -279,7 +201,7 @@
 
 ---
 
-## Q 6-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-c. How is `output` *Image change* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -288,6 +210,84 @@
 | claude-code / trial3 | match | ok | match | concerning | LZ |  |
 | codex / trial1 | match | ok | match | incorrect | LZ |  |
 | codex / trial2 | match | ok | match | concerning | LZ |  |
+| codex / trial3 | match | match | match | incorrect | LZ |  |
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *Running speed* derived from?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | match | — |  |
+| codex / trial1 | match | match | match | match | — |  |
+| codex / trial2 | match | match | match | match | — |  |
+| codex / trial3 | match | match | match | match | — |  |
+
+---
+
+## Q 5-b. What processing is involved in computing `output` *Running speed*?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | concerning | incorrect | Claude judge | Claude caught a minor bug |
+| claude-code / trial2 | incorrect | match | concerning | incorrect | — |  |
+| claude-code / trial3 | match | match | concerning | incorrect | LZ |  |
+| codex / trial1 | match | match | concerning | incorrect | LZ |  |
+| codex / trial2 | match | match | match | incorrect | LZ |  |
+| codex / trial3 | match | match | match | incorrect | LZ |  |
+
+---
+
+## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | match | — |  |
+| claude-code / trial2 | match | match | ok | incorrect | LZ |  |
+| claude-code / trial3 | match | match | match | incorrect | LZ |  |
+| codex / trial1 | match | match | match | incorrect | LZ |  |
+| codex / trial2 | match | match | match | incorrect | LZ |  |
+| codex / trial3 | match | match | match | incorrect | LZ |  |
+
+---
+
+## Q 6-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | concerning | ok | concerning | incorrect | — |  |
+| claude-code / trial2 | concerning | ok | concerning | concerning | — |  |
+| claude-code / trial3 | concerning | ok | incorrect | incorrect | — |  |
+| codex / trial1 | concerning | ok | concerning | incorrect | — |  |
+| codex / trial2 | ok | concerning | concerning | incorrect | LZ |  |
+| codex / trial3 | ok | ok | incorrect | incorrect | LZ |  |
+
+---
+
+## Q 6-b. What processing is involved in computing `output` *Pupil diameter*?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | concerning | incorrect | LZ |  |
+| claude-code / trial2 | match | ok | concerning | incorrect | LZ |  |
+| claude-code / trial3 | match | match | concerning | incorrect | LZ |  |
+| codex / trial1 | match | match | concerning | incorrect | LZ |  |
+| codex / trial2 | match | match | concerning | incorrect | LZ |  |
+| codex / trial3 | match | match | concerning | incorrect | LZ |  |
+
+---
+
+## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | match | — |  |
+| claude-code / trial2 | incorrect | match | ok | incorrect | LZ |  |
+| claude-code / trial3 | match | match | match | incorrect | LZ |  |
+| codex / trial1 | match | match | match | incorrect | LZ |  |
+| codex / trial2 | match | match | match | incorrect | LZ |  |
 | codex / trial3 | match | match | match | incorrect | LZ |  |
 
 ---

@@ -516,34 +516,7 @@ def compute_distance_to_zone(position_cm, zone_idx):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md:50):
-> `["lt_-50", "-50_to_-10", "-10_to_lt_0", "0", "gt_0_to_10", "10_to_50", "gt_50"]`
-
-**Code** (convert_data.py:196-205):
-```python
-def discretize_distance(distance_cm):
-    out = np.zeros(distance_cm.shape, dtype=np.int64)
-    out[distance_cm < -50.0] = 0
-    out[(distance_cm >= -50.0) & (distance_cm < -10.0)] = 1
-    out[(distance_cm >= -10.0) & (distance_cm < 0.0)] = 2
-    out[distance_cm == 0.0] = 3
-    out[(distance_cm > 0.0) & (distance_cm <= 10.0)] = 4
-    out[(distance_cm > 10.0) & (distance_cm <= 50.0)] = 5
-    out[distance_cm > 50.0] = 6
-    return out
-```
-
-**What this does:** Hand-coded boolean masks place each value into one of 7 bins with thresholds at ±50, ±10, and exactly 0. The `==0` case is a separate bin matching the "inside zone" sentinel.
-
-**Rating:** ok
-
-**Note:** don't like the == 0 operation
-
----
-
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:570 paraphrase):
 > Per-trial slice using same trial slicing as neural; rebinned with `rebin_1d_mean` for 31 Hz sessions.
@@ -612,27 +585,7 @@ pos_bin = discretize_position(position)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md:271):
-> 5 equal bins on the 450 cm corridor.
-
-**Code** (convert_data.py:208-210):
-```python
-def discretize_position(position_cm):
-    clipped = np.clip(position_cm, 0.0, TRACK_LENGTH_CM - 1e-6)
-    return np.minimum((clipped / (TRACK_LENGTH_CM / 5.0)).astype(np.int64), 4)
-```
-
-**What this does:** Five equal-width bins of 90 cm spanning `[0, 450)`. Bin edges are 0, 90, 180, 270, 360, 450.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:570 paraphrase):
 > Same per-trial slicing and rebinning as neural.
@@ -967,5 +920,54 @@ session_info = {
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 13-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:313-320
+> ```
+> Code inefficiencies identified:
+> - Full-session NWB reads currently materialize the session response matrix in memory once per session.
+> - Processing plots intentionally add overhead and should stay disabled for full conversion.
+>
+> Code speedups added:
+> - Used direct `h5py` reads instead of heavier NWB object materialization.
+> - Restricted neural loading to ROI indices actually referenced by the response matrix and then to curated `iscell` ROIs.
+> - Used vectorized trial construction and simple factor-2 rebinning for 31 Hz sessions.
+> ```
+> CONVERSION_NOTES.md:356
+> ```
+> | ROI-region-aware cell filtering before downstream work | Avoids processing unused segmentation-table ROIs |
+> ```
+
+**Code** (convert_data.py:330-337):
+```python
+        rate_hz = float(neural_group["starting_time"].attrs["rate"])
+        timestamps = beh["position/timestamps"][()].astype(np.float64, copy=False)
+
+        neural = neural_group["data"][()].astype(np.float32, copy=False)
+        roi_ids = neural_group["rois"][()].astype(np.int64, copy=False)
+        iscell = seg["iscell"][()][roi_ids, 0] > 0.5
+        neural = neural[:, iscell]
+        roi_ids = roi_ids[iscell]
+```
+
+`copy=False` casting is applied consistently to behavior streams and per-trial arrays (convert_data.py:348-357, 473, 511):
+```python
+            position=beh["position/data"][()][:t_common].astype(np.float32, copy=False),
+            speed=beh["speed/data"][()][:t_common].astype(np.float32, copy=False),
+            ...
+        neural_trial = arrays.neural[start:stop_exclusive].T.astype(np.float32, copy=False)
+        ...
+        neural_trials.append(neural_trial.astype(np.float32, copy=False))
+```
+
+**What this does:** Reads only the `Deconvolved/plane0` response matrix via `h5py` (Fluorescence and Neuropil are never loaded), materializes it in full with `[()]` and then boolean-masks curated ROI columns, so the uncurated matrix is briefly resident. Every cast uses `copy=False` to avoid gratuitous duplicates, dtypes are pinned to float32 for neural/inputs and int64 for outputs, and sessions are handled one at a time; the notes name the remaining full-session materialization as a known inefficiency. No memory-mapping, chunked reads, `del`, or `gc.collect()`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

@@ -369,9 +369,11 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         if judge in placeholder_comments:
             judge = ""
         judge = judge.replace("|", "\\|").replace("\n", " ")
-        # Hand-curated column: match on question text, fall back to the number.
-        diff = (diff_by_title.get(_norm_question(titles.get(qid, "")))
-                or diff_by_qid.get(qid, ""))
+        # Hand-curated column: matched on question text ONLY. Matching on the
+        # number as well looks harmless until the questions are renumbered, at
+        # which point every curated note lands on whichever question inherited
+        # its number — 8 of them did exactly that in the 2026-08 rebuild.
+        diff = diff_by_title.get(_norm_question(titles.get(qid, "")), "")
         lines.append(
             f"| {qid} | {title} | " + " | ".join(h_cells)
             + f" | {c_cell} | {x_cell} | {sol} | {judge} | {diff} |"

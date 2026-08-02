@@ -285,7 +285,162 @@ for trial_idx in np.flatnonzero(raw["keep_mask"]):
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
+## Q 3-a. What variables in the raw data is `output` *Image identity* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:199: "stimulus-presentation image_name, start_time, stop_time, omitted, active task block only -> output[image_identity]. Piecewise-constant categorical signal on 30 Hz grid; use actual image name during image display; use 'gray' during gray-screen or omission periods"
+
+**Code** (convert_data.py:126-152, 261-282, 389-413):
+```python
+def choose_task_presentation_group(h5f):
+    ... # picks the *_presentations group with active==True and change_detection block
+    if best_name is None:
+        raise RuntimeError(...)
+    return intervals[best_name]
+...
+stim_group = choose_task_presentation_group(h5f)
+stim = read_interval_table(stim_group,
+    ["start_time", "stop_time", "image_name", "is_change", "omitted",
+     "trials_id", "active", "flashes_since_change"])
+...
+def stimulus_identity_codes(stimulus, query_t, image_to_code):
+    starts = stimulus["start_time"]; stops = stimulus["stop_time"]
+    image_names = stimulus["image_name"]; omitted = stimulus["omitted"]
+    idx = np.searchsorted(starts, query_t, side="right") - 1
+    codes = np.full(query_t.shape, image_to_code["gray"], dtype=np.int64)
+    ... # within an interval, set code to image name (or 'gray' if omitted)
+```
+
+**What this does:** Image name is derived from the chosen active stimulus-presentations interval table (`start_time`, `stop_time`, `image_name`, `omitted`). Each query timestamp is mapped to the interval that contains it; outside intervals or during omissions, the label is the explicit `gray` class.
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 3-b. What processing is involved in computing `output` *Image identity*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:199: "Global categories = 'gray' + all unique image names in included sessions"
+> CONVERSION_NOTES.md:213: "Use 'gray' as an explicit image-identity class"
+
+**Code** (convert_data.py:349-354, 377, 528, 397-413):
+```python
+image_names.update(
+    str(x)
+    for x, omitted in zip(stim["image_name"], stim["omitted"])
+    if (not omitted) and str(x) not in ("", "None", "nan")
+)
+...
+image_values = ["gray"] + sorted(image_names)
+...
+image_to_code = {name: idx for idx, name in enumerate(image_values)}
+...
+codes = np.full(query_t.shape, image_to_code["gray"], dtype=np.int64)
+... # write per-frame code by stimulus interval; gray everywhere else
+```
+
+**What this does:** All non-omitted image names across pass-1 sessions are collected, sorted, and prefixed by `"gray"` (always index 0). For each trial frame, `np.searchsorted` locates the containing stimulus interval and assigns the integer code (or gray if not in an interval / omitted).
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 3-c. How is `output` *Image identity* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:199: "Piecewise-constant categorical signal on 30 Hz grid"
+
+**Code** (convert_data.py:609, 620):
+```python
+grid = session_grid(start, stop)
+...
+image_codes = stimulus_identity_codes(raw["stimulus"], grid, image_to_code)
+```
+
+**What this does:** Image identity codes are computed at exactly the same per-trial 30 Hz `grid` timestamps as the neural data, so they share the same time bins.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 4-a. What variables in the raw data is `output` *Image change* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:200: "stimulus-presentation is_change, start_time, stop_time -> output[image_change]. Binary time-varying label: 1 during the changed-image presentation window, else 0 ... Marks the post-change flashed image itself rather than a one-bin impulse; catch trials remain 0"
+> CONVERSION_NOTES.md:252: "image_change is constructed from the stimulus table's is_change presentation interval instead of a single-bin impulse at change_time"
+
+**Code** (convert_data.py:416-433):
+```python
+def stimulus_change_codes(stimulus, query_t):
+    starts = stimulus["start_time"]; stops = stimulus["stop_time"]
+    is_change = stimulus["is_change"]; omitted = stimulus["omitted"]
+    idx = np.searchsorted(starts, query_t, side="right") - 1
+    codes = np.zeros(query_t.shape, dtype=np.int64)
+    valid = idx >= 0; valid &= idx < len(starts)
+    idx_valid = idx[valid]
+    in_interval = query_t[valid] < stops[idx_valid]
+    if np.any(in_interval):
+        sub_idx = idx_valid[in_interval]
+        changed = is_change[sub_idx] & (~omitted[sub_idx])
+        assign = np.flatnonzero(valid)[in_interval]
+        codes[assign] = changed.astype(np.int64)
+    return codes
+```
+
+**What this does:** Image change is derived from the stimulus-presentation table's `is_change`, `start_time`, `stop_time`, and `omitted` fields. It is 1 only during a stimulus interval where `is_change` is True and `omitted` is False; 0 elsewhere (including during gray periods and catch trials, since catch flashes have `is_change == False`).
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 4-b. What processing is involved in computing `output` *Image change*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:200: "Marks the post-change flashed image itself rather than a one-bin impulse"
+
+**Code** (convert_data.py:416-433, 621):
+```python
+# (see 6-a snippet for stimulus_change_codes)
+image_change = stimulus_change_codes(raw["stimulus"], grid)
+```
+
+**What this does:** No additional processing beyond mapping each 30 Hz frame to the containing stimulus interval and reading its `is_change & ~omitted` flag.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 4-c. How is `output` *Image change* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none)
+
+**Code** (convert_data.py:609, 621):
+```python
+grid = session_grid(start, stop)
+...
+image_change = stimulus_change_codes(raw["stimulus"], grid)
+```
+
+**What this does:** Image change is computed at the same per-trial 30 Hz `grid` as the neural data, sharing identical bin indices.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *Running speed* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:201: "running speed timeseries -> output[running_speed_bin] ... Uses filtered running speed, matching SDK default"
@@ -306,7 +461,7 @@ running_timestamps = np.asarray(
 
 ---
 
-## Q 3-b. What processing is involved in computing `output` *Running speed*?
+## Q 5-b. What processing is involved in computing `output` *Running speed*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:214: "Discretize continuous outputs globally, not per session: Running-speed and pupil-diameter bin edges will be computed from all valid included timepoints across the converted dataset so class definitions are shared across sessions."
@@ -342,7 +497,7 @@ running_bins = digitize_with_edges(running_cont, running_edges)
 
 ---
 
-## Q 3-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-c. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:210: "all trial streams are aligned in absolute experiment time and resampled to a common 30 Hz grid from raw trial start_time / stop_time"
@@ -365,7 +520,7 @@ running_cont = interpolate_vector(raw["running_timestamps"], raw["running_speed"
 
 ---
 
-## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+## Q 6-a. What variables in the raw data is `output` *Pupil diameter* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:202: "eye-tracking pupil width/height + blink mask -> output[pupil_diameter_bin]. Compute pupil diameter as max(width, height); use blink-masked values"
@@ -392,7 +547,7 @@ pupil_diameter = np.maximum(pupil_width, pupil_height).astype(np.float32)
 
 ---
 
-## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
+## Q 6-b. What processing is involved in computing `output` *Pupil diameter*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:202: "interpolate across valid timestamps onto 30 Hz trial grid; discretize with global quintile bins"
@@ -424,7 +579,7 @@ pupil_bins = digitize_with_edges(pupil_cont, pupil_edges)
 
 ---
 
-## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:281: "No visual sign of cross-stream temporal misalignment in the reviewed plots."
@@ -439,161 +594,6 @@ pupil_cont = interpolate_pupil(raw["pupil_timestamps"], raw["pupil_diameter"], g
 ```
 
 **What this does:** Pupil diameter is interpolated onto the same per-trial 30 Hz `grid` used for neural data, so pupil bins share the same time indices as the neural bins.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 5-a. What variables in the raw data is `output` *Image name* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:199: "stimulus-presentation image_name, start_time, stop_time, omitted, active task block only -> output[image_identity]. Piecewise-constant categorical signal on 30 Hz grid; use actual image name during image display; use 'gray' during gray-screen or omission periods"
-
-**Code** (convert_data.py:126-152, 261-282, 389-413):
-```python
-def choose_task_presentation_group(h5f):
-    ... # picks the *_presentations group with active==True and change_detection block
-    if best_name is None:
-        raise RuntimeError(...)
-    return intervals[best_name]
-...
-stim_group = choose_task_presentation_group(h5f)
-stim = read_interval_table(stim_group,
-    ["start_time", "stop_time", "image_name", "is_change", "omitted",
-     "trials_id", "active", "flashes_since_change"])
-...
-def stimulus_identity_codes(stimulus, query_t, image_to_code):
-    starts = stimulus["start_time"]; stops = stimulus["stop_time"]
-    image_names = stimulus["image_name"]; omitted = stimulus["omitted"]
-    idx = np.searchsorted(starts, query_t, side="right") - 1
-    codes = np.full(query_t.shape, image_to_code["gray"], dtype=np.int64)
-    ... # within an interval, set code to image name (or 'gray' if omitted)
-```
-
-**What this does:** Image name is derived from the chosen active stimulus-presentations interval table (`start_time`, `stop_time`, `image_name`, `omitted`). Each query timestamp is mapped to the interval that contains it; outside intervals or during omissions, the label is the explicit `gray` class.
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 5-b. What processing is involved in computing `output` *Image name*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:199: "Global categories = 'gray' + all unique image names in included sessions"
-> CONVERSION_NOTES.md:213: "Use 'gray' as an explicit image-identity class"
-
-**Code** (convert_data.py:349-354, 377, 528, 397-413):
-```python
-image_names.update(
-    str(x)
-    for x, omitted in zip(stim["image_name"], stim["omitted"])
-    if (not omitted) and str(x) not in ("", "None", "nan")
-)
-...
-image_values = ["gray"] + sorted(image_names)
-...
-image_to_code = {name: idx for idx, name in enumerate(image_values)}
-...
-codes = np.full(query_t.shape, image_to_code["gray"], dtype=np.int64)
-... # write per-frame code by stimulus interval; gray everywhere else
-```
-
-**What this does:** All non-omitted image names across pass-1 sessions are collected, sorted, and prefixed by `"gray"` (always index 0). For each trial frame, `np.searchsorted` locates the containing stimulus interval and assigns the integer code (or gray if not in an interval / omitted).
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 5-c. How is `output` *Image name* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:199: "Piecewise-constant categorical signal on 30 Hz grid"
-
-**Code** (convert_data.py:609, 620):
-```python
-grid = session_grid(start, stop)
-...
-image_codes = stimulus_identity_codes(raw["stimulus"], grid, image_to_code)
-```
-
-**What this does:** Image identity codes are computed at exactly the same per-trial 30 Hz `grid` timestamps as the neural data, so they share the same time bins.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 6-a. What variables in the raw data is `output` *Image change* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:200: "stimulus-presentation is_change, start_time, stop_time -> output[image_change]. Binary time-varying label: 1 during the changed-image presentation window, else 0 ... Marks the post-change flashed image itself rather than a one-bin impulse; catch trials remain 0"
-> CONVERSION_NOTES.md:252: "image_change is constructed from the stimulus table's is_change presentation interval instead of a single-bin impulse at change_time"
-
-**Code** (convert_data.py:416-433):
-```python
-def stimulus_change_codes(stimulus, query_t):
-    starts = stimulus["start_time"]; stops = stimulus["stop_time"]
-    is_change = stimulus["is_change"]; omitted = stimulus["omitted"]
-    idx = np.searchsorted(starts, query_t, side="right") - 1
-    codes = np.zeros(query_t.shape, dtype=np.int64)
-    valid = idx >= 0; valid &= idx < len(starts)
-    idx_valid = idx[valid]
-    in_interval = query_t[valid] < stops[idx_valid]
-    if np.any(in_interval):
-        sub_idx = idx_valid[in_interval]
-        changed = is_change[sub_idx] & (~omitted[sub_idx])
-        assign = np.flatnonzero(valid)[in_interval]
-        codes[assign] = changed.astype(np.int64)
-    return codes
-```
-
-**What this does:** Image change is derived from the stimulus-presentation table's `is_change`, `start_time`, `stop_time`, and `omitted` fields. It is 1 only during a stimulus interval where `is_change` is True and `omitted` is False; 0 elsewhere (including during gray periods and catch trials, since catch flashes have `is_change == False`).
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 6-b. What processing is involved in computing `output` *Image change*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:200: "Marks the post-change flashed image itself rather than a one-bin impulse"
-
-**Code** (convert_data.py:416-433, 621):
-```python
-# (see 6-a snippet for stimulus_change_codes)
-image_change = stimulus_change_codes(raw["stimulus"], grid)
-```
-
-**What this does:** No additional processing beyond mapping each 30 Hz frame to the containing stimulus interval and reading its `is_change & ~omitted` flag.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 6-c. How is `output` *Image change* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> (none)
-
-**Code** (convert_data.py:609, 621):
-```python
-grid = session_grid(start, stop)
-...
-image_change = stimulus_change_codes(raw["stimulus"], grid)
-```
-
-**What this does:** Image change is computed at the same per-trial 30 Hz `grid` as the neural data, sharing identical bin indices.
 
 **Rating:** match
 
@@ -641,25 +641,6 @@ trial_outcome = np.full(grid.shape, outcome_code, dtype=np.int64)
 ```
 
 **What this does:** A fixed integer mapping (`hit=0, miss=1, false_alarm=2, correct_reject=3`) is applied per trial; the resulting scalar code is broadcast across all 30 Hz time bins of the trial.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:213: "Represent all outputs as time-varying: To satisfy the decoder format and simplify training, even static trial outcome will be repeated across all bins in a trial."
-
-**Code** (convert_data.py:625-626):
-```python
-outcome_code = trial_outcome_code(raw["trials"], trial_idx, outcome_to_code)
-trial_outcome = np.full(grid.shape, outcome_code, dtype=np.int64)
-```
-
-**What this does:** The single per-trial outcome is broadcast to a constant vector matching the same per-trial 30 Hz `grid` length used for neural data.
 
 **Rating:** match
 

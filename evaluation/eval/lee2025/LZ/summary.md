@@ -4,6 +4,8 @@
 
 ## Q 1-a. How are **all the data** for all subjects, sessions, and trials loaded in?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -16,7 +18,10 @@
 **Overall comment:** All agent solutions used the joblib files instead of the .mat files, but this is correct.
 
 ---
+
 ## Q 1-b. How are the data split into subjects?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -33,6 +38,8 @@
 
 ## Q 1-c. How are the data split into sessions?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -45,7 +52,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 1-d. Are the data correctly split into trials?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -59,7 +69,10 @@
 **Overall comment:** 1/6 implementations were not robust because they followed the paper description too literally (40-min recording session).
 
 ---
+
 ## Q 1-e. How are trials filtered based on quality controls?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -73,7 +86,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -87,7 +103,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 2-b. How is the `neural` data processed?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -101,7 +120,10 @@
 **Overall comment:** Largest variability across runs/agents — some performed additional processing steps following the paper.
 
 ---
+
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -115,7 +137,10 @@
 **Overall comment:** One-frame NaN check is not robust (4/6).
 
 ---
+
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -132,6 +157,8 @@
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -144,7 +171,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 3-a. What variables in the raw data is `input` *Blocked positions* derived from?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -158,7 +188,10 @@
 **Overall comment:** All claude agents used the environment-geometry-to-name mapping, which is a bit more complicated but correct.
 
 ---
+
 ## Q 3-b. What processing is involved in computing `input` *Blocked positions*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -172,7 +205,10 @@
 **Overall comment:** Some used different conventions, but the same information is represented.
 
 ---
+
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -186,7 +222,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 4-b. What processing is involved in computing `output` *Position*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -200,7 +239,10 @@
 **Overall comment:** The grid/bin conventions differ across some solutions but are all valid.
 
 ---
+
 ## Q 4-c. How is `output` *Position* aligned with the neural data?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -214,7 +256,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -228,7 +273,10 @@
 **Overall comment:** One agent's solution is more robust.
 
 ---
-## Q 8-a. What are the most time-consuming steps of the code?
+
+## Q 6-a. What are the most time-consuming steps of the code?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -242,7 +290,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -256,7 +307,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-## Q 8-c. What processing does the code repeat multiple times?
+
+## Q 6-c. What processing does the code repeat multiple times?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -270,7 +324,10 @@
 **Overall comment:** One inefficient "two-pass" solution.
 
 ---
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|

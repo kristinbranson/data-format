@@ -9,7 +9,7 @@ those ratings are stored, and how they are combined with the existing ratings
 From `evaluation/eval/`, per dataset:
 
 ```bash
-python3 rate.py <dataset> --rater KB       # rate_blind.py for chen2024, hasnain2024, zhang2025, zhong2025
+python3 rate.py <dataset> --rater KB       # all 8 datasets have a reference now
 python3 raters.py merge <dataset> --apply  # fold the ratings into eval_summary.md
 python3 report.py <dataset>                # regenerate report.md
 ```
@@ -25,16 +25,14 @@ Everything runs from `evaluation/eval/`. Which script to use depends on whether
 the dataset has a hand-written reference solution
 (`manual/<dataset>/DECISIONS.md`):
 
-| script | datasets |
-|---|---|
-| `rate.py` | `allen2p`, `lee2025`, `majnik2025`, `sosa2024` |
-| `rate_blind.py` | `chen2024`, `hasnain2024`, `zhang2025`, `zhong2025` |
+Since the 2026-08 rebuild every dataset has a reference and every dossier carries
+exactly the reference's questions, so **`rate.py` covers all 8**. `rate_blind.py`
+remains for a dataset that has no `manual/<dataset>/DECISIONS.md` at all.
 
 ```bash
 cd /groups/zhang/home/zhangl5/Data-Format/evaluation/eval
 
-python3 rate.py allen2p --rater KB          # reference available
-python3 rate_blind.py chen2024 --rater KB   # no reference
+python3 rate.py allen2p --rater KB          # any of the 8 datasets
 ```
 
 Without `--rater` the script asks for the code; `export DATAFORMAT_RATER=KB`

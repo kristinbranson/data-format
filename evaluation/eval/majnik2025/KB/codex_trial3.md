@@ -412,7 +412,7 @@ def align_motion_to_imaging(motion, tstamps, nframes):
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Sessions with missing camera frames were converted without NaNs or length mismatches." (CONVERSION_NOTES.md:408)
@@ -445,7 +445,7 @@ if neural_binned.shape[1] % BLOCK_BINS != 0:
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Suite2p baseline correction requires loading full `F.npy` and `Fneu.npy` arrays for each session. Full conversion may still be moderately expensive because baseline correction is performed per session on CPU." (CONVERSION_NOTES.md:274-275)
@@ -469,7 +469,7 @@ return dcnv.preprocess(
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none — no loops explicitly flagged for vectorization)
@@ -491,7 +491,7 @@ for idx, session in enumerate(sessions):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Two-pass design avoids loading all neural sessions simultaneously." (CONVERSION_NOTES.md:279)
@@ -524,7 +524,7 @@ for idx, session in enumerate(sessions):
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none — no flagged unnecessary processing)
@@ -539,5 +539,51 @@ motion_aligned, _ = align_motion_to_imaging(motion, tstamps, F.shape[1])
 **Rating:** ok
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:273-281
+> ```
+> Code inefficiencies identified:
+> - Suite2p baseline correction requires loading full `F.npy` and `Fneu.npy` arrays for each session.
+> Code speedups added:
+> - Two-pass design avoids loading all neural sessions simultaneously.
+> - Motion quantile computation stores only 10-frame-averaged behavior values, which are small.
+> - Neural data are processed one session at a time and written to in-memory output lists only after temporal binning and block splitting.
+> - Used `mmap_mode='r'` when only shape inspection was needed.
+> ```
+> CONVERSION_NOTES.md:310-313
+> ```
+> | Two-pass streaming conversion | Avoids holding the full neural dataset in memory |
+> | Session-by-session neural preprocessing | Keeps peak memory bounded by one session |
+> ```
+
+**Code** (convert_data.py:272-280, 288, 345-361):
+```python
+    for session in sessions:                       # pass 1: behavior only
+        ops = load_ops(session)
+        motion = np.load(session.path / "move_deve" / "motion_energy_glob.npy", allow_pickle=True)
+        tstamps = np.load(session.path / "move_deve" / "tstamps.npy", allow_pickle=True)
+        motion_aligned, align_stats = align_motion_to_imaging(motion, tstamps, nframes)
+        motion_binned = bin_average_1d(motion_aligned, MOTION_BIN_SIZE_FRAMES)
+        all_motion_binned.append(motion_binned)
+        # :288
+        "nneurons": int(np.load(... / "F.npy", mmap_mode="r").shape[0]),
+
+    for idx, session in enumerate(sessions):       # pass 2: neural, one session at a time
+        F = np.load(session.path / "suite2p" / "plane0" / "F.npy", allow_pickle=True)
+        Fneu = np.load(session.path / "suite2p" / "plane0" / "Fneu.npy", allow_pickle=True)
+        neural = compute_suite2p_baseline_corrected(F, Fneu, ops)
+        neural_binned = bin_average_2d(neural, MOTION_BIN_SIZE_FRAMES)
+```
+
+**What this does:** The pipeline is split into two passes: pass 1 touches only the small behavior arrays (plus `mmap_mode="r"` for a neuron-count shape lookup, line 288) to compute global quantile edges, and pass 2 loads `F`/`Fneu` for one session at a time, so at most one session's full-resolution neural data is resident. Neural arrays are held as `float32` with `copy=False` casts (lines 151-163, 381) while bin means accumulate in `float64` (lines 140, 147). `fc.copy()` makes one extra full-size copy before `dcnv.preprocess`, which uses an explicit `batch_size` (lines 155, 161). No `del`/`gc` calls; with `--show-processing` the raw `F`/`Fneu` and full-resolution `dff` are passed to the plotting function (lines 386-399).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

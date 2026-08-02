@@ -292,28 +292,6 @@ if not np.array_equal(geometry_grid, valid_grid):
 
 ---
 
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md:182):
-> "Static per trial; same value for every 1-minute trial within a session."
-
-**Code** (convert_data.py:216-220):
-```python
-for trial_slice in slices:
-    neural_trial = session_trace[:, trial_slice].astype(np.float16, copy=False)
-    output_trial = output_class[trial_slice][np.newaxis, :].astype(np.int8, copy=False)
-    neural_trials.append(neural_trial)
-    input_trials.append(geometry_vector.copy())
-```
-
-**What this does:** The same 9-dim geometry vector is appended once per trial in the session; it is constant across timepoints and trials within a session.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:183):
@@ -380,7 +358,7 @@ for trial_slice in slices:
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:330-334):
 > "discarded_tail_frames values were exactly the raw remainders [60, 71, 91, 219, 1666]; all converted trials had length 1800; ... no NaN/Inf values remained in neural, input, or output arrays"
@@ -409,7 +387,7 @@ if not np.array_equal(geometry_grid, valid_grid):
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md:223-228, 261-269):
 > "Loading the full animal files is the main runtime cost because each file contains all sessions and registered cells for one subject." Sample timing: ~6.51 s/session over 2 sessions; refined estimate ~2-3 s/session effective.
@@ -436,7 +414,7 @@ for session_index, session_ref in enumerate(session_refs):
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt:** None explicitly; speedups noted include slicing full-session binned outputs directly (CONVERSION_NOTES.md:229).
 
@@ -458,7 +436,7 @@ for trial_slice in slices:
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md:228):
 > "Reuse one loaded animal dataset across all of its sessions before releasing it."
@@ -487,7 +465,7 @@ if session_ref.animal not in animal_cache:
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt:** None marked explicitly. The script computes `valid_grid` from `maps['smoothed']` purely as a consistency check (raises if mismatched) and optionally renders processing plots.
 
@@ -506,6 +484,40 @@ if show_processing and session_ref.session_id in plot_session_ids:
 ```
 
 **What this does:** `aggregate_valid_map` loads and reduces the `maps['smoothed']` 15x15-per-cell array purely to validate the geometry vector; the result is not stored in the output. Plot generation is gated on `--show-processing`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:227-230 — "Process sessions animal-by-animal so only one large subject file is kept in memory at a time. / Reuse one loaded animal dataset across all of its sessions before releasing it. / Slice full-session binned outputs and present-cell traces directly without redundant recomputation inside trials. / Store neural trials as `float16` and outputs as `int8` to reduce disk footprint and improve the chances that the full dataset remains tractable during downstream validation."
+>
+> CONVERSION_NOTES.md:264 — "Save neural trials as `float16` instead of `float32` | Reduced `sample_data.pkl` from about 92 MB to 46 MB"
+
+**Code** (convert_data.py:190-192, 215-221, 291-298):
+```python
+    position_day = np.asarray(dat["position"][day], dtype=np.float64)
+    trace_day = np.asarray(dat["trace"][day], dtype=np.float64)
+    smoothed_day = np.asarray(dat["maps"]["smoothed"][:, :, :, day], dtype=np.float64)
+...
+    session_trace = trace_day[present_mask].astype(np.float16, copy=False)
+    for trial_slice in slices:
+        neural_trial = session_trace[:, trial_slice].astype(np.float16, copy=False)
+        output_trial = output_class[trial_slice][np.newaxis, :].astype(np.int8, copy=False)
+...
+    animal_cache: dict[str, dict] = {}
+    for session_index, session_ref in enumerate(session_refs):
+        if session_ref.animal not in animal_cache:
+            animal_cache.clear()
+            gc.collect()
+            animal_cache[session_ref.animal] = load_animal_dataset(data_dir, session_ref.animal)
+```
+
+**What this does:** A single-entry `animal_cache` holds one animal's joblib dict at a time, cleared with an explicit `gc.collect()` before the next animal loads; the index-building pass also `del`s each animal after reading its session count. Stored trials use `float16` for neural and `int8` for output, while intermediate per-day arrays are first materialized as `float64`. Trials are direct slices of a session-wide `float16` trace and of a precomputed session-wide output class array; trials remain at the native 1800-frame length.
 
 **Rating:** _(to be filled by evaluator)_
 

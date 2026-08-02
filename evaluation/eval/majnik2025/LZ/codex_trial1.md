@@ -385,7 +385,7 @@ motion_binned = bin_array_mean(motion_full[np.newaxis, :], BIN_FRAMES)[0]
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Behavioral frames can be missing in some sessions; the data README says missing frames should be identified from `tstamps.npy` / `interframe_int.npy` and treated as missing values or interpolated." [line 150]; "Sessions with missing behavior frames (`9` total) convert to the correct final length after reconstruction." [line 358]
@@ -415,7 +415,7 @@ if observed_idx[-1] != target_len - 1:
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "the main cost is Suite2p-style fluorescence preprocessing." [line 229]; "Sample conversion (`--sample`) | 2.48 s / session mean ... Estimated full conversion ... ~85.6 s (~1.43 min) for all 41 sessions" [lines 273-275]
@@ -442,7 +442,7 @@ processed = dcnv.preprocess(
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Behavior reconstruction is vectorized via timing-step accumulation. Binning uses reshape-and-mean rather than Python loops." [lines 233-234]
@@ -467,7 +467,7 @@ for trial_idx in range(n_trials):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none)"
@@ -493,7 +493,7 @@ if args.show_processing:
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none)"
@@ -520,5 +520,43 @@ motion_preview = { ... "timestamps": ..., "interframe_int": ... }
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:266-268
+> ```
+> | Speed-ups Implemented | Time Savings |
+> | Session-wise processing after per-session loading | Keeps memory bounded; avoids storing raw arrays |
+> ```
+
+**Code** (convert_data.py:64-68, 128-144):
+```python
+    def has_missing_behavior_frames(session: SessionInfo) -> bool:
+        move_dir = session.path / "move_deve"
+        motion_len = int(np.load(move_dir / "motion_energy_glob.npy", mmap_mode="r").shape[0])
+        nframes = session_nframes(session)
+        return motion_len != nframes
+
+def compute_baseline_corrected_fluorescence(s2p_dir: Path) -> tuple[np.ndarray, dict, dict]:
+    ops = np.load(s2p_dir / "ops.npy", allow_pickle=True).item()
+    F = np.load(s2p_dir / "F.npy", mmap_mode="r")
+    Fneu = np.load(s2p_dir / "Fneu.npy", mmap_mode="r")
+
+    corrected = np.array(F, dtype=np.float32, copy=True)
+    corrected -= np.float32(ops["neucoeff"]) * np.asarray(Fneu, dtype=np.float32)
+    processed = dcnv.preprocess(
+        corrected, baseline=ops["baseline"], ...,
+        batch_size=int(ops.get("batch_size", 2000)), device=torch.device("cpu"),
+    ).astype(np.float32, copy=False)
+```
+
+**What this does:** `F.npy`/`Fneu.npy` are opened with `mmap_mode="r"` (lines 66, 130-131) so shape checks during sample selection never read the array, and neuropil subtraction is done in place on a single `float32` buffer (`corrected -= ...`, line 134). Downstream casts use `copy=False` and `mean(..., dtype=np.float32)` (lines 144, 162, 181-182), Suite2p `preprocess` runs with an explicit `batch_size`, and sessions are processed one at a time with only binned arrays retained in the returned dict (lines 226-236). Full-resolution previews are truncated to 3000 frames before being kept for plotting (lines 146-154). No explicit `del`/`gc` calls; the per-session binned arrays for all sessions are held in memory before `build_dataset` (line 335).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

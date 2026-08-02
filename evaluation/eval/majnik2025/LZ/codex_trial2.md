@@ -407,7 +407,7 @@ def reconstruct_motion_trace(motion_energy, tstamps, n_imaging_frames):
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md lines 92-94):
 > Sessions with motion-energy length mismatch vs imaging: 9 / 41. Mismatch sizes (n_imaging_frames - n_motion_frames): 1, 2, 3, 116, 148.
@@ -445,7 +445,7 @@ def validate_converted_session(converted):
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md lines 256-267):
 > Sample conversion: 2.26 s/session; full conversion estimated at 1.54 min for 41 sessions. (conversion_full_out.txt: Total conversion time 57.35s; mean 1.38s/session.)
@@ -472,7 +472,7 @@ processed = suite2p_preprocess(
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md lines 225-226):
 > Vectorized motion-frame reconstruction using `np.add.at` and `np.interp`. Vectorized non-overlapping bin averaging via reshape/mean.
@@ -498,7 +498,7 @@ full[missing] = np.interp(missing, valid_idx, full[valid_idx]).astype(np.float32
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt:**
 > (none)
@@ -516,7 +516,7 @@ full[missing] = np.interp(missing, valid_idx, full[valid_idx]).astype(np.float32
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt:**
 > (none)
@@ -544,5 +544,41 @@ summary = {
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none about memory — the speedup notes cover CPU time only) CONVERSION_NOTES.md:225-227
+> ```
+> Code speedups added:
+> - Vectorized motion-frame reconstruction using `np.add.at` and `np.interp`.
+> - Vectorized non-overlapping bin averaging via reshape/mean.
+> ```
+
+**Code** (convert_data.py:76-89, 282-295):
+```python
+def compute_fluorescence_signal(F: np.ndarray, Fneu: np.ndarray, ops: dict) -> np.ndarray:
+    Fc = F.astype(np.float32, copy=False) - float(ops["neucoeff"]) * Fneu.astype(np.float32, copy=False)
+    processed = suite2p_preprocess(
+        Fc.copy(), baseline=ops["baseline"], ...,
+        batch_size=min(512, max(32, Fc.shape[0])), device=torch.device("cpu"),
+    )
+    return processed.astype(np.float32, copy=False)
+
+    # :282-295 (process_session)
+    F = np.load(suite2p_dir / "F.npy", allow_pickle=True)
+    Fneu = np.load(suite2p_dir / "Fneu.npy", allow_pickle=True)
+    ...
+    neural_processed = compute_fluorescence_signal(F, Fneu, ops)
+    neural_binned = average_nonoverlapping(neural_processed, BIN_FRAMES).astype(np.float32, copy=False)
+```
+
+**What this does:** All neural arrays are kept in `float32` and every cast uses `copy=False` so no redundant copies are made (lines 78, 89, 181-183, 290-296); Suite2p `preprocess` is called with a capped `batch_size` of at most 512 neurons (line 86). Sessions are loaded and processed one at a time and only binned trial arrays are retained. `np.load` reads each array fully (no `mmap_mode`), `Fc.copy()` makes one extra full-size copy (line 80), the motion-alignment accumulators are `float64` (lines 115-116), and there is no `del`/`gc` call. When `--show-processing` is on, the raw `F`/`Fneu` arrays are passed through to the plotting function (lines 312-313).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

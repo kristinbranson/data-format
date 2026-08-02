@@ -36,6 +36,8 @@ for idx in range(len(sessions)):
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 1-b. How are the data split into subjects?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -61,6 +63,8 @@ for r in all_results:
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 1-c. How are the data split into sessions?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -83,6 +87,8 @@ def find_session_path(lab, subject, date, number=1):
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -109,6 +115,8 @@ interval_ends = align_times + TIME_WINDOW[1]
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -137,6 +145,8 @@ def create_trial_mask(trials):
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -163,6 +173,8 @@ def load_spike_sorting(alf_path, probe_name):
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -194,6 +206,8 @@ def bin_spikes_vectorized(spike_times, spike_clusters, n_clusters, interval_star
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -214,6 +228,8 @@ else:
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -239,6 +255,8 @@ np.add.at(binned[trial_idx].ravel(), flat_idx, 1)
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -263,7 +281,148 @@ binned_spikes = bin_spikes_vectorized(
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-a. What variables in the raw data is `output` *choice* derived from?
+---
+
+## Q 3-a. What variables in the raw data is `input` *time_from_stimulus_onset* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "| Time since stimOn | input[0] | np.linspace(-0.5, 1.48, 100), continuous time-varying | Manual construction | Same for all trials |" (CONVERSION_NOTES.md:182); metadata `off_start: -0.5`, `off_end: 1.5`, `n_timepoints: 100` (CONVERSION_NOTES.md:192-194).
+
+**Code** (convert_data.py:30-33, 494-496):
+```python
+BINSIZE = 0.02  # 20 ms time bins
+ALIGN_TIME = 'stimOn_times'
+TIME_WINDOW = (-0.5, 1.5)  # 2s window around stimOn
+N_BINS = int(np.ceil((TIME_WINDOW[1] - TIME_WINDOW[0]) / BINSIZE))  # 100
+...
+    # Build inputs
+    # Input 0: time since stimulus onset (continuous, time-varying)
+    time_since_stim = np.linspace(TIME_WINDOW[0] + BINSIZE, TIME_WINDOW[1], N_BINS).astype(np.float32)
+```
+
+**What this does:** The conversion produces this input under the name `time_since_stimulus_onset` (`input_names[0]`, convert_data.py:739). It is not read from any raw data field; it is constructed from the script constants `TIME_WINDOW = (-0.5, 1.5)` and `BINSIZE = 0.02`, which in turn define the window taken around the raw `trials.stimOn_times` used for binning.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_stimulus_onset*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "| Time since stimOn | input[0] | np.linspace(-0.5, 1.48, 100), continuous time-varying | Manual construction | Same for all trials |" (CONVERSION_NOTES.md:182); "Input shapes correct: (2, 100), time axis from -0.48 to 1.5" (CONVERSION_NOTES.md:313).
+
+**Code** (convert_data.py:494-511):
+```python
+    # Build inputs
+    # Input 0: time since stimulus onset (continuous, time-varying)
+    time_since_stim = np.linspace(TIME_WINDOW[0] + BINSIZE, TIME_WINDOW[1], N_BINS).astype(np.float32)
+    ...
+    input_trials = []
+    for t in range(len(final_trials)):
+        inp = np.array([
+            time_since_stim,  # time-varying
+            np.full(N_BINS, trial_in_block_final[t], dtype=np.float32),  # per-trial, broadcast to time
+        ], dtype=np.float32)  # (2, n_bins)
+        input_trials.append(inp)
+```
+
+**What this does:** A single 100-element float32 vector is built once per session with `np.linspace(-0.5 + 0.02, 1.5, 100)`, i.e. values running from -0.48 to 1.5 s in 0.02 s steps (one value per bin, at the bin's right edge). The same vector is copied into row 0 of every trial's `(2, 100)` input array, so it is identical across all trials and sessions.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-c. How is `input` *time_from_stimulus_onset* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Align everything to stimOn_times" (CONVERSION_NOTES.md:198); "Time window (-0.5, 1.5): 2 seconds, 100 bins at 20ms" (CONVERSION_NOTES.md:199); metadata `temporal_alignment_event: "stimulus onset (stimOn_times)"`, `n_timepoints: 100` (CONVERSION_NOTES.md:191,194).
+
+**Code** (convert_data.py:427-436, 496):
+```python
+    # Compute intervals aligned to stimOn_times
+    align_times = valid_trials[ALIGN_TIME].values
+    interval_starts = align_times + TIME_WINDOW[0]
+    interval_ends = align_times + TIME_WINDOW[1]
+
+    # Bin spikes
+    binned_spikes = bin_spikes_vectorized(
+        spikes['times'], spikes['clusters'], n_clusters,
+        interval_starts, interval_ends, BINSIZE, N_BINS
+    )
+    ...
+    time_since_stim = np.linspace(TIME_WINDOW[0] + BINSIZE, TIME_WINDOW[1], N_BINS).astype(np.float32)
+```
+
+**What this does:** Alignment is implicit: spikes are binned into the interval `[stimOn_times - 0.5, stimOn_times + 1.5]` at 20 ms, giving 100 bins, and the time vector spans the same window with the same 100 elements, so element *k* of the input corresponds to bin *k* of the neural array. Neural bin *k* covers `[start + k*0.02, start + (k+1)*0.02)` while the input value is the bin's upper edge (-0.48 for the first bin).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-a. What variables in the raw data is `input` *trial_number_in_block* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "| Trial number in block | input[1] | Count trials within each block, per-trial scalar | Computed from probabilityLeft changes | Resets at block boundary |" (CONVERSION_NOTES.md:183); "Trial number in block: Computed by detecting block boundaries from changes in probabilityLeft" (CONVERSION_NOTES.md:202).
+
+**Code** (convert_data.py:498-503):
+```python
+    # Input 1: trial number in block (continuous, per-trial)
+    prob_left_all = trials['probabilityLeft'].values
+    trial_in_block_all = compute_trial_in_block(prob_left_all)
+    # Apply masks to get trial_in_block for valid+combined trials
+    trial_in_block_valid = trial_in_block_all[mask.values]
+    trial_in_block_final = trial_in_block_valid[combined_mask]
+```
+
+**What this does:** The conversion produces this input as `trial_number_in_block` (`input_names[1]`, convert_data.py:739). It is derived from the `probabilityLeft` column of the raw `_ibl_trials.table.pqt` trials table, together with the row ordering of that table.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-b. What processing is involved in computing `input` *trial_number_in_block*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Count trials within each block, per-trial scalar ... Resets at block boundary" (CONVERSION_NOTES.md:183); "Computed by detecting block boundaries from changes in probabilityLeft" (CONVERSION_NOTES.md:202).
+
+**Code** (convert_data.py:354-364, 498-509):
+```python
+def compute_trial_in_block(prob_left):
+    """Compute trial number within each block.
+    Block boundaries are where probabilityLeft changes."""
+    trial_in_block = np.zeros(len(prob_left), dtype=np.float32)
+    count = 1
+    for i in range(len(prob_left)):
+        if i > 0 and prob_left[i] != prob_left[i-1]:
+            count = 1
+        trial_in_block[i] = count
+        count += 1
+    return trial_in_block
+...
+    trial_in_block_all = compute_trial_in_block(prob_left_all)
+    trial_in_block_valid = trial_in_block_all[mask.values]
+    trial_in_block_final = trial_in_block_valid[combined_mask]
+    ...
+            np.full(N_BINS, trial_in_block_final[t], dtype=np.float32),  # per-trial, broadcast to time
+```
+
+**What this does:** A running counter walks the full unfiltered trials table in order, starting at 1 and resetting to 1 whenever `probabilityLeft` differs from the previous row, so the count reflects position within the block including trials later excluded. The resulting per-trial scalar is then subset by the trial-quality mask and the wheel/motion-energy mask, and each retained trial's value is broadcast with `np.full` across all 100 time bins as row 1 of the input array. Values are raw counts (no normalization, no cap).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *choice* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "trials.choice → output[0]: left(-1)→0, right(1)→1, binary per-trial" (CONVERSION_NOTES.md:184).
@@ -282,7 +441,9 @@ choice_encoded = ((choice + 1) // 2).astype(int)  # -1->0, 1->1
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-b. What processing is involved in computing `output` *choice*?
+---
+
+## Q 5-b. What processing is involved in computing `output` *choice*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "left=0, right=1 (reference code: left=-1, right=1)" (CONVERSION_NOTES.md:171).
@@ -304,31 +465,9 @@ out = np.array([
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-c. How is `output` *choice* aligned with the neural data?
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> Trial-level scalar broadcast across the same 100 stimOn-aligned bins as `neural`.
-
-**Code** (convert_data.py:537-545):
-```python
-output_trials = []
-for t in range(len(final_trials)):
-    out = np.array([
-        np.full(N_BINS, choice_encoded[t], dtype=int),  # per-trial, broadcast
-        np.full(N_BINS, prior_encoded[t], dtype=int),
-        wheel_disc_2d[t],
-        me_disc_2d[t],
-    ], dtype=int)
-    output_trials.append(out)
-```
-
-**What this does:** Choice is constant per trial; same trial mask as neural is applied (line 486 `final_trials = valid_trials[combined_mask]`), so trial indices match neural.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
-## Q 4-a. What variables in the raw data is `output` *prior_probability_left* derived from?
+## Q 6-a. What variables in the raw data is `output` *prior_probability_left* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "trials.probabilityLeft → output[1]: 0.2→0, 0.5→1, 0.8→2" (CONVERSION_NOTES.md:185).
@@ -349,7 +488,9 @@ prior_encoded[prob_left == 0.8] = 2
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 4-b. What processing is involved in computing `output` *prior_probability_left*?
+---
+
+## Q 6-b. What processing is involved in computing `output` *prior_probability_left*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Prior encoded as categorical (3 classes from probabilityLeft)" (CONVERSION_NOTES.md:169).
@@ -369,23 +510,9 @@ prior_encoded[prob_left == 0.8] = 2
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 4-c. How is `output` *prior_probability_left* aligned with the neural data?
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> Per-trial scalar broadcast over the 100 stimOn-aligned bins.
-
-**Code** (convert_data.py:540-541):
-```python
-np.full(N_BINS, prior_encoded[t], dtype=int),  # per-trial, broadcast
-```
-
-**What this does:** Constant value per trial replicated across 100 bins; same trial mask as neural keeps trials in correspondence.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
-## Q 5-a. What variables in the raw data is `output` *wheel_speed* derived from?
+## Q 7-a. What variables in the raw data is `output` *wheel_speed* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "wheel velocity → output[2]: abs(velocity) → discretize into 3 equal-frequency bins" (CONVERSION_NOTES.md:186); raw files `_ibl_wheel.position.npy`, `_ibl_wheel.timestamps.npy`.
@@ -403,7 +530,9 @@ wheel_times, wheel_speed = interpolate_wheel(wheel_ts_raw, wheel_pos_raw)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 5-b. What processing is involved in computing `output` *wheel_speed*?
+---
+
+## Q 7-b. What processing is involved in computing `output` *wheel_speed*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Wheel velocity: 1kHz interpolation, Butterworth low-pass (20Hz, order 8), absolute value for speed" (README.md:42); "discretize into 3 equal-frequency bins" (CONVERSION_NOTES.md:186).
@@ -429,7 +558,9 @@ wheel_disc_2d = wheel_disc.reshape(final_wheel.shape).astype(int)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 5-c. How is `output` *wheel_speed* aligned with the neural data?
+---
+
+## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Same `interval_starts/interval_ends` (stimOn ± window) used as for neural; same `combined_mask` ensures matching trials.
@@ -453,7 +584,9 @@ final_wheel = wheel_speed_binned[combined_mask]
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-a. What variables in the raw data is `output` *whisker_motion_energy* derived from?
+---
+
+## Q 8-a. What variables in the raw data is `output` *whisker_motion_energy* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "whisker motion energy → output[3]" (CONVERSION_NOTES.md:187); raw `leftCamera.ROIMotionEnergy.npy` + `_ibl_leftCamera.times.npy` (fallback right).
@@ -480,7 +613,9 @@ def load_motion_energy(alf_path, side='left'):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-b. What processing is involved in computing `output` *whisker_motion_energy*?
+---
+
+## Q 8-b. What processing is involved in computing `output` *whisker_motion_energy*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Discretize into 3 equal-frequency bins, time-varying" (CONVERSION_NOTES.md:187).
@@ -506,7 +641,9 @@ me_disc_2d = me_disc.reshape(final_me.shape).astype(int)
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+---
+
+## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Same `interval_starts/interval_ends` and `combined_mask` as neural.
@@ -527,7 +664,9 @@ final_me = me_binned[combined_mask]
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+---
+
+## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "67 sessions skipped: missing data paths, missing wheel, or <2 valid trials" (CONVERSION_NOTES.md:325); "Handle length mismatch (common in IBL data)" (convert_data.py:290).
@@ -562,7 +701,9 @@ if n_valid < 2:
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-a. What are the most time-consuming steps of the code?
+---
+
+## Q 10-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Total: 1741s (29 min) for 459 sessions" (CONVERSION_NOTES.md:286); "~20s/session" (CONVERSION_NOTES.md:255).
@@ -587,7 +728,9 @@ def interpolate_behavior_to_bins(beh_times, beh_values, interval_starts, interva
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+---
+
+## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -622,7 +765,9 @@ for t in range(len(final_trials)):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-c. What processing does the code repeat multiple times?
+---
+
+## Q 10-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -650,7 +795,9 @@ times_file = find_latest_revision(alf_path, '_ibl_leftCamera.times.npy')
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+---
+
+## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -680,7 +827,9 @@ def get_brain_regions(clusters, br):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-e. How is memory usage optimized?
+---
+
+## Q 10-e. How is memory usage optimized?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "neural stored as uint8 to fit in 64GB container memory" (CONVERSION_NOTES.md:283); "Use uint8 to save memory (spike counts per 20ms bin are small integers, max ~12)" (convert_data.py:489).
@@ -699,3 +848,5 @@ for t in range(len(final_spikes)):
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---

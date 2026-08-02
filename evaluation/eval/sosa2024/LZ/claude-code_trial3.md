@@ -613,44 +613,7 @@ dist_bins = discretize_distance(dist_to_rz)
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md:185):
-> Bins: <-50, -50 to -10, -10 to 0, 0, >0 to +10, +10 to +50, >+50
-
-**Code** (convert_data.py:242-263):
-```python
-def discretize_distance(distance):
-    """
-    Discretize distance to reward zone into 7 bins:
-    0: < -50 cm
-    1: -50 to -10 cm
-    2: -10 cm to < 0 cm
-    3: 0 cm (in reward zone)
-    4: >0 cm to +10 cm
-    5: +10 to +50 cm
-    6: > +50 cm
-    """
-    bins = np.zeros(len(distance), dtype=np.int64)
-    bins[distance < -50] = 0
-    bins[(distance >= -50) & (distance < -10)] = 1
-    bins[(distance >= -10) & (distance < 0)] = 2
-    bins[distance == 0] = 3
-    bins[(distance > 0) & (distance <= 10)] = 4
-    bins[(distance > 10) & (distance <= 50)] = 5
-    bins[distance > 50] = 6
-    return bins
-```
-
-**What this does:** Custom branching assigns one of 7 integer bins, with bin 3 reserved for distance exactly equal to 0 (i.e., samples inside the reward zone).
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (none directly).
 
@@ -724,25 +687,7 @@ pos_bins = discretize_position(trial_pos)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md:186):
-> Bins: 0-90, 90-180, 180-270, 270-360, 360-450
-
-**Code** (convert_data.py:286-296):
-```python
-bins = np.clip(np.floor(position / 90.0).astype(np.int64), 0, 4)
-```
-
-**What this does:** Floor-divides the position by 90 cm and clips to a 5-bin range. Negative pre-trial values (e.g., -500 placeholder) and values >450 collapse into the end bins via clipping.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (none directly).
 
@@ -1147,5 +1092,49 @@ scanning = behav['scanning']['data'][:]
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 13-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — CONVERSION_NOTES.md has no memory/RAM/dtype-sizing/chunking/streaming discussion; there is no README.md in the snapshot. The only storage-adjacent section is `### Cache Files (intermediate outputs)` at CONVERSION_NOTES.md:358, which lists on-disk artifacts, not memory.)
+
+**Code** (convert_data.py:341-360):
+```python
+        if len(planes) == 1:
+            deconv_data = ophys['Deconvolved']['plane0']['data'][:]  # (n_samples, n_rois)
+            fluor_data = ophys['Fluorescence']['plane0']['data'][:]
+            neuropil_data = ophys['Neuropil']['plane0']['data'][:]
+            n_planes = 1
+        else:
+            # Multi-plane: concatenate ROIs across planes
+            deconv_parts = []
+            fluor_parts = []
+            neuro_parts = []
+            for plane in planes:
+                deconv_parts.append(ophys['Deconvolved'][plane]['data'][:])
+                fluor_parts.append(ophys['Fluorescence'][plane]['data'][:])
+                neuro_parts.append(ophys['Neuropil'][plane]['data'][:])
+            deconv_data = np.concatenate(deconv_parts, axis=1)
+            fluor_data = np.concatenate(fluor_parts, axis=1)
+            neuropil_data = np.concatenate(neuro_parts, axis=1)
+            n_planes = len(planes)
+```
+
+Per-trial arrays are preallocated with explicit dtypes (convert_data.py:545, 578, 586):
+```python
+        trial_input = np.zeros((4, n_timepoints), dtype=np.float32)
+        ...
+        trial_output = np.zeros((6, n_timepoints), dtype=np.int64)
+        ...
+        neural_trials.append(trial_neural.astype(np.float32))
+```
+
+**What this does:** All three ROI streams for a session (Deconvolved, Fluorescence, Neuropil) are loaded in full and, for multi-plane sessions, concatenated from per-plane lists before any ROI filtering; there is no column-subset read, chunking, memory-mapping, `del`, or `gc.collect()` anywhere in the script. Output arrays are preallocated per trial with fixed dtypes (float32 neural/input, int64 output). The dF/F path used for the interneuron check allocates two further full-session-sized arrays (`F_corr = F - 0.7 * Fneu` and `dff = np.full_like(F_corr, np.nan)`, convert_data.py:109-112) plus a per-trial `.copy()`, inheriting the source dtype rather than upcasting.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

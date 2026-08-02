@@ -293,7 +293,165 @@ for trial_idx in np.where(trial_mask)[0]:
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
+## Q 3-a. What variables in the raw data is `output` *Image identity* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:211: "image_name | output[0] | Categorical encoding (8 images) | stimulus_presentations | Forward-fill for omitted."
+
+**Code** (convert_data.py:120-126, 320-336):
+```python
+stim = f['intervals'][stim_key]
+stim_start = stim['start_time'][:]
+stim_stop = stim['stop_time'][:]
+stim_image_name = np.array([x.decode() if isinstance(x, bytes) else str(x) for x in stim['image_name'][:]])
+stim_is_change = stim['is_change'][:]
+stim_omitted = stim['omitted'][:]
+stim_trials_id = stim['trials_id'][:]
+...
+def collect_all_image_names(active_exps, nwb_map):
+    all_images = set()
+    sample_exps = active_exps.head(min(10, len(active_exps)))
+    for _, row in sample_exps.iterrows():
+        nwb_path = nwb_map[row['ophys_experiment_id']]
+        with h5py.File(nwb_path, 'r') as f:
+            stim_key = find_stim_key(f)
+            ...
+            names = f['intervals'][stim_key]['image_name'][:]
+            for n in names:
+                name = n.decode() if isinstance(n, bytes) else str(n)
+                if name != 'omitted':
+                    all_images.add(name)
+    return sorted(all_images)
+```
+
+**What this does:** Image identity is derived from the `image_name` column of the stimulus presentations table in NWB intervals. The global vocabulary is built from up to 10 sampled experiments (excluding `'omitted'`).
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 3-b. What processing is involved in computing `output` *Image identity*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:222: "Omitted stimuli: Forward-fill image identity from previous presentation."
+
+**Code** (convert_data.py:206-247):
+```python
+img_to_idx = {name: i for i, name in enumerate(IMAGE_NAMES_GLOBAL)}
+...
+images = stim_image_name[trial_stim_indices].copy()
+# Forward-fill omitted presentations
+for bi in range(len(images)):
+    if images[bi] == 'omitted':
+        if bi > 0:
+            images[bi] = images[bi - 1]
+        else:
+            for bj in range(bi + 1, len(images)):
+                if images[bj] != 'omitted':
+                    images[bi] = images[bj]
+                    break
+
+image_indices = np.array([img_to_idx.get(img, 0) for img in images], dtype=np.int64)
+```
+
+**What this does:** Forward-fills omitted-stimulus bins with the previous image (or backfills if the trial starts with `'omitted'`), then maps strings to integer codes via the global sorted image-name vocabulary; missing names fall back to 0.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 3-c. How is `output` *Image identity* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> Per-presentation index `trial_stim_indices` is shared between neural and image_identity bins.
+
+**Code** (convert_data.py:220-247):
+```python
+trial_stim_indices = np.where(stim_trials_id == tid)[0]
+...
+n_bins = len(trial_stim_indices)
+neural_matrix = np.zeros((n_neurons, n_bins), dtype=np.float32)
+...
+images = stim_image_name[trial_stim_indices].copy()
+...
+image_indices = np.array([img_to_idx.get(img, 0) for img in images], dtype=np.int64)
+```
+
+**What this does:** Image name is indexed by the same `trial_stim_indices` used to build the neural matrix, so bin `bi` of the image-identity row corresponds to bin `bi` of the neural matrix.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 4-a. What variables in the raw data is `output` *Image change* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:212: "is_change | output[1] | Binary (0/1) | stimulus_presentations | 1 at change flash only."
+
+**Code** (convert_data.py:124, 249-250):
+```python
+stim_is_change = stim['is_change'][:]
+...
+change_flags = np.nan_to_num(stim_is_change[trial_stim_indices], nan=0).astype(np.int64)
+```
+
+**What this does:** Image change is derived directly from the `is_change` column of the stimulus presentations table, indexed per stimulus bin within each trial; NaNs are mapped to 0.
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 4-b. What processing is involved in computing `output` *Image change*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:329: "Image change rate | ~7.5% of presentations | 7.5% | Match." Marked at the change flash only (the bin equal to one stimulus presentation).
+
+**Code** (convert_data.py:249-250, 559-563):
+```python
+change_flags = np.nan_to_num(stim_is_change[trial_stim_indices], nan=0).astype(np.int64)
+...
+output_arr = np.stack([
+    ot['image_identity'].astype(np.int64),
+    ot['image_change'].astype(np.int64),
+    ...
+], axis=0)
+```
+
+**What this does:** Casts the boolean `is_change` per stimulus to int (0/1) with NaN→0; no smoothing or windowing — only the single change-flash bin is set to 1.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 4-c. How is `output` *Image change* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> Same per-presentation alignment as image identity / neural.
+
+**Code** (convert_data.py:249-250):
+```python
+change_flags = np.nan_to_num(stim_is_change[trial_stim_indices], nan=0).astype(np.int64)
+```
+
+**What this does:** Image change uses the same `trial_stim_indices` per-stimulus indexing as the neural matrix bins, so bin `bi` matches.
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *Running speed* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:213: "running speed | output[2] | Average in 750ms bins, discretize to 5 percentile bins | running/speed in NWB | 10 Hz Butterworth filtered."
@@ -312,7 +470,7 @@ running_ts = f['processing']['running']['speed']['timestamps'][:]
 
 ---
 
-## Q 3-b. What processing is involved in computing `output` *Running speed*?
+## Q 5-b. What processing is involved in computing `output` *Running speed*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:224: "Discretization: Compute percentile bin edges across ALL valid time points in dataset (2-pass), then assign bins."
@@ -353,7 +511,7 @@ running_disc, _ = discretize_values(ot['running_speed_raw'], N_PERCENTILE_BINS, 
 
 ---
 
-## Q 3-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-c. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:218-219: All outputs are computed per stimulus presentation bin, sharing the same bin index space as `neural`.
@@ -381,7 +539,7 @@ for bi, si in enumerate(trial_stim_indices):
 
 ---
 
-## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+## Q 6-a. What variables in the raw data is `output` *Pupil diameter* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:214: "pupil area → diameter | output[3] | 2*sqrt(area/pi), interpolate NaN... | pupil_tracking/area." CONVERSION_NOTES.md:199: "Use area → compute diameter, interpolate NaNs."
@@ -409,7 +567,7 @@ if has_eye_tracking:
 
 ---
 
-## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
+## Q 6-b. What processing is involved in computing `output` *Pupil diameter*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:223: "Pupil NaN handling: Linear interpolation for blink frames before computing diameter and averaging."
@@ -452,7 +610,7 @@ else:
 
 ---
 
-## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Pupil bins use the same `all_stim_starts/ends` index as neural bins (same code structure as running speed).
@@ -474,164 +632,6 @@ for bi, si in enumerate(trial_stim_indices):
 **Rating:** incorrect
 
 **Note:** same error due to time bin definition
-
----
-
-## Q 5-a. What variables in the raw data is `output` *Image name* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:211: "image_name | output[0] | Categorical encoding (8 images) | stimulus_presentations | Forward-fill for omitted."
-
-**Code** (convert_data.py:120-126, 320-336):
-```python
-stim = f['intervals'][stim_key]
-stim_start = stim['start_time'][:]
-stim_stop = stim['stop_time'][:]
-stim_image_name = np.array([x.decode() if isinstance(x, bytes) else str(x) for x in stim['image_name'][:]])
-stim_is_change = stim['is_change'][:]
-stim_omitted = stim['omitted'][:]
-stim_trials_id = stim['trials_id'][:]
-...
-def collect_all_image_names(active_exps, nwb_map):
-    all_images = set()
-    sample_exps = active_exps.head(min(10, len(active_exps)))
-    for _, row in sample_exps.iterrows():
-        nwb_path = nwb_map[row['ophys_experiment_id']]
-        with h5py.File(nwb_path, 'r') as f:
-            stim_key = find_stim_key(f)
-            ...
-            names = f['intervals'][stim_key]['image_name'][:]
-            for n in names:
-                name = n.decode() if isinstance(n, bytes) else str(n)
-                if name != 'omitted':
-                    all_images.add(name)
-    return sorted(all_images)
-```
-
-**What this does:** Image identity is derived from the `image_name` column of the stimulus presentations table in NWB intervals. The global vocabulary is built from up to 10 sampled experiments (excluding `'omitted'`).
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 5-b. What processing is involved in computing `output` *Image name*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:222: "Omitted stimuli: Forward-fill image identity from previous presentation."
-
-**Code** (convert_data.py:206-247):
-```python
-img_to_idx = {name: i for i, name in enumerate(IMAGE_NAMES_GLOBAL)}
-...
-images = stim_image_name[trial_stim_indices].copy()
-# Forward-fill omitted presentations
-for bi in range(len(images)):
-    if images[bi] == 'omitted':
-        if bi > 0:
-            images[bi] = images[bi - 1]
-        else:
-            for bj in range(bi + 1, len(images)):
-                if images[bj] != 'omitted':
-                    images[bi] = images[bj]
-                    break
-
-image_indices = np.array([img_to_idx.get(img, 0) for img in images], dtype=np.int64)
-```
-
-**What this does:** Forward-fills omitted-stimulus bins with the previous image (or backfills if the trial starts with `'omitted'`), then maps strings to integer codes via the global sorted image-name vocabulary; missing names fall back to 0.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 5-c. How is `output` *Image name* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> Per-presentation index `trial_stim_indices` is shared between neural and image_identity bins.
-
-**Code** (convert_data.py:220-247):
-```python
-trial_stim_indices = np.where(stim_trials_id == tid)[0]
-...
-n_bins = len(trial_stim_indices)
-neural_matrix = np.zeros((n_neurons, n_bins), dtype=np.float32)
-...
-images = stim_image_name[trial_stim_indices].copy()
-...
-image_indices = np.array([img_to_idx.get(img, 0) for img in images], dtype=np.int64)
-```
-
-**What this does:** Image name is indexed by the same `trial_stim_indices` used to build the neural matrix, so bin `bi` of the image-identity row corresponds to bin `bi` of the neural matrix.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 6-a. What variables in the raw data is `output` *Image change* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:212: "is_change | output[1] | Binary (0/1) | stimulus_presentations | 1 at change flash only."
-
-**Code** (convert_data.py:124, 249-250):
-```python
-stim_is_change = stim['is_change'][:]
-...
-change_flags = np.nan_to_num(stim_is_change[trial_stim_indices], nan=0).astype(np.int64)
-```
-
-**What this does:** Image change is derived directly from the `is_change` column of the stimulus presentations table, indexed per stimulus bin within each trial; NaNs are mapped to 0.
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 6-b. What processing is involved in computing `output` *Image change*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:329: "Image change rate | ~7.5% of presentations | 7.5% | Match." Marked at the change flash only (the bin equal to one stimulus presentation).
-
-**Code** (convert_data.py:249-250, 559-563):
-```python
-change_flags = np.nan_to_num(stim_is_change[trial_stim_indices], nan=0).astype(np.int64)
-...
-output_arr = np.stack([
-    ot['image_identity'].astype(np.int64),
-    ot['image_change'].astype(np.int64),
-    ...
-], axis=0)
-```
-
-**What this does:** Casts the boolean `is_change` per stimulus to int (0/1) with NaN→0; no smoothing or windowing — only the single change-flash bin is set to 1.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 6-c. How is `output` *Image change* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> Same per-presentation alignment as image identity / neural.
-
-**Code** (convert_data.py:249-250):
-```python
-change_flags = np.nan_to_num(stim_is_change[trial_stim_indices], nan=0).astype(np.int64)
-```
-
-**What this does:** Image change uses the same `trial_stim_indices` per-stimulus indexing as the neural matrix bins, so bin `bi` matches.
-
-**Rating:** ok
-
-**Note:** _(no note)_
 
 ---
 
@@ -695,27 +695,6 @@ output_arr = np.stack([
 ```
 
 **What this does:** Picks the first true outcome flag (with a fallback to Miss=1 if none is true), maps to integer code 0-3, and replicates the constant value across all `n_bins` time bins of the trial.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> Static per trial; replicated across all time bins via `np.full(n_bins, ot['trial_outcome'], ...)`.
-
-**Code** (convert_data.py:561-563):
-```python
-output_arr = np.stack([
-    ...
-    np.full(n_bins, ot['trial_outcome'], dtype=np.int64),
-], axis=0)  # (5, n_bins)
-```
-
-**What this does:** The trial outcome scalar is broadcast across all bins of the trial, so it occupies the same per-bin grid as the neural matrix without per-time alignment of an event.
 
 **Rating:** match
 

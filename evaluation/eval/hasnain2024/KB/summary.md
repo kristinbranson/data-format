@@ -4,6 +4,8 @@
 
 ## Q 1-a. How are **all the data** for all subjects, sessions, and trials loaded in?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -16,7 +18,10 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 1-b. How are the data split into subjects?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -33,6 +38,8 @@
 
 ## Q 1-c. How are the data split into sessions?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -47,6 +54,8 @@
 ---
 
 ## Q 1-d. Are the data correctly split into trials?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -63,6 +72,8 @@
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | filters no response trials, which manual does not |
@@ -77,6 +88,8 @@
 ---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -93,6 +106,8 @@
 
 ## Q 2-b. How is the `neural` data processed?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | bin width is 10 ms instead of 5 ms,  manual interprets params.smooth to be in ms, while agent interprets this as bins |
@@ -107,6 +122,8 @@
 ---
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -123,6 +140,8 @@
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | uses 10 ms bin instead of 5 ms |
@@ -138,6 +157,8 @@
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
+
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -151,7 +172,9 @@
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *lick_direction* derived from?
+## Q 4-a. What variables in the raw data is `output` *lick_direction* derived from?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -166,7 +189,9 @@
 
 ---
 
-## Q 3-b. What processing is involved in computing `output` *lick_direction*?
+## Q 4-b. What processing is involved in computing `output` *lick_direction*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -181,22 +206,9 @@
 
 ---
 
-## Q 3-c. How is `output` *lick_direction* aligned with the neural data?
+## Q 5-a. What variables in the raw data is `output` *context* derived from?
 
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
-
----
-
-## Q 4-a. What variables in the raw data is `output` *context* derived from?
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -211,7 +223,9 @@
 
 ---
 
-## Q 4-b. What processing is involved in computing `output` *context*?
+## Q 5-b. What processing is involved in computing `output` *context*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -226,22 +240,9 @@
 
 ---
 
-## Q 4-c. How is `output` *context* aligned with the neural data?
+## Q 6-a. What variables in the raw data is `output` *outcome* derived from?
 
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | ok | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
-
----
-
-## Q 5-a. What variables in the raw data is `output` *outcome* derived from?
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -256,7 +257,9 @@
 
 ---
 
-## Q 5-b. What processing is involved in computing `output` *outcome*?
+## Q 6-b. What processing is involved in computing `output` *outcome*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -271,22 +274,9 @@
 
 ---
 
-## Q 5-c. How is `output` *outcome* aligned with the neural data?
+## Q 7-a. What variables in the raw data is `output` *tongue_velocity* derived from?
 
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | ok | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
-
----
-
-## Q 6-a. What variables in the raw data is `output` *tongue_velocity* derived from?
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -301,7 +291,9 @@
 
 ---
 
-## Q 6-b. What processing is involved in computing `output` *tongue_velocity*?
+## Q 7-b. What processing is involved in computing `output` *tongue_velocity*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -316,7 +308,9 @@
 
 ---
 
-## Q 6-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -331,7 +325,9 @@
 
 ---
 
-## Q 7-a. What variables in the raw data is `output` *paw_velocity* derived from?
+## Q 8-a. What variables in the raw data is `output` *paw_velocity* derived from?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -346,7 +342,9 @@
 
 ---
 
-## Q 7-b. What processing is involved in computing `output` *paw_velocity*?
+## Q 8-b. What processing is involved in computing `output` *paw_velocity*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -361,7 +359,9 @@
 
 ---
 
-## Q 7-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -376,7 +376,9 @@
 
 ---
 
-## Q 8-a. What variables in the raw data is `output` *motion_energy* derived from?
+## Q 9-a. What variables in the raw data is `output` *motion_energy* derived from?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -391,7 +393,9 @@
 
 ---
 
-## Q 8-b. What processing is involved in computing `output` *motion_energy*?
+## Q 9-b. What processing is involved in computing `output` *motion_energy*?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -406,7 +410,9 @@
 
 ---
 
-## Q 8-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -421,7 +427,9 @@
 
 ---
 
-## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 10. How are minor mistakes in the data, e.g. missing data, handled?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -436,7 +444,9 @@
 
 ---
 
-## Q 10-a. What are the most time-consuming steps of the code?
+## Q 11-a. What are the most time-consuming steps of the code?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -451,7 +461,9 @@
 
 ---
 
-## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 11-b. What loops in the code could have been vectorized to improve efficiency?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -466,7 +478,9 @@
 
 ---
 
-## Q 10-c. What processing does the code repeat multiple times?
+## Q 11-c. What processing does the code repeat multiple times?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -481,7 +495,9 @@
 
 ---
 
-## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 11-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -496,7 +512,9 @@
 
 ---
 
-## Q 10-e. How is memory usage optimized?
+## Q 11-e. How is memory usage optimized?
+
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -510,4 +528,3 @@
 **Overall comment:** _(no overall comment)_
 
 ---
-

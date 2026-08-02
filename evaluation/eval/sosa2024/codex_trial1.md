@@ -521,32 +521,7 @@ def discretize_distance_to_zone(position_cm, zone_start, zone_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> Output values: `["lt_-50", "minus50_to_minus10", "minus10_to_lt0", "in_zone", "gt0_to_10", "gt10_to_50", "gt50"]` (line 48 in code)
-
-**Code** (convert_data.py:180-187):
-```python
-bins = np.full(distance.shape, 6, dtype=np.int16)
-bins[distance < -50.0] = 0
-bins[(distance >= -50.0) & (distance < -10.0)] = 1
-bins[(distance >= -10.0) & (distance < 0.0)] = 2
-bins[distance == 0.0] = 3
-bins[(distance > 0.0) & (distance <= 10.0)] = 4
-bins[(distance > 10.0) & (distance <= 50.0)] = 5
-return bins
-```
-
-**What this does:** 7 bins are assigned by hard-coded thresholds at -50, -10, 0 (exact), 10, 50 cm. The `distance == 0.0` case is its own "in_zone" bin, and any value outside the explicit ranges falls to bin 6 (`gt50`).
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Use only in-trial frames; exclude teleport." (line 220)
@@ -611,30 +586,7 @@ pos_bin = discretize_absolute_position(pos_trial)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> Output values: `["bin0", "bin1", "bin2", "bin3", "bin4"]` (line 49 in code)
-
-**Code** (convert_data.py:16-17, 190-193):
-```python
-TRACK_START_CM = 0.0
-TRACK_END_CM = 450.0
-...
-clipped = np.clip(position_cm, TRACK_START_CM, np.nextafter(TRACK_END_CM, TRACK_START_CM))
-edges = np.linspace(TRACK_START_CM, TRACK_END_CM, 6)
-return np.digitize(clipped, edges[1:-1], right=False).astype(np.int16)
-```
-
-**What this does:** 5 equal-width bins of 90 cm each spanning 0-450 cm; positions are clipped to within the track before digitizing. Negative pre-sync (-500) values map to bin 0 after clipping.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Use only in-trial frames; exclude teleport." (line 220)
@@ -956,6 +908,57 @@ def make_processing_plot(session_label, savedir, neural_trials, input_trials, ou
 ```
 
 **What this does:** Optional `--show-processing` plotting computes and renders figures that are not consumed by downstream training. Otherwise no obviously discarded computation. (No explicit notes-based discussion.)
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 13-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:271-279
+> ```
+> Code inefficiencies identified:
+> - Full-session deconvolved activity is currently loaded into memory per session before trial slicing.
+> - No parallel file processing yet.
+>
+> Code speedups added:
+> - Uses direct HDF5 access with `h5py` instead of slower NWB object loading.
+> - Reads only curated ROI columns from the deconvolved matrix.
+> - Stores neural trials as `float16` to reduce output size; training code later casts to `float32`.
+> - Processes sessions sequentially to keep peak memory bounded by one session.
+> ```
+
+**Code** (convert_data.py:297-314):
+```python
+        deconv_group = handle["processing/ophys/Deconvolved"]
+        plane_keys = sorted(deconv_group.keys(), key=lambda key: int(key.replace("plane", "")))
+        if len(plane_keys) == 1:
+            deconvolved = np.asarray(deconv_group[plane_keys[0]]["data"][:, curated_idx], dtype=np.float16)
+        else:
+            n_frames = deconv_group[plane_keys[0]]["data"].shape[0]
+            n_rois = plane_idx.shape[0]
+            all_deconvolved = np.empty((n_frames, n_rois), dtype=np.float16)
+            for plane_key in plane_keys:
+                plane_number = int(plane_key.replace("plane", ""))
+                cols = np.flatnonzero(plane_idx == plane_number)
+                plane_data = np.asarray(deconv_group[plane_key]["data"], dtype=np.float16)
+                ...
+                all_deconvolved[:, cols] = plane_data
+            deconvolved = all_deconvolved[:, curated_idx]
+```
+
+Behavioral streams are narrowed at read time and ancillary arrays use small integer dtypes (convert_data.py:282-295):
+```python
+        position = behavior["position/data"][:].astype(np.float32)
+        ...
+        plane_idx = segmentation["planeIdx"][:].astype(np.int16)
+        brain_region_idx = np.zeros(curated_idx.size, dtype=np.int16)
+```
+
+**What this does:** The script uses `h5py` slicing to read only the curated ROI columns in the single-plane case, preallocates a `np.empty(..., dtype=np.float16)` destination for the multi-plane case and fills it plane by plane rather than concatenating, and stores neural trials as float16 with discretized outputs as int16. Only the deconvolved stream is loaded (Fluorescence/Neuropil are not read), sessions are processed one at a time, and the notes state both the remaining full-session-in-memory cost and the memory-bounding choices explicitly. No memory-mapping, chunked iteration, or explicit `del`/`gc.collect()` is used.
 
 **Rating:** _(to be filled by evaluator)_
 

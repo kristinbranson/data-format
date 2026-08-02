@@ -520,36 +520,7 @@ def signed_distance_to_zone(position_cm, zone_start, zone_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> Bins: `<-50`, `[-50,-10]`, `[-10,0)`, `0`, `(0,10]`, `(10,50]`, `>50` cm. (line 261)
-
-**Code** (convert_data.py:178-189):
-```python
-def discretize_distance(distance_cm):
-    out = np.full(distance_cm.shape, -1, dtype=np.int16)
-    out[distance_cm < -50] = 0
-    out[(distance_cm >= -50) & (distance_cm < -10)] = 1
-    out[(distance_cm >= -10) & (distance_cm < 0)] = 2
-    out[distance_cm == 0] = 3
-    out[(distance_cm > 0) & (distance_cm <= 10)] = 4
-    out[(distance_cm > 10) & (distance_cm <= 50)] = 5
-    out[distance_cm > 50] = 6
-    if np.any(out < 0):
-        raise ValueError("Failed to discretize reward-zone distance.")
-    return out
-```
-
-**What this does:** Hand-coded boolean masks assigning each sample to one of 7 bins (0-6) by signed distance; zero distance gets its own bin (3).
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > (none specific; general alignment via shared frame grid)
@@ -614,29 +585,7 @@ def discretize_absolute_position(position_cm):
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> 5 equal bins on `[0,450]`. (line 262)
-
-**Code** (convert_data.py:192-196):
-```python
-def discretize_absolute_position(position_cm):
-    clipped = np.clip(position_cm, 0.0, np.nextafter(450.0, 0.0))
-    bins = np.floor(clipped / 90.0).astype(np.int16)
-    bins[bins > 4] = 4
-    return bins
-```
-
-**What this does:** 5 bins of width 90 cm: `[0,90), [90,180), [180,270), [270,360), [360,450)`. Negative positions are clipped to 0; values >=450 to bin 4.
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > (none specific; via shared `frame_mask`)
@@ -937,5 +886,59 @@ if len(kept_examples) < 3:
 **Rating:** ok
 
 **Note:** _(no note)_
+
+---
+
+## Q 13-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:311-318
+> ```
+> Code inefficiencies identified:
+> - Full-session deconvolved matrices are still loaded into memory one session at a time.
+> - Reward-zone labels are parsed from scene metadata rather than cached lookup tables.
+>
+> Code speedups added:
+> - Uses `h5py` instead of higher-level NWB objects for the main conversion path.
+> - Processes sessions sequentially and writes only the final pickle, avoiding intermediate I/O.
+> - Filters trials before building output arrays to avoid wasted allocations for dropped trials.
+> ```
+
+**Code** (convert_data.py:301-317):
+```python
+        deconv_shape_t = None
+        deconv = None
+        planes = sorted(int(x) for x in np.unique(plane_idx_all))
+        for plane in planes:
+            plane_roi_idx = np.flatnonzero(plane_idx_all == plane)
+            accepted_total_idx = plane_roi_idx[accepted_mask[plane_roi_idx]]
+            accepted_local_idx = np.flatnonzero(accepted_mask[plane_roi_idx])
+            plane_data = ophys_group[f"Deconvolved/plane{plane}/data"][:, accepted_local_idx]
+            plane_data = plane_data.astype(np.float32, copy=False)
+
+            if deconv_shape_t is None:
+                deconv_shape_t = plane_data.shape[0]
+                deconv = np.empty((deconv_shape_t, accepted_idx.size), dtype=np.float32)
+
+            dest_cols = np.searchsorted(accepted_idx, accepted_total_idx)
+            deconv[:, dest_cols] = plane_data
+```
+
+Behavior streams and stored arrays are cast to fixed dtypes, with int16 for discretized outputs (convert_data.py:284-292, 393, 412, 419):
+```python
+        position = behavior_group["position/data"][()].astype(np.float32)
+        ...
+        neural_trial = deconv[trial_slice][frame_mask].T.astype(np.float32, copy=False)
+        ...
+                (lick_trial > 0).astype(np.int16),
+        ...
+        input_trials.append(input_trial.astype(np.float32, copy=False))
+```
+
+**What this does:** Only accepted (`iscell == 1`) ROI columns are read from each plane's Deconvolved dataset via HDF5 fancy indexing, written into a single preallocated `np.empty((T, n_accepted), float32)` buffer instead of being concatenated; Fluorescence and Neuropil are never read. Casts use `copy=False` where the source is already correct, discretized outputs use int16, trials are filtered before arrays are allocated, and sessions are processed sequentially. The notes list full-session residency as a remaining inefficiency. No memory-mapping, chunked time-axis reads, `del`, or `gc.collect()`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

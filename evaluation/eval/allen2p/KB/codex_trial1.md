@@ -295,7 +295,188 @@ for spec in preview.trial_specs:
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *Running speed* derived from?
+## Q 3-a. What variables in the raw data is `output` *Image identity* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:244: "Stimulus presentation `image_name` + presentation timing + omission state → `output[0]` (`image_identity`)". CONVERSION_NOTES.md:260: "Image identity will include a `gray` class".
+
+**Code** (convert_data.py:152-198, 287-297):
+```python
+def read_task_presentations(f):
+    ...
+    keep_names = ["start_time", "stop_time", "image_name", "omitted", "is_change",
+                  "is_sham_change", "trials_id", "active"]
+    for key in interval_root.keys():
+        if key == "trials":
+            continue
+        ...
+        rows.append(read_interval_group(group, keep_names))
+    ...
+
+def unique_nonempty_images(presentations):
+    ...
+    names = [str(x) for x in presentations["image_name"]
+             if str(x) not in {"", "nan", "None", "omitted"}]
+    return sorted(set(names))
+```
+
+**What this does:** Image names are derived from all `/intervals/*_presentations` tables in the NWB file (concatenated across non-trials presentation groups), using each presentation's `image_name`, `start_time`, `stop_time`, and `omitted` flag. Empty / NaN / "omitted" entries are excluded from the image vocabulary.
+
+**Rating:** ok
+
+**Note:** uses stimulus presentations table instead of initial_image_name change_image_name
+
+---
+
+## Q 3-b. What processing is involved in computing `output` *Image identity*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:244: "Project stimulus presentations onto trial bins; assign image category during image flashes and `gray` during ISI/omissions/no-image periods". CONVERSION_NOTES.md:686-688 (script): builds global image vocabulary across all eligible sessions.
+
+**Code** (convert_data.py:311-334, 686-688):
+```python
+def make_image_series(presentations, row_idx, centers, image_to_idx):
+    image_series = np.full(centers.shape, image_to_idx["gray"], dtype=np.int16)
+    change_series = np.zeros(centers.shape, dtype=np.int16)
+    for idx in row_idx:
+        start = float(presentations["start_time"][idx])
+        stop = float(presentations["stop_time"][idx])
+        ...
+        in_window = (centers >= start) & (centers < stop)
+        ...
+        omitted = bool(np.nan_to_num(presentations["omitted"][idx], nan=0.0))
+        if not omitted:
+            image_name = str(presentations["image_name"][idx])
+            image_series[in_window] = image_to_idx.get(image_name, image_to_idx["gray"])
+        ...
+    return image_series, change_series
+...
+image_names = sorted({img for p in eligible for img in p.unique_images})
+image_values = ["gray"] + image_names
+image_to_idx = {name: idx for idx, name in enumerate(image_values)}
+```
+
+**What this does:** A global integer code vocabulary is built across all eligible sessions; index 0 is `"gray"`, then the sorted set of distinct image names. Per trial, every bin is initialized to `gray` and then overwritten with the corresponding image code for any non-omitted presentation interval whose `[start, stop)` covers that bin center.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 3-c. How is `output` *Image identity* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:244 (transform): "Project stimulus presentations onto trial bins".
+
+**Code** (convert_data.py:300-308, 547, 560-561):
+```python
+def find_presentation_rows(presentations, start_time, stop_time):
+    ...
+    starts = presentations["start_time"]
+    ends = presentations["stop_time"]
+    mask = (starts < stop_time) & (ends > start_time)
+    return np.flatnonzero(mask)
+...
+starts, ends, centers = build_bin_centers(spec.start_time, spec.stop_time, bin_size_sec)
+...
+row_idx = find_presentation_rows(presentations, spec.start_time, spec.stop_time)
+image_series, change_series = make_image_series(presentations, row_idx, centers, image_to_idx)
+```
+
+**What this does:** Presentations overlapping the trial window are selected and assigned to bins whose centers fall inside each presentation's `[start, stop)`. The image series uses the same `centers` time grid as the neural data, so each bin column in `output` aligns with the same column in `neural`.
+
+**Rating:** ok
+
+**Note:** manual uses trial table initial_image_name change_image_name while agent uses image time series
+
+---
+
+## Q 4-a. What variables in the raw data is `output` *Image change* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:245: "Stimulus presentation `is_change` + presentation timing → `output[1]` (`image_change`). Binary series that is 1 during the changed-image presentation immediately after a true image-identity change, else 0".
+
+**Code** (convert_data.py:317-334):
+```python
+def make_image_series(presentations, row_idx, centers, image_to_idx):
+    image_series = np.full(centers.shape, image_to_idx["gray"], dtype=np.int16)
+    change_series = np.zeros(centers.shape, dtype=np.int16)
+    for idx in row_idx:
+        start = float(presentations["start_time"][idx])
+        stop = float(presentations["stop_time"][idx])
+        ...
+        in_window = (centers >= start) & (centers < stop)
+        ...
+        omitted = bool(np.nan_to_num(presentations["omitted"][idx], nan=0.0))
+        ...
+        is_change = bool(np.nan_to_num(presentations["is_change"][idx], nan=0.0))
+        if is_change and not omitted:
+            change_series[in_window] = 1
+    return image_series, change_series
+```
+
+**What this does:** `image_change` is derived from each presentation row's `is_change` flag combined with `omitted`. Bins fall to 1 only inside a presentation interval flagged `is_change` and not omitted; all other bins remain 0.
+
+**Rating:** concerning
+
+**Note:** manual uses trial table, but agent uses stimulus presentation intervals. manual sets to 1 for 750ms, while agent is only 1 for one frame
+
+---
+
+## Q 4-b. What processing is involved in computing `output` *Image change*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:261: "Image-change target will mark the changed-image presentation, not only a single instant: Marking the post-change image flash interval is more robust after binning".
+
+**Code** (convert_data.py:317-334):
+```python
+change_series = np.zeros(centers.shape, dtype=np.int16)
+for idx in row_idx:
+    ...
+    in_window = (centers >= start) & (centers < stop)
+    ...
+    is_change = bool(np.nan_to_num(presentations["is_change"][idx], nan=0.0))
+    if is_change and not omitted:
+        change_series[in_window] = 1
+```
+
+**What this does:** No additional smoothing or expansion: the binary `change_series` is set to 1 only inside the presentation window flagged `is_change` (not omitted). The output is the raw indicator over the changed-image flash interval.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 4-c. How is `output` *Image change* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none specific; covered by 5-c general alignment language)
+
+**Code** (convert_data.py:560-561, 574-580):
+```python
+row_idx = find_presentation_rows(presentations, spec.start_time, spec.stop_time)
+image_series, change_series = make_image_series(presentations, row_idx, centers, image_to_idx)
+...
+output_trial = np.vstack([
+    image_series.astype(np.int16),
+    change_series.astype(np.int16),
+    running_bins,
+    pupil_bins,
+    outcome_series,
+])
+```
+
+**What this does:** `change_series` is computed on the same `centers` time grid as the neural data, then stacked into row 1 of `output_trial`, so each bin column aligns with the corresponding neural column.
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *Running speed* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:246: "Running speed timeseries → `output[2]` (`running_speed_bin`)". CONVERSION_NOTES.md:178-179: "computed from wheel encoder voltage ... whitepaper explicitly points to AllenSDK running-processing code".
@@ -314,7 +495,7 @@ running_values = np.asarray(f["/processing/running/speed/data"], dtype=np.float6
 
 ---
 
-## Q 3-b. What processing is involved in computing `output` *Running speed*?
+## Q 5-b. What processing is involved in computing `output` *Running speed*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:262: "Running and pupil bin edges will be global, not per-session". CONVERSION_NOTES.md:246: "Interpolate running speed to rebinned trial time axis, then discretize into 5 global percentile bins".
@@ -354,7 +535,7 @@ running_bins = discretize_with_edges(running_interp, running_edges)
 
 ---
 
-## Q 3-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-c. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:216: "Align converted outputs to ophys timestamps by resampling/interpolating from their native synchronized time bases."
@@ -384,7 +565,7 @@ output_trial = np.vstack([
 
 ---
 
-## Q 4-a. What variables in the raw data is `output` *Pupil diameter* derived from?
+## Q 6-a. What variables in the raw data is `output` *Pupil diameter* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:247: "Use processed pupil area after blink filtering, convert to equivalent diameter `2*sqrt(area/pi)`". CONVERSION_NOTES.md:181: "whitepaper states pupil size is derived from ellipse fits; major axis is treated as diameter and area is computed from that diameter".
@@ -414,7 +595,7 @@ pupil_diameter = pupil_area_to_diameter(pupil_area)
 
 ---
 
-## Q 4-b. What processing is involved in computing `output` *Pupil diameter*?
+## Q 6-b. What processing is involved in computing `output` *Pupil diameter*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:247: "Use processed pupil area after blink filtering, convert to equivalent diameter ... interpolate to rebinned trial axis, discretize into 5 global percentile bins".
@@ -445,7 +626,7 @@ pupil_edges = compute_bin_edges(pupil_pool, 5)
 
 ---
 
-## Q 4-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:216: "Align converted outputs to ophys timestamps by resampling/interpolating from their native synchronized time bases."
@@ -468,187 +649,6 @@ output_trial = np.vstack([
 **What this does:** Pupil values are evaluated at the same per-trial bin centers as neural and running, so `pupil_bins` becomes one row of `output_trial` aligned column-by-column with the neural data via the shared `centers` time grid.
 
 **Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 5-a. What variables in the raw data is `output` *Image name* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:244: "Stimulus presentation `image_name` + presentation timing + omission state → `output[0]` (`image_identity`)". CONVERSION_NOTES.md:260: "Image identity will include a `gray` class".
-
-**Code** (convert_data.py:152-198, 287-297):
-```python
-def read_task_presentations(f):
-    ...
-    keep_names = ["start_time", "stop_time", "image_name", "omitted", "is_change",
-                  "is_sham_change", "trials_id", "active"]
-    for key in interval_root.keys():
-        if key == "trials":
-            continue
-        ...
-        rows.append(read_interval_group(group, keep_names))
-    ...
-
-def unique_nonempty_images(presentations):
-    ...
-    names = [str(x) for x in presentations["image_name"]
-             if str(x) not in {"", "nan", "None", "omitted"}]
-    return sorted(set(names))
-```
-
-**What this does:** Image names are derived from all `/intervals/*_presentations` tables in the NWB file (concatenated across non-trials presentation groups), using each presentation's `image_name`, `start_time`, `stop_time`, and `omitted` flag. Empty / NaN / "omitted" entries are excluded from the image vocabulary.
-
-**Rating:** ok
-
-**Note:** uses stimulus presentations table instead of initial_image_name change_image_name
-
----
-
-## Q 5-b. What processing is involved in computing `output` *Image name*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:244: "Project stimulus presentations onto trial bins; assign image category during image flashes and `gray` during ISI/omissions/no-image periods". CONVERSION_NOTES.md:686-688 (script): builds global image vocabulary across all eligible sessions.
-
-**Code** (convert_data.py:311-334, 686-688):
-```python
-def make_image_series(presentations, row_idx, centers, image_to_idx):
-    image_series = np.full(centers.shape, image_to_idx["gray"], dtype=np.int16)
-    change_series = np.zeros(centers.shape, dtype=np.int16)
-    for idx in row_idx:
-        start = float(presentations["start_time"][idx])
-        stop = float(presentations["stop_time"][idx])
-        ...
-        in_window = (centers >= start) & (centers < stop)
-        ...
-        omitted = bool(np.nan_to_num(presentations["omitted"][idx], nan=0.0))
-        if not omitted:
-            image_name = str(presentations["image_name"][idx])
-            image_series[in_window] = image_to_idx.get(image_name, image_to_idx["gray"])
-        ...
-    return image_series, change_series
-...
-image_names = sorted({img for p in eligible for img in p.unique_images})
-image_values = ["gray"] + image_names
-image_to_idx = {name: idx for idx, name in enumerate(image_values)}
-```
-
-**What this does:** A global integer code vocabulary is built across all eligible sessions; index 0 is `"gray"`, then the sorted set of distinct image names. Per trial, every bin is initialized to `gray` and then overwritten with the corresponding image code for any non-omitted presentation interval whose `[start, stop)` covers that bin center.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 5-c. How is `output` *Image name* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:244 (transform): "Project stimulus presentations onto trial bins".
-
-**Code** (convert_data.py:300-308, 547, 560-561):
-```python
-def find_presentation_rows(presentations, start_time, stop_time):
-    ...
-    starts = presentations["start_time"]
-    ends = presentations["stop_time"]
-    mask = (starts < stop_time) & (ends > start_time)
-    return np.flatnonzero(mask)
-...
-starts, ends, centers = build_bin_centers(spec.start_time, spec.stop_time, bin_size_sec)
-...
-row_idx = find_presentation_rows(presentations, spec.start_time, spec.stop_time)
-image_series, change_series = make_image_series(presentations, row_idx, centers, image_to_idx)
-```
-
-**What this does:** Presentations overlapping the trial window are selected and assigned to bins whose centers fall inside each presentation's `[start, stop)`. The image series uses the same `centers` time grid as the neural data, so each bin column in `output` aligns with the same column in `neural`.
-
-**Rating:** ok
-
-**Note:** manual uses trial table initial_image_name change_image_name while agent uses image time series
-
----
-
-## Q 6-a. What variables in the raw data is `output` *Image change* derived from?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:245: "Stimulus presentation `is_change` + presentation timing → `output[1]` (`image_change`). Binary series that is 1 during the changed-image presentation immediately after a true image-identity change, else 0".
-
-**Code** (convert_data.py:317-334):
-```python
-def make_image_series(presentations, row_idx, centers, image_to_idx):
-    image_series = np.full(centers.shape, image_to_idx["gray"], dtype=np.int16)
-    change_series = np.zeros(centers.shape, dtype=np.int16)
-    for idx in row_idx:
-        start = float(presentations["start_time"][idx])
-        stop = float(presentations["stop_time"][idx])
-        ...
-        in_window = (centers >= start) & (centers < stop)
-        ...
-        omitted = bool(np.nan_to_num(presentations["omitted"][idx], nan=0.0))
-        ...
-        is_change = bool(np.nan_to_num(presentations["is_change"][idx], nan=0.0))
-        if is_change and not omitted:
-            change_series[in_window] = 1
-    return image_series, change_series
-```
-
-**What this does:** `image_change` is derived from each presentation row's `is_change` flag combined with `omitted`. Bins fall to 1 only inside a presentation interval flagged `is_change` and not omitted; all other bins remain 0.
-
-**Rating:** concerning
-
-**Note:** manual uses trial table, but agent uses stimulus presentation intervals. manual sets to 1 for 750ms, while agent is only 1 for one frame
-
----
-
-## Q 6-b. What processing is involved in computing `output` *Image change*?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:261: "Image-change target will mark the changed-image presentation, not only a single instant: Marking the post-change image flash interval is more robust after binning".
-
-**Code** (convert_data.py:317-334):
-```python
-change_series = np.zeros(centers.shape, dtype=np.int16)
-for idx in row_idx:
-    ...
-    in_window = (centers >= start) & (centers < stop)
-    ...
-    is_change = bool(np.nan_to_num(presentations["is_change"][idx], nan=0.0))
-    if is_change and not omitted:
-        change_series[in_window] = 1
-```
-
-**What this does:** No additional smoothing or expansion: the binary `change_series` is set to 1 only inside the presentation window flagged `is_change` (not omitted). The output is the raw indicator over the changed-image flash interval.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 6-c. How is `output` *Image change* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> (none specific; covered by 5-c general alignment language)
-
-**Code** (convert_data.py:560-561, 574-580):
-```python
-row_idx = find_presentation_rows(presentations, spec.start_time, spec.stop_time)
-image_series, change_series = make_image_series(presentations, row_idx, centers, image_to_idx)
-...
-output_trial = np.vstack([
-    image_series.astype(np.int16),
-    change_series.astype(np.int16),
-    running_bins,
-    pupil_bins,
-    outcome_series,
-])
-```
-
-**What this does:** `change_series` is computed on the same `centers` time grid as the neural data, then stacked into row 1 of `output_trial`, so each bin column aligns with the corresponding neural column.
-
-**Rating:** ok
 
 **Note:** _(no note)_
 
@@ -701,26 +701,6 @@ output_trial = np.vstack([
 ```
 
 **What this does:** The single per-trial outcome integer (0–3) is broadcast across all `T` bins of the trial via `np.full`, producing a constant row in `output_trial`.
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:263 (see 7-b).
-
-**Code** (convert_data.py:572, 574-582):
-```python
-outcome_series = np.full(T, spec.outcome_idx, dtype=np.int16)
-...
-output_trial = np.vstack([... outcome_series])
-```
-
-**What this does:** Trial outcome is a constant value across all `T` bins of a trial; it shares the same time dimension as the neural data by construction (`T == centers.size`).
 
 **Rating:** ok
 

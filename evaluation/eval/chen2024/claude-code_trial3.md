@@ -37,6 +37,8 @@ for i, (subject, nwb_path) in enumerate(all_files):
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 1-b. How are the data split into subjects?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -63,6 +65,8 @@ for sess in session_results:
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 1-c. How are the data split into sessions?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -87,6 +91,8 @@ for sess in session_results:
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -116,6 +122,8 @@ for trial_idx in valid_indices:
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -151,6 +159,8 @@ for i in range(n_trials):
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -174,6 +184,8 @@ spike_times_good = [spike_times_all[idx] for idx in good_indices]
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -207,6 +219,8 @@ def compute_firing_rates_vectorized(spike_times_list, go_time, t_start, t_end, b
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -231,6 +245,8 @@ if len(good_indices_units) == 0:
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -258,6 +274,8 @@ fr /= bin_width
 
 **Note:** _(to be filled by evaluator)_
 
+---
+
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -282,7 +300,199 @@ for trial_idx in valid_indices:
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-a. What variables in the raw data is `output` *choice* derived from?
+---
+
+## Q 3-a. What variables in the raw data is `input` *time_from_tone_onset* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "sample_start_times -> input[0]: time_from_tone; t - tone_onset (seconds, continuous); Find sample_start within each trial window" (CONVERSION_NOTES.md:177). "`input[session][trial]` = (2, 80) float32: [time_from_tone_onset, photostim_on]" (README.md:27).
+
+**Code** (convert_data.py:362, 373-388):
+```python
+trial_starts = trials['start_time'][:]
+...
+be = nwb.acquisition['BehavioralEvents']
+go_times = be.time_series['go_start_times'].timestamps[:]
+
+# ------ Get sample (tone) onset times for each trial ------
+sample_starts = be.time_series['sample_start_times'].timestamps[:]
+
+# Map sample_start to each trial: find the last sample_start before the go cue within each trial
+tone_onset_per_trial = np.full(n_trials, np.nan)
+for i in range(n_trials):
+    in_trial = sample_starts[(sample_starts >= trial_starts[i]) & (sample_starts <= go_times[i])]
+    if len(in_trial) > 0:
+        tone_onset_per_trial[i] = in_trial[-1]
+```
+
+**What this does:** Derived from `BehavioralEvents['sample_start_times'].timestamps` (the tone/sample onset events), bracketed by `trials.start_time` and `BehavioralEvents['go_start_times'].timestamps` to assign one onset per trial.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_tone_onset*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Time from tone onset: Continuous variable = current_time - first_sample_start_in_trial (in go-cue-relative coords)." (CONVERSION_NOTES.md:199). "time_from_tone_onset range: [-1.5, 11.9]. Sessions 0-41 have min -0.6 (shorter presample), sessions 42+ have min -1.5." (CONVERSION_NOTES.md:385).
+
+**Code** (convert_data.py:383-388, 495-496, 507-510, 536):
+```python
+for i in range(n_trials):
+    in_trial = sample_starts[(sample_starts >= trial_starts[i]) & (sample_starts <= go_times[i])]
+    if len(in_trial) > 0:
+        # Take the LAST sample onset (in case of replays from early licking)
+        tone_onset_per_trial[i] = in_trial[-1]
+...
+bin_centers = T_START + np.arange(N_BINS) * BIN_WIDTH + BIN_WIDTH / 2
+...
+    # --- Input 0: time from tone onset (seconds) ---
+    tone_time = tone_onset_per_trial[trial_idx]
+    tone_relative = tone_time - go_time  # tone onset relative to go cue (negative)
+    time_from_tone = bin_centers - tone_relative  # time since tone onset at each bin
+...
+input_data = np.stack([time_from_tone.astype(np.float32), photostim], axis=0)  # (2, n_bins)
+```
+
+**What this does:** Per trial, the last `sample_start_times` event between trial start and go cue is taken as tone onset, converted to go-cue-relative time, and subtracted from each of the 80 bin centers to give a continuous seconds-since-tone value per bin (float32). Trials with no such event get NaN and are dropped by the valid-trial mask.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-c. How is `input` *time_from_tone_onset* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "(in go-cue-relative coords)" (CONVERSION_NOTES.md:199). "`input[session][trial]` = (2, 80) float32" (README.md:27), same 80-bin layout as `neural`.
+
+**Code** (convert_data.py:495-510, 536-537):
+```python
+# Time bin centers relative to go cue
+bin_centers = T_START + np.arange(N_BINS) * BIN_WIDTH + BIN_WIDTH / 2
+
+for trial_idx in valid_indices:
+    go_time = go_times[trial_idx]
+    fr = compute_firing_rates_vectorized(
+        spike_times_good, go_time, T_START, T_END, BIN_WIDTH, N_BINS
+    )
+    neural_trials.append(fr)
+
+    tone_time = tone_onset_per_trial[trial_idx]
+    tone_relative = tone_time - go_time
+    time_from_tone = bin_centers - tone_relative
+...
+input_data = np.stack([time_from_tone.astype(np.float32), photostim], axis=0)
+input_trials.append(input_data)
+```
+
+**What this does:** It is evaluated on the same `bin_centers` grid used for the firing rates — 80 50 ms bins over [-2.5, +1.5] s relative to the trial's go cue — and appended in the same trial loop, so `input[s][t][0]` is bin-for-bin aligned with `neural[s][t]`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-a. What variables in the raw data is `input` *photostim* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "photostim_onset/duration -> input[1]: photostim_on; Binary (0/1) per time bin; 1 during photostim window, 0 otherwise" (CONVERSION_NOTES.md:178). "trials: ... photostim_onset/power/duration" (CONVERSION_NOTES.md:62).
+
+**Code** (convert_data.py:362, 369-370, 514-516):
+```python
+trial_starts = trials['start_time'][:]
+...
+photostim_onset = trials['photostim_onset'][:]  # time or 'N/A'
+photostim_duration = trials['photostim_duration'][:]  # duration or 'N/A'
+...
+if photostim_onset[trial_idx] != 'N/A':
+    ps_onset = float(photostim_onset[trial_idx])
+    ps_duration = float(photostim_duration[trial_idx])
+```
+
+**What this does:** Derived from the NWB trials table columns `photostim_onset` and `photostim_duration`, combined with `trials.start_time` and the go-cue time. The `BehavioralEvents` `photostim_start/stop_times` series are noted in CONVERSION_NOTES.md:64 but not used in the code.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-b. What processing is involved in computing `input` *photostim*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Photostim input: Binary time series; 1 when photostim is active, 0 otherwise." (CONVERSION_NOTES.md:200). "photostim_on: Binary [0,1] as expected. 3 sessions have no photostim trials (max=0), which is valid." (CONVERSION_NOTES.md:386). "Photostim fraction ~25% - '~25% randomly interleaved trials'" (CONVERSION_NOTES.md:94).
+
+**Code** (convert_data.py:512-536):
+```python
+# --- Input 1: photostimulation on/off ---
+photostim = np.zeros(N_BINS, dtype=np.float32)
+if photostim_onset[trial_idx] != 'N/A':
+    ps_onset = float(photostim_onset[trial_idx])
+    ps_duration = float(photostim_duration[trial_idx])
+    # photostim_onset is relative to trial start, need to convert to absolute then go-relative
+    # Actually check: is it absolute or relative?
+    # Looking at the data: photostim_onset values are small (1.8) suggesting relative to trial start
+    ps_onset_abs = trial_starts[trial_idx] + ps_onset
+    ps_end_abs = ps_onset_abs + ps_duration
+    ps_onset_rel = ps_onset_abs - go_time
+    ps_end_rel = ps_end_abs - go_time
+
+    for b in range(N_BINS):
+        bc = bin_centers[b]
+        if ps_onset_rel <= bc < ps_end_rel:
+            photostim[b] = 1.0
+
+input_data = np.stack([time_from_tone.astype(np.float32), photostim], axis=0)  # (2, n_bins)
+```
+
+**What this does:** A length-80 float32 vector initialized to zeros; for trials whose `photostim_onset` is not `'N/A'`, the onset string is cast to float, interpreted as an offset from `trial_starts[trial_idx]`, converted to go-cue-relative time, and bins whose center falls in `[onset, onset+duration)` are set to 1.0. The inline comments record that the code assumed (rather than verified) the trial-start-relative interpretation.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-c. How is `input` *photostim* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Binary (0/1) per time bin; 1 during photostim window, 0 otherwise" (CONVERSION_NOTES.md:178). "`input[session][trial]` = (2, 80) float32" (README.md:27).
+
+**Code** (convert_data.py:495-499, 526-537):
+```python
+bin_centers = T_START + np.arange(N_BINS) * BIN_WIDTH + BIN_WIDTH / 2
+
+for trial_idx in valid_indices:
+    go_time = go_times[trial_idx]
+    ...
+    ps_onset_abs = trial_starts[trial_idx] + ps_onset
+    ps_end_abs = ps_onset_abs + ps_duration
+    ps_onset_rel = ps_onset_abs - go_time
+    ps_end_rel = ps_end_abs - go_time
+
+    for b in range(N_BINS):
+        bc = bin_centers[b]
+        if ps_onset_rel <= bc < ps_end_rel:
+            photostim[b] = 1.0
+
+input_data = np.stack([time_from_tone.astype(np.float32), photostim], axis=0)
+input_trials.append(input_data)
+```
+
+**What this does:** The photostim window is converted into go-cue-relative time and tested against the same `bin_centers` grid used for the firing rates, yielding an 80-bin vector per trial that is bin-for-bin aligned with `neural[s][t]` and stored as `input[s][t][1]`.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 5-a. What variables in the raw data is `output` *choice* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "trial_instruction + outcome -> output[0]: choice; left=0, right=1; hit: choice=instruction; miss: choice=opposite; ignore: choice=instruction" (CONVERSION_NOTES.md:178)
@@ -308,7 +518,9 @@ else:  # ignore
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-b. What processing is involved in computing `output` *choice*?
+---
+
+## Q 5-b. What processing is involved in computing `output` *choice*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Choice for ignore trials: Set to instruction direction (the 'correct' choice), since there's no actual lick" (CONVERSION_NOTES.md:194).
@@ -334,29 +546,9 @@ output_data = np.array([
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 3-c. How is `output` *choice* aligned with the neural data?
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "(none)"
-
-**Code** (convert_data.py:575-581):
-```python
-output_data = np.array([
-    np.full(N_BINS, choice, dtype=np.int64),
-    np.full(N_BINS, outcome_val, dtype=np.int64),
-    np.full(N_BINS, early_val, dtype=np.int64),
-    tongue_y_trial.astype(np.int64),
-], dtype=np.int64)  # (4, n_bins)
-output_trials.append(output_data)
-```
-
-**What this does:** Choice is assigned per trial and replicated across all N_BINS=80 bins, matching the neural array's time-bin axis (sharing the same go-cue-aligned trial window).
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
-## Q 4-a. What variables in the raw data is `output` *outcome* derived from?
+## Q 6-a. What variables in the raw data is `output` *outcome* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "outcome -> output[1]: outcome; ignore=0, miss=1, hit=2; Direct mapping from NWB" (CONVERSION_NOTES.md:179)
@@ -374,7 +566,9 @@ outcome_val = {'ignore': 0, 'miss': 1, 'hit': 2}[outcome]
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 4-b. What processing is involved in computing `output` *outcome*?
+---
+
+## Q 6-b. What processing is involved in computing `output` *outcome*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Direct mapping from NWB" (CONVERSION_NOTES.md:179).
@@ -392,23 +586,9 @@ np.full(N_BINS, outcome_val, dtype=np.int64),
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 4-c. How is `output` *outcome* aligned with the neural data?
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "(none)"
-
-**Code** (convert_data.py:577):
-```python
-np.full(N_BINS, outcome_val, dtype=np.int64),
-```
-
-**What this does:** Per-trial scalar broadcast to all 80 time bins, matching the neural array's bin axis on the same per-trial go-cue-aligned window.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
-## Q 5-a. What variables in the raw data is `output` *early_lick* derived from?
+## Q 7-a. What variables in the raw data is `output` *early_lick* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "early_lick -> output[2]: early_lick; no=0, yes=1; Direct mapping from NWB" (CONVERSION_NOTES.md:180)
@@ -426,7 +606,9 @@ early_val = 0 if early_licks[trial_idx] == 'no early' else 1
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 5-b. What processing is involved in computing `output` *early_lick*?
+---
+
+## Q 7-b. What processing is involved in computing `output` *early_lick*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Direct mapping from NWB" (CONVERSION_NOTES.md:180).
@@ -444,23 +626,9 @@ np.full(N_BINS, early_val, dtype=np.int64),
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 5-c. How is `output` *early_lick* aligned with the neural data?
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "(none)"
-
-**Code** (convert_data.py:578):
-```python
-np.full(N_BINS, early_val, dtype=np.int64),
-```
-
-**What this does:** Per-trial scalar replicated across all 80 bins of the go-cue-aligned trial window.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
-## Q 6-a. What variables in the raw data is `output` *tongue_y* derived from?
+## Q 8-a. What variables in the raw data is `output` *tongue_y_position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "TongueTracking y -> output[3]: tongue_y; Discretized per-session (0/1/2); 40th/60th percentile thresholds" (CONVERSION_NOTES.md:181)
@@ -482,7 +650,9 @@ if has_tongue:
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-b. What processing is involved in computing `output` *tongue_y*?
+---
+
+## Q 8-b. What processing is involved in computing `output` *tongue_y_position*?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Discretize per session using 40th/60th percentile thresholds over ALL valid tongue positions in the session" (CONVERSION_NOTES.md:195).
@@ -515,7 +685,9 @@ for b in range(N_BINS):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 6-c. How is `output` *tongue_y* aligned with the neural data?
+---
+
+## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"
@@ -539,7 +711,9 @@ tongue_y_trial.astype(np.int64),
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+---
+
+## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Zero-neural-data trials: 126/74894 (0.17%) - negligible edge cases from recording coverage boundaries" (CONVERSION_NOTES.md:298). "All unmapped annotations fall back to OtherCortex (reasonable default)" (CONVERSION_NOTES.md:299).
@@ -583,7 +757,9 @@ except Exception as e:
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-a. What are the most time-consuming steps of the code?
+---
+
+## Q 10-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "~5-10s per session, ~30 min total for full conversion" (CONVERSION_NOTES.md:239).
@@ -609,7 +785,9 @@ for b in range(N_BINS):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+---
+
+## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"
@@ -643,7 +821,9 @@ for b in range(N_BINS):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-c. What processing does the code repeat multiple times?
+---
+
+## Q 10-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"
@@ -664,7 +844,9 @@ for trial_idx in valid_indices:
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+---
+
+## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"
@@ -683,7 +865,9 @@ def make_processing_plots(session_data, session_idx, nwb_path):
 
 **Note:** _(to be filled by evaluator)_
 
-## Q 8-e. How is memory usage optimized?
+---
+
+## Q 10-e. How is memory usage optimized?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "converted_data.pkl (9977.5 MB)" (CONVERSION_NOTES.md:262).
@@ -705,3 +889,5 @@ with open(args.outfile, 'wb') as f:
 **Rating:** _(to be filled by evaluator)_
 
 **Note:** _(to be filled by evaluator)_
+
+---

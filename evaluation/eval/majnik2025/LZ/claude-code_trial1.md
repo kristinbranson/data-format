@@ -403,7 +403,7 @@ def interpolate_missing_frames(motion_energy, interframe_int, n_neural_frames):
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Edge cases: Missing video frames handled via interframe interval detection and interpolation. End-of-session partial bins discarded (correct behavior)." (CONVERSION_NOTES.md:236)
@@ -430,7 +430,7 @@ n_trials = n_bins // trial_frames
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "dF/F + binning | ~1.5s | ~60s for 41 sessions" (CONVERSION_NOTES.md:174); "Total conversion time: 60.5s" (conversion_full_out.txt)
@@ -457,7 +457,7 @@ for i, (subj, sess) in enumerate(all_sessions):
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -487,7 +487,7 @@ for session_trials in all_me_trials:
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -502,7 +502,7 @@ for session_trials in all_me_trials:
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -522,5 +522,37 @@ def _plot_processing(subj, sess, F, Fneu, me, interframe,
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — the notes discuss runtime only, e.g. CONVERSION_NOTES.md:148 "Fix also dramatically improved runtime: 1420s → 60s"; no mention of memory, dtype choice, or streaming)
+
+**Code** (convert_data.py:298-313, with the dtype cast at :206):
+```python
+    for i, (subj, sess) in enumerate(all_sessions):
+        t0 = time.time()
+        print(f"Processing session {i+1}/{len(all_sessions)}: {subj}/{sess}...", end=" ")
+
+        subj_dir = os.path.join(DATA_DIR, subj)
+        F, Fneu, me, interframe = load_session(subj_dir, sess)
+
+        dff_binned, me_binned = process_session(F, Fneu, me, interframe)
+        neural_trials, me_trials = split_into_trials(dff_binned, me_binned, trial_frames)
+
+        neural_all.append(neural_trials)
+        me_all_raw.append(me_trials)
+        subject_idx.append(subject_list.index(subj))
+
+# :206  neural_trials.append(neural_binned[:, start:end].astype(np.float32))
+```
+
+**What this does:** Sessions are loaded and processed one at a time inside the main loop, so full-resolution `F`/`Fneu`/dF/F arrays for the current session are rebound (and released) on the next iteration; only the 10-frame-binned trials are accumulated, cast to `float32` at line 206. There is no memory-mapping, no explicit `del` or `gc` call, and no chunked/streaming read — `np.load` reads each array fully into RAM (lines 157-160), and the motion-energy path upcasts to `float64` (lines 100-121). The `_maximin_baseline` helper allocates several full `(n_neurons, n_frames)` intermediates (`Fc`, `Flow` ×3, `dff`) simultaneously.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

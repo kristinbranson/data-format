@@ -152,7 +152,7 @@
 
 ---
 
-## Q 3-a. What variables in the raw data is `output` *visual_stimulus* derived from?
+## Q 7-a. What variables in the raw data is `output` *visual_stimulus* derived from?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -167,7 +167,7 @@
 
 ---
 
-## Q 3-b. What processing is involved in computing `output` *visual_stimulus*?
+## Q 7-b. What processing is involved in computing `output` *visual_stimulus*?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -182,7 +182,7 @@
 
 ---
 
-## Q 4-a. What variables in the raw data is `output` *licking* derived from?
+## Q 8-a. What variables in the raw data is `output` *licking* derived from?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -197,7 +197,7 @@
 
 ---
 
-## Q 4-b. What processing is involved in computing `output` *licking*?
+## Q 8-b. What processing is involved in computing `output` *licking*?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -212,7 +212,7 @@
 
 ---
 
-## Q 4-c. How is `output` *licking* aligned with the neural data?
+## Q 8-c. How is `output` *licking* aligned with the neural data?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -227,7 +227,7 @@
 
 ---
 
-## Q 5-a. What variables in the raw data is `output` *position* derived from?
+## Q 9-a. What variables in the raw data is `output` *position* derived from?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -242,7 +242,7 @@
 
 ---
 
-## Q 5-b. What processing is involved in computing `output` *position*?
+## Q 9-b. What processing is involved in computing `output` *position*?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -257,7 +257,7 @@
 
 ---
 
-## Q 5-c. How is `output` *position* aligned with the neural data?
+## Q 9-c. How is `output` *position* aligned with the neural data?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -272,7 +272,7 @@
 
 ---
 
-## Q 6-a. What variables in the raw data is `output` *running_speed* derived from?
+## Q 10-a. What variables in the raw data is `output` *running_speed* derived from?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -287,7 +287,7 @@
 
 ---
 
-## Q 6-b. What processing is involved in computing `output` *running_speed*?
+## Q 10-b. What processing is involved in computing `output` *running_speed*?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -302,7 +302,7 @@
 
 ---
 
-## Q 6-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-c. How is `output` *running_speed* aligned with the neural data?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -317,7 +317,7 @@
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 11. How are minor mistakes in the data, e.g. missing data, handled?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -332,7 +332,7 @@
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 12-a. What are the most time-consuming steps of the code?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -347,7 +347,7 @@
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 12-b. What loops in the code could have been vectorized to improve efficiency?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -362,7 +362,7 @@
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 12-c. What processing does the code repeat multiple times?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -377,7 +377,7 @@
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 12-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -392,7 +392,7 @@
 
 ---
 
-## Q 8-e. How is memory usage optimized?
+## Q 12-e. How is memory usage optimized?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|

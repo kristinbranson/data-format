@@ -33,6 +33,8 @@ for i, (anm, date, probes, data_dir) in enumerate(sessions):
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 1-b. How are the data split into subjects?
 
 **Notes excerpt** (CONVERSION_NOTES.md:271-274):
@@ -57,6 +59,8 @@ subject_idx = np.array([subjects.index(anm) for anm in all_animals], dtype=np.in
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---
 
 ## Q 1-c. How are the data split into sessions?
 
@@ -84,6 +88,8 @@ for i, (anm, date, probes, data_dir) in enumerate(sessions):
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 1-d. Are the data correctly split into trials?
 
 **Notes excerpt** (CONVERSION_NOTES.md:204):
@@ -107,6 +113,8 @@ for t_idx in range(n_valid):
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
@@ -134,6 +142,8 @@ valid_trials = np.where(valid_mask)[0]
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:191):
@@ -160,6 +170,8 @@ for i, clu_idx in enumerate(valid_clu):
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 2-b. How is the `neural` data processed?
 
 **Notes excerpt** (CONVERSION_NOTES.md:52-59):
@@ -183,6 +195,8 @@ def causal_gaussian_smooth(x, N, bctype='reflect'):
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
@@ -214,6 +228,8 @@ def remove_low_fr_neurons(trialdat, low_fr):
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:202):
@@ -237,6 +253,8 @@ trialdat[:, neuron_offset + i, j] = causal_gaussian_smooth(fr, SMOOTH_WINDOW, BC
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---
 
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
@@ -262,7 +280,111 @@ counts, _ = np.histogram(aligned, bins=edges)
 
 **Note:** _(no note)_---
 
-## Q 3-a. What variables in the raw data is `output` *lick_direction* derived from?
+---
+
+## Q 3-a. What variables in the raw data is `input` *time_from_go_cue* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:192 — `| time from goCue (s) | input[0] | Continuous time axis | N/A | Ranges from -2.5 to 2.5 s |`
+> CONVERSION_NOTES.md:44-45 — `- \`alignEvent = 'goCue'\`` / `- \`tmin = -2.5\`, \`tmax = 2.5\` (seconds from goCue)`
+> README.md:38 — `| \`input\` | list of 44 arrays, each: (n_trials, 500, 1) | Time from go cue (seconds) |`
+> README.md:44 — `| \`input_names\` | \`['time_from_gocue']\` | Input variable names |`
+
+**Code** (convert_data.py:91-94, 636-637, 673, 693-695):
+```python
+ALIGN_EVENT = 'goCue'
+TMIN = -2.5  # seconds
+TMAX = 2.5   # seconds
+DT = 1.0 / 100  # 10 ms bins
+...
+    ev = bp['ev']
+    goCue = np.array(ev['goCue']).flatten()
+...
+    align_times_all = goCue  # for all trials
+...
+    edges = np.arange(TMIN, TMAX + DT, DT)
+    time_axis = edges[:-1] + DT / 2
+    n_time = len(time_axis)
+```
+
+**What this does:** The trial produces a single input variable, `input_names = ['time_from_gocue']`. It is not read from a raw data field directly; it is the bin-center time axis constructed from the constants `TMIN`, `TMAX`, `DT`, which is the same axis the spikes are binned on after subtracting the raw per-trial `obj.bp.ev.goCue` time.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_go_cue*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:192 — `| time from goCue (s) | input[0] | Continuous time axis | N/A | Ranges from -2.5 to 2.5 s |`
+> CONVERSION_NOTES.md:275 — `- **500 time bins** per trial (-2.5 to 2.5 s from goCue at 10ms resolution)`
+> README.md:19 — `| Time bins per trial | 500 (-2.5 to +2.5 s from go cue, 10 ms bins) |`
+
+**Code** (convert_data.py:693-695, 774-784):
+```python
+    edges = np.arange(TMIN, TMAX + DT, DT)
+    time_axis = edges[:-1] + DT / 2
+    n_time = len(time_axis)
+...
+    # Build trial-level data structures
+    neural_trials = []
+    input_trials = []
+    output_trials = []
+
+    for t_idx in range(n_valid):
+        # Neural: (n_neurons, n_time)
+        neural_trials.append(trialdat_valid[:, :, t_idx].T.astype(np.float32))
+
+        # Input: time from goCue in seconds (1, n_time)
+        input_trials.append(time_axis.reshape(1, -1).astype(np.float32))
+```
+
+**What this does:** `edges` spans TMIN=-2.5 to TMAX=2.5 s in DT=0.01 s steps and `time_axis` takes the bin centers (edges shifted by DT/2), giving 500 values from -2.495 to 2.495 s. The identical `time_axis` vector is reshaped to (1, n_time), cast to float32, and appended once per valid trial, so every trial in a session carries the same input row.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-c. How is `input` *time_from_go_cue* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:56 — `4. Align spikes to goCue: \`trialtm_aligned = trialtm - goCue_time\``
+> CONVERSION_NOTES.md:142-143 — `- Align to goCue` / `- Time window: -2.5 to 2.5 s from goCue`
+> README.md:64 — `3. Align spike times to go cue onset`
+
+**Code** (convert_data.py:711-720, 781-784):
+```python
+            for j in range(ntrials_total):
+                trial_num = j + 1
+                spk_mask = trial_arr == trial_num
+                if not np.any(spk_mask):
+                    continue
+
+                aligned = trialtm_arr[spk_mask] - align_times_all[j]
+                counts, _ = np.histogram(aligned, bins=edges)
+                fr = counts.astype(np.float32) / DT
+                trialdat[:, neuron_offset + i, j] = causal_gaussian_smooth(fr, SMOOTH_WINDOW, BC_TYPE)
+...
+        # Neural: (n_neurons, n_time)
+        neural_trials.append(trialdat_valid[:, :, t_idx].T.astype(np.float32))
+
+        # Input: time from goCue in seconds (1, n_time)
+        input_trials.append(time_axis.reshape(1, -1).astype(np.float32))
+```
+
+**What this does:** Alignment is by construction: spikes are histogrammed into `edges` after subtracting each trial's `goCue` time, and the input is the bin-center vector of those same `edges`. Neural arrays are (n_neurons, 500) and the input is (1, 500) over the identical bin grid, so index k of the input is the time offset from go cue of bin k of the neural data. `metadata['temporal_alignment_event'] = 'Go cue onset'` (convert_data.py:1013).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-a. What variables in the raw data is `output` *lick_direction* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:193):
 > obj.bp.R/L + hit/miss -> output[0]: lick_direction; R&hit or L&miss -> right(1); L&hit or R&miss -> left(0)
@@ -284,7 +406,9 @@ lick_direction = lick_right[valid_trials].astype(np.int32)
 
 **Note:** _(no note)_---
 
-## Q 3-b. What processing is involved in computing `output` *lick_direction*?
+---
+
+## Q 4-b. What processing is involved in computing `output` *lick_direction*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:193):
 > R&hit or L&miss -> right(1); L&hit or R&miss -> left(0)
@@ -303,23 +427,9 @@ out[0, :] = lick_direction[t_idx]  # broadcast per-trial to time
 
 **Note:** _(no note)_---
 
-## Q 3-c. How is `output` *lick_direction* aligned with the neural data?
+---
 
-**Notes excerpt** (none directly).
-
-**Code** (convert_data.py:786-789):
-```python
-out = np.zeros((6, n_time), dtype=np.int32)
-out[0, :] = lick_direction[t_idx]  # broadcast per-trial to time
-```
-
-**What this does:** Per-trial label is replicated across all 500 neural time bins; alignment is implicit (constant over the same time axis as neural).
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
-## Q 4-a. What variables in the raw data is `output` *context* derived from?
+## Q 5-a. What variables in the raw data is `output` *context* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:194):
 > obj.bp.autowater -> output[1]: context; autowater=1 -> WC(0); autowater=0 -> DR(1)
@@ -337,7 +447,9 @@ context = (~autowater[valid_trials]).astype(np.int32)
 
 **Note:** _(no note)_---
 
-## Q 4-b. What processing is involved in computing `output` *context*?
+---
+
+## Q 5-b. What processing is involved in computing `output` *context*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:194):
 > autowater=1 -> WC(0); autowater=0 -> DR(1)
@@ -355,22 +467,9 @@ out[1, :] = context[t_idx]
 
 **Note:** _(no note)_---
 
-## Q 4-c. How is `output` *context* aligned with the neural data?
+---
 
-**Notes excerpt** (none).
-
-**Code** (convert_data.py:790):
-```python
-out[1, :] = context[t_idx]
-```
-
-**What this does:** Per-trial scalar broadcast across all `n_time` neural bins.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(no note)_---
-
-## Q 5-a. What variables in the raw data is `output` *outcome* derived from?
+## Q 6-a. What variables in the raw data is `output` *outcome* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:195):
 > obj.bp.hit/miss -> output[2]: outcome; hit -> correct(1); miss -> incorrect(0)
@@ -388,7 +487,9 @@ outcome = hit[valid_trials].astype(np.int32)
 
 **Note:** _(no note)_---
 
-## Q 5-b. What processing is involved in computing `output` *outcome*?
+---
+
+## Q 6-b. What processing is involved in computing `output` *outcome*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:195):
 > hit -> correct(1); miss -> incorrect(0)
@@ -406,22 +507,9 @@ out[2, :] = outcome[t_idx]
 
 **Note:** _(no note)_---
 
-## Q 5-c. How is `output` *outcome* aligned with the neural data?
+---
 
-**Notes excerpt** (none).
-
-**Code** (convert_data.py:791):
-```python
-out[2, :] = outcome[t_idx]
-```
-
-**What this does:** Per-trial scalar broadcast across all neural time bins.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(no note)_---
-
-## Q 6-a. What variables in the raw data is `output` *tongue_velocity* derived from?
+## Q 7-a. What variables in the raw data is `output` *tongue_velocity* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:196):
 > tongue velocity from DLC -> output[3]: tongue_velocity; Compute from DLC, discretize at 50th percentile per session
@@ -446,7 +534,9 @@ x = ts[:, 0, tongue_idx].copy(); y = ts[:, 1, tongue_idx].copy()
 
 **Note:** _(no note)_---
 
-## Q 6-b. What processing is involved in computing `output` *tongue_velocity*?
+---
+
+## Q 7-b. What processing is involved in computing `output` *tongue_velocity*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:235):
 > Tongue NaN values NOT filled (per paper methods), velocity computed only where visible
@@ -473,7 +563,9 @@ tongue_vel = np.nan_to_num(tongue_vel, nan=0.0)
 
 **Note:** _(no note)_---
 
-## Q 6-c. How is `output` *tongue_velocity* aligned with the neural data?
+---
+
+## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (none beyond above).
 
@@ -498,7 +590,9 @@ out[3, :] = tongue_vel_disc[:, t_idx]
 
 **Note:** _(no note)_---
 
-## Q 7-a. What variables in the raw data is `output` *paw_velocity* derived from?
+---
+
+## Q 8-a. What variables in the raw data is `output` *paw_velocity* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:197):
 > paw velocity from DLC -> output[4]: paw_velocity; Compute from DLC, discretize at 50th percentile per session
@@ -522,7 +616,9 @@ ts = np.array(traj_bottom['ts'][trix])
 
 **Note:** _(no note)_---
 
-## Q 7-b. What processing is involved in computing `output` *paw_velocity*?
+---
+
+## Q 8-b. What processing is involved in computing `output` *paw_velocity*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:236):
 > Paw NaN values filled with nearest neighbor before velocity computation
@@ -551,7 +647,9 @@ avg_speed = np.mean(speeds, axis=0)
 
 **Note:** _(no note)_---
 
-## Q 7-c. How is `output` *paw_velocity* aligned with the neural data?
+---
+
+## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (none).
 
@@ -575,7 +673,9 @@ out[4, :] = paw_vel_disc[:, t_idx]
 
 **Note:** _(no note)_---
 
-## Q 8-a. What variables in the raw data is `output` *motion_energy* derived from?
+---
+
+## Q 9-a. What variables in the raw data is `output` *motion_energy* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:198):
 > motion energy -> output[5]: motion_energy; Load from motionEnergy file, discretize at 50th percentile per session
@@ -601,7 +701,9 @@ for trix in range(ntrials):
 
 **Note:** _(no note)_---
 
-## Q 8-b. What processing is involved in computing `output` *motion_energy*?
+---
+
+## Q 9-b. What processing is involved in computing `output` *motion_energy*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:207):
 > Motion energy discretization: Per-session 50th percentile threshold on the time-varying signal.
@@ -629,7 +731,9 @@ if me_raw is not None:
 
 **Note:** _(no note)_---
 
-## Q 8-c. How is `output` *motion_energy* aligned with the neural data?
+---
+
+## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:64):
 > Motion energy aligned: interp1(frameTimes - vidshift - alignTime, me.data, taxis)
@@ -655,7 +759,9 @@ out[5, :] = me_disc[:, t_idx]
 
 **Note:** _(no note)_---
 
-## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
+---
+
+## Q 10. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:292-295):
 > Session 36 (JEB24_2023-10-23, 17 neurons): 19 trials with all-zero neural data at end of session ... These are likely recording artifacts; trials retained for completeness.
@@ -686,7 +792,9 @@ if n_neurons_final < 10: return None
 
 **Note:** _(no note)_---
 
-## Q 10-a. What are the most time-consuming steps of the code?
+---
+
+## Q 11-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md:271):
 > 44 sessions processed in 300s
@@ -716,7 +824,9 @@ print(f"  Behavioral processing: {t_behav:.1f}s")
 
 **Note:** _(no note)_---
 
-## Q 10-b. What loops in the code could have been vectorized to improve efficiency?
+---
+
+## Q 11-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (none).
 
@@ -743,7 +853,9 @@ for j in range(x_filt.shape[1]):
 
 **Note:** _(no note)_---
 
-## Q 10-c. What processing does the code repeat multiple times?
+---
+
+## Q 11-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (none).
 
@@ -763,7 +875,9 @@ output[:, trix] = f_interp(time_axis)
 
 **Note:** _(no note)_---
 
-## Q 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+---
+
+## Q 11-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (none).
 
@@ -783,7 +897,9 @@ if show_processing and n_valid > 0:
 
 **Note:** _(no note)_---
 
-## Q 10-e. How is memory usage optimized?
+---
+
+## Q 11-e. How is memory usage optimized?
 
 **Notes excerpt** (none).
 
@@ -803,3 +919,5 @@ with open(args.output, 'wb') as f:
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---

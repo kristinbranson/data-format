@@ -39,6 +39,8 @@ align_times = to_vector(obj["bp"]["ev"]["goCue"], float)
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 1-b. How are the data split into subjects?
 
 **Notes excerpt** (CONVERSION_NOTES.md:218-220):
@@ -72,6 +74,8 @@ subject_idx.append(subject_order.index(spec.subject))
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 1-c. How are the data split into sessions?
 
 **Notes excerpt** (CONVERSION_NOTES.md:218-221):
@@ -94,6 +98,8 @@ def parse_loader_file(loader_name: str, folder: str, task: str) -> List[SessionS
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---
 
 ## Q 1-d. Are the data correctly split into trials?
 
@@ -124,6 +130,8 @@ for tr in range(n_trials):
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 1-e. How are trials filtered based on quality controls?
 
 **Notes excerpt** (CONVERSION_NOTES.md:222-223):
@@ -152,6 +160,8 @@ if max_trial_with_spikes > 0:
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:208):
@@ -175,6 +185,8 @@ align_times = to_vector(obj["bp"]["ev"]["goCue"], float)
 **Rating:** ok
 
 **Note:** _(no note)_---
+
+---
 
 ## Q 2-b. How is the `neural` data processed?
 
@@ -206,6 +218,8 @@ def binned_neuron_trials(probe, neuron_index, align_times, keep_trials_0based, e
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
 **Notes excerpt** (CONVERSION_NOTES.md:224):
@@ -236,6 +250,8 @@ if len(selected_neurons) < MIN_UNITS_PER_SESSION:
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---
 
 ## Q 2-d. How is the `neural` data temporally binned/resampled?
 
@@ -270,6 +286,8 @@ return causal_gaussian_smooth(rates, SMOOTH, BCTYPE)
 
 **Note:** _(no note)_---
 
+---
+
 ## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md:226):
@@ -292,7 +310,107 @@ Metadata (convert_data.py:1033):
 
 **Note:** _(no note)_---
 
-## Q 3-a. lick_direction — derivation source
+---
+
+## Q 3-a. What variables in the raw data is `input` *time_from_go_cue* derived from?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:209 — `| Common aligned time axis | `input[0]` | Continuous time-from-go-cue series, same for every trial, shape `(1, time)` | `getSeq` / paper decoding methods | Input name: `time_from_go_cue`. |`
+> CONVERSION_NOTES.md:360 — "`time_from_go_cue` range | `[-2.5, 2.5]` implied by chosen decoding window | `tmin=-2.5`, `tmax=2.5` in reference scripts | Raw event times support this range | `[-2.4975, 2.4975]`"
+
+**Code** (convert_data.py:23-27, 216-221, 807, 1008):
+```python
+DT = 0.005
+TMIN = -2.5
+TMAX = 2.5
+SMOOTH = 15
+BCTYPE = "reflect"
+...
+def make_time_edges() -> np.ndarray:
+    return np.arange(TMIN, TMAX + DT * 0.5, DT, dtype=np.float64)
+
+def make_time_centers(edges: np.ndarray) -> np.ndarray:
+    return edges[:-1] + DT / 2.0
+...
+    align_times = to_vector(obj["bp"]["ev"]["goCue"], float)
+...
+        "input_names": ["time_from_go_cue"],
+```
+
+**What this does:** The trial produces one input, `time_from_go_cue`. Its numeric values come from the fixed window constants `TMIN`/`TMAX`/`DT` via `make_time_edges`/`make_time_centers`, not from a raw per-trial array; the raw field that defines the zero point is `obj.bp.ev.goCue`, used as `align_times` when binning spikes.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_go_cue*?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:291 — `| `time_from_go_cue` range | [-2.4975, 2.4975] |`
+> CONVERSION_NOTES.md:380 — "Input: independently rebuilt the 1000-bin time axis `(-2.4975 ... 2.4975)` and matched `input[0]` for the same session/trial (`np.allclose=True`, max abs diff `3.58e-07`)."
+
+**Code** (convert_data.py:216-221, 808-809, 881-884):
+```python
+def make_time_edges() -> np.ndarray:
+    return np.arange(TMIN, TMAX + DT * 0.5, DT, dtype=np.float64)
+
+def make_time_centers(edges: np.ndarray) -> np.ndarray:
+    return edges[:-1] + DT / 2.0
+...
+    time_edges = make_time_edges()
+    time_centers = make_time_centers(time_edges)
+...
+    input_trials: List[np.ndarray] = []
+    output_trials: List[np.ndarray] = []
+    for tr in range(n_trials):
+        input_trials.append(time_centers[None, :].astype(np.float32))
+```
+
+**What this does:** Edges are `np.arange(-2.5, 2.5 + DT/2, 0.005)` and centers are `edges[:-1] + DT/2`, yielding 1000 values spanning -2.4975 to 2.4975 s. The center vector is reshaped to `(1, n_timepoints)` and cast to float32, and the same array is appended for every kept trial in the session.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 3-c. How is `input` *time_from_go_cue* aligned with the neural data?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:386 — "Input construction: decoder input is the common aligned time axis, derived from the same bin centers as the neural data."
+> CONVERSION_NOTES.md:237 — "[ ] Input check: verify `input[0]` exactly matches the converted time axis for every session/trial."
+
+**Code** (convert_data.py:619-626, 857-862, 884, 1033-1035):
+```python
+    aligned = trialtm[mask] - align_times[trials[mask] - 1]
+    bin_index = np.floor((aligned - TMIN) / DT).astype(np.int64)
+    valid = (bin_index >= 0) & (bin_index < edges.size - 1)
+    counts = np.zeros((edges.size - 1, keep_trials_0based.size), dtype=np.float32)
+    np.add.at(counts, (bin_index[valid], keep_index[valid]), 1.0)
+    rates = counts / DT
+    return causal_gaussian_smooth(rates, SMOOTH, BCTYPE)
+...
+    neural_trials = [np.zeros((n_neurons, time_centers.size), dtype=np.float32) for _ in range(n_trials)]
+        rates = binned_neuron_trials(probe, selected.neuron_index, align_times, keep_trials, time_edges)
+...
+        input_trials.append(time_centers[None, :].astype(np.float32))
+...
+            "temporal_alignment_event": "Auditory go cue onset",
+            "off_start": TMIN,
+            "off_end": TMAX,
+```
+
+**What this does:** Spikes are shifted by each trial's `goCue` time and binned into `time_edges`; the neural arrays are allocated with width `time_centers.size`, so the input row holds the center coordinate of each neural bin and matches column-for-column. Metadata lists the alignment event as "Auditory go cue onset" over -2.5 to 2.5 s.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 4-a. What variables in the raw data is `output` *lick_direction* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:210):
 > "`obj.bp.R` / `obj.bp.L` -> `output[0]` Per-trial categorical label: left=`0`, right=`1`"
@@ -310,7 +428,9 @@ lick_direction = R[keep_trials]
 
 **Note:** _(no note)_---
 
-## Q 3-b. lick_direction — processing
+---
+
+## Q 4-b. What processing is involved in computing `output` *lick_direction*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:210, 1018):
 > "Per-trial categorical label: left=`0`, right=`1`"
@@ -334,31 +454,9 @@ output_trials.append(
 
 **Note:** _(no note)_---
 
-## Q 3-c. lick_direction — quality filtering
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md:223):
-> "Exclude `stim.enable`, `early`, and `no` trials to match the reference analyses and keep output definitions unambiguous."
-
-**Code** (convert_data.py:570-576, 873):
-```python
-def build_trial_mask(obj: dict) -> np.ndarray:
-    bp = obj["bp"]
-    stim_enable = to_vector(bp["stim"]["enable"], float).astype(bool)
-    early = to_vector(bp["early"], float).astype(bool)
-    no = to_vector(bp["no"], float).astype(bool)
-    valid = (~stim_enable) & (~early) & (~no)
-    return valid
-...
-lick_direction = R[keep_trials]
-```
-
-**What this does:** No output-specific filter beyond the global trial mask (excludes stim, early, no-response).
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
-## Q 4-a. behavioral_context — derivation source
+## Q 5-a. What variables in the raw data is `output` *context* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:211):
 > "`obj.bp.autowater` -> `output[1]` Per-trial categorical label remapped to WC=`0`, DR=`1`"
@@ -376,7 +474,9 @@ context = 1 - autowater[keep_trials]
 
 **Note:** _(no note)_---
 
-## Q 4-b. behavioral_context — processing
+---
+
+## Q 5-b. What processing is involved in computing `output` *context*?
 
 **Notes excerpt** (CONVERSION_NOTES.md:227):
 > "Context encoding: Represent behavioral context as WC=`0`, DR=`1`, even though raw `autowater` uses the opposite polarity."
@@ -394,22 +494,9 @@ context = 1 - autowater[keep_trials]
 
 **Note:** _(no note)_---
 
-## Q 4-c. behavioral_context — quality filtering
+---
 
-**Code** (convert_data.py:570-576, 874):
-```python
-valid = (~stim_enable) & (~early) & (~no)
-...
-context = 1 - autowater[keep_trials]
-```
-
-**What this does:** Only the global trial mask applies.
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
-## Q 5-a. outcome — derivation source
+## Q 6-a. What variables in the raw data is `output` *outcome* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:212):
 > "`obj.bp.hit` / `obj.bp.miss` -> `output[2]` Per-trial categorical label: miss=`0`, hit=`1`"
@@ -428,7 +515,9 @@ outcome = hit[keep_trials]
 
 **Note:** _(no note)_---
 
-## Q 5-b. outcome — processing
+---
+
+## Q 6-b. What processing is involved in computing `output` *outcome*?
 
 **Code** (convert_data.py:875-879):
 ```python
@@ -445,26 +534,9 @@ if not np.all((hit[keep_trials] + miss[keep_trials]) == 1):
 
 **Note:** _(no note)_---
 
-## Q 5-c. outcome — quality filtering
+---
 
-**Notes excerpt** (CONVERSION_NOTES.md:229):
-> "Outcome encoding: Represent only miss versus hit. Ignore trials are removed instead of being merged into incorrect."
-
-**Code** (convert_data.py:574-576, 875):
-```python
-no = to_vector(bp["no"], float).astype(bool)
-valid = (~stim_enable) & (~early) & (~no)
-...
-outcome = hit[keep_trials]
-```
-
-**What this does:** Ignore (`no`) trials are dropped via the global trial mask, leaving only hit/miss outcomes.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(no note)_---
-
-## Q 6-a. tongue_velocity_bin — derivation source
+## Q 7-a. What variables in the raw data is `output` *tongue_velocity* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:213):
 > "DLC trajectories for tongue-related features -> `output[3]` Reference kinematic interpolation and velocity computation, then aggregate to a single tongue-speed trace and bin by per-session median"
@@ -485,7 +557,9 @@ tongue_speed_all, tongue_feats = aggregate_speed(obj, TONGUE_FEATURES, time_cent
 
 **Note:** _(no note)_---
 
-## Q 6-b. tongue_velocity_bin — processing
+---
+
+## Q 7-b. What processing is involved in computing `output` *tongue_velocity*?
 
 **Code** (convert_data.py:415-437, 440-468, 562-567, 848, 852):
 ```python
@@ -521,7 +595,9 @@ tongue_bin = discretize_trace(tongue_speed, tongue_thr)
 
 **Note:** _(no note)_---
 
-## Q 6-c. tongue_velocity_bin — neural alignment
+---
+
+## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:60-61):
 > "DLC trajectories also use frame times corrected by a 0.5 s or computed video offset depending on loader/helper path. This is important for later consistency checks on temporal alignment."
@@ -557,7 +633,9 @@ tongue_speed_all, tongue_feats = aggregate_speed(obj, TONGUE_FEATURES, time_cent
 
 **Note:** _(no note)_---
 
-## Q 7-a. paw_velocity_bin — derivation source
+---
+
+## Q 8-a. What variables in the raw data is `output` *paw_velocity* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:214):
 > "DLC trajectories for paw-related features -> `output[4]` ... Paws are tracked in the bottom view only."
@@ -577,7 +655,9 @@ paw_speed_all, paw_feats = aggregate_speed(obj, PAW_FEATURES, time_centers, alig
 
 **Note:** _(no note)_---
 
-## Q 7-b. paw_velocity_bin — processing
+---
+
+## Q 8-b. What processing is involved in computing `output` *paw_velocity*?
 
 **Code** (convert_data.py:415-437, 849, 853):
 ```python
@@ -599,7 +679,9 @@ paw_bin = discretize_trace(paw_speed, paw_thr)
 
 **Note:** _(no note)_---
 
-## Q 7-c. paw_velocity_bin — neural alignment
+---
+
+## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:60-61):
 > "DLC trajectories also use frame times corrected by a 0.5 s or computed video offset depending on loader/helper path. This is important for later consistency checks on temporal alignment."
@@ -636,7 +718,9 @@ paw_speed_all, paw_feats = aggregate_speed(obj, PAW_FEATURES, time_centers, alig
 
 **Note:** _(no note)_---
 
-## Q 8-a. motion_energy_bin — derivation source
+---
+
+## Q 9-a. What variables in the raw data is `output` *motion_energy* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md:215):
 > "Motion energy traces (`motionEnergy_*.mat` or embedded `obj.me`) -> `output[5]` Align/interpolate to neural time axis using reference logic, then bin by per-session median"
@@ -658,7 +742,9 @@ def load_motion_energy_raw(obj, spec):
 
 **Note:** _(no note)_---
 
-## Q 8-b. motion_energy_bin — processing
+---
+
+## Q 9-b. What processing is involved in computing `output` *motion_energy*?
 
 **Code** (convert_data.py:513-551, 850, 854):
 ```python
@@ -683,7 +769,9 @@ me_bin = discretize_trace(motion_energy, me_thr)
 
 **Note:** _(no note)_---
 
-## Q 8-c. motion_energy_bin — neural alignment
+---
+
+## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:60):
 > "Motion energy alignment is explicit: `interp1(frameTimes - video_offset - align_event_time, me.data{trial}, obj.time + advance_movement)`, then edge NaNs are filled with nearest values."
@@ -718,7 +806,9 @@ motion_energy_all = aligned_motion_energy(obj, load_motion_energy_raw(obj, spec)
 
 **Note:** _(no note)_---
 
-## Q 9. How are minor mistakes in the data, e.g. missing data, handled?
+---
+
+## Q 10. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:367-370, 397-400):
 > "`JEB15` motion-energy files required recursive unwrapping of nested `me.data` structs."
@@ -754,7 +844,9 @@ if max_trial_with_spikes > 0:
 
 **Note:** _(no note)_---
 
-## Q 10-a. Performance — time-consuming steps
+---
+
+## Q 11-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md:267-269):
 > "Code inefficiencies identified: Session loading from large MATLAB files is the main cost. Kinematic interpolation and per-neuron spike binning dominate runtime."
@@ -775,7 +867,9 @@ xy_aligned = interp(taxis)
 
 **Note:** _(no note)_---
 
-## Q 10-b. Performance — vectorization
+---
+
+## Q 11-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Code** (convert_data.py:619-624, 257-258):
 ```python
@@ -794,7 +888,9 @@ for col in range(x_filt.shape[1]):
 
 **Note:** _(no note)_---
 
-## Q 10-c. Performance — repeated work
+---
+
+## Q 11-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md:271-275):
 > "Avoided full-session temporary 3D neural arrays before low-FR filtering by using a two-pass approach: pass 1: estimate firing rate and select neurons; pass 2: build only kept neurons' trial matrices"
@@ -817,7 +913,9 @@ selected_neurons, probe_summaries = select_neurons(obj, spec, trial_mask)  # cal
 
 **Note:** _(no note)_---
 
-## Q 10-d. Performance — unnecessary work
+---
+
+## Q 11-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md:275-276):
 > "Aggregated output traces only for the feature groups needed by the decoder task (tongue, paw, motion energy) instead of reconstructing the full video feature matrix."
@@ -839,7 +937,9 @@ motion_energy = motion_energy_all[:, keep_trials]
 
 **Note:** _(no note)_---
 
-## Q 10-e. Performance — memory
+---
+
+## Q 11-e. How is memory usage optimized?
 
 **Notes excerpt** (CONVERSION_NOTES.md:271-273, 348):
 > "Avoided full-session temporary 3D neural arrays before low-FR filtering by using a two-pass approach"
@@ -864,3 +964,5 @@ for out_idx, selected in enumerate(selected_neurons):
 **Rating:** match
 
 **Note:** _(no note)_---
+
+---

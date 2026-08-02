@@ -414,7 +414,7 @@ me = interpolate_motion_energy(me_raw, n_frames)
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:82-90, 130):
 > Some sessions have fewer motion energy frames than neural frames
@@ -441,7 +441,7 @@ truncated = data[..., :n_bins * bin_size]
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md:230-233):
 > | Full processing | ~0.5s (36k frames), ~0.7s (54k frames) | ~25s for 41 sessions |
@@ -463,7 +463,7 @@ dfof = s2p_preprocess(
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md): (none)
 
@@ -486,7 +486,7 @@ for t in range(n_trials):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md): (none)
 
@@ -500,7 +500,7 @@ for t in range(n_trials):
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md): (none)
 
@@ -517,5 +517,38 @@ def plot_processing(ax_list, subj, session, F, Fneu, dfof, me, me_binned,
 **Rating:** ok
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — no memory, dtype, memory-mapping, or streaming discussion in CONVERSION_NOTES.md or README.md; README.md:43-44 only documents the stored `float32` array dtypes)
+
+**Code** (convert_data.py:79-89, 148-164):
+```python
+    # Neuropil correction
+    Fc = F - NEUROPIL_COEFF * Fneu
+
+    # Suite2p baseline correction: returns Fc - F0 (baseline-subtracted)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    dfof = s2p_preprocess(
+        Fc.copy().astype(np.float32), BASELINE_METHOD, WIN_BASELINE,
+        SIG_BASELINE, fs, PRCTILE_BASELINE, device=device
+    )
+    return dfof.astype(np.float32)
+
+    # :148-164 (process_session)
+    F = np.load(os.path.join(sess_dir, 'suite2p', 'plane0', 'F.npy'))
+    Fneu = np.load(os.path.join(sess_dir, 'suite2p', 'plane0', 'Fneu.npy'))
+    ...
+    dfof_binned = bin_timeseries(dfof, BIN_SIZE)  # (n_neurons, n_bins)
+```
+
+**What this does:** `process_session` handles one session at a time and returns only the binned, trial-split arrays, so the raw `F`/`Fneu`/`dfof` arrays go out of scope per iteration; the neural traces are held as `float32` (line 85, 89) and stored trials re-cast to `float32` (line 182). `Fc.copy()` creates an extra full-size copy before Suite2p `preprocess`, which may run on CUDA if available (line 83). No memory-mapping, chunked reads, explicit `del`, or in-place arithmetic; motion energy is interpolated in `float64` (lines 98-103).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

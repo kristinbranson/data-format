@@ -330,32 +330,6 @@ input_names = [f"env_partition_{r}{c}" for r in range(N_POS_BINS) for c in range
 
 ---
 
-## Q 3-c. How is `input` *Blocked positions* aligned with the neural data?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:140 — "static per trial"; CONVERSION_NOTES.md:149 — "Input: Environment geometry, static per trial"
-
-**Code** (convert_data.py:157-164):
-```python
-# Input: environment geometry, static per trial -> (9,)
-input_trial = env_mat.astype(np.float32)
-
-# Output: position bin, time-varying -> (1, trial_len)
-output_trial = pos_bins[start:end].astype(np.int64).reshape(1, -1)
-
-neural_trials.append(neural_trial)
-input_trials.append(input_trial)
-output_trials.append(output_trial)
-```
-
-**What this does:** The input is a constant length-9 vector per trial — it does not have a time dimension. The same env_mat vector is paired with every trial of a given session.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
@@ -437,7 +411,7 @@ for start in trial_starts:
 
 ---
 
-## Q 7. How are minor mistakes in the data, e.g. missing data, handled?
+## Q 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:60 — "NaN for unregistered cells"; CONVERSION_NOTES.md:266-269 — "Last trial has fewer frames when session length isn't divisible by 1800 ... Partial trials <900 frames (30s) are dropped ... All sessions produce >=2 trials"
@@ -472,7 +446,7 @@ if n_trials < 2:
 
 ---
 
-## Q 8-a. What are the most time-consuming steps of the code?
+## Q 6-a. What are the most time-consuming steps of the code?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:185-187 — "~21s per animal average, 42.5s for 2 animals. Full run estimated: ~160s (actual: 159.8s)"; CONVERSION_NOTES.md:99 — print statements wrap each animal/day with `time.time()` timings
@@ -507,7 +481,7 @@ Conversion full output (conversion_full_out.txt) reports per-animal totals aroun
 
 ---
 
-## Q 8-b. What loops in the code could have been vectorized to improve efficiency?
+## Q 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:160 — "Efficient vectorized operations (no inner loops for trace/position)"
@@ -542,7 +516,7 @@ for day in range(n_days):
 
 ---
 
-## Q 8-c. What processing does the code repeat multiple times?
+## Q 6-c. What processing does the code repeat multiple times?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -564,7 +538,7 @@ input_trial = env_mat.astype(np.float32)
 
 ---
 
-## Q 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:65-66 — fields like `maps`, `SFPs`, `centroids` exist in the source data but are not used; CONVERSION_NOTES.md:60 — `blocked` field is loaded by source but trial1 derives input from `envs` instead
@@ -591,5 +565,39 @@ def plot_processing(animal, d, all_neural, all_input, all_output, session_info):
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:160 — "Efficient vectorized operations (no inner loops for trace/position)"
+>
+> No section of CONVERSION_NOTES.md or README.md discusses memory, RAM, dtype sizing, or streaming; the "Run Time Estimates" section (CONVERSION_NOTES.md:185-188) reports wall-clock only.
+
+**Code** (convert_data.py:100, 132, 155-161, 192):
+```python
+    d = load_animal_data(animal)          # whole animal joblib dict held in RAM
+    ...
+        trace_registered = trace[registered_mask]  # (n_registered, n_frames)
+    ...
+            # Neural: (n_registered, trial_len)
+            neural_trial = trace_registered[:, start:end].astype(np.float32)
+
+            # Input: environment geometry, static per trial -> (9,)
+            input_trial = env_mat.astype(np.float32)
+
+            # Output: position bin, time-varying -> (1, trial_len)
+            output_trial = pos_bins[start:end].astype(np.int64).reshape(1, -1)
+    ...
+    del d  # Free memory
+    return all_neural, all_input, all_output, session_info
+```
+
+**What this does:** Animals are loaded and converted one at a time, with `del d` at the end of `convert_animal` releasing that animal's joblib dict before the next is loaded; there is no `gc.collect()`, memory-mapping, or chunked read. Per-trial neural slices are cast to `float32` and outputs to `int64`; trials are stored at the native 30 Hz frame rate (1800 frames each) with no temporal pooling. Converted trials accumulate in Python lists and the whole dataset is held in memory until the final pickle dump.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---

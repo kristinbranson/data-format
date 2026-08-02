@@ -536,36 +536,7 @@ def compute_distance_to_reward_zone(position, rz_start, rz_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md:239-240):
-> 7 bins: < -50, [-50,-10], [-10,0), 0, (0,10], [10,50], > 50 cm
-
-**Code** (convert_data.py:226-244, 511):
-```python
-def discretize_distance_to_rz(dist):
-    out = np.zeros(len(dist), dtype=np.int64)
-    out[dist < -50] = 0
-    out[(dist >= -50) & (dist < -10)] = 1
-    out[(dist >= -10) & (dist < 0)] = 2
-    out[dist == 0] = 3
-    out[(dist > 0) & (dist <= 10)] = 4
-    out[(dist > 10) & (dist <= 50)] = 5
-    out[dist > 50] = 6
-    return out
-...
-dist_to_rz_binned = discretize_distance_to_rz(dist_to_rz)
-```
-
-**What this does:** Maps signed distance to one of 7 integer bins via boolean indexing, with bin 3 reserved for samples exactly inside (distance == 0).
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:152):
 > all behavioral and neural data at ~15.5 Hz frame rate, already synchronized
@@ -636,32 +607,7 @@ def discretize_position(position, n_bins=POSITION_BINS):
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* thresholded into categories?
-
-**Notes excerpt** (CONVERSION_NOTES.md:242):
-> Absolute position (5 bins): [0,90), [90,180), [180,270), [270,360), [360,450] cm
-
-**Code** (convert_data.py:42-44, 247-252):
-```python
-POSITION_BINS = 5  # equal-size bins over [0, 450]
-POSITION_BIN_EDGES = np.linspace(0, TRACK_LENGTH, POSITION_BINS + 1)
-...
-def discretize_position(position, n_bins=POSITION_BINS):
-    bin_edges = np.linspace(0, TRACK_LENGTH, n_bins + 1)
-    binned = np.digitize(position, bin_edges) - 1
-    binned = np.clip(binned, 0, n_bins - 1)
-    return binned
-```
-
-**What this does:** Uses `np.linspace(0, 450, 6)` to create 5 equal-width bins over the assumed track length, with values clipped to [0, 4].
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:152):
 > all behavioral and neural data at ~15.5 Hz frame rate, already synchronized
@@ -999,5 +945,55 @@ is_interneuron = detect_interneurons(dff_full, speed)
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 13-e. How is memory usage optimized?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — CONVERSION_NOTES.md and README.md contain no discussion of memory, RAM, dtype sizing, chunking or streaming. The only related remark is the output size, README/CONVERSION_NOTES.md:456: `converted_data.pkl           - Full dataset (9.4 GB, 152 sessions)`)
+
+**Code** (convert_data.py:327-344):
+```python
+        # Load deconvolved events (already computed in NWB)
+        deconv_list = []
+        F_list = []
+        Fneu_list = []
+        plane_assignment = []
+
+        for pi, plane_name in enumerate(fluor_planes):
+            deconv_data = ophys[f'Deconvolved/{plane_name}/data'][:]  # (n_timepoints, n_rois_plane)
+            F_data = ophys[f'Fluorescence/{plane_name}/data'][:]
+            Fneu_data = ophys[f'Neuropil/{plane_name}/data'][:]
+            deconv_list.append(deconv_data)
+            F_list.append(F_data)
+            Fneu_list.append(Fneu_data)
+
+        # Concatenate across planes: (n_timepoints, n_total_rois)
+        deconv_all = np.concatenate(deconv_list, axis=1)
+        F_all = np.concatenate(F_list, axis=1)
+        Fneu_all = np.concatenate(Fneu_list, axis=1)
+```
+
+Per-trial arrays are preallocated and stored as float32 / int64 (convert_data.py:501, 531, 540):
+```python
+        input_arr = np.zeros((4, n_t), dtype=np.float32)
+        ...
+        output_arr = np.zeros((6, n_t), dtype=np.int64)
+        ...
+        neural_trials.append(trial_neural.astype(np.float32))
+```
+
+The speed-correlation interneuron check upcasts to float64 (convert_data.py:189-190):
+```python
+    speed_valid = speed_all[valid].astype(np.float64)
+    dff_valid = dff_all[:, valid].astype(np.float64)  # (n_cells, n_valid)
+```
+
+**What this does:** For each session the script reads three full-session ROI matrices (Deconvolved, Fluorescence, Neuropil) entirely into memory per plane and concatenates the per-plane lists, with no column subsetting at read time, no chunked/streaming reads, no memory-mapping, and no `del`/`gc.collect()` of the large intermediates. Stored trial arrays are preallocated with explicit dtypes — float32 for neural and inputs, int64 for outputs — while the interneuron speed-correlation step temporarily casts to float64. All sessions accumulate into a single in-memory structure that is pickled at the end.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
 
 ---
