@@ -43,12 +43,7 @@ add the flag with the old value as the default so running it by hand is unchange
 
     ap.add_argument('--datadir', default=DATA_DIR, help='directory holding the raw files')
 
-Edit `manual/<name>/convert_data.py`, not the copies — see step 2. Verify with the same
-argument shape `solve.sh` uses:
-
-    python manual/<name>/convert_data.py --sample --datadir data/<task> /tmp/x.pkl
-
-and check the per-session counts against `manual/<name>/conversion_full_out.txt`.
+Edit `manual/<name>/convert_data.py`, not the copies — see step 2.
 
 ## 2. Copy the human solution into the task
 

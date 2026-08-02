@@ -1,829 +1,399 @@
-#!/usr/bin/env python
-"""
-Convert IBL Brain-Wide Map data to decoder-compatible format.
+"""Convert the IBL brain-wide map into the decoder format.
 
-Usage:
-    python -u convert_data.py <output_pickle> [options]
-
-Options:
-    --full            Process all sessions (default)
-    --sample          Process only 2 sessions for testing
-    --show-processing Plot visualizations of processing steps
+Usage: python -u convert_data.py <outpicklefile> [--full | --sample] [--datadir DIR]
 """
 
-import os
-import sys
 import argparse
+import os
 import pickle
 import time
-from pathlib import Path
+import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
-from scipy.ndimage import gaussian_filter1d
-import warnings
-warnings.filterwarnings('ignore')
+from tqdm import tqdm
 
-# Import IBL libraries (only use what's available)
+_zhang2025_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _zhang2025_seed) % 2**31)
+
+# the loader always pulls these four spike arrays
+import brainbox.io.one as bio
+bio.SPIKES_ATTRIBUTES = ['clusters', 'times']
+
+from one.api import ONE
+from one.alf.exceptions import ALFWarning
+from brainbox.io.one import SessionLoader, SpikeSortingLoader
 from iblatlas.regions import BrainRegions
 
-# Matplotlib for plotting
-import matplotlib
-matplotlib.use('Agg')
+# the trials table and the spike sorting are each listed at two revisions, and ONE warns
+# once per load that it is taking the later one, which is the one we want
+warnings.filterwarnings('ignore', category=ALFWarning)
+
+# --- constants ---
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+# Directory holding the one_cache/ folder. Harbor mounts the dataset at /app/data while
+# this script runs from /solution, so solve.sh overrides this with --datadir.
+DATA_DIR = os.path.join(HERE, 'data')
+RELEASE = 'Brainwidemap'
+
+T_START, T_STOP = -0.5, 1.5      # decoding window around stimulus onset, following the reference code
+BIN = 0.02
+N_BINS = int(round((T_STOP - T_START) / BIN))            # 100
+EDGES = T_START + BIN * np.arange(N_BINS + 1)
+TIME = EDGES[:-1] + BIN / 2                              # bin centres, the first decoder input
+
+# reaction time bounds of the paper, which truncates the distribution at 80 ms and 2 s;
+MIN_RT, MAX_RT = 0.08, 2.0
+
+QC_LABEL = 1.0                   # the "stringent quality control" of the paper, 75,708 units of 621,733
+SPLIT = [100 / 3, 2 * 100 / 3]       # equal sized classes, from percentiles of each session's own trace
+
+CHOICE = {1.0: 0, -1.0: 1}       # +1 is a leftward choice, -1 rightward; 0 is a no response, dropped
+PRIOR = {0.2: 0, 0.5: 1, 0.8: 2}
+MOVEMENT = ['low', 'medium', 'high']
+
+INPUT_NAMES = ['time_from_stimulus_onset', 'trial_number_in_block']
+OUTPUT_NAMES = ['choice', 'prior_probability_left', 'wheel_speed', 'whisker_motion_energy']
+OUTPUT_VALUES = [['left', 'right'], ['0.2', '0.5', '0.8'], MOVEMENT, MOVEMENT]
+
+# the cache location is not known until --datadir is parsed, and the connection cannot be
+# shared across a fork anyway, so connect() fills this in per process rather than at import
+one = None
+brain_regions = BrainRegions()
 
 
-def bincount2D(x, y, xbin=0, xlim=None):
+def connect(datadir):
+    """Point the module-level ONE client at the cache under datadir.
+
+    datadir: directory holding the one_cache/ folder.
+    Sets the global `one`; returns nothing.
     """
-    Compute a 2D histogram of spike counts (vectorized version).
-
-    Parameters
-    ----------
-    x : array-like
-        Spike times
-    y : array-like
-        Cluster IDs
-    xbin : float
-        Bin size
-    xlim : tuple
-        (xmin, xmax)
-
-    Returns
-    -------
-    binned : ndarray
-        2D array of shape (n_clusters, n_bins)
-    xscale : ndarray
-        Time bin edges
-    yscale : ndarray
-        Cluster IDs
-    """
-    if xlim is None:
-        xlim = [np.min(x), np.max(x)]
-
-    xmin, xmax = xlim
-    n_bins = int(np.ceil((xmax - xmin) / xbin))
-    xscale = np.linspace(xmin, xmax, n_bins + 1)
-
-    yscale = np.unique(y)
-    n_clusters = len(yscale)
-
-    # Vectorized binning
-    # Filter spikes within window
-    mask = (x >= xmin) & (x < xmax)
-    x_masked = x[mask]
-    y_masked = y[mask]
-
-    if len(x_masked) == 0:
-        return np.zeros((n_clusters, n_bins)), xscale, yscale
-
-    # Compute bin indices
-    bin_idx = np.floor((x_masked - xmin) / xbin).astype(int)
-    bin_idx = np.clip(bin_idx, 0, n_bins - 1)
-
-    # Create cluster index mapping
-    cluster_to_idx = {c: i for i, c in enumerate(yscale)}
-    cluster_idx = np.array([cluster_to_idx.get(c, -1) for c in y_masked])
-
-    # Use numpy bincount for efficient counting
-    valid = cluster_idx >= 0
-    flat_idx = cluster_idx[valid] * n_bins + bin_idx[valid]
-    counts = np.bincount(flat_idx, minlength=n_clusters * n_bins)
-    binned = counts.reshape(n_clusters, n_bins)
-
-    return binned, xscale, yscale
-import matplotlib.pyplot as plt
-
-# ============================================================================
-# Configuration
-# ============================================================================
-
-# Processing parameters matching Zhang2025 paper
-PARAMS = {
-    'align_time': 'stimOn_times',
-    'time_window': (-0.5, 1.5),  # 2 seconds, aligned to stimulus onset
-    'binsize': 0.02,             # 20 ms bins
-    'n_bins': 100,               # 2.0 / 0.02 = 100 bins
-}
-
-# Trial filtering parameters
-TRIAL_PARAMS = {
-    'min_rt': 0.08,        # Minimum reaction time (s)
-    'max_rt': 2.0,         # Maximum reaction time (s)
-    'max_trial_len': 10.0, # Maximum trial length (s)
-    'exclude_nochoice': True,
-}
-
-# Data paths
-BASE_PATH = Path(__file__).parent
-DATA_PATH = BASE_PATH / 'data' / 'one_cache'
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
-
-def timer(func):
-    """Decorator to time function execution."""
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        result = func(*args, **kwargs)
-        elapsed = time.time() - start
-        print(f"  [{func.__name__}] took {elapsed:.2f}s")
-        return result
-    return wrapper
+    global one
+    one = ONE(base_url='https://openalyx.internationalbrainlab.org', password='international',
+              silent=True, cache_dir=os.path.join(datadir, 'one_cache'))
 
 
-def get_session_paths(data_path, max_sessions=None):
-    """Find all session paths in the ONE cache."""
-    session_paths = []
-    bwm_sessions_path = data_path / 'Brainwidemap' / 'sessions.pqt'
+# --- sessions ---
 
-    if bwm_sessions_path.exists():
-        bwm_df = pd.read_parquet(bwm_sessions_path)
-        print(f"Found {len(bwm_df)} sessions in Brainwidemap sessions.pqt")
+def select_sessions():
+    """Released sessions that have everything the decoder needs, grouped by subject."""
+    one.load_cache(tag=RELEASE)               # downloads the release index if it is not cached
 
-        # Walk through labs to find actual session directories
-        for lab_dir in data_path.iterdir():
-            if not lab_dir.is_dir() or lab_dir.name.startswith('.') or lab_dir.name.endswith('.pqt'):
-                continue
-            if lab_dir.name in ['Brainwidemap', '2022_Q4_IBL_et_al_BWM', '2025_Q3_IBL_et_al_BWM']:
-                continue
-            subjects_dir = lab_dir / 'Subjects'
-            if not subjects_dir.exists():
-                continue
-            for subject_dir in subjects_dir.iterdir():
-                if not subject_dir.is_dir():
-                    continue
-                for date_dir in subject_dir.iterdir():
-                    if not date_dir.is_dir():
-                        continue
-                    for num_dir in date_dir.iterdir():
-                        if not num_dir.is_dir():
-                            continue
-                        alf_dir = num_dir / 'alf'
-                        if alf_dir.exists():
-                            session_paths.append({
-                                'path': num_dir,
-                                'lab': lab_dir.name,
-                                'subject': subject_dir.name,
-                                'date': date_dir.name,
-                                'number': num_dir.name
-                            })
-                            if max_sessions and len(session_paths) >= max_sessions:
-                                return session_paths
+    required = ['spikes.times.npy', 'spikes.clusters.npy',          # ephys
+                '_ibl_trials.table.pqt',                            # task
+                '_ibl_wheel.position.npy', '_ibl_wheel.timestamps.npy']
 
-    return session_paths
+    keep = set(one.search(query_type='local', datasets=required))
+    keep &= (set(one.search(query_type='local', datasets=['leftCamera.ROIMotionEnergy.npy',
+                                                          '_ibl_leftCamera.times.npy']))
+             | set(one.search(query_type='local', datasets=['rightCamera.ROIMotionEnergy.npy',
+                                                            '_ibl_rightCamera.times.npy'])))
+
+    eids, info = one.search(query_type='local', details=True)
+    selected = {}
+    for eid, session in zip(eids, info):
+        if eid in keep:
+            selected.setdefault(session['subject'], []).append(str(eid))
+    return {subject: selected[subject] for subject in sorted(selected)}
 
 
-def load_trials(session_path):
-    """Load and filter trials for a session."""
-    alf_path = session_path / 'alf'
-
-    # Find trials table
-    trials_path = None
-    for version_dir in alf_path.iterdir():
-        if version_dir.name.startswith('#') and version_dir.is_dir():
-            candidate = version_dir / '_ibl_trials.table.pqt'
-            if candidate.exists():
-                trials_path = candidate
-                break
-
-    if trials_path is None:
-        return None, None
-
-    trials = pd.read_parquet(trials_path)
-
-    # Create mask for valid trials
-    mask = pd.Series(True, index=trials.index)
-
-    # Check required columns exist
-    required_cols = ['stimOn_times', 'choice', 'feedback_times', 'probabilityLeft',
-                     'firstMovement_times', 'feedbackType']
-    for col in required_cols:
-        if col not in trials.columns:
-            return None, None
-        mask &= ~trials[col].isna()
-
-    # Filter by reaction time
-    rt = trials['firstMovement_times'] - trials['stimOn_times']
-    mask &= (rt >= TRIAL_PARAMS['min_rt']) & (rt <= TRIAL_PARAMS['max_rt'])
-
-    # Filter by trial length
-    if 'goCue_times' in trials.columns:
-        trial_len = trials['feedback_times'] - trials['goCue_times']
-        mask &= trial_len <= TRIAL_PARAMS['max_trial_len']
-
-    # Exclude no-choice trials
-    if TRIAL_PARAMS['exclude_nochoice']:
-        mask &= trials['choice'] != 0
-
-    return trials, mask
+def camera_view(eid):
+    """The side camera this session has whisker motion energy for, left preferred."""
+    for view in ('left', 'right'):
+        if len(one.list_datasets(eid, filename=f'{view}Camera.ROIMotionEnergy.npy',
+                                 query_type='local')):
+            return view
+    raise ValueError(f'no whisker motion energy for {eid}')
 
 
-def load_spikes(session_path):
-    """Load spike data from all probes in a session."""
-    alf_path = session_path / 'alf'
+# --- trials ---
 
-    all_spike_times = []
-    all_spike_clusters = []
-    all_cluster_regions = []
-    cluster_offset = 0
+def trial_variables(trials):
+    """Choice, block prior and trial number in block, one row per trial."""
+    # probabilityLeft is constant within a block, so a change of value starts a new block
+    block = (trials.probabilityLeft != trials.probabilityLeft.shift()).cumsum()
 
-    # Find all probe directories
-    for probe_dir in sorted(alf_path.iterdir()):
-        if not probe_dir.name.startswith('probe'):
+    return pd.DataFrame({'choice': trials.choice.map(CHOICE),
+                         'prior': trials.probabilityLeft.map(PRIOR),
+                         'trial_in_block': trials.groupby(block).cumcount()})
+
+
+def covered(times, stim_on):
+    """Trials whose window is spanned by this stream, allowing the one bin gap the reference allows."""
+    start, stop = stim_on + T_START, stim_on + T_STOP
+    begin = np.searchsorted(times, start, side='right')      # first sample inside the window
+    end = np.searchsorted(times, stop, side='left') - 1       # last sample inside the window
+
+    # a trial with no sample at all, or a gap at either edge, has no usable trace
+    inside = begin <= end
+    first = np.where(inside, times[np.clip(begin, 0, times.size - 1)], np.inf)
+    last = np.where(inside, times[np.clip(end, 0, times.size - 1)], -np.inf)
+    return inside & (np.abs(start - first) <= BIN) & (np.abs(stop - last) <= BIN)
+
+
+def usable_trials(trials, wheel_times, camera_times):
+    """Trials the paper would keep, that also have a full wheel and camera window."""
+    stim_on = trials.stimOn_times.to_numpy()
+    reaction = trials.firstMovement_times.to_numpy() - stim_on
+
+    keep = (reaction >= MIN_RT) & (reaction <= MAX_RT)          # NaN compares false, so those go too
+    keep &= trials.choice.isin(CHOICE).to_numpy()               # drops the no response trials
+    keep &= trials.probabilityLeft.isin(PRIOR).to_numpy()
+
+    return keep & covered(wheel_times, stim_on) & covered(camera_times, stim_on)
+
+
+# --- behavior ---
+
+def window_slice(times, stim_on):
+    """Index range of each trial window, so a stream is sliced rather than rescanned per trial."""
+    window_start = stim_on + T_START
+    window_stop = stim_on + T_STOP
+
+    # the samples are in time order, so each window is one contiguous range of them
+    begin = np.searchsorted(times, window_start)
+    end = np.searchsorted(times, window_stop)
+
+    return begin, end
+
+
+def trial_traces(times, values, stim_on):
+    """A continuous trace resampled onto the same time grid for every trial."""
+    begin, end = window_slice(times, stim_on)
+
+    traces = []
+    for trial, onset in enumerate(stim_on):
+        # one sample either side of the window, so the first and last bin centre are
+        # interpolated rather than clamped to the nearest sample inside it
+        first = max(begin[trial] - 1, 0)
+        last = end[trial] + 1
+
+        traces.append(np.interp(onset + TIME, times[first:last], values[first:last]))
+
+    return np.array(traces)
+
+
+def discretize(trace):
+    """Equal sized classes, split at percentiles of this session's own trace."""
+    return np.digitize(trace, np.percentile(trace, SPLIT))
+
+
+# --- neural ---
+
+def load_neural(eid):
+    """Spike times and good clusters of a session, merged over its probes."""
+    times, units, regions = [], [], []
+    for pid, name in zip(*one.eid2pid(eid)):
+        loader = SpikeSortingLoader(pid=pid, one=one, eid=eid, pname=name)
+
+        # skip the md5 check, which rereads every spike file and draws its own progress bar
+        spikes, clusters, channels = loader.load_spike_sorting(check_hash=False)
+
+        # a session can hold an insertion whose spike sorting was never released
+        if not clusters:
             continue
 
-        pks_dir = probe_dir / 'pykilosort'
-        if not pks_dir.exists():
-            continue
-
-        # Find latest version
-        version_dir = None
-        for v in sorted(pks_dir.iterdir(), reverse=True):
-            if v.name.startswith('#') and v.is_dir():
-                version_dir = v
-                break
-
-        if version_dir is None:
-            continue
-
-        # Load spike data
-        spike_times_path = version_dir / 'spikes.times.npy'
-        spike_clusters_path = version_dir / 'spikes.clusters.npy'
-
-        if not spike_times_path.exists() or not spike_clusters_path.exists():
-            continue
-
-        spike_times = np.load(spike_times_path)
-        spike_clusters = np.load(spike_clusters_path)
-
-        # Load cluster info
-        metrics_path = version_dir / 'clusters.metrics.pqt'
-        if metrics_path.exists():
-            metrics = pd.read_parquet(metrics_path)
-            n_clusters = len(metrics)
-        else:
-            n_clusters = len(np.unique(spike_clusters))
-
-        # Get brain regions
-        # Try to load from channels.brainLocationIds or use Beryl mapping
-        regions = ['unknown'] * n_clusters
-
-        # Check for acronym file or brain location IDs
-        channels_path = version_dir / 'channels.brainLocationIds_ccf_2017.npy'
-        cluster_channels_path = version_dir / 'clusters.channels.npy'
-
-        if channels_path.exists() and cluster_channels_path.exists():
-            try:
-                brain_loc_ids = np.load(channels_path)
-                cluster_channels = np.load(cluster_channels_path)
-
-                # Map cluster to brain region using BrainRegions
-                br = BrainRegions()
-                for i, ch in enumerate(cluster_channels):
-                    if i < len(regions) and ch < len(brain_loc_ids):
-                        region_id = brain_loc_ids[int(ch)]
-                        try:
-                            acronym = br.id2acronym(region_id, mapping='Beryl')
-                            if isinstance(acronym, np.ndarray):
-                                acronym = acronym[0] if len(acronym) > 0 else 'unknown'
-                            regions[i] = str(acronym)
-                        except:
-                            regions[i] = 'unknown'
-            except Exception as e:
-                print(f"    Warning: Could not load brain regions: {e}")
-
-        # Offset cluster IDs for merging
-        spike_clusters_offset = spike_clusters + cluster_offset
-        cluster_offset += n_clusters
-
-        all_spike_times.append(spike_times)
-        all_spike_clusters.append(spike_clusters_offset)
-        all_cluster_regions.extend(regions)
-
-    if len(all_spike_times) == 0:
-        return None, None, None
-
-    # Merge all probes
-    merged_times = np.concatenate(all_spike_times)
-    merged_clusters = np.concatenate(all_spike_clusters)
-
-    # Sort by time
-    sort_idx = np.argsort(merged_times)
-    merged_times = merged_times[sort_idx]
-    merged_clusters = merged_clusters[sort_idx]
-
-    return merged_times, merged_clusters, np.array(all_cluster_regions)
-
-
-def bin_spikes_for_trial(spike_times, spike_clusters, trial_start, trial_end,
-                         binsize, n_clusters):
-    """Bin spikes for a single trial."""
-    n_bins = int(np.round((trial_end - trial_start) / binsize))
-
-    # Select spikes in trial window
-    mask = (spike_times >= trial_start) & (spike_times < trial_end)
-    trial_times = spike_times[mask]
-    trial_clusters = spike_clusters[mask]
-
-    if len(trial_times) == 0:
-        return np.zeros((n_clusters, n_bins))
-
-    # Bin using bincount2D
-    binned, t_bins, cluster_ids = bincount2D(
-        trial_times, trial_clusters,
-        xbin=binsize,
-        xlim=[trial_start, trial_end]
-    )
-
-    # Create full matrix for all clusters
-    result = np.zeros((n_clusters, n_bins))
-    for i, cid in enumerate(cluster_ids):
-        if cid < n_clusters:
-            result[int(cid), :binned.shape[1]] = binned[i, :n_bins]
-
-    return result[:, :n_bins]
-
-
-def load_wheel_data(session_path):
-    """Load wheel data for a session."""
-    alf_path = session_path / 'alf'
-
-    times_path = alf_path / '_ibl_wheel.timestamps.npy'
-    position_path = alf_path / '_ibl_wheel.position.npy'
-
-    if not times_path.exists() or not position_path.exists():
-        return None, None
-
-    times = np.load(times_path)
-    position = np.load(position_path)
-
-    # Compute velocity using gradient
-    dt = np.gradient(times)
-    dt[dt == 0] = 1e-10  # Avoid division by zero
-    velocity = np.gradient(position) / dt
-
-    # Compute speed (absolute velocity)
-    speed = np.abs(velocity)
+        clusters = loader.merge_clusters(spikes, clusters, channels)   # attaches metrics and histology
 
-    # Smooth with Gaussian filter (sigma=5 samples ~ 30ms at 158Hz)
-    speed = gaussian_filter1d(speed, sigma=5)
-
-    return times, speed
-
-
-def load_motion_energy(session_path):
-    """Load whisker motion energy for a session."""
-    alf_path = session_path / 'alf'
-
-    # Try different version directories for motion energy
-    me_data = None
-    me_times = None
-
-    for version_dir in sorted(alf_path.iterdir(), reverse=True):
-        if version_dir.name.startswith('#') and version_dir.is_dir():
-            # Try left camera first, then right
-            for camera in ['leftCamera', 'rightCamera']:
-                me_path = version_dir / f'{camera}.ROIMotionEnergy.npy'
-                times_path = version_dir / f'{camera}.times.npy'
-
-                if me_path.exists():
-                    me_data = np.load(me_path)
-                    # Try to find times file
-                    if times_path.exists():
-                        me_times = np.load(times_path)
-                    else:
-                        # Estimate times from video frame rate (60 Hz for left)
-                        # Look for camera times in parent alf dir
-                        parent_times = alf_path / f'_ibl_{camera}.times.npy'
-                        if parent_times.exists():
-                            me_times = np.load(parent_times)
-                        else:
-                            # Estimate from length and assumed frame rate
-                            frame_rate = 60 if 'left' in camera else 150
-                            me_times = np.arange(len(me_data)) / frame_rate
-                    break
-            if me_data is not None:
-                break
-
-    return me_times, me_data
-
-
-def interpolate_to_bins(times, values, bin_centers, allow_nans=True):
-    """Interpolate time series to bin centers."""
-    if times is None or values is None or len(times) == 0:
-        return np.full(len(bin_centers), np.nan)
-
-    # Handle NaN values
-    valid = ~np.isnan(values)
-    if not np.any(valid):
-        return np.full(len(bin_centers), np.nan)
-
-    times_valid = times[valid]
-    values_valid = values[valid]
-
-    # Check if bin centers are within data range
-    if bin_centers[0] < times_valid[0] - 0.1 or bin_centers[-1] > times_valid[-1] + 0.1:
-        if not allow_nans:
-            return None
-
-    # Interpolate
-    interp_func = interp1d(times_valid, values_valid, kind='linear',
-                           bounds_error=False, fill_value='extrapolate')
-    return interp_func(bin_centers)
-
-
-def discretize_to_bins(values, n_bins=3, quantiles=None):
-    """Discretize continuous values into n_bins categories using quantiles."""
-    if quantiles is None:
-        # Compute quantile thresholds
-        valid_values = values[~np.isnan(values)]
-        if len(valid_values) == 0:
-            return np.zeros_like(values, dtype=int), [0, 1, 2]
-        quantiles = np.percentile(valid_values, np.linspace(0, 100, n_bins + 1))
-
-    # Discretize
-    result = np.digitize(values, quantiles[1:-1])
-    result = np.clip(result, 0, n_bins - 1)
-
-    return result, quantiles
-
-
-def compute_trial_in_block(prob_left):
-    """Compute trial number within each block."""
-    trial_in_block = np.zeros(len(prob_left), dtype=int)
-    block_start = 0
-    current_block = prob_left.iloc[0] if isinstance(prob_left, pd.Series) else prob_left[0]
-
-    for i in range(len(prob_left)):
-        p = prob_left.iloc[i] if isinstance(prob_left, pd.Series) else prob_left[i]
-        if p != current_block:
-            block_start = i
-            current_block = p
-        trial_in_block[i] = i - block_start + 1
-
-    return trial_in_block
-
-
-@timer
-def process_session(session_info, show_processing=False):
-    """Process a single session and return formatted data."""
-    session_path = session_info['path']
-    print(f"  Processing {session_info['subject']}/{session_info['date']}")
-
-    # Load trials
-    trials, mask = load_trials(session_path)
-    if trials is None or mask is None or mask.sum() < 50:
-        print(f"    Skipping: insufficient trials")
-        return None
-
-    valid_trials = trials[mask].reset_index(drop=True)
-    n_trials = len(valid_trials)
-    print(f"    Valid trials: {n_trials}")
-
-    # Load spikes
-    spike_times, spike_clusters, cluster_regions = load_spikes(session_path)
-    if spike_times is None:
-        print(f"    Skipping: no spike data")
-        return None
-
-    n_clusters = len(cluster_regions)
-    print(f"    Clusters: {n_clusters}")
-
-    # Load behavioral data
-    wheel_times, wheel_speed = load_wheel_data(session_path)
-    me_times, me_data = load_motion_energy(session_path)
-
-    # Check behavioral data availability
-    has_wheel = wheel_times is not None and wheel_speed is not None
-    has_me = me_times is not None and me_data is not None
-
-    if not has_wheel or not has_me:
-        print(f"    Skipping: missing behavioral data (wheel={has_wheel}, ME={has_me})")
-        return None
-
-    # Process each trial
-    neural_data = []
-    input_data = []
-    output_data = []
-
-    # Compute global discretization thresholds from all wheel/ME data
-    all_wheel = []
-    all_me = []
-
-    # First pass: collect all behavioral data for quantile computation
-    for i in range(n_trials):
-        stim_time = valid_trials['stimOn_times'].iloc[i]
-        t_start = stim_time + PARAMS['time_window'][0]
-        t_end = stim_time + PARAMS['time_window'][1]
-        bin_centers = np.linspace(t_start + PARAMS['binsize']/2,
-                                  t_end - PARAMS['binsize']/2,
-                                  PARAMS['n_bins'])
-
-        if has_wheel:
-            ws = interpolate_to_bins(wheel_times, wheel_speed, bin_centers)
-            all_wheel.append(ws)
-        if has_me:
-            me = interpolate_to_bins(me_times, me_data, bin_centers)
-            all_me.append(me)
-
-    # Compute quantiles for discretization
-    wheel_quantiles = None
-    me_quantiles = None
-    if has_wheel and len(all_wheel) > 0:
-        all_wheel_flat = np.concatenate(all_wheel)
-        valid_wheel = all_wheel_flat[~np.isnan(all_wheel_flat)]
-        if len(valid_wheel) > 0:
-            wheel_quantiles = np.percentile(valid_wheel, [0, 33.33, 66.67, 100])
-    if has_me and len(all_me) > 0:
-        all_me_flat = np.concatenate(all_me)
-        valid_me = all_me_flat[~np.isnan(all_me_flat)]
-        if len(valid_me) > 0:
-            me_quantiles = np.percentile(valid_me, [0, 33.33, 66.67, 100])
-
-    # Compute trial-in-block
-    trial_in_block = compute_trial_in_block(valid_trials['probabilityLeft'])
-
-    # Create time array (same for all trials)
-    time_array = np.linspace(PARAMS['time_window'][0],
-                             PARAMS['time_window'][1],
-                             PARAMS['n_bins'])
-
-    # Second pass: process each trial
-    valid_trial_indices = []
-    for i in range(n_trials):
-        stim_time = valid_trials['stimOn_times'].iloc[i]
-        t_start = stim_time + PARAMS['time_window'][0]
-        t_end = stim_time + PARAMS['time_window'][1]
-
-        # Bin spikes
-        binned_spikes = bin_spikes_for_trial(
-            spike_times, spike_clusters, t_start, t_end,
-            PARAMS['binsize'], n_clusters
-        )
-
-        if binned_spikes.shape[1] != PARAMS['n_bins']:
-            # Adjust if needed
-            if binned_spikes.shape[1] < PARAMS['n_bins']:
-                pad = np.zeros((n_clusters, PARAMS['n_bins'] - binned_spikes.shape[1]))
-                binned_spikes = np.hstack([binned_spikes, pad])
-            else:
-                binned_spikes = binned_spikes[:, :PARAMS['n_bins']]
-
-        # Inputs
-        # Input 0: Time since stimulus onset
-        trial_time = time_array.copy()
-
-        # Input 1: Trial number in block (broadcast to time)
-        trial_num = np.full(PARAMS['n_bins'], trial_in_block[i], dtype=float)
-
-        trial_input = np.stack([trial_time, trial_num], axis=0)  # Shape: (2, n_bins)
-
-        # Outputs
-        # Output 0: Choice (left=0, right=1)
-        choice = valid_trials['choice'].iloc[i]
-        choice_out = 0 if choice == 1 else 1  # IBL: 1=left, -1=right -> our: 0=left, 1=right
-
-        # Output 1: Prior (0.2->0, 0.5->1, 0.8->2)
-        prob_left = valid_trials['probabilityLeft'].iloc[i]
-        if abs(prob_left - 0.2) < 0.1:
-            prior_out = 0
-        elif abs(prob_left - 0.5) < 0.1:
-            prior_out = 1
-        else:  # ~0.8
-            prior_out = 2
-
-        # Output 2: Wheel speed (discretized, time-varying)
-        bin_centers = np.linspace(t_start + PARAMS['binsize']/2,
-                                  t_end - PARAMS['binsize']/2,
-                                  PARAMS['n_bins'])
-        wheel_interp = interpolate_to_bins(wheel_times, wheel_speed, bin_centers)
-        wheel_disc, _ = discretize_to_bins(wheel_interp, n_bins=3, quantiles=wheel_quantiles)
-
-        # Output 3: Whisker ME (discretized, time-varying)
-        me_interp = interpolate_to_bins(me_times, me_data, bin_centers)
-        me_disc, _ = discretize_to_bins(me_interp, n_bins=3, quantiles=me_quantiles)
-
-        # Check for valid data
-        if np.any(np.isnan(wheel_interp)) or np.any(np.isnan(me_interp)):
-            continue
-
-        # Stack outputs: choice and prior are per-trial (scalar), wheel and ME are time-varying
-        trial_output = np.stack([
-            np.full(PARAMS['n_bins'], choice_out),
-            np.full(PARAMS['n_bins'], prior_out),
-            wheel_disc,
-            me_disc
-        ], axis=0)  # Shape: (4, n_bins)
-
-        neural_data.append(binned_spikes)
-        input_data.append(trial_input)
-        output_data.append(trial_output)
-        valid_trial_indices.append(i)
-
-    if len(neural_data) < 50:
-        print(f"    Skipping: only {len(neural_data)} valid trials after processing")
-        return None
-
-    print(f"    Processed trials: {len(neural_data)}")
-
-    # Plotting for show-processing mode
-    if show_processing and len(neural_data) > 0:
-        plot_processing(session_info, neural_data, input_data, output_data,
-                       valid_trials.iloc[valid_trial_indices], time_array)
+        # spikes.clusters holds the row of the cluster table, so a per cluster flag
+        # can be indexed by it directly to say whether each spike survives
+        is_good = clusters['label'] >= QC_LABEL
+        keep = is_good[spikes['clusters']]
+
+        # renumber the surviving clusters, continuing the count from the previous probe
+        new_index = np.cumsum(is_good) - 1
+        units.append(new_index[spikes['clusters'][keep]] + len(regions))
+        times.append(spikes['times'][keep])
+
+        # Beryl is the coarser atlas the reference code uses, e.g. DG-sg and DG-mo both become DG
+        regions.extend(brain_regions.acronym2acronym(clusters['acronym'][is_good], mapping='Beryl'))
+
+    times, units = np.concatenate(times), np.concatenate(units)
+
+    # sort the merged probes by spike time, as the reference does, so trials can be sliced
+    order = np.argsort(times, kind='stable')
+    return times[order], units[order], np.array(regions)
+
+
+def spike_counts(times, units, n_units, stim_on):
+    """Spike count per unit and bin, for every trial."""
+    counts = np.empty((stim_on.size, n_units, N_BINS))
+    begin, end = window_slice(times, stim_on)
+
+    for trial, onset in enumerate(stim_on):
+        spike_time = times[begin[trial]:end[trial]] - onset      # time from stimulus onset
+        spike_unit = units[begin[trial]:end[trial]]
+
+        bin_index = np.floor((spike_time - T_START) / BIN).astype(np.int64)
+        
+        # a spike sitting on the window edge can round out of range once the onset is subtracted
+        bin_index = np.clip(bin_index, 0, N_BINS - 1)
+
+        # one flat index per spike lets a single bincount fill the whole unit by bin grid
+        flat_index = spike_unit * N_BINS + bin_index
+        counts[trial] = np.bincount(flat_index, minlength=n_units * N_BINS).reshape(n_units, N_BINS)
+
+    return counts
+
+
+# --- session ---
+
+def process_session(eid, subject):
+    """One session as lists of per trial neural, input and output arrays."""
+    loader = SessionLoader(one=one, eid=eid)
+    loader.load_trials()
+    loader.load_wheel()
+    view = camera_view(eid)
+    loader.load_motion_energy(views=[view])
+
+    trials, wheel = loader.trials, loader.wheel
+    motion_energy = loader.motion_energy[f'{view}Camera']
+
+    variables = trial_variables(trials)                 # before filtering, so the block count is real
+    keep = usable_trials(trials, wheel.times.to_numpy(), motion_energy.times.to_numpy())
+    variables = variables[keep]
+    stim_on = trials.stimOn_times.to_numpy()[keep]
+
+    # no trial survived the mask, so there is nothing to load or bin
+    if stim_on.size == 0:
+        return {'session_id': str(eid), 'subject': subject, 'camera': view,
+                'neural': [], 'input': [], 'output': [],
+                'n_trials': 0, 'n_units': 0, 'regions': np.array([])}
+
+    speed = trial_traces(wheel.times, np.abs(wheel.velocity), stim_on)
+    whisker = trial_traces(motion_energy.times, motion_energy.iloc[:, 1], stim_on)
+
+    spike_times, spike_units, regions = load_neural(eid)
+    rate = spike_counts(spike_times, spike_units, regions.size, stim_on) / BIN
+
+    # the split is over the whole session, so both traces are discretized once, not per trial
+    speed_class = discretize(speed)
+    whisker_class = discretize(whisker)
+
+    neural = [trial.astype(np.float32) for trial in rate]
+    inputs, outputs = [], []
+    for trial in range(stim_on.size):
+        row = variables.iloc[trial]
+        inputs.append(np.stack([TIME, np.full(N_BINS, row.trial_in_block)]).astype(np.float32))
+        outputs.append(np.stack([np.full(N_BINS, row.choice), np.full(N_BINS, row.prior),
+                                 speed_class[trial], whisker_class[trial]]).astype(np.int8))
+
+    return {'session_id': str(eid), 'subject': subject, 'camera': view,
+            'neural': neural, 'input': inputs, 'output': outputs,
+            'n_trials': len(neural), 'n_units': regions.size, 'regions': regions}
+
+
+def assemble(results):
+    """Stitch per-session results into the target dictionary."""
+    subjects = sorted({r['subject'] for r in results})
+    sub_ix = {s: i for i, s in enumerate(subjects)}
+
+    regions = sorted({region for r in results for region in r['regions']})
+    reg_ix = {region: i for i, region in enumerate(regions)}
 
     return {
-        'neural': neural_data,
-        'input': input_data,
-        'output': output_data,
-        'subject': session_info['subject'],
-        'cluster_regions': cluster_regions,
-        'n_trials': len(neural_data),
-        'n_neurons': n_clusters,
+        'neural': [r['neural'] for r in results],
+        'input': [r['input'] for r in results],
+        'output': [r['output'] for r in results],
+
+        'subjects': subjects,
+        'subject_idx': np.array([sub_ix[r['subject']] for r in results], np.int32),
+
+        'brain_regions': regions,
+        'brain_region_idx': [np.array([reg_ix[x] for x in r['regions']], np.int32) for r in results],
+
+        'input_names': INPUT_NAMES,
+        'output_names': OUTPUT_NAMES,
+        'output_values': OUTPUT_VALUES,
+
+        'metadata': {
+            'task_description':
+                'Head-fixed mice turn a wheel to report the side of a visual grating. The '
+                'probability that the stimulus appears on the left is held constant within a '
+                'block and switches between 0.2 and 0.8.',
+            'time_bin_size': BIN * 1000.0,          # ms
+            'temporal_alignment_event': 'visual stimulus onset (stimOn_times)',
+            'off_start': T_START,
+            'off_end': T_STOP,
+
+            'dataset': 'IBL brain-wide map, release tag %s' % RELEASE,
+            'neural_units': 'Hz',
+            'session_info': [
+                {'session_id': r['session_id'], 'subject': r['subject'], 'camera': r['camera'],
+                 'n_trials': r['n_trials'], 'n_units': r['n_units']}
+                for r in results
+            ],
+        },
     }
 
 
-def plot_processing(session_info, neural_data, input_data, output_data, trials, time_array):
-    """Plot processing visualizations for a session."""
-    fig, axes = plt.subplots(4, 3, figsize=(15, 12))
+def worker_setup(datadir):
+    """Give each process its own database connection, which cannot be shared across a fork.
 
-    # Sample trials to plot
-    n_plot = min(3, len(neural_data))
-
-    for i in range(n_plot):
-        # Neural activity (mean across neurons)
-        ax = axes[0, i]
-        mean_activity = np.mean(neural_data[i], axis=0)
-        ax.plot(time_array, mean_activity, 'k-')
-        ax.axvline(0, color='r', linestyle='--', alpha=0.5)
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Mean spike count')
-        ax.set_title(f'Trial {i+1}: Neural Activity')
-
-        # Inputs
-        ax = axes[1, i]
-        ax.plot(time_array, input_data[i][0], 'b-', label='Time')
-        ax.plot(time_array, input_data[i][1] / input_data[i][1].max() if input_data[i][1].max() > 0 else input_data[i][1],
-                'g-', label='Trial in block (norm)')
-        ax.axvline(0, color='r', linestyle='--', alpha=0.5)
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Value')
-        ax.set_title(f'Trial {i+1}: Inputs')
-        ax.legend(fontsize=8)
-
-        # Outputs (per-trial)
-        ax = axes[2, i]
-        ax.bar([0, 1], [output_data[i][0, 0], output_data[i][1, 0]],
-               tick_label=['Choice', 'Prior'])
-        ax.set_ylabel('Value')
-        ax.set_title(f'Trial {i+1}: Per-trial Outputs')
-
-        # Outputs (time-varying)
-        ax = axes[3, i]
-        ax.plot(time_array, output_data[i][2], 'b-', label='Wheel speed')
-        ax.plot(time_array, output_data[i][3], 'g-', label='Whisker ME')
-        ax.axvline(0, color='r', linestyle='--', alpha=0.5)
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Discretized value')
-        ax.set_title(f'Trial {i+1}: Time-varying Outputs')
-        ax.legend(fontsize=8)
-
-    plt.suptitle(f"Session: {session_info['subject']}/{session_info['date']}")
-    plt.tight_layout()
-    plt.savefig(BASE_PATH / f"processing_{session_info['subject']}_{session_info['date']}.png", dpi=150)
-    plt.close()
+    datadir: directory holding the one_cache/ folder, forwarded from --datadir.
+    """
+    connect(datadir)
+    one.load_cache(tag=RELEASE)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Convert IBL data to decoder format')
-    parser.add_argument('output_file', type=str, help='Output pickle file path')
-    parser.add_argument('--full', action='store_true', default=True,
-                        help='Process all sessions (default)')
-    parser.add_argument('--sample', action='store_true',
-                        help='Process only 2 sessions for testing')
-    parser.add_argument('--show-processing', action='store_true',
-                        help='Plot processing visualizations')
-    parser.add_argument('--datadir', type=str, default=None,
-                        help='Path to data directory (default: data/one_cache next to script)')
-    args = parser.parse_args()
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('outfile', help='output pickle path')
+    ap.add_argument('--full', action='store_true', help='process all sessions (default)')
+    ap.add_argument('--sample', action='store_true', help='process only 2 sessions')
+    ap.add_argument('--workers', type=int, default=10, help='sessions to process in parallel')
+    ap.add_argument('--datadir', default=DATA_DIR,
+                    help='directory holding the one_cache/ folder (default: %(default)s)')
+    args = ap.parse_args()
 
-    global DATA_PATH
-    if args.datadir is not None:
-        DATA_PATH = Path(args.datadir) / 'one_cache'
-
+    connect(args.datadir)
+    selected = select_sessions()
+    pairs = [(eid, subject) for subject, eids in selected.items() for eid in eids]
     if args.sample:
-        args.full = False
+        pairs = pairs[:2]
+    print('%d sessions, %d subjects, %d workers'
+          % (len(pairs), len({s for _, s in pairs}), args.workers), flush=True)
 
-    print("=" * 60)
-    print("IBL Data Conversion")
-    print("=" * 60)
-    print(f"Output file: {args.output_file}")
-    print(f"Mode: {'sample (2 sessions)' if args.sample else 'full'}")
-    print(f"Show processing: {args.show_processing}")
-    print()
+    t0 = time.time()
 
-    # Find sessions
-    max_sessions = 2 if args.sample else None
-    session_paths = get_session_paths(DATA_PATH, max_sessions=max_sessions)
-    print(f"Found {len(session_paths)} sessions to process")
+    # sessions are independent, so they are processed out of order and put back by index
+    ordered = [None] * len(pairs)
+    with ProcessPoolExecutor(max_workers=args.workers, initializer=worker_setup,
+                             initargs=(args.datadir,)) as pool:
+        futures = {pool.submit(process_session, eid, subject): index
+                   for index, (eid, subject) in enumerate(pairs)}
 
-    # Process sessions
-    all_neural = []
-    all_input = []
-    all_output = []
-    all_subjects = []
-    subject_idx = []
-    all_brain_regions = set()
-    brain_region_idx = []
+        progress = tqdm(as_completed(futures), total=len(futures), unit='session')
+        for future in progress:
+            eid, subject = pairs[futures[future]]
+            try:
+                res = future.result()
+            except Exception as error:
+                print('failed %s: %s: %s' % (eid[:8], type(error).__name__, error), flush=True)
+                continue
 
-    subject_to_idx = {}
+            # a session with no surviving unit or trial will be skipped
+            if res['n_units'] == 0 or res['n_trials'] < 2:
+                print('skipped %s: %d trials, %d units'
+                      % (res['session_id'][:8], res['n_trials'], res['n_units']), flush=True)
+                continue
 
-    total_start = time.time()
-    for i, session_info in enumerate(session_paths):
-        print(f"\n[{i+1}/{len(session_paths)}] {session_info['lab']}/{session_info['subject']}")
+            ordered[futures[future]] = res
+            progress.set_postfix_str('%s %s %d trials %d units'
+                                     % (res['session_id'][:8], subject, res['n_trials'], res['n_units']))
 
-        result = process_session(session_info, show_processing=args.show_processing)
+    results = [res for res in ordered if res is not None]
+    data = assemble(results)
+    print('\nconverted in %.1f s' % (time.time() - t0), flush=True)
+    print('sessions %d | subjects %d | regions %d | trials %d | units %d'
+          % (len(results), len(data['subjects']), len(data['brain_regions']),
+             sum(r['n_trials'] for r in results), sum(r['n_units'] for r in results)), flush=True)
 
-        if result is None:
-            continue
-
-        # Add to lists
-        all_neural.append(result['neural'])
-        all_input.append(result['input'])
-        all_output.append(result['output'])
-
-        # Handle subject indexing
-        subject = result['subject']
-        if subject not in subject_to_idx:
-            subject_to_idx[subject] = len(all_subjects)
-            all_subjects.append(subject)
-        subject_idx.append(subject_to_idx[subject])
-
-        # Handle brain regions - store raw regions for now
-        regions = result['cluster_regions']
-        all_brain_regions.update(regions)
-        brain_region_idx.append(regions)  # Store raw regions, convert to idx later
-
-    total_elapsed = time.time() - total_start
-    print(f"\nTotal processing time: {total_elapsed:.1f}s")
-
-    if len(all_neural) == 0:
-        print("ERROR: No valid sessions processed!")
-        sys.exit(1)
-
-    # Build final data structure
-    brain_region_list = sorted(list(all_brain_regions))
-    region_to_idx = {r: i for i, r in enumerate(brain_region_list)}
-
-    # Convert region names to indices
-    brain_region_idx_final = []
-    for regions in brain_region_idx:
-        brain_region_idx_final.append(np.array([region_to_idx[r] for r in regions]))
-
-    data = {
-        'neural': all_neural,
-        'input': all_input,
-        'output': all_output,
-        'subjects': all_subjects,
-        'subject_idx': np.array(subject_idx),
-        'brain_regions': brain_region_list,
-        'brain_region_idx': brain_region_idx_final,
-        'input_names': ['time_since_stim', 'trial_in_block'],
-        'output_names': ['choice', 'prior', 'wheel_speed', 'whisker_me'],
-        'output_values': [
-            ['left', 'right'],
-            ['0.2', '0.5', '0.8'],
-            ['slow', 'medium', 'fast'],
-            ['low', 'medium', 'high']
-        ],
-        'metadata': {
-            'time_bin_size': PARAMS['binsize'] * 1000,  # Convert to ms
-            'temporal_alignment_event': 'stimulus onset (stimOn_times)',
-            'off_start': PARAMS['time_window'][0],
-            'off_end': PARAMS['time_window'][1],
-            'task_description': 'IBL visual decision-making task',
-            'n_sessions': len(all_neural),
-            'total_trials': sum(len(s) for s in all_neural),
-        }
-    }
-
-    # Print summary
-    print("\n" + "=" * 60)
-    print("Conversion Summary")
-    print("=" * 60)
-    print(f"Sessions: {len(all_neural)}")
-    print(f"Subjects: {len(all_subjects)}")
-    print(f"Total trials: {sum(len(s) for s in all_neural)}")
-    print(f"Brain regions: {len(brain_region_list)}")
-    print(f"Input dimensions: {len(data['input_names'])}")
-    print(f"Output dimensions: {len(data['output_names'])}")
-
-    # Save
-    print(f"\nSaving to {args.output_file}...")
-    with open(args.output_file, 'wb') as f:
-        pickle.dump(data, f)
-
-    file_size = os.path.getsize(args.output_file) / (1024 * 1024)
-    print(f"Saved! File size: {file_size:.1f} MB")
+    with open(args.outfile, 'wb') as f:
+        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+    print('wrote %s (%.1f GB)' % (args.outfile, os.path.getsize(args.outfile) / 1e9), flush=True)
 
 
 if __name__ == '__main__':
