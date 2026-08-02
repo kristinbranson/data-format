@@ -226,7 +226,7 @@ output_trials.append(out[np.newaxis, s:e])
 
 iii. The interframe interval threshold of 0.04s (slightly above the expected 1/30 ≈ 0.033s interval) identifies frames where the video missed a capture. Linear interpolation fills these gaps so that both streams can be indexed identically.
 
-## 7. How are minor mistakes in the data, e.g. missing data, handled?
+## 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 i. Dropped video frames are detected and interpolated (see 4-c). An assertion verifies the motion energy length matches the neural data length after interpolation. Remainder frames at the end of a session that don't fill a complete trial are discarded.
 
@@ -243,7 +243,7 @@ if remainder > 0:
 
 iii. The assertion ensures any frame count mismatch is caught rather than silently producing misaligned data. Discarding remainder frames is a minor data loss (at most 59 seconds per session).
 
-## 8-a. What are the most time-consuming steps of the code?
+## 6-a. What are the most time-consuming steps of the code?
 
 i. The most time-consuming step is the suite2p `dcnv.preprocess` baseline correction, which runs on GPU. Loading the `.npy` files is also I/O bound but relatively fast.
 
@@ -251,7 +251,7 @@ ii. N/A
 
 iii. The baseline correction involves sliding window operations over the full session length for every neuron. GPU acceleration (`DEVICE = torch.device('cuda')`) mitigates this.
 
-## 8-b. What loops in the code could have been vectorized to improve efficiency?
+## 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 i. The dropped frame interpolation loop inserts one frame at a time using `np.insert`, which reallocates the array each iteration. This could be vectorized by pre-allocating the output array and filling in all interpolated values at once.
 
@@ -259,10 +259,18 @@ ii. N/A
 
 iii. The number of dropped frames is typically very small, so the performance impact is negligible.
 
-## 8-c. What processing does the code repeat multiple times?
+## 6-c. What processing does the code repeat multiple times?
 
 N/A
 
-## 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 N/A
+
+## 13-e. How is memory usage optimized?
+
+i. N/A
+
+ii. N/A
+
+iii. N/A

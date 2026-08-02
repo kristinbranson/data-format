@@ -205,7 +205,91 @@ for r, u in enumerate(good):
 
 iii. Everything in the NWB file is timestamped on one global clock, so aligning to the go cue only requires looking up each trial's go-cue time and taking the window around it. There is no resampling or interpolation, and no per-stream offset to correct.
 
-## 3-a. What variables in the raw data is `output` *choice* derived from?
+## 3-a. What variables in the raw data is `input` *time_from_tone_onset* derived from?
+
+i. From `sample_start_times`, the tone onsets of the session, together with the go cue of each trial. The tone taken for a trial is the **last one** before its go cue.
+
+ii. The tone of each trial:
+```python
+sample = np.asarray(bev['sample_start_times'].timestamps)
+tone = sample[np.searchsorted(sample, go, side='left') - 1]
+```
+
+iii. An early lick replays the sample epoch, so a trial can carry more than one tone; the last one before the go cue is the one the animal actually heard.
+
+## 3-b. What processing is involved in computing `input` *time_from_tone_onset*?
+
+i. The bins sit around the go cue, so the value of a bin is its centre plus the gap between the tone and the go cue. That makes it seconds since the tone, and unlike a pure bin centre it differs from trial to trial.
+
+ii. The bin centres, and the shift that turns them into time from the tone:
+```python
+CENTERS = REL_EDGES[:-1] + BIN / 2                        # 80 bin centres
+```
+```python
+# bins sit around the go cue, values are seconds since the tone
+time_from_tone = CENTERS[None, :] + (go - tone)[:, None]
+```
+
+iii. N/A
+
+## 3-c. How is `input` *time_from_tone_onset* aligned with the neural data?
+
+i. It is how the neural binnning grid is defined.
+
+ii. The grid, defined once as offsets from the go cue, and laid on each trial's go cue to bin the spikes:
+```python
+T_START, T_STOP = -2.5, 1.5
+BIN = 0.05
+N_BINS = int(round((T_STOP - T_START) / BIN))             
+
+REL_EDGES = T_START + BIN * np.arange(N_BINS + 1)         
+CENTERS = REL_EDGES[:-1] + BIN / 2                        
+```
+```python
+edges = (go[:, None] + REL_EDGES[None, :]).ravel()
+```
+
+iii. N/A
+
+## 4-a. What variables in the raw data is `input` *photostim* derived from?
+
+i. From `photostim_onset` and `photostim_duration` in the trials table, with `start_time` and the go cue used to place them on the trial's time axis.
+
+ii. The onset and offset of the stimulation, relative to the go cue:
+```python
+on_s = trials['photostim_onset'].values
+has = on_s != 'N/A'
+stim_on[has] = trials['start_time'].values[has] + on_s[has].astype(float) - go[has]
+stim_off[has] = stim_on[has] + trials['photostim_duration'].values[has].astype(float)
+```
+
+iii. The onsets are stored as strings measured from trial start, with `'N/A'` on the trials that were not stimulated, so they have to be converted and re-expressed against the go cue the bins are aligned on.
+
+## 4-b. What processing is involved in computing `input` *photostim*?
+
+i. A bin is 1 where its centre falls between the onset and the offset of the stimulation and 0 elsewhere, so the input is a binary time series rather than a per trial flag.
+
+ii. The bins the light is on for:
+```python
+# NaN compares False, so non-stim trials stay 0
+photostim = ((CENTERS[None, :] >= stim_on[:, None])
+             & (CENTERS[None, :] < stim_off[:, None]))
+```
+
+iii. A trial without stimulation keeps NaN bounds, and NaN compares false, so all of its bins come out 0 without a separate branch.
+
+## 4-c. How is `input` *photostim* aligned with the neural data?
+
+i. The onset and offset are expressed relative to the go cue, which is the event the neural bins are aligned on, so they can be compared against the bin centres directly.
+
+ii. The onset put on the same axis as the bins:
+```python
+stim_on[has] = trials['start_time'].values[has] + on_s[has].astype(float) - go[has]
+```
+
+iii. N/A
+
+## 5-a. What variables in the raw data is `output` *choice* derived from?
 
 i. There is no choice column in the file. Choice is derived from two trials-table columns: `trial_instruction` (`'left'` / `'right'`, the side the tone instructed) and `outcome` (`'hit'` / `'miss'` / `'ignore'`). A hit means the animal licked the instructed side, a miss means it licked the other side, and an `ignore` means it never licked.
 
@@ -225,7 +309,7 @@ choice = np.where(outcome_s == 'ignore', CHOICE_NO_LICK,
 
 iii. The animal's actual lick direction is not stored, but it is fully determined by the instructed side and the outcome, so it is derived from those two columns. `outcome == 'ignore'` was verified to mean no lick anywhere in `[go, go + 1.5]`, with no exceptions, so choice is genuinely undefined on those trials and gets its own third value.
 
-## 3-b. What processing is involved in computing `output` *choice*?
+## 5-b. What processing is involved in computing `output` *choice*?
 
 i. The derived choice is coded as `0` left, `1` right, `2` no lick, and written into row 0 of the per-trial output array, repeated across all 80 bins. `output_values[0]` names the three codes.
 
@@ -254,15 +338,7 @@ out[:, 0, :] = choice[:, None]
 
 iii. `left = 0` and `right = 1` follow the instructions, and a third class is defined for the no-lick case. Choice is one value per trial, so it is repeated across the 80 bins to keep all four outputs in a single `(n_output, n_timepoints)` array.
 
-## 3-c. How is `output` *choice* aligned with the neural data?
-
-i. Choice is a single value per trial, so there is no temporal alignment to do. It is assigned to the same trial index as that trial's neural data and repeated across all 80 bins, so it spans exactly the same window.
-
-ii. N/A
-
-iii. `choice`, `trials`, `go` and `rates` are all indexed by the same trial order — the trial filter in 1-e is applied to `trials` and `go` before any of them are computed — so trial `t` of `output` corresponds to trial `t` of `neural` by construction.
-
-## 4-a. What variables in the raw data is `output` *outcome* derived from?
+## 6-a. What variables in the raw data is `output` *outcome* derived from?
 
 i. Outcome comes directly from the `outcome` column of the trials table, which already holds the strings `'ignore'`, `'miss'`, and `'hit'`.
 
@@ -273,7 +349,7 @@ outcome_s = trials['outcome'].values
 
 iii. The trials table stores the outcome explicitly with exactly the three categories the instructions ask for, so no derivation is needed.
 
-## 4-b. What processing is involved in computing `output` *outcome*?
+## 6-b. What processing is involved in computing `output` *outcome*?
 
 i. The three strings are mapped to `0` ignore, `1` miss, `2` hit via a fixed dictionary, and written into row 1 of the output array, repeated across all 80 bins.
 
@@ -288,15 +364,7 @@ out[:, 1, :] = np.array([OUTCOME_CODE[x] for x in outcome_s])[:, None]
 
 iii. The code assignment follows the instructions. Outcome is one value per trial, so it is repeated across bins like the other per-trial outputs.
 
-## 4-c. How is `output` *outcome* aligned with the neural data?
-
-i. Same as choice — one value per trial, assigned by trial index and repeated across all 80 bins.
-
-ii. N/A
-
-iii. Trial order is shared across `trials`, `go` and `rates`, so the per-trial value lines up with its neural data by construction.
-
-## 5-a. What variables in the raw data is `output` *early_lick* derived from?
+## 7-a. What variables in the raw data is `output` *early_lick* derived from?
 
 i. From the `early_lick` column of the trials table, which holds the strings `'no early'` and `'early'`.
 
@@ -307,7 +375,7 @@ trials['early_lick'].values
 
 iii. The trials table flags early licking explicitly, so no derivation is needed. The lick that sets the flag occurs during the sample or delay epoch, before the go cue, so the event itself falls inside the -2.5 s window even though the flag is stored per trial.
 
-## 5-b. What processing is involved in computing `output` *early_lick*?
+## 7-b. What processing is involved in computing `output` *early_lick*?
 
 i. The two strings are mapped to `0` no, `1` yes via a fixed dictionary, and written into row 2 of the output array, repeated across all 80 bins.
 
@@ -322,15 +390,7 @@ out[:, 2, :] = np.array([EARLY_CODE[x] for x in trials['early_lick'].values])[:,
 
 iii. The code assignment follows the instructions. One value per trial, so repeated across bins like the other per-trial outputs.
 
-## 5-c. How is `output` *early_lick* aligned with the neural data?
-
-i. Same as choice and outcome — one value per trial, assigned by trial index and repeated across all 80 bins.
-
-ii. N/A
-
-iii. Trial order is shared across `trials`, `go` and `rates`, so the per-trial value lines up with its neural data by construction.
-
-## 6-a. What variables in the raw data is `output` *tongue_y_position* derived from?
+## 8-a. What variables in the raw data is `output` *tongue_y_position* derived from?
 
 i. From `acquisition/BehavioralTimeSeries/Camera0_side_TongueTracking`, whose `data` is `(n_frames, 3)` = `tongue_x`, `tongue_y`, `tongue_likelihood`, with matching `timestamps`. Column 1 (`tongue_y`) is the value; column 2 (`likelihood`) decides whether the tongue is visible in that frame.
 
@@ -344,7 +404,7 @@ y = data[:, 1].copy()
 
 iii. This is the only tongue measurement in the file. The channel layout is stated in the series' own `description` attribute (`"('tongue_x', 'tongue_y', 'tongue_likelihood')"`) rather than assumed. Tracking is present in all 174 sessions and runs at ~294 Hz.
 
-## 6-b. What processing is involved in computing `output` *tongue_y_position*?
+## 8-b. What processing is involved in computing `output` *tongue_y_position*?
 
 i. Four steps. Frames with `likelihood < 0.5` are set to NaN, since the tracker still reports a position when the tongue is not protruding. The surviving values are averaged into 50 ms bins across the whole session, and the 40th and 60th percentiles of *those bin means* give two class edges. Each trial's window is then binned the same way and digitised against those edges, giving classes 0/1/2. Bins containing no visible frame are assigned a fourth class, `3` (`'not visible'`).
 
@@ -378,7 +438,7 @@ iii. The tongue is visible in only ~10% of frames, and when it is retracted the 
 
 Percentiles are taken over the 50 ms bin means rather than raw frames so the edges are defined on the same quantity that gets discretised; taking them over frames instead skews the resulting class balance, because averaging within a bin pulls values toward the centre. The 40th/60th split and the per-session scope both follow the instructions. A fourth class is defined for bins with no visible tongue, which is 75% of all bins.
 
-## 6-c. How is `output` *tongue_y_position* aligned with the neural data?
+## 8-c. How is `output` *tongue_y_position* aligned with the neural data?
 
 i. This is the one genuinely time-varying output, so it is the only one needing real alignment. The camera timestamps are on the same session-absolute clock as the spikes and the go cues, so each trial's frame range is found by `searchsorted` on the camera timestamps at `go + T_START` and `go + T_STOP`, and frames are assigned to bins by their offset from `go + T_START` — the same go-cue-relative grid used for the firing rates.
 
@@ -394,7 +454,7 @@ iii. The camera timestamps share the global clock with the spikes and events, so
 
 Unlike the spikes, the video is trial-gated: it runs from `trials.start_time` to the trial-end event and is off during the inter-trial interval. On the ~3% of trials where the go cue falls less than 2.5 s after trial start, the leading bins therefore contain no frames at all and fall into the `'not visible'` class.
 
-## 7. How are minor mistakes in the data, e.g. missing data, handled?
+## 9. How are minor mistakes in the data, e.g. missing data, handled?
 
 i. Three cases:
 
@@ -425,7 +485,7 @@ cls[i, ok] = np.digitize(m[ok], edges)
 
 iii. Missing data is handled one of two ways depending on what it means. Where nothing was recorded, the session or trial is excluded, since emitting it would fabricate data — a trial with no spikes would otherwise appear as 4 s of 0 Hz across every unit. Where the measurement legitimately has no value, as with a retracted tongue, it is represented as an explicit category rather than imputed.
 
-## 8-a. What are the most time-consuming steps of the code?
+## 10-a. What are the most time-consuming steps of the code?
 
 i. Reading each NWB file dominates. The full conversion takes 247 s for 174 sessions, ~1.4 s per session on average, ranging from ~0.7 s to ~4 s roughly with unit count. Within a session the costs are pulling the `spike_times` buffer (up to ~11.5 M doubles) and the tongue tracking array (~680 k x 3), then the per-unit `searchsorted` loop. Pickling the 11.9 GB result takes a further ~40 s.
 
@@ -433,7 +493,7 @@ ii. N/A
 
 iii. The work is dominated by I/O and by one binary search per bin edge per unit, both of which scale with the data actually needed. No step was worth optimising further given the 15-minute budget in the instructions.
 
-## 8-b. What loops in the code could have been vectorized to improve efficiency?
+## 10-b. What loops in the code could have been vectorized to improve efficiency?
 
 i. Two loops remain. The per-unit loop in the neural binning runs one `searchsorted` per unit, but over *all* trials at once — the per-trial dimension is already vectorised by flattening the edge array. The per-trial loop in `tongue_output` bins one trial's frames at a time.
 
@@ -447,7 +507,7 @@ for r, u in enumerate(good):
 
 iii. The per-unit loop cannot be collapsed further because each unit has a different number of spikes, so there is no single sorted array to search — this is inherent to the ragged storage. The tongue loop could be vectorised with a global bin index and one `bincount`, but it runs over trials rather than frames and is not a measurable share of runtime, so it was left in the clearer form.
 
-## 8-c. What processing does the code repeat multiple times?
+## 10-c. What processing does the code repeat multiple times?
 
 i. Nothing is recomputed. Each NWB file is opened once and every quantity derived from it is computed once. The bin grid (`REL_EDGES`, `CENTERS`) is built once at module level and reused for every trial and session.
 
@@ -455,7 +515,7 @@ ii. N/A
 
 iii. The conversion is a single pass over the files. Because the tongue discretisation edges are per-session rather than global, they can be computed inside that same pass — no second pass over the data is needed to establish them.
 
-## 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## 10-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 i. None. Every field computed goes into the output.
 
@@ -463,7 +523,7 @@ ii. N/A
 
 iii. N/A
 
-## 8-e. How is memory usage optimized?
+## 10-e. How is memory usage optimized?
 
 i. Firing rates are stored as `float32` and the outputs as `int8` rather than the default `float64`. Each session is read inside a `with` block so the file handle and its cached arrays are released on exit, and only the per-trial slices are retained. The full neural payload is 11.9 GB; a single session's working arrays are at most ~0.2 GB.
 

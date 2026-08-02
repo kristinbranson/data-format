@@ -369,10 +369,6 @@ outcome_row = np.full(n_frames, outcome_code, dtype=np.int8)
 
 iii. The mapping order matches `TRIAL_OUTCOMES = ['hit', 'miss', 'false_alarm', 'correct_reject']`. The mapping is stored in `metadata['outcome_to_code']` for recovery.
 
-## 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-N/A — trial outcome is a per-trial constant, not a time-varying signal.
-
 ## 8. How are minor mistakes in the data, e.g. missing data, handled?
 
 i. Several cases are handled:

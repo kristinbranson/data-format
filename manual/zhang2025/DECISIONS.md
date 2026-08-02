@@ -238,14 +238,6 @@ ii. N/A
 
 iii. N/A
 
-## 5-c. How is `output` *choice* aligned with the neural data?
-
-i. It is a single value per trial, so there is no time alignment required.
-
-ii. N/A
-
-iii. N/A
-
 ## 6-a. What variables in the raw data is `output` *prior_probability_left* derived from?
 
 i. One column of the trials table, `probabilityLeft`, which takes the three values 0.2, 0.5 and 0.8 and is recoded to 0, 1 and 2.
@@ -264,14 +256,6 @@ iii. The three values are the block prior the task holds constant within a block
 ## 6-b. What processing is involved in computing `output` *prior_probability_left*?
 
 i. None beyond the recoding of 0.2, 0.5 and 0.8 to 0, 1 and 2 described above.
-
-ii. N/A
-
-iii. N/A
-
-## 6-c. How is `output` *prior_probability_left* aligned with the neural data?
-
-i. It is a single value per trial, so there is no time alignment required.
 
 ii. N/A
 
