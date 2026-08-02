@@ -331,9 +331,9 @@ ALIGN_EVENT = "goCue"
 
 **What this does:** The input is a time axis built from the module constants `TMIN`/`TMAX`/`DT` (-2.5 to 2.5 s, 5 ms bins) rather than read per trial from a raw field; the raw variable that anchors it is `obj.bp.ev.goCue`, which is the event subtracted from spike times so that bin centers mean "time from go cue". It is named `time_from_go_cue_s` in `input_names`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -362,9 +362,9 @@ ALIGN_EVENT = "goCue"
 
 **What this does:** Bin edges are created with `np.arange(TMIN, TMAX + DT, DT)` and the time vector is the bin centers (`edges[:-1] + DT/2`), giving 1000 values from -2.4975 to 2.4975 s. The same `time_vec` is cast to float32, reshaped to `(1, n_timepoints)`, and appended once per selected trial, so every trial in every session carries an identical single-row input.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -394,9 +394,9 @@ def compute_unit_trial_matrix(unit, go_cue, trial_to_pos, n_sel, time_edges):
 
 **What this does:** The neural matrix is built by histogramming go-cue-subtracted spike times into the same `time_edges` used to derive `time_vec`, so the input row is by construction the bin centers of the neural array and has the same length (`time_edges.size - 1`). Metadata records `temporal_alignment_event = "go cue onset (stored bp.ev.goCue for every trial)"` with `off_start`/`off_end` of -2.5/2.5 s.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

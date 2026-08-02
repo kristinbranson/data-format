@@ -339,9 +339,9 @@ def make_time_centers(edges: np.ndarray) -> np.ndarray:
 
 **What this does:** The trial produces one input, `time_from_go_cue`. Its numeric values come from the fixed window constants `TMIN`/`TMAX`/`DT` via `make_time_edges`/`make_time_centers`, not from a raw per-trial array; the raw field that defines the zero point is `obj.bp.ev.goCue`, used as `align_times` when binning spikes.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -370,9 +370,9 @@ def make_time_centers(edges: np.ndarray) -> np.ndarray:
 
 **What this does:** Edges are `np.arange(-2.5, 2.5 + DT/2, 0.005)` and centers are `edges[:-1] + DT/2`, yielding 1000 values spanning -2.4975 to 2.4975 s. The center vector is reshaped to `(1, n_timepoints)` and cast to float32, and the same array is appended for every kept trial in the session.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -404,9 +404,9 @@ def make_time_centers(edges: np.ndarray) -> np.ndarray:
 
 **What this does:** Spikes are shifted by each trial's `goCue` time and binned into `time_edges`; the neural arrays are allocated with width `time_centers.size`, so the input row holds the center coordinate of each neural bin and matches column-for-column. Metadata lists the alignment event as "Auditory go cue onset" over -2.5 to 2.5 s.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

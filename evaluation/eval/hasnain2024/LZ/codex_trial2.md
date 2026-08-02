@@ -348,9 +348,9 @@ EDGES = np.arange(TMIN, TMAX + DT, DT, dtype=np.float64)
 
 **What this does:** The trial produces a single input named `time_from_go_cue_seconds`. Its values come from the module-level `TIME_AXIS` constant defined by `TMIN`/`TMAX`/`DT`, not from a per-trial raw field; the raw variable giving it its meaning is `bp.ev.goCue` (`ALIGN_EVENT`), the per-trial event time subtracted from spike times.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -378,9 +378,9 @@ EDGES = np.arange(TMIN, TMAX + DT, DT, dtype=np.float64)
 
 **What this does:** `TIME_AXIS` is computed once at import as `np.arange(-2.5, 2.5, 0.005) + 0.0025`, i.e. the centers of the 1000 5 ms bins. Inside the per-trial loop it is reshaped to `(1, n_timepoints)` and cast to float32, so each kept trial receives an identical copy with no per-trial computation.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -411,9 +411,9 @@ EDGES = np.arange(TMIN, TMAX + DT, DT, dtype=np.float64)
 
 **What this does:** Spike times are shifted by each trial's `bp.ev.goCue` and binned with `bin_idx = floor((aligned - TMIN)/DT)` into arrays sized `TIME_AXIS.size`, so the input vector is exactly the bin-center coordinate of each neural column and shares its length. Metadata reports the alignment event as `bp.ev.goCue` with window -2.5 to 2.5 s.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

@@ -298,9 +298,9 @@ def compute_time_axis():
 
 **What this does:** The trial produces a single input named `time_from_go_cue`. It is not read from any raw data field directly; it is a constructed time axis defined by the constants `TMIN`, `TMAX`, and `DT`. The raw variable it corresponds to is the go-cue event time `obj.bp.ev.goCue` (read elsewhere as `align_times` via `get_event_times(data, fmt, ALIGN_EVENT)`, convert_data.py:182-184, 665), which defines t=0 for the axis.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -332,9 +332,9 @@ def compute_time_axis():
 
 **What this does:** Bin edges are built as `np.arange(-2.5, 2.5 + DT/2, DT)` and the axis is taken as the bin centers (`edges[:-1] + DT/2`), giving 500 values from -2.495 to 2.495 s. The identical `time_axis` is cast to float32, reshaped to `(1, 500)`, and appended once per valid trial, so every trial in every session carries the same input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -367,9 +367,9 @@ def compute_time_axis():
 
 **What this does:** The same `edges` array that defines `time_axis` is used as the histogram bins for the go-cue-subtracted spike times, so neural bin *k* and input sample *k* refer to the same offset relative to the go cue. Both arrays have 500 timepoints per trial, and the input is emitted once per valid trial alongside the neural array (convert_data.py:796-799).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

@@ -309,9 +309,9 @@ DT = 1.0 / 100  # 10 ms bins
 
 **What this does:** The trial produces a single input variable, `input_names = ['time_from_gocue']`. It is not read from a raw data field directly; it is the bin-center time axis constructed from the constants `TMIN`, `TMAX`, `DT`, which is the same axis the spikes are binned on after subtracting the raw per-trial `obj.bp.ev.goCue` time.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -343,9 +343,9 @@ DT = 1.0 / 100  # 10 ms bins
 
 **What this does:** `edges` spans TMIN=-2.5 to TMAX=2.5 s in DT=0.01 s steps and `time_axis` takes the bin centers (edges shifted by DT/2), giving 500 values from -2.495 to 2.495 s. The identical `time_axis` vector is reshaped to (1, n_time), cast to float32, and appended once per valid trial, so every trial in a session carries the same input row.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -378,9 +378,9 @@ DT = 1.0 / 100  # 10 ms bins
 
 **What this does:** Alignment is by construction: spikes are histogrammed into `edges` after subtracting each trial's `goCue` time, and the input is the bin-center vector of those same `edges`. Neural arrays are (n_neurons, 500) and the input is (1, 500) over the identical bin grid, so index k of the input is the time offset from go cue of bin k of the neural data. `metadata['temporal_alignment_event'] = 'Go cue onset'` (convert_data.py:1013).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
