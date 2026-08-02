@@ -267,7 +267,7 @@ N/A
 
 N/A
 
-## 13-e. How is memory usage optimized?
+## 6-e. How is memory usage optimized?
 
 i. N/A
 
