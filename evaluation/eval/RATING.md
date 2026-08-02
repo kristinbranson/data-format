@@ -158,6 +158,14 @@ the per-question overall comments are preserved untouched:
 An evaluator's column appears only once they have at least one rating for that
 dataset, so tables stay clean while a pass is in progress.
 
+A question that has no row yet — one added to the reference after the last
+`compare.py` pass — gets one as soon as somebody rates it, with both judge
+columns blank and `Best` set to the primary evaluator. That is what makes the
+analysis read the primary evaluator's rating as the combined `best_rating` for
+those questions, which is the right reading when no judge comparison was run.
+Run `compare.py <dataset>` later if you do want judge ratings for them; it will
+fill the blank columns in.
+
 `eval_summary.md` is the only file the analysis layer reads:
 
 ```python

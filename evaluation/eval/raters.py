@@ -471,12 +471,59 @@ def merge_eval_summary(dataset: str, apply: bool = False,
         if (v.get("best") or "").strip().lower() == "human":
             v["best"] = primary
 
+    added = _add_unjudged_rows(dataset, entries, titles, eval_dir)
+
     target = path if apply else path.with_suffix(".md.preview")
     write_summary(target, entries, titles, overalls)
     after = target.read_text()
     if not apply:
         target.unlink()
-    return after != before
+    return (after != before, added)
+
+
+def _add_unjudged_rows(dataset: str, entries: dict, titles: dict,
+                       eval_dir: Path = EVAL_DIR) -> int:
+    """
+    Give newly rated questions a row, without a judge comparison.
+
+    `compare.py` is what normally creates rows, because it is what fetches the
+    Claude/Codex judge ratings. Questions added to a reference after that pass
+    would otherwise stay invisible to the metrics however carefully they were
+    rated. These rows carry the evaluators' ratings, leave both judge columns
+    blank, and record Best as the primary evaluator — so the combined
+    `best_rating` the analysis reads is that evaluator's rating, which is the
+    intended reading of "no judge comparison was run here".
+
+    Rows appear only once somebody has actually rated the question. Returns how
+    many were added.
+    """
+    ref = reference_titles(dataset)
+    if not ref:
+        return 0
+    codes = rating_columns(dataset, eval_dir=eval_dir)
+    disk = collect_ratings(dataset, codes, eval_dir)
+    primary = primary_code()
+    have = {qid for (qid, _, _) in entries}
+    added = 0
+    for qid, title in ref.items():
+        if qid in have:
+            continue
+        per_trial = disk.get(qid, {})
+        if not any(cell.get(c) for cell in per_trial.values() for c in codes):
+            continue  # nobody has rated it yet
+        for (agent, n), cell in per_trial.items():
+            entries[(qid, agent, n)] = {
+                "ratings": {c: cell.get(c) or "—" for c in codes},
+                "human": cell.get(primary),
+                "claude": "—",
+                "codex": "—",
+                "best": primary,
+                "why": "",
+                "title": title,
+            }
+            added += 1
+        titles[qid] = title
+    return added
 
 
 # ---------- CLI ----------
@@ -507,10 +554,13 @@ def _main():
         changed = []
         for ds in ([args.dataset] if args.dataset else datasets()):
             cols = rating_columns(ds)
-            if merge_eval_summary(ds, apply=args.apply):
+            diff, added = merge_eval_summary(ds, apply=args.apply)
+            if diff:
                 changed.append(ds)
+            note = (f"  +{added} rows for newly rated questions "
+                    f"(no judges, Best={primary_code()})" if added else "")
             print(f"── {ds}: columns {', '.join(cols)}"
-                  + ("  [changed]" if ds in changed else "  (unchanged)"))
+                  + ("  [changed]" if ds in changed else "  (unchanged)") + note)
         verb = "rewritten" if args.apply else "would change"
         print(f"\n{len(changed)} eval_summary.md {verb}."
               + ("" if args.apply or not changed else " Re-run with --apply."))
