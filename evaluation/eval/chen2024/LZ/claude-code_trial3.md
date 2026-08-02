@@ -358,9 +358,9 @@ input_data = np.stack([time_from_tone.astype(np.float32), photostim], axis=0)  #
 
 **What this does:** Per trial, the last `sample_start_times` event between trial start and go cue is taken as tone onset, converted to go-cue-relative time, and subtracted from each of the 80 bin centers to give a continuous seconds-since-tone value per bin (float32). Trials with no such event get NaN and are dropped by the valid-trial mask.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -391,9 +391,9 @@ input_trials.append(input_data)
 
 **What this does:** It is evaluated on the same `bin_centers` grid used for the firing rates — 80 50 ms bins over [-2.5, +1.5] s relative to the trial's go cue — and appended in the same trial loop, so `input[s][t][0]` is bin-for-bin aligned with `neural[s][t]`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -416,9 +416,9 @@ if photostim_onset[trial_idx] != 'N/A':
 
 **What this does:** Derived from the NWB trials table columns `photostim_onset` and `photostim_duration`, combined with `trials.start_time` and the go-cue time. The `BehavioralEvents` `photostim_start/stop_times` series are noted in CONVERSION_NOTES.md:64 but not used in the code.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -452,9 +452,9 @@ input_data = np.stack([time_from_tone.astype(np.float32), photostim], axis=0)  #
 
 **What this does:** A length-80 float32 vector initialized to zeros; for trials whose `photostim_onset` is not `'N/A'`, the onset string is cast to float, interpreted as an offset from `trial_starts[trial_idx]`, converted to go-cue-relative time, and bins whose center falls in `[onset, onset+duration)` are set to 1.0. The inline comments record that the code assumed (rather than verified) the trial-start-relative interpretation.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -486,9 +486,9 @@ input_trials.append(input_data)
 
 **What this does:** The photostim window is converted into go-cue-relative time and tested against the same `bin_centers` grid used for the firing rates, yielding an 80-bin vector per trial that is bin-for-bin aligned with `neural[s][t]` and stored as `input[s][t][1]`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

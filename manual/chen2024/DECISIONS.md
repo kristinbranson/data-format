@@ -173,10 +173,10 @@ ii.
 # trial window relative to the go cue, and bin width, in seconds
 T_START, T_STOP = -2.5, 1.5
 BIN = 0.05
-N_BINS = int(round((T_STOP - T_START) / BIN))             # 80
+N_BINS = int(round((T_STOP - T_START) / BIN))             
 
-REL_EDGES = T_START + BIN * np.arange(N_BINS + 1)         # 81 edges, re go cue
-CENTERS = REL_EDGES[:-1] + BIN / 2                        # 80 bin centres
+REL_EDGES = T_START + BIN * np.arange(N_BINS + 1)         
+CENTERS = REL_EDGES[:-1] + BIN / 2                        
 ```
 
 ```python
@@ -219,11 +219,11 @@ iii. An early lick replays the sample epoch, so a trial can carry more than one 
 
 ## 3-b. What processing is involved in computing `input` *time_from_tone_onset*?
 
-i. The bins sit around the go cue, so the value of a bin is its centre plus the gap between the tone and the go cue.
+i. The bins sit around the go cue, so the value of a bin is its center plus the gap between the tone and the go cue.
 
-ii. The bin centres, and the shift that turns them into time from the tone:
+ii. The bin center, and the shift that turns them into time from the tone:
 ```python
-CENTERS = REL_EDGES[:-1] + BIN / 2                        # 80 bin centres
+CENTERS = REL_EDGES[:-1] + BIN / 2                        
 ```
 ```python
 # bins sit around the go cue, values are seconds since the tone
@@ -267,7 +267,7 @@ iii. The onsets are stored as strings measured from trial start, with `'N/A'` on
 
 ## 4-b. What processing is involved in computing `input` *photostim*?
 
-i. A bin is 1 where its centre falls between the onset and the offset of the stimulation and 0 elsewhere, so the input is a binary time series rather than a per trial flag.
+i. A bin is 1 where its center falls between the onset and the offset of the stimulation and 0 elsewhere, so the input is a binary time series rather than a per trial flag.
 
 ii. The bins the light is on for:
 ```python
@@ -280,7 +280,7 @@ iii. A trial without stimulation keeps NaN bounds, and NaN compares false, so al
 
 ## 4-c. How is `input` *photostim* aligned with the neural data?
 
-i. The onset and offset are expressed relative to the go cue, which is the event the neural bins are aligned on, so they can be compared against the bin centres directly.
+i. The onset and offset are expressed relative to the go cue, which is the event the neural bins are aligned on, so they can be compared against the bin center directly.
 
 ii. The onset put on the same axis as the bins:
 ```python
@@ -436,7 +436,7 @@ for i in range(len(go)):
 
 iii. The tongue is visible in only ~10% of frames, and when it is retracted the tracker still emits a position, so those frames are discarded rather than averaged in — including them shifts the percentiles and mixes real protrusions with noise. The likelihood value is effectively binary (89% of frames below 0.01, 10.5% at or above 0.99), so the exact threshold does not matter.
 
-Percentiles are taken over the 50 ms bin means rather than raw frames so the edges are defined on the same quantity that gets discretised; taking them over frames instead skews the resulting class balance, because averaging within a bin pulls values toward the centre. The 40th/60th split and the per-session scope both follow the instructions. A fourth class is defined for bins with no visible tongue, which is 75% of all bins.
+Percentiles are taken over the 50 ms bin means rather than raw frames so the edges are defined on the same quantity that gets discretised; taking them over frames instead skews the resulting class balance, because averaging within a bin pulls values toward the center. The 40th/60th split and the per-session scope both follow the instructions. A fourth class is defined for bins with no visible tongue, which is 75% of all bins.
 
 ## 8-c. How is `output` *tongue_y_position* aligned with the neural data?
 

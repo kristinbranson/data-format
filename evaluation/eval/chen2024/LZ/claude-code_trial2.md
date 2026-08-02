@@ -361,9 +361,9 @@ def compute_time_from_tone(go_cue_time, tone_onset_time, t_start, t_end, bin_siz
 
 **What this does:** For each trial, the tone onset is the last `sample_start_times` value strictly before that trial's go cue (fallback `go_cue - 1.85` if none exists). The value at each of the 80 bin centers is the bin-center time minus the tone onset expressed relative to the go cue, giving a float32 elapsed-seconds ramp. Values are not clipped at zero, so pre-tone bins are negative.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -389,9 +389,9 @@ input_trials.append(input_data)
 
 **What this does:** The signal is evaluated at the centers of the same 80 go-cue-aligned 50 ms bins (T_START=-2.5 to T_END=1.5) used for firing rates, computed from the same per-trial `go_cue`. It is stored as row 0 of a (2, 80) float32 array, one per trial, parallel to the (n_neurons, 80) neural array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -413,9 +413,9 @@ photostim_stop_abs = events.time_series['photostim_stop_times'].timestamps[:]
 
 **What this does:** Derived from the absolute timestamps of `BehavioralEvents/photostim_start_times` and `photostim_stop_times`, combined with the per-trial `go_start_times`. The trials-table fields `photostim_onset/power/duration` are not used.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -447,9 +447,9 @@ photostim_ts = compute_photostim_timeseries(go_cue, ps_starts, ps_stops, ...)
 
 **What this does:** Photostim pulses overlapping the trial's absolute window are selected, then each bin center falling inside a [start, stop] interval is set to 1.0 (else 0.0), producing a binary float32 vector of length 80. Stimulation power/duration are not encoded — only on/off.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -475,9 +475,9 @@ input_trials.append(input_data)
 
 **What this does:** Bin centers relative to the trial's go cue are converted to absolute time and tested against the absolute pulse intervals, so the 80 photostim bins share the same go-cue-aligned 50 ms grid as the neural array. It is stored as row 1 of the per-trial (2, 80) input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

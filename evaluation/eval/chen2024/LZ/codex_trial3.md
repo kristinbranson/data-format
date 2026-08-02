@@ -350,9 +350,9 @@ REL_CENTERS = (REL_EDGES[:-1] + REL_EDGES[1:]) / 2.0
 
 **What this does:** A single 80-element vector `REL_CENTERS - (-1.85)` is computed once (values `[-0.575, ..., 3.325]` s), cast to `float16`, and tiled identically across all trials in the session; no per-trial timing enters. It is then row-subset by the nonzero-spike trial mask and stacked as row 0 of each trial's `input` array (`input_names[0] = "time_from_tone_onset_s"`, convert_data.py:515).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** incorrect
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -376,9 +376,9 @@ REL_CENTERS = (REL_EDGES[:-1] + REL_EDGES[1:]) / 2.0
 
 **What this does:** The input uses the same `REL_CENTERS` grid that defines the neural bins (`REL_EDGES` shifted by each trial's go time), so it is a shape-`(n_trials, 80)` array on the identical go-aligned 50 ms lattice as `neural`. Because a fixed offset is assumed rather than per-trial tone times, every trial's vector is the same; the nonzero-spike trial mask is applied to `input_time` alongside the neural array so trial indices stay in correspondence.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -407,9 +407,9 @@ REL_CENTERS = (REL_EDGES[:-1] + REL_EDGES[1:]) / 2.0
 
 **What this does:** Derived from the trial-table string columns `intervals/trials/photostim_onset` and `photostim_duration`, plus `intervals/trials/start_time` and `acquisition/BehavioralEvents/go_start_times/timestamps` for the coordinate change. `photostim_power` and the photostimulation event time series under `acquisition/BehavioralEvents` are not used.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -444,9 +444,9 @@ def build_photostim_matrix(
 
 **What this does:** Onset and duration strings are parsed to floats with `"N/A"` becoming NaN; onset is shifted from trial-start to go-cue coordinates by subtracting `go_time - start_time`, and offset is onset plus duration. A per-trial boolean mask marks bin centers in `[onset_rel_go, offset_rel_go)` as `1.0` in a `float16` zeros matrix; NaN (non-stim) trials stay all-zero. The result becomes row 1 of `input` (`input_names[1] = "photostim_on"`, convert_data.py:515) and is subset by `nonzero_trial_mask` at line 425.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -476,9 +476,9 @@ def build_photostim_matrix(
 
 **What this does:** Per-trial stim onset/offset are converted into the same go-cue-relative coordinate frame as the neural bins, then thresholded against `REL_CENTERS`, giving a shape-`(n_trials, 80)` binary array on the identical go-aligned 50 ms grid as `neural`. Trials dropped by the nonzero-spike mask are removed from `input_stim` too, keeping trial ordering matched.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
