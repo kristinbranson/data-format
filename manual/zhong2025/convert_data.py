@@ -7,7 +7,6 @@ import argparse
 import os
 import pickle
 import time
-from datetime import date
 
 import numpy as np
 from tqdm import tqdm
@@ -71,21 +70,16 @@ def list_sessions():
     return sorted(records)
 
 
-def session_date(session_id):
-    """The date of a session, whose id is mouse, year, month, day and block."""
-    _, year, month, day, _ = session_id.split('_')
-    return date(int(year), int(month), int(day))
-
-
 def training_days(records):
-    """Day of each session, counted from the first one of that mouse."""
-    first = {}
-    for subject, session_id, _, _ in records:
-        day = session_date(session_id)
-        first[subject] = min(first.get(subject, day), day)
+    """How many days into training each session is, counted per mouse."""
+    days, count = {}, {}
 
-    return {session_id: (session_date(session_id) - first[subject]).days
-            for subject, session_id, _, _ in records}
+    # a session id sorts by date within a mouse, so the sessions are counted in order
+    for subject, session_id, _, _ in sorted(records):
+        days[session_id] = count.get(subject, 0)
+        count[subject] = days[session_id] + 1
+
+    return days
 
 
 # --- trials ---
