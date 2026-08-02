@@ -331,9 +331,9 @@ time_from_tone = compute_time_from_tone(go_cue, tone_onset, T_START, T_END, BIN_
 
 **What this does:** Derived from the timestamps of `BehavioralEvents/sample_start_times` (tone/sample epoch onsets) together with `BehavioralEvents/go_start_times` (per-trial go cue). No trials table field is used for this input.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

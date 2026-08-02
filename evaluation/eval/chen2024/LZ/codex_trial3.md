@@ -326,9 +326,9 @@ REL_CENTERS = (REL_EDGES[:-1] + REL_EDGES[1:]) / 2.0
 
 **What this does:** The variable is not read from any raw NWB dataset. It is built from the module-level bin-center grid plus a hard-coded constant `TONE_ONSET_REL_GO_S = -1.85`, which the notes derive from the published task structure (0.65 s sample + 1.2 s delay) rather than from the per-trial `acquisition/BehavioralEvents` sample/tone event stream. The only raw quantity entering indirectly is the per-trial go cue time, via the go-aligned bin grid.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** incorrect
 
-**Note:** _(to be filled by evaluator)_
+**Note:** Used a hard-coded tone_onset, did not use the data to handle cases where there are restarts due to early lick
 
 ---
 

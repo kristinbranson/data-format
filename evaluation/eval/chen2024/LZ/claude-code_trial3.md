@@ -327,9 +327,9 @@ for i in range(n_trials):
 
 **What this does:** Derived from `BehavioralEvents['sample_start_times'].timestamps` (the tone/sample onset events), bracketed by `trials.start_time` and `BehavioralEvents['go_start_times'].timestamps` to assign one onset per trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

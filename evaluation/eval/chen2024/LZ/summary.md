@@ -172,6 +172,21 @@
 
 ---
 
+## Q 3-a. What variables in the raw data is `input` *time_from_tone_onset* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | incorrect | Used a hard-coded tone_onset, did not use the data to handle cases where there are restarts due to early lick |
+
+**Overall comment:** One of the trial did not handle cases where there are restarts due to early lick but hard coded the solution
+
+---
+
 ## Q 5-a. What variables in the raw data is `output` *choice* derived from?
 
 

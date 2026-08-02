@@ -215,11 +215,11 @@ sample = np.asarray(bev['sample_start_times'].timestamps)
 tone = sample[np.searchsorted(sample, go, side='left') - 1]
 ```
 
-iii. An early lick replays the sample epoch, so a trial can carry more than one tone; the last one before the go cue is the one the animal actually heard.
+iii. An early lick replays the sample epoch, so a trial can carry more than one tone; the last one before the go cue is the one the animal actually used.
 
 ## 3-b. What processing is involved in computing `input` *time_from_tone_onset*?
 
-i. The bins sit around the go cue, so the value of a bin is its centre plus the gap between the tone and the go cue. That makes it seconds since the tone, and unlike a pure bin centre it differs from trial to trial.
+i. The bins sit around the go cue, so the value of a bin is its centre plus the gap between the tone and the go cue.
 
 ii. The bin centres, and the shift that turns them into time from the tone:
 ```python
@@ -230,7 +230,7 @@ CENTERS = REL_EDGES[:-1] + BIN / 2                        # 80 bin centres
 time_from_tone = CENTERS[None, :] + (go - tone)[:, None]
 ```
 
-iii. N/A
+iii. No additional processing needed other than find the tone onset time.
 
 ## 3-c. How is `input` *time_from_tone_onset* aligned with the neural data?
 

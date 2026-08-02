@@ -332,9 +332,9 @@ sample_start_times = h5["acquisition"]["BehavioralEvents"]["sample_start_times"]
 
 **What this does:** The input is built from `acquisition/BehavioralEvents/sample_start_times` (tone/sample onset event timestamps), `acquisition/BehavioralEvents/go_start_times` (per-trial go cue), and the `intervals/trials` `start_time`/`stop_time` columns used to window which sample events belong to each trial. A constant fallback `EXPECTED_SAMPLE_ONSET_REL_GO = -1.85` (convert_data.py:17) is used for trials with no sample event.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** ok
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

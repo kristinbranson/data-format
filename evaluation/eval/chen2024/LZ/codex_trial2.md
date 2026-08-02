@@ -316,9 +316,9 @@ time_from_tone = (bin_centers_abs - sample_onset).astype(np.float32)
 
 **What this does:** Derived from `acquisition/BehavioralEvents/sample_start_times.timestamps`, bracketed by `intervals/trials.start_time` and the per-trial go-cue timestamp from `go_start_times`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

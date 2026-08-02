@@ -335,9 +335,9 @@ def get_tone_onset_for_trials(go_times, sample_start_ts, trial_starts, trial_sto
 
 **What this does:** Derived from NWB `BehavioralEvents.sample_start_times` timestamps (tone/sample epoch onset), bounded by the `trials` table `start_time`/`stop_time` and `BehavioralEvents.go_start_times`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
