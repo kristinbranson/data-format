@@ -270,13 +270,89 @@ def fingerprint(qid: str, title: str, dataset: str | None = None) -> tuple:
     return ("var", io, var_name, role)
 
 
+# Distinct number-fallback warnings already printed this process, keyed by
+# (dataset, qid, reference title, dossier title). build_qid_map runs about a
+# dozen times per rating session — once per trial dossier, again for the
+# pre-flight check, twice more per judge file — and would otherwise repeat
+# every warning that many times. Keying on the titles rather than the file
+# means two trials that reworded a question the same way warn once between
+# them, and two that reworded it differently each get their own line.
+_warned_number_fallbacks: set[tuple] = set()
+
+# Titles run long; enough to recognize the question, short enough for one line.
+WARN_TITLE_CHARS = 64
+
+
+def _warn_number_fallback(dataset: str | None, qid: str,
+                          ref_title: str, llm_title: str) -> None:
+    """Warn on stderr that `qid` was paired by number, not content.
+
+    Args:
+        dataset: dataset name for the message, or None if the caller had none.
+        qid: the question number both sides share.
+        ref_title: the reference's wording of the question.
+        llm_title: the dossier's/judge's wording of the same number.
+
+    Side effects: prints to stderr, at most once per distinct argument tuple.
+    """
+    key = (dataset, qid, ref_title, llm_title)
+    if key in _warned_number_fallbacks:
+        return
+    _warned_number_fallbacks.add(key)
+    clip = lambda s: s if len(s) <= WARN_TITLE_CHARS else s[:WARN_TITLE_CHARS - 1] + "…"
+    print(f"WARNING: {dataset or '?'} Q {qid} paired by number, not content — "
+          f"reference asks {clip(ref_title)!r}, answer is titled {clip(llm_title)!r}",
+          file=sys.stderr)
+
+
 def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[str, str | None]:
+    """Pair each reference question with the question that answers it.
+
+    Args:
+        human: reference questions, {qid: {"title": str, ...}} — the extra keys
+            are ignored, so this takes DECISIONS.md sections as parsed by
+            rate.parse_reference or bare {"title": ...} stubs.
+        llm: the questions to pair against, same shape: one trial dossier, one
+            judge file, or the merged titles of several dossiers.
+        dataset: dataset name, used to load its qid_aliases.json when
+            normalizing variable names. None skips per-dataset aliases.
+
+    Returns:
+        {reference qid: llm qid or None}. None only when the reference question
+        matches nothing by content and no section carries its number.
+
+    Side effects:
+        Prints a WARNING to stderr, once per distinct pair of question
+        wordings, for every pairing made by number rather than by content.
+
+    Content fingerprint first, so a question keeps its partner when the
+    dossiers number it differently (allen2p reorders its output variables;
+    sosa2024 gained sub-questions). Whatever is left over pairs by bare
+    question number: agents reword the questions freely — "Performance —
+    vectorization" for "What loops in the code could have been vectorized" —
+    and at that point the number is the better guide than the wording. That
+    fallback warns, because the same silence would also hide a dossier that
+    answers a genuinely different question under the same number.
+    """
     llm_by_fp = {}
     for qid, v in llm.items():
         fp = fingerprint(qid, v.get("title", ""), dataset=dataset)
         llm_by_fp.setdefault(fp, qid)
-    return {qid: llm_by_fp.get(fingerprint(qid, v.get("title", ""), dataset=dataset))
+    qmap = {qid: llm_by_fp.get(fingerprint(qid, v.get("title", ""), dataset=dataset))
             for qid, v in human.items()}
+
+    # Number fallback. Never hand out a section that a reference question
+    # already matched by content: two reference questions pointing at one
+    # answer would rate it twice and silently drop the other question.
+    claimed = {q for q in qmap.values() if q}
+    for qid, matched in list(qmap.items()):
+        if matched is not None or qid not in llm or qid in claimed:
+            continue
+        qmap[qid] = qid
+        claimed.add(qid)
+        _warn_number_fallback(dataset, qid, human[qid].get("title", ""),
+                              llm[qid].get("title", ""))
+    return qmap
 
 
 # ---------- summary file I/O ----------
