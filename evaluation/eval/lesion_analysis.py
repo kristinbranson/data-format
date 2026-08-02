@@ -665,10 +665,14 @@ def cell_index(agent, prompt, trial, arms):
 
     Returns:
         Column index into the len(arms) * TRIALS_PER_ARM strip, or None when this
-        (agent, prompt) arm is not displayed.
+        (agent, prompt) arm is not displayed, or when the trial number is beyond
+        TRIALS_PER_ARM. unplaced_trials() reports whatever is dropped.
     """
     arm = (agent, prompt)
-    if arm not in arms:
+    # The trial bound is not decoration: zhang2025/codex/full has a fourth run,
+    # from a separate job two weeks after the first three, and without this it
+    # indexes past the end of its three-wide group.
+    if arm not in arms or not 1 <= trial <= TRIALS_PER_ARM:
         return None
     return arms.index(arm) * TRIALS_PER_ARM + (trial - 1)
 
