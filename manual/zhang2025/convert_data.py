@@ -358,10 +358,6 @@ def main():
 
     t0 = time.time()
     
-    print(f'DEBUG: first session to process: {pairs[0]}')
-    eid, subject = pairs[0]
-    process_session(eid, subject)
-
     # sessions are independent, so they are processed out of order and put back by index
     ordered = [None] * len(pairs)
     with ProcessPoolExecutor(max_workers=args.workers, initializer=worker_setup,
