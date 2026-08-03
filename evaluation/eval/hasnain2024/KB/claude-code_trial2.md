@@ -317,9 +317,9 @@ PARAMS = {
 
 
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -352,9 +352,9 @@ time_axis = edges[:-1] + params['dt'] / 2
 
 
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -383,9 +383,9 @@ time_axis = edges[:-1] + params['dt'] / 2
 
 
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
