@@ -618,9 +618,9 @@ def collect_visual_categories(specs: list[SessionSpec]) -> list[str]:
 
 **What this does:** Builds a sorted global category vocabulary, looks up the trial's wall name, broadcasts that scalar index to the trial's retained frame count, and stacks it as row 0 of `output`.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

@@ -610,7 +610,7 @@ for si in range(len(output_all)):
 
 **Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

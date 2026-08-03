@@ -359,19 +359,16 @@
 
 ## Q 7-b. What processing is involved in computing `output` *visual_stimulus*?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial1 | ok | _(no note)_ |
 | claude-code / trial2 | incorrect | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** 1/6 trials remapped and merged stimulus categories (e.g., rock→circle, wood→leaf) for no apparent reason.
+**Overall comment:** 5/6 agents used the fine stimulus category; 1/6 agent did a strange mapping (e.g., rock to circle)
 
 ---
 

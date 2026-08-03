@@ -43,7 +43,7 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 | 6-a | What variables in the raw data is `input` *reward_availability* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
 | 6-b | What processing is involved in computing `input` *reward_availability*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
 | 7-a | What variables in the raw data is `output` *visual_stimulus* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 7-b | What processing is involved in computing `output` *visual_stimulus*? | 🟢🔴🟢 🟢🟢🟢 | 🔵🟡🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🔴 🟢🟢🟢 | 1/6 trials remapped and merged stimulus categories (e.g., rock→circle, wood→leaf) for no apparent reason. |  | `MISC=1` |
+| 7-b | What processing is involved in computing `output` *visual_stimulus*? | 🔵🔴🔵 🔵🔵🔵 | 🔵🟡🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🔴 🟢🟢🟢 | 5/6 agents used the fine stimulus category; 1/6 agent did a strange mapping (e.g., rock to circle) |  | `MISC=1` |
 | 8-a | What variables in the raw data is `output` *licking* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟢🟢🟢 |  |  |  |
 | 8-b | What processing is involved in computing `output` *licking*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟢🟢🟢 |  |  |  |
 | 8-c | How is `output` *licking* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🔴 🟢🟢🟢 |  | The codex judge applies the comparison to the reference paper too literally. |  |

@@ -301,12 +301,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | ok | match | match |
+| claude-code / trial1 | ok | ok | match | match |
 | claude-code / trial2 | incorrect | concerning | match | concerning |
-| claude-code / trial3 | match | ok | match | incorrect |
-| codex / trial1 | match | ok | match | match |
-| codex / trial2 | match | ok | match | match |
-| codex / trial3 | match | ok | match | match |
+| claude-code / trial3 | ok | ok | match | incorrect |
+| codex / trial1 | ok | ok | match | match |
+| codex / trial2 | ok | ok | match | match |
+| codex / trial3 | ok | ok | match | match |
 
 **Overall comment:** _(no overall comment)_
 

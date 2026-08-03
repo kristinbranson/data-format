@@ -602,9 +602,9 @@ stim_code = np.full(len(frame_idx), category_to_idx[str(wall_name[trial_idx])], 
 
 **What this does:** Builds a global sorted list of all unique `WallName` strings across all sessions (15 categories), maps each to an integer ID, and broadcasts the trial's category across all retained frames.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

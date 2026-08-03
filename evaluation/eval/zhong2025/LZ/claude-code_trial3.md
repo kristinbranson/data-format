@@ -606,9 +606,9 @@ stim_out = np.full(n_tp, stim_idx, dtype=np.int64)
 
 **What this does:** Wall names are stringified and mapped to a global integer index using a sorted vocabulary built across all sessions. The per-trial scalar index is broadcast across all timepoints in the trial.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

@@ -600,9 +600,9 @@ stimulus_to_idx = {name: idx for idx, name in enumerate(stimulus_values)}
 
 **What this does:** All unique `WallName` strings across all sessions are collected and sorted to define the integer vocabulary. Each trial's wall name is mapped to its index, then broadcast across the trial's retained frames.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

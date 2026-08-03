@@ -597,9 +597,9 @@ for result in session_results:
 
 **What this does:** Unique `WallName` values across all sessions are sorted to build a global name→index map (15 categories). Per-trial stimulus index is broadcast across all timepoints in the trial.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
