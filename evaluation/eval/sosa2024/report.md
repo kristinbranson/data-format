@@ -9,7 +9,7 @@
 - Judges: Claude, Codex
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than evaluator LZ.
+Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
 
 ## Comments
 
@@ -28,7 +28,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🔵🟢 | All agents used `h5py` directly instead of the `pynwb` interface to read the data. |  | `SDK` |
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🟢 |  |  |  |
 | 1-c | How are the data split into sessions? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟨🟢🟨 🟢🔵🟢 | 🟡🟡🔴 🟢🔴🟢 | Slightly different handling of potential mismatches between `trial_start` and teleport events. | Claude correctly flagged some implementations as less robust. | `ASSUME=2` |
+| 1-d | Are the data correctly split into trials? | 🟡🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟡 🟢🔵🟢 | 🟡🟡🔴 🟢🔴🟢 | Slightly different handling of potential mismatches between `trial_start` and teleport events. | Claude correctly flagged some implementations as less robust. | `ASSUME=2` |
 | 1-e | How are trials filtered based on quality controls? | 🟣🔵🟣 🔵🔵🟣 | 🟣🔵🟣 🟣🟣🟣 | 🔵🔴🟡 🟡🔴🔴 | 🔴🔴🔴 🔴🔴🔴 | Some agents implemented additional filtering based on a detail in the paper's methods. |  | `DETAIL` |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔴 🟢🔴🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔴🟢 | 🔵🔵🔵 🟢🔴🟢 | 🔵🟡🟣 🟢🟡🟡 | 🟡🔴🔴 🔵🔴🟢 |  |  |  |

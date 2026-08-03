@@ -135,15 +135,16 @@ def _to_score(cell: str) -> int | None:
 
 
 def _pick_best_rating(best_who: str | None, h, jc, jx):
-    # `best_who` is "Human" in files written before evaluators were named, and
-    # an evaluator code ("LZ") afterwards — both mean "the human was right".
-    if best_who is None or best_who.lower() == "human":
-        return h
-    if best_who.lower().startswith("claude"):
-        return jc
-    if best_who.lower().startswith("codex"):
-        return jx
-    return h  # evaluator code or unknown label → fall back to human
+    """The rating to treat as correct for a trial: the primary evaluator's.
+
+    eval_summary.md used to carry a `Best` column naming whichever of the
+    evaluator or the two judges was right where they disagreed. The handful of
+    rows where a judge won have since been folded into the evaluator's own
+    rating, so the evaluator column is the answer everywhere and the column is
+    gone. `best_who` is accepted (and ignored) so files written before the
+    change still parse.
+    """
+    return h
 
 
 def _parse_header(line: str) -> dict[str, int] | None:
@@ -221,7 +222,10 @@ def _parse_eval_summary(path: Path) -> dict[str, dict[str, dict]]:
             continue
         agent, trial = tm.group(1), int(tm.group(2))
         cells = [c for c in line.strip().strip("|").split("|")]
-        if len(cells) < 5:
+        # Column count varies: one rating column per evaluator, and the Best/Why
+        # pair is gone. The header decided the indices, so bound-check per cell
+        # (see `cell` below) rather than against a fixed width.
+        if len(cells) < 2:
             continue
         cell = lambda key: (cells[cols[key]] if key in cols and cols[key] < len(cells)
                             else "")

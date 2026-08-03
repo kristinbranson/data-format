@@ -248,7 +248,7 @@
 | claude-code / trial3 | match | _(no note)_ |
 | codex / trial1 | match | slightly different implementation but it's ok |
 | codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| codex / trial3 | better | [adopted Claude judge rating (match → better)] |
 
 **Overall comment:** The grid/bin conventions differ across some solutions but are all valid.
 
@@ -279,12 +279,12 @@
 
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial1 | concerning | [adopted Claude judge rating (match → concerning)] |
 | claude-code / trial2 | match | _(no note)_ |
 | claude-code / trial3 | match | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |
 | codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| codex / trial3 | better | [adopted Claude judge rating (match → better)] |
 
 **Overall comment:** One agent's solution is more robust.
 
@@ -356,7 +356,7 @@
 | claude-code / trial3 | match | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |
 | codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| codex / trial3 | concerning | [adopted Claude judge rating (match → concerning)] |
 
 **Overall comment:** _(no overall comment)_
 

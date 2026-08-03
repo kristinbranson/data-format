@@ -440,9 +440,9 @@ if n_trials < 2:
 
 **What this does:** Unregistered cells (NaN traces for that day) are dropped via `~np.isnan(trace[:, 0])`. Days with zero registered cells or fewer than 2 produced trials are skipped. Final partial trials shorter than 30 s are dropped. No imputation of missing position frames is performed.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → concerning)]
 
 ---
 

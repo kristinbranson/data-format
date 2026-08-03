@@ -130,9 +130,9 @@ n_trials = len(trial_starts)
 
 **What this does:** Trial boundaries are extracted as the indices where `trial_start_signal > 0` and `teleport_signal > 0`. The arrays are truncated to equal length and pairs where the teleport does not come after its corresponding start are dropped.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → concerning)]
 
 ---
 

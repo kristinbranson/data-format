@@ -358,9 +358,9 @@ image_indices = np.array([img_to_idx.get(img, 0) for img in images], dtype=np.in
 
 **What this does:** Forward-fills omitted-stimulus bins with the previous image (or backfills if the trial starts with `'omitted'`), then maps strings to integer codes via the global sorted image-name vocabulary; missing names fall back to 0.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → concerning): Claude caught a problem with agent implmentation of image name mapping]
 
 ---
 

@@ -9,7 +9,7 @@
 - Judges: Claude, Codex
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than evaluator LZ.
+Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
 
 ## Comments
 
@@ -29,7 +29,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 
 | Q | Question | LZ | KB | Claude judge | Codex judge | Solution comment | LLM judge comment | Difference categories |
 |---|---|---|---|---|---|---|---|---|
-| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔵🔵🔵 🔵🔵🔵 | 🔴🔴🔴 🔴🔴🔴 | 🔵🔵🔵 🔵🔵🟨 | 🔴🔴🔴 🔴🔴🔴 | Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface. | The Claude judge caught a minor mistake that I overlooked: one of the solutions was not properly filtering the data based on `project_code`. |  |
+| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔵🔵🔵 🔵🔵🟡 | 🔴🔴🔴 🔴🔴🔴 | 🔵🔵🔵 🔵🔵🟡 | 🔴🔴🔴 🔴🔴🔴 | Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface. | The Claude judge caught a minor mistake that I overlooked: one of the solutions was not properly filtering the data based on `project_code`. |  |
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | All agents used the correct information. |  |  |
 | 1-c | How are the data split into sessions? | 🔴🔴🔴 🔴🔴🔴 | 🔴🔴🔴 🔴🔴🔴 | 🟡🟡🟡 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 | The Allen dataset has an unusual setup where each session, identified by `ophys_session_id`, is split into multiple `ophys_experiment_id`s for different imaging planes in the same session. This seems to have thrown off all the agents — none of them recombined the data based on the session ID. This is explicitly shown in the tutorial code, which the agents had been instructed to read. |  | `VARNAME=6` |
 | 1-d | Are the data correctly split into trials? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🟢🟡🟢 🟢🟢🟡 | 🔴🔴🟢 🟢🔵🟢 |  |  | `MISC=1` |
@@ -40,13 +40,13 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🔵 🟢🔵🔵 | 🟢🟡🟢 🟢🟡🟡 | 🟢🔴🟢 🟢🟢🔴 |  |  |  |
 | 2-e | How is the `neural` data temporally binned/resampled? | 🟢🔴🔵 🟡🔵🔵 | 🟢🔴🔵 🟡🔵🔵 | 🟡🔴🟡 🟡🔴🟡 | 🟢🔴🔴 🔴🔴🔴 | The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices (2-b). |  | `TIMERES=2` |
 | 3-a | What variables in the raw data is `output` *Image identity* derived from? | 🟢🟢🟢 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🟡🔵🟡 | 🔴🔵🔴 🔴🟡🔴 | Codex agents dig deep into the data structure to find the image ID info instead of using the data table. |  |  |
-| 3-b | What processing is involved in computing `output` *Image identity*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟨🟢 🟡🔵🟡 | 🔴🟡🟡 🔴🟡🔴 |  |  |  |
+| 3-b | What processing is involved in computing `output` *Image identity*? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟡🟢 🟡🔵🟡 | 🔴🟡🟡 🔴🟡🔴 |  |  |  |
 | 3-c | How is `output` *Image identity* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🔵🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔴 |  |  |  |
 | 4-a | What variables in the raw data is `output` *Image change* derived from? | 🔵🔵🟢 🔵🔵🔵 | 🟡🟡🔵 🟡🔵🔵 | 🔵🔵🔵 🔵🟡🟡 | 🔴🔵🟡 🔴🔴🟡 | Some solutions included the grey screen as an extra image category. |  | `SEMANTIC` |
-| 4-b | What processing is involved in computing `output` *Image change*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🟨🔵🟢 🟡🟡🟡 | 🔴🔵🟡 🔴🔴🟡 |  |  |  |
+| 4-b | What processing is involved in computing `output` *Image change*? | 🟡🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🟡🔵🟢 🟡🟡🟡 | 🔴🔵🟡 🔴🔴🟡 |  |  |  |
 | 4-d | How is `output` *Image change* aligned with the neural data? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🔵 🔵🔵🟢 | 🟢🔵🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔴 |  |  |  |
 | 5-a | What variables in the raw data is `output` *Running speed* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 5-b | What processing is involved in computing `output` *Running speed*? | 🟢🔴🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟨🟡🟡 🟡🟢🟢 | 🔴🔴🔴 🔴🔴🔴 |  |  | `TIMERES=1` |
+| 5-b | What processing is involved in computing `output` *Running speed*? | 🟡🔴🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟢🟢 | 🔴🔴🔴 🔴🔴🔴 |  |  | `TIMERES=1` |
 | 5-d | How is `output` *Running speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟢🔴🔴 🔴🔴🔴 |  |  |  |
 | 6-a | What variables in the raw data is `output` *Pupil diameter* derived from? | 🟡🟡🟡 🟡🔵🔵 | 🔵🔵🔵 🔵🟡🔵 | 🟡🟡🔴 🟡🟡🔴 | 🔴🟡🔴 🔴🔴🔴 | Agents really like to compute pupil size from area. |  | `MISC=4` |
 | 6-b | What processing is involved in computing `output` *Pupil diameter*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 |  |  |  |

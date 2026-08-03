@@ -14,7 +14,7 @@
 | claude-code / trial3 | ok | _(no note)_ |
 | codex / trial1 | ok | _(no note)_ |
 | codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
+| codex / trial3 | concerning | [adopted Claude judge rating (ok → concerning): Claude caught a small bug with data filtering using project_code] |
 
 **Overall comment:** Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface.
 
@@ -208,7 +208,7 @@
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial2 | concerning | [adopted Claude judge rating (match → concerning): Claude caught a problem with agent implmentation of image name mapping] |
 | claude-code / trial3 | match | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |
 | codex / trial2 | match | _(no note)_ |
@@ -261,7 +261,7 @@
 
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial1 | concerning | [adopted Claude judge rating (match → concerning): Human error] |
 | claude-code / trial2 | match | _(no note)_ |
 | claude-code / trial3 | match | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |
@@ -315,7 +315,7 @@
 
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial1 | concerning | [adopted Claude judge rating (match → concerning): Claude caught a minor bug] |
 | claude-code / trial2 | incorrect | same binning error cascade to all the variables |
 | claude-code / trial3 | match | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |

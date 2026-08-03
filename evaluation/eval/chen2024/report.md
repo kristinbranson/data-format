@@ -9,7 +9,7 @@
 - Judges: Claude, Codex
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than evaluator LZ.
+Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
 
 ## Comments
 

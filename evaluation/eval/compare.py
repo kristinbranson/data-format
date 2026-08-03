@@ -569,9 +569,14 @@ def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
         lines.append(f"## Q {qid}. {title}")
         lines.append("")
         if qid in by_qid:
+            # No Best/Why column: where a judge was judged more accurate than an
+            # evaluator, that judgement was folded into the evaluator's own
+            # rating (see archive/adopt_judge_ratings.py), so the evaluator
+            # column is the answer and a separate adjudication column would only
+            # be another thing to consult.
             lines.append("| Agent / trial | " + " | ".join(codes)
-                         + " | Claude judge | Codex judge | Best | Why |")
-            lines.append("|---" * (len(codes) + 5) + "|")
+                         + " | Claude judge | Codex judge |")
+            lines.append("|---" * (len(codes) + 3) + "|")
             for (agent, n), v in sorted(by_qid[qid], key=lambda x: TRIAL_KEYS.index(x[0])):
                 on_disk = ({} if qid in stale
                            else disk_ratings.get(qid, {}).get((agent, n), {}))
@@ -591,8 +596,6 @@ def write_summary(path: Path, entries: dict[tuple[str, str, int], dict],
                     *[cell(c) for c in codes],
                     v.get("claude") or "—",
                     v.get("codex") or "—",
-                    v.get("best") or "—",
-                    v.get("why") or "",
                 ]
                 row = "| " + " | ".join(c.replace("|", "\\|") for c in row_cells) + " |"
                 lines.append(row)
@@ -852,23 +855,11 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
                 for c in cols:
                     _CONSOLE.print(c)
 
-            # Prompt user for best evaluation + justification
-            try:
-                best = prompt_best(rater.code)
-            except (EOFError, KeyboardInterrupt):
-                aborted = True
-                break
-            if best is None:
-                # User pressed Enter to skip — mark the qid incomplete so the
-                # whole qid is NOT flushed; the user will be re-prompted on the
-                # next run from the start of this qid.
-                qid_incomplete = True
-                _CONSOLE.print("[dim]→ skipped (qid will not be flushed)[/dim]")
-                continue
-            try:
-                best_just = prompt_best_justification()
-            except (EOFError, KeyboardInterrupt):
-                best_just = None
+            # The panels above are for review only. Nothing is adjudicated
+            # here any more: where a judge was once recorded as more accurate
+            # than the evaluator, that has been folded into the evaluator's own
+            # rating, so there is no Best column left to fill.
+            best, best_just = None, None
 
             qid_entries[key] = {
                 "human": h_rating or "—",

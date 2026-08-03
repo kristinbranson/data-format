@@ -31,9 +31,9 @@ all_sessions = get_local_session_metadata(data_root)
 
 **What this does:** Reads the local `ophys_experiment_table.csv` and intersects with locally available `behavior_ophys_experiment_*.nwb` files, dropping passive experiments. Each surviving experiment file is later opened directly with `h5py` (not via AllenSDK) to access trials, neural events, running, pupil, and stimulus presentations.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (ok → concerning): Claude caught a small bug with data filtering using project_code]
 
 ---
 

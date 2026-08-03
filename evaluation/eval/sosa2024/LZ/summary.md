@@ -63,9 +63,9 @@
 
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial1 | concerning | [adopted Claude judge rating (match → concerning): AI Correctly identified that the agent code is less robust] |
 | claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
+| claude-code / trial3 | concerning | [adopted Claude judge rating (match → concerning)] |
 | codex / trial1 | match | _(no note)_ |
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |

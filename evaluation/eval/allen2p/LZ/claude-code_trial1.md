@@ -459,9 +459,9 @@ change_trace = build_image_change_trace(ophys_ts, stim_data, t_start, t_stop)
 
 **What this does:** A zero trace is initialized over the trial's ophys frames. For each stimulus presentation flagged `is_change`, the single ophys frame at or after its `start_time` (via `np.searchsorted`) is set to 1. The "1" is one ophys frame wide, not a 750 ms window.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → concerning): Human error]
 
 ---
 
@@ -549,9 +549,9 @@ running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
 
 **What this does:** Running speed is linearly interpolated from its native (~60 Hz) timebase to the ophys timestamps, then discretized into 5 percentile bins. Bin edges are computed per session (not globally across sessions). NaNs map to bin 0.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → concerning): Claude caught a minor bug]
 
 ---
 

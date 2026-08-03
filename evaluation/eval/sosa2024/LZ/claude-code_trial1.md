@@ -105,9 +105,9 @@ teleport_inds = teleport_inds[:n_trials]
 
 **What this does:** Trial boundaries are derived from the `trial_start` and `teleport` behavioral timeseries flags, taking indices where each flag is positive. The minimum count of starts/ends is used to align them.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → concerning): AI Correctly identified that the agent code is less robust]
 
 ---
 

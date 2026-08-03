@@ -330,9 +330,9 @@ def compute_position_bins(position_day, n_bins=POSITION_BINS):
 
 **What this does:** Position is divided per-axis by `(session_max + 1e-5) / 3`, floored to integer bins, clipped to `[0, 2]`, and combined into a single 9-class label `xbin*3 + ybin`. Stored as `int8` with shape `(1, T)` per trial.
 
-**Rating:** match
+**Rating:** better
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → better)]
 
 ---
 
@@ -381,9 +381,9 @@ if not np.array_equal(geometry_grid, valid_grid):
 
 **What this does:** NaN rows in `trace` (cells absent on a day) are dropped; trailing frames not filling a full 1-minute trial are discarded and recorded as `discarded_tail_frames`. Sessions with no present cells, fewer than 2 full trials, or where the blocked geometry disagrees with the maps' valid mask raise `ValueError`.
 
-**Rating:** match
+**Rating:** better
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → better)]
 
 ---
 
@@ -485,9 +485,9 @@ if show_processing and session_ref.session_id in plot_session_ids:
 
 **What this does:** `aggregate_valid_map` loads and reduces the `maps['smoothed']` 15x15-per-cell array purely to validate the geometry vector; the result is not stored in the output. Plot generation is gated on `--show-processing`.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → concerning)]
 
 ---
 

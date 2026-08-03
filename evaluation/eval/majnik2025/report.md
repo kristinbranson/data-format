@@ -9,7 +9,7 @@
 - Judges: Claude, Codex
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than evaluator LZ.
+Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
 
 ## Comments
 
@@ -43,7 +43,7 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 4-d | How is `output` *Motion energy* aligned with the neural data? | 🟢🔴🔴 🟢🟢🟢 | 🟢🔴🔴 🟢🔵🔵 | 🔵🟡🟡 🟣🔵🟣 | 🔴🔴🔴 🟣🔴🔴 | 2/6 incorrect solutions (did not attempt to identify missing frames); 4/6 correct solutions using a different approach to detect missing frames. | Judge ratings are inconsistent. | `PROCESS=2` |
 | 5 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟡 🟢🟢🟢 | 🔵🔴🔴 🟢🔴🟡 | 🔵🔵🟡 🟣🟢🟣 | 🔵🟡🔴 🟣🔵🔴 |  |  |  |
 | 6-a | What are the most time-consuming steps of the code? | 🔵🟢🟢 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Only two solutions used GPU/CUDA via `suite2p`. |  |  |
-| 6-b | What loops in the code could have been vectorized to improve efficiency? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🔵🟢🟢 🟪🟢🔵 | 🔵🔵🔵 🟣🔵🟢 |  | Some agents' solutions for detecting missing frames are more efficient. |  |
+| 6-b | What loops in the code could have been vectorized to improve efficiency? | 🟢🟢🟢 🟣🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🔵🟢🟢 🟣🟢🔵 | 🔵🔵🔵 🟣🔵🟢 |  | Some agents' solutions for detecting missing frames are more efficient. |  |
 | 6-c | What processing does the code repeat multiple times? | 🟢🟢🟢 🟢🟢🔵 | 🔵🔵🔵 🔵🔵🟡 | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🔵🔵🔵 |  |  |  |
 | 6-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🔴 🟢🟢🟢 | 🔵🔵🔵 🟡🔵🔵 |  |  |  |
 | 6-e | How is memory usage optimized? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | memory not really an issue here |  |  |

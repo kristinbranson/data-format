@@ -9,7 +9,7 @@
 - Judges: Claude, Codex
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
-A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed more accurate than evaluator LZ.
+Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
 
 ## Comments
 
@@ -41,11 +41,11 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 3-a | What variables in the raw data is `input` *Blocked positions* derived from? | 🔵🔵🔵 🟢🟢🟢 | 🔵🔵🔵 🟢🟢🟢 | 🟡🔵🟡 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | All claude agents used the environment-geometry-to-name mapping, which is a bit more complicated but correct. | Two possible solutions; Claude judge is inconsistent. |  |
 | 3-b | What processing is involved in computing `input` *Blocked positions*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟡🔵🟡 🔵🟡🟣 | 🔴🔴🔴 🔴🟢🔴 | Some used different conventions, but the same information is represented. | Same as above. |  |
 | 4-a | What variables in the raw data is `output` *Position* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 4-b | What processing is involved in computing `output` *Position*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🔵 🔵🟡🟪 | 🔴🔴🔴 🔴🟢🔴 | The grid/bin conventions differ across some solutions but are all valid. |  |  |
+| 4-b | What processing is involved in computing `output` *Position*? | 🟢🟢🟢 🟢🟢🟣 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🔵 🔵🟡🟣 | 🔴🔴🔴 🔴🟢🔴 | The grid/bin conventions differ across some solutions but are all valid. |  |  |
 | 4-d | How is `output` *Position* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🔵🔵🟢 | 🟢🟢🟢 🟢🟡🟢 | 🟢🟡🟢 🔵🟢🟢 |  |  |  |
-| 5 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟨🟢🟢 🟢🟡🟪 | 🔴🟡🟡 🟡🟢🔵 | One agent's solution is more robust. |  |  |
+| 5 | How are minor mistakes in the data, e.g. missing data, handled? | 🟡🟢🟢 🟢🟢🟣 | 🔵🔵🔵 🔵🔵🔵 | 🟡🟢🟢 🟢🟡🟣 | 🔴🟡🟡 🟡🟢🔵 | One agent's solution is more robust. |  |  |
 | 6-a | What are the most time-consuming steps of the code? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟡🟢 🔵🟢🔵 |  |  |  |
 | 6-b | What loops in the code could have been vectorized to improve efficiency? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🔵 🟢🟢🟢 | 🟡🟡🟡 🔵🟢🔵 |  |  |  |
 | 6-c | What processing does the code repeat multiple times? | 🟢🟢🔵 🔵🟢🔴 | 🔵🔵🟢 🔵🔵🟡 | 🟢🟢🔵 🟢🟢🟢 | 🔴🟡🟡 🔵🟢🔵 | One inefficient "two-pass" solution. |  | `INEFFICIENT` |
-| 6-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟨 | 🔴🔵🟡 🔵🟢🔵 |  |  |  |
+| 6-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟢🟢 🟢🟢🟡 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 🔴🔵🟡 🔵🟢🔵 |  |  |  |
 | 6-e | How is memory usage optimized? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | memory is not really a concern for this dataset |  |  |

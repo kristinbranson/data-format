@@ -336,7 +336,7 @@
 | claude-code / trial1 | match | _(no note)_ |
 | claude-code / trial2 | match | _(no note)_ |
 | claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
+| codex / trial1 | better | [adopted Claude judge rating (match → better)] |
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 

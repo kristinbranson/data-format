@@ -461,9 +461,9 @@ for trial_idx in range(n_trials):
 
 **What this does:** Trial segmentation uses a per-trial Python loop that slices the binned arrays. Within the loop, all expensive ops (binning, normalization, digitization) are already vectorized; the loop itself just slices.
 
-**Rating:** match
+**Rating:** better
 
-**Note:** _(no note)_
+**Note:** [adopted Claude judge rating (match → better)]
 
 ---
 

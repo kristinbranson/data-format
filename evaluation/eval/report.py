@@ -23,11 +23,7 @@ EVAL_DIR = Path(__file__).resolve().parent
 # Canonical 6-trial order: cc1, cc2, cc3, cx1, cx2, cx3
 TRIAL_KEYS = [("claude-code", n) for n in (1, 2, 3)] + [("codex", n) for n in (1, 2, 3)]
 
-# Visual mapping — colored squares chosen for at-a-glance scanning.
-# A circle (same color) replaces the square when the LLM judge was picked
-# as better than the human, so the cell width never changes.
-# Default rating shapes are circles; squares (same color) mark cells where the
-# LLM judge was deemed better than the human. Width unchanged either way.
+# Visual mapping — colored circles chosen for at-a-glance scanning.
 RATING_DEFAULT = {   # circles
     "better":     "🟣",
     "match":      "🟢",
@@ -35,14 +31,6 @@ RATING_DEFAULT = {   # circles
     "concerning": "🟡",
     "incorrect":  "🔴",
     "missing":    "⚪",
-}
-RATING_PICKED = {    # squares (LLM judge > human)
-    "better":     "🟪",
-    "match":      "🟩",
-    "ok":         "🟦",
-    "concerning": "🟨",
-    "incorrect":  "🟥",
-    "missing":    "⬜",
 }
 EMPTY_MARK = "⚫"   # black circle — matches the default-shape convention
 
@@ -191,28 +179,18 @@ def parse_eval_summary(path: Path, rater: str = "") -> tuple[dict, dict, dict, d
     return h, c, x, comments, best
 
 
-def square(rating: str | None, picked: bool = False) -> str:
-    """Return the colored marker for a rating.
-    Default = circle. If `picked` is True (LLM judge > human), use a square."""
+def square(rating: str | None) -> str:
+    """Return the colored marker for a rating."""
     if rating is None or rating in ("—", ""):
         return EMPTY_MARK
-    table = RATING_PICKED if picked else RATING_DEFAULT
-    return table.get(rating.lower(), EMPTY_MARK)
+    return RATING_DEFAULT.get(rating.lower(), EMPTY_MARK)
 
 
-def six_squares(ratings: dict, qid: str,
-                highlight: dict | None = None,
-                judge_label: str | None = None) -> str:
-    """
-    Return cc1 cc2 cc3 cx1 cx2 cx3 as 6 colored squares.
-    If `highlight` is provided (best_picks dict) and `judge_label` matches the
-    user's pick for that trial, prepend a ⭐ to that square.
-    """
+def six_squares(ratings: dict, qid: str) -> str:
+    """Return cc1 cc2 cc3 cx1 cx2 cx3 as 6 colored markers."""
     parts_cc, parts_cx = [], []
     for agent, n in TRIAL_KEYS:
-        is_picked = (highlight and judge_label
-                     and highlight.get((qid, agent, n)) == judge_label)
-        sq = square(ratings.get((qid, agent, n)), picked=bool(is_picked))
+        sq = square(ratings.get((qid, agent, n)))
         (parts_cc if agent == "claude-code" else parts_cx).append(sq)
     return "".join(parts_cc) + " " + "".join(parts_cx)
 
@@ -337,8 +315,8 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         f"- Judges: Claude, Codex",
         "",
         f"**Legend:**  {LEGEND_LINE}  ",
-        f"A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed "
-        f"more accurate than evaluator {who}.",
+        f"Ratings are evaluator {who}'s, including the few questions where a judge "
+        f"was found more accurate and that judgement was adopted.",
         "",
         "## Comments",
         "",
@@ -346,6 +324,7 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         "## Per-question evaluations",
         "",
         # Columns: Q, Question, one per evaluator, 2 judges, 3 comment columns.
+        # The solution comment is the report evaluator's (named in the header).
         "| Q | Question | " + " | ".join(codes)
         + " | Claude judge | Codex judge | Solution comment "
           "| LLM judge comment | Difference categories |",
@@ -357,10 +336,10 @@ def build_report(dataset: str, rater: str | None = None) -> str:
     for qid in qids:
         title = (titles.get(qid) or "").replace("|", "\\|").replace("\n", " ")
         h_cells = [six_squares(per_code.get(c) or human_ratings, qid) for c in codes]
-        c_cell = (six_squares(es_c, qid, highlight=es_best, judge_label="Claude judge")
-                  if es_c else (EMPTY_MARK * 3 + " " + EMPTY_MARK * 3))
-        x_cell = (six_squares(es_x, qid, highlight=es_best, judge_label="Codex judge")
-                  if es_x else (EMPTY_MARK * 3 + " " + EMPTY_MARK * 3))
+        c_cell = (six_squares(es_c, qid) if es_c
+                  else (EMPTY_MARK * 3 + " " + EMPTY_MARK * 3))
+        x_cell = (six_squares(es_x, qid) if es_x
+                  else (EMPTY_MARK * 3 + " " + EMPTY_MARK * 3))
         sol = (rs_solution.get(qid) or "").strip()
         if sol in placeholder_comments:
             sol = ""
