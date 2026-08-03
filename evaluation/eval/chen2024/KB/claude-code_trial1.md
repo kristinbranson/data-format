@@ -335,9 +335,9 @@ def get_tone_onset_for_trials(go_times, sample_start_ts, trial_starts, trial_sto
 
 **What this does:** Derived from NWB `BehavioralEvents.sample_start_times` timestamps (tone/sample epoch onset), bounded by the `trials` table `start_time`/`stop_time` and `BehavioralEvents.go_start_times`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -371,9 +371,9 @@ tone_onset_input = compute_tone_onset_input(go_times, tone_onsets, ALIGN_START, 
 
 **What this does:** Per trial, the last `sample_start_times` event between trial start and go cue is taken as tone onset; then a continuous elapsed-time value `bin_center - (tone_t - go_t)` is computed at each of the 80 bin centers. Trials with no tone onset found get an all-zeros vector.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -402,9 +402,9 @@ for t in range(n_valid_trials):
 
 **What this does:** Uses the same go-cue-referenced grid as `neural`: the same `ALIGN_START=-2.5`/`ALIGN_END=1.5`, `BIN_WIDTH=0.050`, `N_BINS=80` constants, evaluated at bin centers with the trial's `go_times[t]` as time 0. Stored as row 0 of a per-trial `(2, 80)` input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -428,9 +428,9 @@ photostim_stop_ts = be.time_series['photostim_stop_times'].timestamps[:]
 
 **What this does:** Derived from NWB `BehavioralEvents.photostim_start_times` and `photostim_stop_times` timestamps, plus `go_start_times` for referencing. (The `trials` table columns `photostim_onset`/`photostim_power`/`photostim_duration` are loaded at lines 388-390 but are used only for session-level control-trial performance, not for this input.)
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** ok
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -464,9 +464,9 @@ def compute_photostim_input(go_times, photostim_start_ts, photostim_stop_ts,
 
 **What this does:** For each trial, every photostim start/stop interval in the session is shifted into go-cue-relative time; intervals overlapping the [-2.5, +1.5]s window set the bins whose centers fall inside `[ps_start, ps_stop)` to 1.0, others remain 0.0 (float32 binary vector).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** ok
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -496,9 +496,9 @@ for t in range(n_valid_trials):
 
 **What this does:** Photostim times are converted to go-cue-relative time using each trial's `go_times[t]` and evaluated on the same 80-bin [-2.5, +1.5]s grid as `neural`. Stored as row 1 of the per-trial `(2, 80)` input array, named `photostim_on`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

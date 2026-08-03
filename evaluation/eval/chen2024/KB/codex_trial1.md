@@ -332,9 +332,9 @@ sample_start_times = h5["acquisition"]["BehavioralEvents"]["sample_start_times"]
 
 **What this does:** The input is built from `acquisition/BehavioralEvents/sample_start_times` (tone/sample onset event timestamps), `acquisition/BehavioralEvents/go_start_times` (per-trial go cue), and the `intervals/trials` `start_time`/`stop_time` columns used to window which sample events belong to each trial. A constant fallback `EXPECTED_SAMPLE_ONSET_REL_GO = -1.85` (convert_data.py:17) is used for trials with no sample event.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -371,9 +371,9 @@ for trial in range(n_trials):
 
 **What this does:** For each trial, `searchsorted` selects the sample-start events falling inside `[trial_start, trial_stop]` and takes the earliest as tone onset; that absolute time is converted to a go-cue-relative offset and subtracted from each bin center, producing a continuous per-bin elapsed-time-since-tone value in seconds (negative before tone onset). Trials with no in-window sample event fall back to a fixed -1.85 s offset from the go cue, counted in `sample_onset_fallbacks`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** ok
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -403,9 +403,9 @@ abs_edges = go_times[:, None] + bin_edges_rel[None, :]
 
 **What this does:** The input uses the same go-cue-relative bin grid (`bin_centers_rel`, 80 bins of 50 ms over [-2.5, 1.5) s) that defines the neural binning edges, so input bin *i* corresponds to the same go-aligned time window as neural bin *i* within each trial. Trials dropped for all-zero neural data are also dropped from `input_trials` (convert_data.py:414), keeping the trial lists index-matched.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -430,9 +430,9 @@ go_times_all = h5["acquisition"]["BehavioralEvents"]["go_start_times"]["timestam
 
 **What this does:** The photostim input comes from the `intervals/trials` table columns `photostim_onset` and `photostim_duration` (stored as strings, `"N/A"` on no-stim trials), combined with the trial `start_time` and the per-trial go cue timestamp from `acquisition/BehavioralEvents/go_start_times`. The `photostim_start_times`/`photostim_stop_times` event series are not read by the converter (CONVERSION_NOTES.md:187 states they were used only as a spot check).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -461,9 +461,9 @@ for trial in range(n_trials):
 
 **What this does:** For trials whose `photostim_onset` string is not `"N/A"`, the onset (interpreted as an offset from `trial_start`) is converted to a go-cue-relative time, the offset time is onset plus `photostim_duration`, and each bin center inside `[on, off)` is set to 1.0 (float32); all other bins and all non-stim trials stay 0.0. The number of stim trials per session is recorded as `photostim_trials` in the stats dict (convert_data.py:481).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -489,9 +489,9 @@ abs_edges = go_times[:, None] + bin_edges_rel[None, :]
 
 **What this does:** The stim window is expressed in the same go-cue-relative coordinates as the neural bin grid, and membership is tested against `bin_centers_rel` — the centers of the same 50 ms edges used for spike binning — so the `(2, 80)` input array is bin-for-bin aligned with the `(n_units, 80)` neural array of the same trial. The same `nonzero_trial_mask` prunes neural and input trial lists together.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

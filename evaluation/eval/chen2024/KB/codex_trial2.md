@@ -316,9 +316,9 @@ time_from_tone = (bin_centers_abs - sample_onset).astype(np.float32)
 
 **What this does:** Derived from `acquisition/BehavioralEvents/sample_start_times.timestamps`, bracketed by `intervals/trials.start_time` and the per-trial go-cue timestamp from `go_start_times`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -348,9 +348,9 @@ input_tensor[keep_idx, 0, :] = rec["time_from_tone"]
 
 **What this does:** Selects the last `sample_start` event falling in `[trial_start, go_time]` as tone onset (falling back to `go - 1.85 s` if none), then computes elapsed seconds from that onset to each bin center, giving a continuous float32 ramp stored as `input[0]`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** incorrect
 
-**Note:** _(to be filled by evaluator)_
+**Note:** uses sample_start_time instead of tone_onset_times
 
 ---
 
@@ -379,9 +379,9 @@ if n_trials_dropped_all_zero:
 
 **What this does:** Evaluated at the same 80 go-aligned bin centers (`go_time + BIN_CENTERS_REL`) used to build the neural bin edges, so `input[0]` has shape `(80,)` per trial matching the neural time axis; the same trial mask is applied to both tensors.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -410,9 +410,9 @@ if stim_power is not None and stim_onset is not None and stim_dur is not None:
 
 **What this does:** Derived from the `intervals/trials` columns `photostim_onset`, `photostim_duration`, and `photostim_power` (as gate), combined with `trials.start_time` to convert trial-relative stim times to absolute times. The `BehavioralEvents/photostim_start_times` event stream is noted in the notes (CONVERSION_NOTES.md:71) but not read by the code.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -446,9 +446,9 @@ input_tensor[keep_idx, 1, :] = rec["photostim_on"]
 
 **What this does:** Parses the three photostim string fields to floats (returning `None` for `"N/A"`/`""`/`"nan"`/`"None"`); when all three are present, computes the absolute stim window `[trial_start + onset, +duration)` and marks each bin center inside it as 1.0, else leaves the row all zeros.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -477,9 +477,9 @@ if n_trials_dropped_all_zero:
 
 **What this does:** The binary stim indicator is sampled on the same 80 go-aligned bin centers (`go_time + BIN_CENTERS_REL`) that define the neural bins, giving one value per neural time bin; the same trial mask is applied to both `neural` and `input`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
