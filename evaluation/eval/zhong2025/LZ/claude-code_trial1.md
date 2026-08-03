@@ -240,7 +240,7 @@ trial_neural = spk[:, sfr:gfr].astype(np.float16)
 
 **Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

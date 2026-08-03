@@ -258,9 +258,9 @@ for trial in range(int(beh["ntrials"])):
 
 **What this does:** Per-trial neural slices are the running-corridor frames whose `ft_trInd == trial_idx`; alignment event is corridor entry (trial start) with `off_start=0`. Cue time is encoded as the `time_to_sound_cue` input rather than as a re-alignment of the neural slice.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

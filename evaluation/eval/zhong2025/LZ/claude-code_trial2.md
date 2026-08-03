@@ -252,9 +252,9 @@ trial_spk = spk[:, start:end].copy()
 
 **What this does:** Each trial's neural slice begins at frame `StartFr[i]` (corridor entry) and ends at the next trial's start. Frame index 0 of the trial corresponds to the corridor entry event.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

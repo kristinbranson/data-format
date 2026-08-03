@@ -127,11 +127,11 @@
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
 | claude-code / trial1 | match | better | match | match |
-| claude-code / trial2 | match | concerning | match | concerning |
-| claude-code / trial3 | match | concerning | match | incorrect |
-| codex / trial1 | match | concerning | match | match |
+| claude-code / trial2 | concerning | concerning | match | concerning |
+| claude-code / trial3 | concerning | concerning | match | incorrect |
+| codex / trial1 | concerning | concerning | match | match |
 | codex / trial2 | match | better | match | incorrect |
-| codex / trial3 | match | better | match | match |
+| codex / trial3 | concerning | better | match | match |
 
 **Overall comment:** _(no overall comment)_
 

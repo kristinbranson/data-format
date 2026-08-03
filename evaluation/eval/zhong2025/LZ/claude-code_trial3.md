@@ -254,9 +254,9 @@ for t in range(ntrials):
 
 **What this does:** Each trial's neural slice begins at `StartFr` (corridor entry) and ends at `EndFr`. Alignment event documented as trial start; trial length is variable.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

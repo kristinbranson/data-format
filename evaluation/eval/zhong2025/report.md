@@ -30,7 +30,7 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟢🟡 | 🟡🟡🔴 🟡🟡🔴 | The neural data requires little processing beyond combining the imaging planes. The agents tend to store the data as float16, which is unnecessary. |  |  |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🔵🟢🔵 🟡🟡🔴 | 🔵🟢🔵 🟡🟡🟡 | 🟢🟢🔵 🟡🟡🟡 | 🟢🟢🔴 🟡🔴🔴 | The codex agents used very aggressive selectivity-based filters; one trial even dropped V1 entirely, which is hard to justify. |  | `FILTER=3` |
-| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟣🟡🟡 🟡🟣🟣 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🔴 🟢🔴🟢 |  |  |  |
+| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟡🟡 🟡🟢🟡 | 🟣🟡🟡 🟡🟣🟣 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🔴 🟢🔴🟢 |  |  |  |
 | 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🔴 🟢🟢🟢 |  |  |  |
 | 3-a | What variables in the raw data is `input` *time_to_sound_cue* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🟢🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
 | 3-b | What processing is involved in computing `input` *time_to_sound_cue*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | Both solutions are valid - use frame index diffrence + frame rate, or use time stamp and convert |  |  |

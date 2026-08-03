@@ -274,9 +274,9 @@ def session_trial_info(record, trial, frame_idx):
 
 **What this does:** Trials are segmented by `ft_trInd`. The `time_since_trial_start_s` input encodes alignment to the trial-start event (`Trial_start_time`); `off_start=0.0, off_end=None` is recorded in metadata.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

@@ -245,7 +245,7 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
