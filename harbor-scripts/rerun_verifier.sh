@@ -98,6 +98,22 @@ TRIAL_DIR="${1:?Usage: $0 [--claude-judge-only|--codex-judge-only|--judges-only]
 # (basename of the grandparent) working from any cwd.
 TRIAL_DIR="$(cd "$TRIAL_DIR" && pwd)"
 
+# The snapshot's large files (converted_data.pkl, sample_data.pkl) are symlinks
+# to /nearline: the job tree keeps only the small files on /groups so it can be
+# browsed and committed, and the pickles stay on the archive filesystem. The
+# snapshot is bind-mounted at /app below, and a symlink pointing outside that
+# mount is DANGLING inside the container -- test_outputs' _find_workdir_file
+# calls Path.exists(), which follows symlinks, so the verifier would report
+# converted_data.pkl missing and score the trial as if the agent produced
+# nothing. Mounting the archive read-only at its own absolute path makes those
+# links resolve. Empty when the tree has no such symlinks, so this is a no-op
+# for anyone whose jobs are all on one filesystem.
+NEARLINE_ROOT="/nearline/branson/data-format/harbor-jobs"
+NEARLINE_MOUNT=""
+if [ -d "$NEARLINE_ROOT" ]; then
+    NEARLINE_MOUNT="-v $NEARLINE_ROOT:$NEARLINE_ROOT:ro"
+fi
+
 # Infer task name from trial directory path: .../jobs/<task>/<agent>/<timestamp>/
 TASK_NAME="$(basename "$(dirname "$(dirname "$TRIAL_DIR")")")"
 TASK_DIR="$REPO_DIR/harbor-tasks/$TASK_NAME"
@@ -359,6 +375,7 @@ echo "=== Judge rerun complete ==="
         -e ANTHROPIC_API_KEY \
         -e OPENAI_API_KEY \
         -v "$SNAPSHOT_DIR":/app \
+        $NEARLINE_MOUNT \
         -v "$DATA_DIR":/app/data:ro \
         -v "$TESTS_TMPDIR":/tests:ro \
         -v "$VERIFIER_OUT":/logs/verifier \
@@ -399,6 +416,7 @@ else
         -e ANTHROPIC_API_KEY \
         -e OPENAI_API_KEY \
         -v "$SNAPSHOT_DIR":/app \
+        $NEARLINE_MOUNT \
         -v "$DATA_DIR":/app/data:ro \
         -v "$TESTS_TMPDIR":/tests:ro \
         -v "$VERIFIER_OUT":/logs/verifier \

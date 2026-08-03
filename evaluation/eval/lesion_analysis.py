@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: tmp-data-format
 #     language: python
@@ -136,13 +136,6 @@ OTHER_FILES = [f for f in tests.REQUIRED_FILES if f not in CORE_FILES]
 # on its own as category 5, and T_median is not part of the requested split.
 SCALE_FIELDS_CHECK = ['nsubjects', 'nsessions', 'ntrials_total']
 
-# An input variable matches when its endpoint error is within this fraction of
-# the reference variable's span. Relative, not absolute: reference spans differ
-# by three orders of magnitude across datasets (majnik2025 'time' spans 1800,
-# lee2025 'blocked_*' span 1), so no absolute cut is meaningful for all of them.
-# 0.1 is the same 10% convention STATLIMITS applies to the scale ratios.
-INPUT_RANGE_TOL = 0.1
-
 # An output variable matches in distribution when the L1 distance between the
 # sorted class-fraction vectors is at most this. That field ranges 0-2.
 OUTPUT_FRACTION_TOL = 0.1
@@ -156,9 +149,11 @@ TASK_DIR_NAME = {v: k for k, v in DATASET_ALIASES.items()}
 def load_reference_stats(dataset):
     """Oracle summary statistics for one dataset, or None if it has none.
 
-    Needed only by category 7: the recorded input_range_error_<var> is an
-    absolute endpoint error, and turning it into a pass/fail needs the reference
-    variable's span, which no field of metrics.json carries.
+    Needed by the output categories (7-9), which are scored per reference output
+    variable and so need the reference's variable names. The input-range category
+    no longer needs it: test_data_stats now records the endpoint error already
+    divided by the reference span, so metrics.json carries a directly comparable
+    number where it used to carry an absolute error in the variable's own units.
 
     Args:
         dataset: metrics-side dataset name, e.g. 'chen2024'. The harbor task
@@ -223,13 +218,15 @@ def _recorded_bool(jobdata, key):
     return np.nan if value is None else float(bool(value))
 
 
-def _ratio_within_limit(jobdata, field):
-    """Whether <field>_ratio (agent/reference) sits inside its STATLIMITS band.
+def _ratio_within_limit(jobdata, field, limit=None):
+    """Whether <field>_ratio (agent/reference) sits inside a tolerance band.
 
     Args:
         jobdata: one trial's curated metrics dict.
         field: scale field name, e.g. 'nsubjects'. STATLIMITS is keyed by
             '<field>_ratio' and holds a half-width tolerance; 0 means exact.
+        limit: use this half-width instead of the STATLIMITS one. The threshold
+            sweep passes a candidate value here; everything else leaves it None.
 
     Returns:
         1.0, 0.0, or nan when the ratio was not recorded (test_data_stats skipped
@@ -238,7 +235,8 @@ def _ratio_within_limit(jobdata, field):
     ratio = jobdata.get(f'{field}_ratio')
     if ratio is None:
         return np.nan
-    limit = STATLIMITS[f'{field}_ratio']
+    if limit is None:
+        limit = STATLIMITS[f'{field}_ratio']
     return float(1 - limit <= ratio <= 1 + limit)
 
 
@@ -286,40 +284,40 @@ def scale_matches(jobdata, refstats):
 
 
 def input_range_matches(jobdata, refstats):
-    """Fraction of reference input variables whose range matches.
+    """Whether the input variables span the right values: 1 or 0.
 
-    A variable matches when its recorded absolute endpoint error is at most
-    INPUT_RANGE_TOL of the reference variable's span. This is cost_range from
-    test_outputs.match_variables_by_hungarian, including its max(span, 1e-6)
-    guard, so a reference variable that is constant (lee2025 blocked_7 = [0, 0])
-    matches only on an exactly zero error.
+    Exactly the check test_data_stats asserts -- mean_input_range_error against
+    STATLIMITS['input_range_error'] -- rather than a reimplementation, so this
+    cannot drift from the verifier. The metric is the mean, over matched input
+    variables, of the larger endpoint error as a fraction of the reference
+    variable's span.
 
-    Not reproduced: the matcher's "both submitted and reference constant -> cost
-    0" special case. It needs the submitted span for a given reference variable,
-    which the curated metrics cannot supply -- input_range_<var> is keyed by the
-    agent's own variable names and the pairing between the two naming schemes
-    (input_matches) is dropped by trial_metrics._curate.
+    Binary rather than a per-variable fraction, which is what this used to be.
+    The verifier asserts on the mean, and reproducing a per-variable rule here
+    could not match it anyway: the matcher treats two variables that are both
+    constant as a perfect match whatever their constant values (lee2025's
+    reference blocked_7 = [0, 0] against an agent's [1, 1]), and reproducing that
+    needs the submitted span for a given reference variable, which the curated
+    metrics cannot supply -- input_range_<var> is keyed by the agent's own names
+    and the pairing (input_matches) is dropped by trial_metrics._curate.
 
-    Returns nan when the dataset has no input variables at all (allen2p, where
-    the reference input_range is empty and dinput == 0), or when test_data_stats
-    never reached the input matcher.
+    allen2p scores 1, not nan: it has dinput == 0, the verifier's assert is
+    guarded on there being matched inputs so test_data_stats never fails it on
+    input ranges, and test_data_stats records mean_input_range_error = 0.0 for
+    it. A free point rather than a measurement -- see lesion_analysis.md.
+
+    Args:
+        jobdata: one trial's curated metrics.
+        refstats: unused; kept because compute_job_categories calls every
+            category with the same two arguments.
+
+    Returns:
+        1.0, 0.0, or nan when test_data_stats never reached the input matcher.
     """
-    if refstats is None:
+    error = jobdata.get('mean_input_range_error')
+    if error is None:
         return np.nan
-    reference_ranges = refstats['input_range']   # {name: [lo, hi]}, variable's own units
-    if not reference_ranges:
-        return np.nan                            # allen2p: dinput == 0
-    if 'input_range_mean_cost' not in jobdata:
-        return np.nan                            # matcher never ran for this trial
-    n_match = 0
-    for name, (low, high) in reference_ranges.items():
-        error = jobdata.get(f'input_range_error_{name}')  # absolute, variable's units
-        if error is None:
-            continue                             # unmatched reference variable -> miss
-        span = max(abs(high - low), 1e-6)
-        if error / span <= INPUT_RANGE_TOL:
-            n_match += 1
-    return n_match / len(reference_ranges)
+    return float(error <= STATLIMITS['input_range_error'])
 
 
 def output_nclasses_matches(jobdata, refstats):
@@ -1794,3 +1792,201 @@ difference_table(
                                                             ('codex', 'full'))},
     fmt='markdown', color=False,
     outfile=FIGURES_DIR / 'minimal_vs_maximal_difference.md')
+
+# %%
+STATLIMITS
+
+# %%
+# look at the effect of STATLIMITS on results
+# change STATLIMITS to all values between 0 and 0.2, in steps of 0.002
+# count how many jobs of each type of test pass with the new threshold (regardless of arm, up to trial 3)
+# make a plot for each test type with this fraction. make a horizontal line
+# at the true STATLIMITS value frac jobs that pass
+statlimits_try = np.linspace(0, .5, 101)
+
+# Each verifier threshold, the field it tests, and where it is worth sweeping.
+# Ranges are per test because the metrics live on different scales -- a ratio
+# tolerance and a matching cost have nothing to do with each other -- and each
+# one covers where its own values actually sit, so the curve shows its
+# transition rather than a flat line.
+#
+# kind selects the predicate:
+#   'ratio'     pass when 1-t <= ratio <= 1+t     (raising t passes more)
+#   'cost'      pass when cost < t                (raising t passes more)
+#   'accuracy'  pass when every output ratio >= t (raising t passes FEWER)
+#
+# input cost is computed as:
+# cost_semantic = 1 − cos_sim(MiniLM embedding of the two names)
+# cost_range = max(|input_agent_low-input_ref_low|, |input_agent_high-input_ref_high|) / max(|input_ref_high − input_ref_low|, 1e-6)
+# input cost = .95*cost_semantic + .05*cost_range
+# The last field is the limit currently in force, drawn as the marker on each
+# panel. Read from STATLIMITS rather than restated: these were hardcoded, and
+# went stale the moment input_match_cost moved from 1 to 0.5, silently marking
+# the wrong operating point on the plot.
+THRESHOLD_SWEEPS = [
+    ('nsessions',      'N sessions', 'ratio', statlimits_try, STATLIMITS['nsessions_ratio']),
+    ('ntrials_total',  'N trials',   'ratio', statlimits_try, STATLIMITS['ntrials_total_ratio']),
+    ('T_median',       'T median',   'ratio', statlimits_try, STATLIMITS['T_median_ratio']),
+    ('nsubjects',      'N subjects', 'ratio', statlimits_try, STATLIMITS['nsubjects_ratio']),
+    ('nneurons_total', 'N neurons',  'ratio', statlimits_try, STATLIMITS['nneurons_total_ratio']),
+    ('input_range_mean_cost',     'Input match cost',  'cost',
+     np.linspace(0, 1.0, 101), STATLIMITS['input_match_cost']),
+    ('output_fraction_mean_cost', 'Output match cost', 'cost',
+     np.linspace(0, 0.5, 101), STATLIMITS['output_match_cost']),
+    # The two range-only checks. Both are newer and less settled than the rest,
+    # which is the case for sweeping them. output_range_error is asserted per
+    # variable, so the scalar swept here is the per-trial max that
+    # trial_metrics._curate reduces the output_range_error_<var> fields to --
+    # the same thing the assert fails on, since it fails if any variable does.
+    ('mean_input_range_error',    'Input range error',  'cost',
+     np.linspace(0, 1.0, 101), STATLIMITS['input_range_error']),
+    ('output_range_error_max',    'Output range error', 'cost',
+     np.linspace(0, 2.0, 101), STATLIMITS['output_range_error']),
+    ('validation_balanced_accuracy_ratio', 'Decoder accuracy', 'accuracy',
+     np.linspace(.5, 1.0, 101), MIN_ACCURACY_FRAC),
+]
+
+
+def sweep_trials(data, datasets=SUPERVISED_DS):
+    """Every trial the sweep considers: supervised, all arms, trials 1-3.
+
+    Args:
+        data: nested {dataset: {agent: {prompt: {trial: metrics}}}} from
+            utils.load_trial_metrics.
+        datasets: dataset names to include.
+
+    Returns:
+        list of the per-trial curated metrics dicts. Arms are pooled -- the
+        question is what a threshold does to the benchmark, not to one agent.
+    """
+    return [jobdata
+            for dataset in datasets
+            for by_prompt in data.get(dataset, {}).values()
+            for by_trial in by_prompt.values()
+            for trial, jobdata in by_trial.items()
+            if int(trial) <= TRIALS_PER_ARM]
+
+
+def pass_fraction(trials, key, kind, threshold):
+    """Fraction of eligible trials passing one test at one threshold.
+
+    A trial is eligible when the verifier recorded the field at all. Absent and
+    nan are excluded from the denominator rather than counted as failures --
+    never measured is not the same as measured and failed, and allen2p records a
+    nan input cost simply because it has no input variables to match. inf is
+    kept, and fails at every finite threshold.
+
+    Args:
+        trials: per-trial metrics dicts, from sweep_trials().
+        key: metrics field, or the scale field name for kind='ratio'.
+        kind: 'ratio', 'cost' or 'accuracy'; see THRESHOLD_SWEEPS.
+        threshold: candidate value to test at.
+
+    Returns:
+        (fraction_passing, n_eligible, mean_fraction_of_outputs). The third is
+        nan except for kind='accuracy', where the test asserts per output
+        variable and the panel draws both readings.
+    """
+    passed, eligible, output_fracs = 0, 0, []
+    for jobdata in trials:
+        if kind == 'ratio':
+            within = _ratio_within_limit(jobdata, key, limit=threshold)
+            if np.isnan(within):
+                continue
+            eligible += 1
+            passed += within
+
+        elif kind == 'cost':
+            cost = jobdata.get(key)
+            if cost is None or np.isnan(cost):
+                continue
+            eligible += 1
+            passed += cost < threshold
+
+        else:   # accuracy: test_decoder_accuracy asserts the bar per output
+            ratios = jobdata.get(key)
+            if not ratios:
+                continue
+            values = [v for v in ratios.values() if v is not None]
+            if not values:
+                continue
+            eligible += 1
+            passed += all(v >= threshold for v in values)
+            output_fracs.append(np.mean([v >= threshold for v in values]))
+
+    if eligible == 0:
+        return np.nan, 0, np.nan
+    return (passed / eligible, eligible,
+            float(np.mean(output_fracs)) if output_fracs else np.nan)
+
+
+def plot_threshold_sweeps(data, sweeps=THRESHOLD_SWEEPS, ncols=4):
+    """Pass rate against threshold, one panel per verifier test.
+
+    Each panel marks the fraction passing at the threshold actually in force, so
+    the question "would a different setting change anything" is read off the
+    distance between that line and the rest of the curve. A flat curve through
+    the marked point means the threshold is not separating anything.
+
+    Args:
+        data: nested trial metrics, as loaded by utils.load_trial_metrics.
+        sweeps: the THRESHOLD_SWEEPS spec, or a subset of it.
+        ncols: panels per row.
+
+    Returns:
+        (fig, ax_array).
+
+    Side effects: creates a figure; does not write any file.
+    """
+    trials = sweep_trials(data)
+    nrows = int(np.ceil(len(sweeps) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(3.1 * ncols, 2.9 * nrows),
+                             squeeze=False)
+
+    for ax, (key, label, kind, thresholds, true_value) in zip(axes.flat, sweeps):
+        curve = [pass_fraction(trials, key, kind, t) for t in thresholds]
+        fractions = [c[0] for c in curve]
+        n_eligible = max(c[1] for c in curve)
+        ax.plot(thresholds, fractions, lw=1.6, color='#3070b0',
+                label='all outputs' if kind == 'accuracy' else None)
+
+        if kind == 'accuracy':
+            # What the decoder_accuracy_matches category measures, for contrast:
+            # the gap is how often one bad variable sinks an otherwise good trial.
+            ax.plot(thresholds, [c[2] for c in curve], lw=1.2, ls='--',
+                    color='#3070b0', alpha=0.6, label='mean over outputs')
+            ax.legend(fontsize=6, frameon=False, loc='lower left')
+
+        # The horizontal line is the reading at the threshold in force.
+        at_true = pass_fraction(trials, key, kind, true_value)[0]
+        ax.axhline(at_true, color='#c0392b', lw=1.0, ls=':')
+        ax.text(0.98, at_true, f'{at_true:.2f}', transform=ax.get_yaxis_transform(),
+                ha='right', va='bottom', fontsize=6, color='#c0392b')
+
+        # ... and where that threshold sits, when it is on the axis at all.
+        if thresholds[0] <= true_value <= thresholds[-1]:
+            ax.axvline(true_value, color='#c0392b', lw=1.0, ls=':')
+        else:
+            ax.text(0.98, 0.06, f'in force: {true_value:g}\n(off scale)',
+                    transform=ax.transAxes, ha='right', va='bottom',
+                    fontsize=6, color='#c0392b')
+
+        ax.set_title(f'{label}  (n={n_eligible})', fontsize=8)
+        ax.set_ylim(-0.03, 1.03)
+        ax.tick_params(labelsize=7)
+        ax.set_xlabel('threshold', fontsize=7)
+
+    for ax in axes.flat[len(sweeps):]:
+        ax.set_visible(False)
+    for ax in axes[:, 0]:
+        ax.set_ylabel('fraction of jobs passing', fontsize=7)
+
+    fig.tight_layout()
+    return fig, axes
+
+
+fig, axes = plot_threshold_sweeps(data)
+fig.savefig(FIGURES_DIR / 'threshold_sensitivity.pdf', bbox_inches='tight')
+plt.show()
+
+

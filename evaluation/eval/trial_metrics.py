@@ -71,6 +71,14 @@ CURATED_FIELDS = (
     "input_range_mean_cost",
     "output_fraction_mean_cost",
     "output_matches",
+    # Range agreement on its own, with no name-similarity term. The two *_cost
+    # fields above are dominated by how the agent named its variables --
+    # input_range_mean_cost is 95% semantic -- so they can pass on well-named
+    # variables whose ranges are wrong. Kept by name rather than by prefix:
+    # "mean_input_range_error" does not start with "input_range_", and renaming
+    # it so it did would put it in the per-variable namespace, where the
+    # input_range_error_max derivation below would read it as a variable.
+    "mean_input_range_error",
     # Variable counts recorded before the test_data_stats skip (so they're
     # present for unsupervised tasks too).
     "dinput", "doutput",
@@ -106,8 +114,12 @@ def _metrics_path_from_md(md_path: Path) -> Path | None:
 # categories (output_fraction_error) or a missing variable.
 CURATED_PREFIXES = (
     # `input_range_` (no `_error`) catches the per-input [lo, hi] fields
-    # recorded before the skip, AND the existing `input_range_error_<var>`
-    # fields recorded after the matcher runs.
+    # recorded before the skip, AND the `input_range_error_<var>` fields
+    # recorded after the matcher runs. Those errors are a fraction of the
+    # reference variable's span, not an absolute distance -- spans differ by
+    # three orders of magnitude across datasets, so the absolute value they
+    # used to hold was not comparable between them. Files collected before that
+    # change hold the absolute value under the same key.
     "input_range_",
     "output_range_error_",
     "output_fraction_error_",

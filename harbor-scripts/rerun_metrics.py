@@ -45,6 +45,25 @@ Merge behaviour:
     fields (e.g., the matcher fix). `--reference-only` is nearly always
     paired with it, since the fields it refreshes already exist.
 
+Two things this script does NOT do, both of which have bitten before:
+
+1. It writes metrics.json ONLY. reward.txt, ctrf.json and test-stdout.txt keep
+   whatever the verifier decided when the trial actually ran. As of the range
+   checks added to test_data_stats (input_range_error / output_range_error),
+   67 of 128 supervised trials hold a metrics.json that fails a check their
+   reward.txt says they passed. lesion_analysis.py is unaffected -- it derives
+   every category from metrics plus STATLIMITS -- but check_trial_health.py
+   parses test-stdout.txt and therefore reports the pre-range verdict. Use
+   rerun_verifier.sh if you need reward and metrics to agree.
+
+2. It cannot make a partial sweep safe. `input_range_error_<var>` changed
+   meaning -- it was an absolute endpoint error in the variable's own units and
+   is now a FRACTION of the reference variable's span -- and nothing in
+   metrics.json records which meaning a given file holds. Sweeping a subset
+   leaves the two silently mixed under one key, and trial_metrics._curate maxes
+   over that prefix into `input_range_error_max`. Sweep everything or nothing.
+   The same applies to any future change that redefines an existing field.
+
 Usage:
     conda activate decoder-data-format
     # Dry-run: list candidate trials (those with a snapshot)
@@ -79,12 +98,11 @@ REPO_ROOT = Path("/groups/branson/home/bransonk/behavioranalysis/code/"
                  "ScienceBenchmark/data-format")
 HARBOR_TASKS = REPO_ROOT / "harbor-tasks"
 HARBOR_JOBS = REPO_ROOT / "harbor-jobs"
-HARBOR_JOBS_NEW = REPO_ROOT / "harbor-jobs-new"
-# Both analysis trees, same <task>/<agent>/<timestamp>_trial<N>/ layout. Results are
-# split across them -- e.g. map has trials in both -- so a sweep that looked only at
-# harbor-jobs would silently refresh half the trials of a task and leave the rest
-# inconsistent with the new reference, which is worse than not running at all.
-JOB_ROOTS = [HARBOR_JOBS, HARBOR_JOBS_NEW]
+# One tree: harbor-jobs-new was merged into harbor-jobs. It stays a list because the
+# reason for sweeping every root at once still holds -- refreshing half a task's
+# trials leaves the rest holding metrics on the old definitions, which is worse than
+# not running at all.
+JOB_ROOTS = [HARBOR_JOBS]
 
 
 # ---------------------------------------------------------------- imports / refs
@@ -187,6 +205,140 @@ def _derive_decoder_reference_fields(test_mod, existing, submitted_data_stats,
     new_metrics["validation_balanced_accuracy_ratio"] = ratio
 
     return f"derive decoder refs: {len(ratio)} output(s) from stored accuracy (no training)"
+
+
+# Significant figures for values shown in the run report. Full float repr costs
+# 17 digits per number, which pushes structures like output_matches (a list of
+# dicts, each with a cost) past any sane line length for no benefit: the size of
+# a change is read off the delta in _fmt_change, which stays exact.
+_DISPLAY_SIGFIGS = 6
+
+
+def _round_floats(v, sigfigs: int = _DISPLAY_SIGFIGS):
+    """Recursively round floats inside a metric value, for display only.
+
+    Ints are left alone (they are exact counts, and bool is an int subclass that
+    must not be turned into a float). nan/inf survive the %g round-trip
+    unchanged, so they need no special case.
+
+    Args:
+        v: any metric value -- scalar, list, or dict, nested arbitrarily.
+        sigfigs: significant figures to keep on each float.
+
+    Returns:
+        The same structure with floats rounded. Never mutates the input.
+    """
+    if isinstance(v, float):
+        return float(f"%.{sigfigs}g" % v)
+    if isinstance(v, dict):
+        return {k: _round_floats(x, sigfigs) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_round_floats(x, sigfigs) for x in v]
+    return v
+
+
+def _fmt_value(v, maxlen: int = 220) -> str:
+    """Render one metric value as a single line for the run report.
+
+    Floats are rounded to _DISPLAY_SIGFIGS so more of a structure fits on the
+    line. Long values (the *_warnings lists reach megabytes) are cut, but the cut
+    is always stated: a silently truncated log is worse than a verbose one when
+    the log is what you are reading to make a decision.
+
+    Args:
+        v: any metric value; JSON-representable types render exactly, anything
+           else falls back to repr().
+        maxlen: characters to keep before truncating.
+
+    Returns:
+        Single-line string, with " ...[+N chars]" appended if it was cut.
+    """
+    try:
+        s = json.dumps(_round_floats(v), sort_keys=True)
+    except (TypeError, ValueError):
+        s = repr(v)
+    if len(s) <= maxlen:
+        return s
+    return f"{s[:maxlen]} ...[+{len(s) - maxlen} chars]"
+
+
+def _fmt_change(old, new) -> str:
+    """Render an overwrite as 'old -> new', with a delta for plain numbers.
+
+    The delta is what makes float noise self-evident: +5.7e-08 next to a value
+    of 0.13 reads as noise at a glance, where the two full-precision numbers on
+    their own do not. bool is excluded because it is an int subclass and
+    "True -> False (delta -1)" is nonsense.
+
+    Args:
+        old: value currently in metrics.json.
+        new: value the freshly-run test produced.
+
+    Returns:
+        Single-line string.
+    """
+    shown_old, shown_new = _fmt_value(old), _fmt_value(new)
+    line = f"{shown_old} -> {shown_new}"
+    numeric = (int, float)
+    if (isinstance(old, numeric) and isinstance(new, numeric)
+            and not isinstance(old, bool) and not isinstance(new, bool)):
+        try:
+            line += f"   (delta {new - old:+.6g})"
+        except (TypeError, OverflowError, ValueError):
+            pass
+    elif shown_old == shown_new:
+        # Rounding for display can make a real change look like none at all.
+        # There is no scalar delta to fall back on for a list or dict, so say it.
+        line += f"   (differs only below {_DISPLAY_SIGFIGS} s.f.)"
+    return line
+
+
+# Overwrites whose every numeric leaf moves by less than this are collapsed to a
+# single summary line in the report. The matcher's semantic embeddings are not
+# bit-reproducible across runs, so costs wobble by ~1e-7 on most trials; listing
+# those individually buries the changes that matter.
+_NOISE_EPSILON = 1e-4
+
+
+def _max_abs_delta(old, new):
+    """Largest absolute difference between corresponding numeric leaves.
+
+    Recurses into lists and dicts so a nested value like output_matches (a list
+    of {reference, submitted, cost} dicts) is judged on its costs rather than
+    treated as opaque.
+
+    Args:
+        old: value currently in metrics.json.
+        new: value the freshly-run test produced.
+
+    Returns:
+        float -- the largest absolute leaf difference; nan if any leaf pair mixes
+        nan with a number (allen2p's input_range_mean_cost goes nan -> 0.0, which
+        is a real fix and must not be squashed); or None when the two values are
+        not comparable leaf-for-leaf -- different types, dict keys, or lengths.
+        None means a structural change, which is always worth reporting whatever
+        its magnitude. Callers must treat both None and nan as significant.
+    """
+    # bool before int: bool is an int subclass and True/False has no useful delta.
+    if isinstance(old, bool) or isinstance(new, bool):
+        return 0.0 if old == new else None
+    if isinstance(old, (int, float)) and isinstance(new, (int, float)):
+        return abs(new - old)
+    if isinstance(old, dict) and isinstance(new, dict):
+        if set(old) != set(new):
+            return None
+        deltas = [_max_abs_delta(old[k], new[k]) for k in old]
+    elif isinstance(old, (list, tuple)) and isinstance(new, (list, tuple)):
+        if len(old) != len(new):
+            return None
+        deltas = [_max_abs_delta(a, b) for a, b in zip(old, new)]
+    else:
+        return 0.0 if old == new else None
+    if any(d is None for d in deltas):
+        return None
+    if any(d != d for d in deltas):          # nan anywhere -> nan, not max()
+        return float("nan")
+    return max(deltas) if deltas else 0.0
 
 
 def _invoke(fn, *args, label: str):
@@ -316,16 +468,22 @@ def rerun_trial(trial_dir: Path, task: str, *,
             report["events"].append("derive decoder refs: skipped (no converted_data.pkl)")
 
     # ---- merge ----
+    # Carries the values, not just the key names. A bare list of changed keys
+    # cannot distinguish 1e-7 of float wobble in a matcher cost from a genuine
+    # redefinition of the field, and both happen in the same run. The old value
+    # has to be read before the assignment clobbers it.
+    #   keys_added:       [(key, new_value)]
+    #   keys_overwritten: [(key, old_value, new_value)]
     keys_added, keys_overwritten = [], []
     for k, v in new_metrics.items():
         if k not in existing:
+            keys_added.append((k, v))
             existing[k] = v
-            keys_added.append(k)
         elif force and existing[k] != v:
+            keys_overwritten.append((k, existing[k], v))
             existing[k] = v
-            keys_overwritten.append(k)
-    report["keys_added"] = sorted(keys_added)
-    report["keys_overwritten"] = sorted(keys_overwritten)
+    report["keys_added"] = sorted(keys_added, key=lambda t: t[0])
+    report["keys_overwritten"] = sorted(keys_overwritten, key=lambda t: t[0])
     report["ok"] = True
 
     changed = bool(keys_added or keys_overwritten)
@@ -381,6 +539,11 @@ def main():
     ap.add_argument("--force", action="store_true",
                     help="Overwrite existing keys in metrics.json when values "
                          "differ (default: only ADD missing keys).")
+    ap.add_argument("--epsilon", type=float, default=_NOISE_EPSILON,
+                    help="Collapse overwrites whose every numeric leaf moves by "
+                         f"less than this into one summary line (default "
+                         f"{_NOISE_EPSILON:g}). Display only -- they are still "
+                         "written. Pass 0 to list every change individually.")
     ap.add_argument("--task", action="append", default=[],
                     help="Restrict to this task (top-level dir under harbor-jobs/). "
                          "Can be repeated, e.g. `--task hasnain2024 --task map`.")
@@ -485,12 +648,24 @@ def main():
             print(f"  {ev}")
         if rep["keys_added"]:
             print(f"  + added ({len(rep['keys_added'])}):")
-            for k in rep["keys_added"]:
-                print(f"      {k}")
+            for k, v in rep["keys_added"]:
+                print(f"      {k} = {_fmt_value(v)}")
         if rep["keys_overwritten"]:
+            # Split real changes from float noise. None (structural) and nan
+            # (nan <-> number) both count as real -- see _max_abs_delta.
+            real, noise = [], []
+            for k, old, new in rep["keys_overwritten"]:
+                delta = _max_abs_delta(old, new)
+                significant = delta is None or delta != delta or delta >= args.epsilon
+                (real if significant else noise).append((k, old, new, delta))
             print(f"  * overwritten ({len(rep['keys_overwritten'])}):")
-            for k in rep["keys_overwritten"]:
-                print(f"      {k}")
+            for k, old, new, _ in real:
+                print(f"      {k}: {_fmt_change(old, new)}")
+            if noise:
+                worst = max(d for *_, d in noise)
+                print(f"      [{len(noise)} changed by < {args.epsilon:g} "
+                      f"(max |delta| {worst:.3g}), still written]: "
+                      f"{', '.join(k for k, *_ in noise)}")
         if not rep["keys_added"] and not rep["keys_overwritten"]:
             print("  (no changes)")
         print()
