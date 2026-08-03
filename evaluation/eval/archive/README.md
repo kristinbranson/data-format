@@ -1,39 +1,85 @@
 # Archived scripts
 
-One-off tools, kept for provenance. They are not part of the day-to-day rating
-workflow, but all three still run from here (each adds the parent directory to
-`sys.path` so `import raters` keeps working).
+One-off tools, kept for provenance and re-runnable from here — each adds the
+parent directory to `sys.path` so `import raters` keeps working:
 
-- **`migrate_raters.py`** — moved the single-evaluator layout to per-rater
-  subfolders: copied each dataset's dossiers and `summary.md` into `LZ/`, then
-  reset the root dossiers' `**Rating:**` / `**Note:**` lines to placeholders so
-  they serve as masters. Run once on 2026-07-28 across all 8 datasets.
+    python3 archive/<script>.py --help
 
-- **`verify_migration.py`** — checked that migration against git: every rating
-  preserved in `LZ/`, dossier content byte-identical, masters blank. Reported OK
-  for all 48 dossiers. Must be pointed at the *pre-migration* revision, e.g.
-  `python3 archive/verify_migration.py --rev ed2b8bd~1`; run against a later
-  commit it compares the copies to the blanked masters and reports everything
-  as lost.
+They are listed newest first. Everything they did is already applied; nothing
+here runs as part of the normal rating workflow.
 
-- **`renumber_summary.py`** — re-keys `## Q <qid>.` headings in `summary.md` /
-  `eval_summary.md` to the numbering the dossiers use, matching sections by
-  title. Needed when the reference `DECISIONS.md` is renumbered after rating:
-  sosa2024 gained two "thresholded into categories" sub-questions, which pushed
-  "aligned with the neural data" from `7-c` to `7-d` while the summary files
-  kept the old numbers. Applied once (4 headings). Bring it back only if a
-  rating tool reports summary-vs-dossier title drift; follow it with
-  `python3 raters.py merge <dataset> --apply`.
+---
 
-Live tools stay in `evaluation/eval/`:
+### `rebuild_dossiers.py` — bring the dossiers back onto the reference
+
+**Bring this one back whenever `manual/<dataset>/DECISIONS.md` changes.** It is
+the recovery path for exactly the situation `raters.py check` complains about.
+
+Each dossier section moves under the reference qid whose question it answers —
+pairing on exact title, then on the `compare.fingerprint` (same variable *and*
+role; a differing variable is a non-match, never a fallback), then on
+`<dataset>/rebuild_overrides.json`. Bodies and ratings travel with their
+section, so nothing is re-rated; questions the dossiers never asked are left as
+placeholders for an extraction pass; questions the reference no longer asks are
+dropped. `--summaries` does the same re-keying for `summary.md` and
+`eval_summary.md` (and supersedes `renumber_summary.py`).
+
+Run twice: 2026-08-03, moving all 8 datasets onto the canonical references
+(2286 ratings carried, 162 sections extracted by subagents, 86 dropped); then
+again the same day after collaborators swapped `2-d`/`2-e`, shifted the
+per-variable *aligned* question from `-c` to `-d`, and restored sosa2024's two
+threshold questions (2502 ratings carried, 0 lost).
+
+    python3 archive/rebuild_dossiers.py                    # dry run
+    python3 archive/rebuild_dossiers.py --apply
+    python3 archive/rebuild_dossiers.py --summaries --apply
+
+Follow with the extraction pass for any placeholder sections (runbook §4), then
+`raters.py merge --apply` and `report.py`.
+
+### `adopt_judge_ratings.py` — fold judge wins into the evaluator's rating
+
+`eval_summary.md` used to carry a `Best` column naming who was right where a
+human and a judge disagreed. Run once on 2026-08-03: the 11 rows where the
+Claude judge had won were written into LZ's own rating (and mirrored into
+`LZ/summary.md`), with the old `Why` text kept in the rating's note. The `Best`
+and `Why` columns were then removed, so this script can no longer find anything
+to do — it is here as the record of which 11 ratings changed and why.
+
+### `renumber_summary.py` — re-key summary headings by question text
+
+Superseded by `rebuild_dossiers.py --summaries`, which also drops rows for
+questions the reference retired instead of leaving them parked on a number that
+now means something else. Applied once to sosa2024 (4 headings).
+
+### `migrate_raters.py` — single-evaluator layout → per-rater subfolders
+
+Copied each dataset's dossiers and `summary.md` into `LZ/`, then reset the root
+dossiers' `**Rating:**` / `**Note:**` lines to placeholders so they serve as
+masters. Run once on 2026-07-28 across all 8 datasets.
+
+### `verify_migration.py` — checked that migration against git
+
+Every rating preserved in `LZ/`, dossier content byte-identical, masters blank;
+reported OK for all 48 dossiers. Must be pointed at the *pre-migration*
+revision, e.g. `--rev ed2b8bd~1`; run against a later commit it compares the
+copies to the blanked masters and reports everything as lost.
+
+---
+
+## Live tools (in `evaluation/eval/`)
 
 | script | role |
 |---|---|
-| `raters.py` | shared library — evaluator registry, rater folders, rating I/O, alignment check, `eval_summary.md` merge. Imported by everything below; not optional. Also a CLI: `list` (default), `check [dataset]`, `merge [dataset] [--apply]`. |
-| `rate.py` | Q-by-Q rating against a reference `DECISIONS.md` |
-| `rate_blind.py` | rating for datasets with no reference |
-| `compare.py` | judge-comparison pass (primary evaluator) |
+| `raters.py` | shared library — evaluator registry, rater folders, rating I/O, alignment check, `eval_summary.md` merge. Also a CLI: `list` (default), `check [dataset]`, `merge [dataset] [--apply]`. |
+| `rate.py` | Q-by-Q rating against a reference `DECISIONS.md` — covers all 8 datasets |
+| `rate_blind.py` | rating for a dataset with no reference at all |
+| `compare.py` | fetch the judge ratings into `eval_summary.md` |
 | `report.py` | render `report.md` |
+| `copy_judge_results.py` | mirror a `data-format-experiments/` run into `judge_supervised/` / `judge_unsupervised/` |
+| `utils.py`, `metrics.py`, `trial_metrics.py` | notebook analysis |
 
-`rate.py` and `rate_blind.py` run the alignment check themselves at startup and
-refuse to run on a misaligned dataset, so there is nothing to remember.
+Per-dataset artefacts left behind by the rebuild — `rebuild_map.json` (which old
+question became which) and `rebuild_overrides.json` / `qid_aliases.json` (manual
+pairings) — are small and document what moved. The map files are regenerated by
+any `--apply` run; the override and alias files are inputs and should be kept.

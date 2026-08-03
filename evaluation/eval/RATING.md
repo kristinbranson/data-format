@@ -216,9 +216,12 @@ summary files, so edits to other columns will not survive.
 | `compare.py` | judge-comparison pass — primary evaluator only |
 | `report.py` | render `report.md` |
 | `raters.py` | shared library, plus `list` / `check` / `merge` subcommands |
+| `copy_judge_results.py` | mirror a `data-format-experiments/` run into `judge_supervised/` |
 | `utils.py`, `metrics.py`, `trial_metrics.py` | notebook analysis |
 
-One-off migration and repair scripts live in [`archive/`](archive/README.md).
+One-off migration and repair scripts live in [`archive/`](archive/README.md) —
+including `rebuild_dossiers.py`, which is what to reach for when a reference
+`DECISIONS.md` is renumbered and `raters.py check` starts complaining.
 
 ### If something looks wrong
 
