@@ -69,7 +69,7 @@ For each question below:
   ii. Provide code snippets from the AI's `convert_data.py`.
   iii. Summarize the AI's justification for its decisions (from CONVERSION_NOTES.md or trajectory).
 
-### Decision Questions **MODIFY THESE!!!**
+### Decision Questions
 
 1-a.  How are **all the data** for all subjects, sessions, and trials loaded in?
 

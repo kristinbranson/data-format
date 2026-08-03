@@ -164,7 +164,27 @@ iii. `classification` is the verdict of the spike-sorting quality-control classi
 
 The one dropped session (`sub-440958_ses-20190216T162508`) has `classification` and `anno_name` set to NaN for all 1,852 units, i.e. it was never quality-controlled. Excluding it gives 173 sessions and 69,453 good units, against the white paper's 173 sessions and 69,943 units.
 
-## 2-d. How is the `neural` data temporally binned/resampled?
+## 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+i. Spike times and event times are already on the same session-absolute clock, so no alignment step is needed. The bin edges relative to the go cue are added to each trial's go-cue time to give the absolute time window for that trial, and the spikes are binned against those edges directly.
+
+ii.
+```python
+go = np.asarray(bev['go_start_times'].timestamps)
+```
+
+```python
+edges = (go[:, None] + REL_EDGES[None, :]).ravel()
+rates = np.empty((good.size, n_trials, N_BINS), np.float32)
+for r, u in enumerate(good):
+    s = allst[starts[u]:offs[u]]
+    pos = np.searchsorted(s, edges).reshape(n_trials, N_BINS + 1)
+    rates[r] = np.diff(pos, axis=1)
+```
+
+iii. Everything in the NWB file is timestamped on one global clock, so aligning to the go cue only requires looking up each trial's go-cue time and taking the window around it. There is no resampling or interpolation, and no per-stream offset to correct.
+
+## 2-e. How is the `neural` data temporally binned/resampled?
 
 i. Spike times are binned into 80 non-overlapping 50 ms bins spanning -2.5 s to +1.5 s relative to the go cue. The bin grid is defined once, as 81 edges relative to the go cue, and reused for every trial and session, so every trial has the same 80 timepoints.
 
@@ -184,26 +204,6 @@ edges = (go[:, None] + REL_EDGES[None, :]).ravel()
 ```
 
 iii. The window and the 50 ms bin width are set by the instructions. Defining the grid once as offsets from the go cue gives a constant 80 timepoints per trial, which the target format requires.
-
-## 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-i. Spike times and event times are already on the same session-absolute clock, so no alignment step is needed. The bin edges relative to the go cue are added to each trial's go-cue time to give the absolute time window for that trial, and the spikes are binned against those edges directly.
-
-ii.
-```python
-go = np.asarray(bev['go_start_times'].timestamps)
-```
-
-```python
-edges = (go[:, None] + REL_EDGES[None, :]).ravel()
-rates = np.empty((good.size, n_trials, N_BINS), np.float32)
-for r, u in enumerate(good):
-    s = allst[starts[u]:offs[u]]
-    pos = np.searchsorted(s, edges).reshape(n_trials, N_BINS + 1)
-    rates[r] = np.diff(pos, axis=1)
-```
-
-iii. Everything in the NWB file is timestamped on one global clock, so aligning to the go cue only requires looking up each trial's go-cue time and taking the window around it. There is no resampling or interpolation, and no per-stream offset to correct.
 
 ## 3-a. What variables in the raw data is `input` *time_from_tone_onset* derived from?
 
@@ -438,7 +438,7 @@ iii. The tongue is visible in only ~10% of frames, and when it is retracted the 
 
 Percentiles are taken over the 50 ms bin means rather than raw frames so the edges are defined on the same quantity that gets discretised; taking them over frames instead skews the resulting class balance, because averaging within a bin pulls values toward the center. The 40th/60th split and the per-session scope both follow the instructions. A fourth class is defined for bins with no visible tongue, which is 75% of all bins.
 
-## 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 i. This is the one genuinely time-varying output, so it is the only one needing real alignment. The camera timestamps are on the same session-absolute clock as the spikes and the go cues, so each trial's frame range is found by `searchsorted` on the camera timestamps at `go + T_START` and `go + T_STOP`, and frames are assigned to bins by their offset from `go + T_START` — the same go-cue-relative grid used for the firing rates.
 

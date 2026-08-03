@@ -155,7 +155,15 @@ for plane_data in deconvolved_data.roi_response_series.values():
 
 iii. The paper describes quality metrics, and the number of cells after filtering by `iscell` approximately matches ranges in the paper. 
 
-## 2-d. How is the `neural` data temporally binned/resampled?
+## 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`? 
+
+i. The data are the be aligned with the trial start, which doesn't require any additional processing beyond splitting into trials. 
+
+ii. N/A
+
+iii. N/A
+
+## 2-e. How is the `neural` data temporally binned/resampled?
 
 i. The neural data is not binned or resampled, it is kept at the stored rate. 
 
@@ -167,14 +175,6 @@ assert np.isclose(neural_time_bin_size, time_bin_size, rtol=1e-2), f"Neural time
 ```
 
 iii. Timestamps are not available for the neural data, just a stored `rate`. This rate is the same for all recordings, once one accounts for the multi-plane recordings
-
-## 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`? 
-
-i. The data are the be aligned with the trial start, which doesn't require any additional processing beyond splitting into trials. 
-
-ii. N/A
-
-iii. N/A
 
 ## 3-a. What variables in the raw data is `input` *Time from start of trial in seconds* derived from? 
 
@@ -339,7 +339,7 @@ iii. The paper defines reward zones A, B, C at specific position ranges. These s
 
 ## 7-b. What processing is involved in computing `output` *Distance to reward zone*?
 
-i. For each timepoint, compute the signed distance from the animal's position to the nearest edge of the reward zone. Distance is 0 when inside the zone, negative when before the zone, and positive when past it.
+i. For each timepoint, compute the signed distance from the animal's position to the nearest edge of the reward zone. Distance is 0 when inside the zone, negative when before the zone, and positive when past it.  The continuous distance is then discretized into 7 bins using `np.digitize` with bin edges `[-inf, -50, -10, 0, 1e-6, 10, 50, inf]`.
 
 ii.
 ```python
@@ -352,9 +352,16 @@ def compute_distance_to_reward_zone(position_curr, reward_zone_curr):
     idx_after_zone = position_curr > reward_zone_range[1]
     distance_to_reward_zone[idx_after_zone] = position_curr[idx_after_zone] - reward_zone_range[1]
     return distance_to_reward_zone
+
+```
+```python
+distance_to_reward_zone_bins = [-np.inf, -50, -10, 0, 1e-6, 10, 50, np.inf]
+...
+output_curr[0] = np.digitize(distance_to_reward_zone, distance_to_reward_zone_bins) - 1
 ```
 
-iii. This matches the paper's concept of distance relative to the reward zone. The reward zone boundaries are from `reward_zone_dict`, inspired by the reference code `Sosa_et_al_2024/src/reward_relative/behavior.py`.
+
+iii. This matches the paper's concept of distance relative to the reward zone. The reward zone boundaries are from `reward_zone_dict`, inspired by the reference code `Sosa_et_al_2024/src/reward_relative/behavior.py`. The `1e-6` boundary separates exactly 0 (in the zone boundary) from slightly positive. The `-1` corrects `np.digitize` to be 0-indexed.
 
 ## 7-c. How is `output` *Distance to reward zone* thresholded into categories?
 
@@ -398,7 +405,7 @@ iii. The `position` variable directly records the animal's position in the VR co
 
 ## 8-b. What processing is involved in computing `output` *Absolute position*?
 
-i. No processing beyond extracting the per-trial slice and discretizing.
+i. No processing beyond extracting the per-trial slice and discretizing. Discretized into 5 bins using `np.digitize` with bin edges `[-inf, 50, 150, 250, 350, inf]`, corresponding to 100 cm wide bins spanning the corridor. The position ranged from -50 to 450. 
 
 ii.
 ```python
@@ -406,7 +413,14 @@ position_curr = position[idx]
 output_curr[1] = np.digitize(position_curr, position_bins) - 1
 ```
 
-iii. The raw position values are used directly.
+```python
+position_bins = [-np.inf,50,150,250,350,np.inf]
+...
+output_curr[1] = np.digitize(position_curr, position_bins) - 1
+```
+
+
+iii. The raw position values are used directly. The corridor spans roughly -50 to 450 cm (from survey), so 100 cm bins are approximately equal-sized.
 
 ## 8-c. How is `output` *Absolute position* thresholded into categories?
 
@@ -564,6 +578,14 @@ ii. N/A
 iii. I don't think these could be run at the same time, as it would require too much RAM. The Viterbi output created during surveying is required to process the data. It was convenient to run the survey before deciding how to handle the conversion of the data. 
 
 ## 13-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
+i. N/A
+
+ii. N/A
+
+iii. N/A
+
+## 13-e. How is memory usage optimized?
 
 i. N/A
 

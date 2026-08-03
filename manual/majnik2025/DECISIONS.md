@@ -117,22 +117,7 @@ ii. N/A
 
 iii. Suite2p's cell detection pipeline already identifies ROIs. No further filtering (e.g., by `iscell`) was applied.
 
-## 2-d. How is the `neural` data temporally binned/resampled?
-
-i. The neural data is kept at the native suite2p frame rate of 30 Hz. No resampling is applied.
-
-ii.
-```python
-FS = 30  # Hz
-...
-'metadata': {
-    'time_bin_size': 1.0 / FS * 1000,  # ms
-}
-```
-
-iii. The data is already at a consistent 30 Hz frame rate from suite2p. No resampling is needed.
-
-## 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 i. Trials are aligned to session start. Since trials are contiguous 60-second segments of the continuous recording, no event-based alignment is needed.
 
@@ -146,6 +131,21 @@ ii.
 ```
 
 iii. There is no stimulus event to align to. The recording is continuous, and trials are artificial segments starting from the beginning of the session.
+
+## 2-e. How is the `neural` data temporally binned/resampled?
+
+i. The neural data is kept at the native suite2p frame rate of 30 Hz. No resampling is applied.
+
+ii.
+```python
+FS = 30  # Hz
+...
+'metadata': {
+    'time_bin_size': 1.0 / FS * 1000,  # ms
+}
+```
+
+iii. The data is already at a consistent 30 Hz frame rate from suite2p. No resampling is needed.
 
 ## 3-a. What variables in the raw data is `input` *Time* derived from?
 
@@ -202,7 +202,7 @@ output = np.digitize(me, bin_edges[1:-1])
 
 iii. Dropped frame interpolation ensures the motion energy signal matches the neural data length frame-for-frame. Standard deviation normalization removes scale differences across sessions before pooling for percentile binning. Global percentile-based discretization ensures balanced class counts.
 
-## 4-c. How is `output` *Motion energy* aligned with the neural data?
+## 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 i. The video and neural data are acquired synchronously at 30 Hz, so they are aligned frame-for-frame in principle. However, occasional video frames are dropped, making the motion energy array shorter than the neural data. Dropped frames are detected by interframe intervals exceeding 0.04s and are filled by inserting the average of neighboring values. After interpolation, an assertion verifies the lengths match. The time unit here is a bit strange but `dt * 1000 > 0.04` seems to work well.
 

@@ -117,8 +117,6 @@ For each question below:
 
 6-b. What processing is involved in computing `output` *Outcome*?
 
-6-c. How is `output` *Outcome* aligned with the neural data?
-
 7-a. What variables in the raw data is `output` *Early lick* derived from?
 
 7-b. What processing is involved in computing `output` *Early lick*?

@@ -136,19 +136,7 @@ ii. N/A
 
 iii. The Allen SDK pipeline already applies its own quality control (e.g., cell segmentation, neuropil correction). No further filtering was deemed necessary.
 
-## 2-d. How is the `neural` data temporally binned/resampled?
-
-i. The neural data is not binned or resampled. It is kept at the native ophys frame rate (~11 Hz). The time bin size is computed from the median inter-frame interval of `ophys_timestamps`.
-
-ii.
-```python
-first_ophys_ts = session_results[0][1]['ophys_ts']
-time_bin_size_ms = float(np.median(np.diff(first_ophys_ts)) * 1000)
-```
-
-iii. The ophys timestamps are already at a consistent frame rate determined by the microscope scanning. No resampling is needed since all data (neural, running, pupil) are aligned to the same ophys timebase.
-
-## 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 i. Each trial's neural data is aligned to the trial start (`start_time`). The ophys frames from `start_time` to `stop_time` are extracted, giving a variable-length window per trial.
 
@@ -162,6 +150,18 @@ idx = np.arange(start_idx, end_idx)
 ```
 
 iii. `np.searchsorted` finds the first ophys frame at or after each boundary time. Since the frame rate is ~11 Hz, the maximum alignment error is ~45 ms (half a frame). The full trial window is used so that time-varying output variables (image identity, image change) can capture the pre- and post-change periods.
+
+## 2-e. How is the `neural` data temporally binned/resampled?
+
+i. The neural data is not binned or resampled. It is kept at the native ophys frame rate (~11 Hz). The time bin size is computed from the median inter-frame interval of `ophys_timestamps`.
+
+ii.
+```python
+first_ophys_ts = session_results[0][1]['ophys_ts']
+time_bin_size_ms = float(np.median(np.diff(first_ophys_ts)) * 1000)
+```
+
+iii. The ophys timestamps are already at a consistent frame rate determined by the microscope scanning. No resampling is needed since all data (neural, running, pupil) are aligned to the same ophys timebase.
 
 ## 3-a. What variables in the raw data is `output` *Image identity* derived from?
 
@@ -228,7 +228,7 @@ ii. See 3-a.
 
 iii. N/A
 
-## 4-c. How is `output` *Image change* aligned with the neural data?
+## 4-d. How is `output` *Image change* aligned with the neural data?
 
 i. Same as image name — computed per ophys frame using the same `idx` array and `change_time` alignment.
 
@@ -268,7 +268,7 @@ run_disc = apply_discretize(t['running'], run_edges)
 
 iii. Linear interpolation preserves the signal shape while resampling to the ophys timebase. Percentile-based binning ensures roughly equal class counts across bins, which is important for balanced decoding. Bin edges are computed globally across all sessions to maintain consistent categories.
 
-## 5-c. How is `output` *Running speed* aligned with the neural data?
+## 5-d. How is `output` *Running speed* aligned with the neural data?
 
 i. Running speed is interpolated to the ophys timebase before trial segmentation, so it shares the same time indices as the neural data. The same `idx` array is used to extract both.
 
@@ -319,7 +319,7 @@ pup_disc = apply_discretize(t['pupil'], pupil_edges)
 
 iii. Same approach as running speed: linear interpolation to the ophys timebase, then global percentile-based discretization. Blink removal before interpolation prevents blink artifacts from propagating into neighboring timepoints.
 
-## 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 i. Same approach as running speed — pupil diameter is interpolated to the ophys timebase before trial segmentation, so it shares the same time indices as the neural data.
 
@@ -368,10 +368,6 @@ outcome_row = np.full(n_frames, outcome_code, dtype=np.int8)
 ```
 
 iii. The mapping order matches `TRIAL_OUTCOMES = ['hit', 'miss', 'false_alarm', 'correct_reject']`. The mapping is stored in `metadata['outcome_to_code']` for recovery.
-
-## 7-c. How is `output` *Trial outcome* aligned with the neural data?
-
-N/A — trial outcome is a per-trial constant, not a time-varying signal.
 
 ## 8. How are minor mistakes in the data, e.g. missing data, handled?
 

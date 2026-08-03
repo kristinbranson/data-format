@@ -101,8 +101,6 @@ For each question below:
 
 3-b. What processing is involved in computing `input` *Environment geometry*?
 
-3-c. How is the `input` *Environment geometry* aligned with the neural data?
-
 4-a. What variables in the raw data is `output` *Mouse position* derived from?
 
 4-b. What processing is involved in computing `output` *Mouse position*?
@@ -111,29 +109,15 @@ For each question below:
 
 4-d. How is `output` *Mouse position* aligned with the neural data?
 
-5-a. What is the temporal resolution (time bin size) of the converted data? Is any temporal rebinning applied?
+5. How are minor mistakes in the data, e.g. missing data, handled?
 
-5-b. How are the neural, input, and output data temporally aligned?
+6-a. What are the most time-consuming steps of the code?
 
-6. How are minor issues in the data (e.g., missing data, malformed entries) handled?
+6-b. What loops in the code could have been vectorized to improve efficiency?
 
-7-a. What are the most time-consuming steps of the code?
+6-c. What processing does the code repeat multiple times?
 
-7-b. What loops in the code could have been vectorized to improve efficiency?
-
-7-c. What processing does the code repeat multiple times?
-
-7-d. What unnecessary processing does the code do that is discarded in downstream analyses?
-
-8. How are minor mistakes in the data, e.g. missing data, handled?
-
-9-a. What are the most time-consuming steps of the code?
-
-9-b. What loops in the code could have been vectorized to improve efficiency?
-
-9-c. What processing does the code repeat multiple times?
-
-9-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 ## Step 3: Evaluate the AI's decisions
 
@@ -200,7 +184,7 @@ iii. <Justification>
 
 ...
 
-## 9-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 i. <Decisions>
 

@@ -117,22 +117,7 @@ ii. N/A
 
 iii. Suite2p's cell detection pipeline already identifies ROIs. No further filtering (e.g., by `iscell`) was applied.
 
-## 2-d. How is the `neural` data temporally binned/resampled?
-
-i. The neural data is kept at the native suite2p frame rate of 30 Hz. No resampling is applied.
-
-ii.
-```python
-FS = 30  # Hz
-...
-'metadata': {
-    'time_bin_size': 1.0 / FS * 1000,  # ms
-}
-```
-
-iii. The data is already at a consistent 30 Hz frame rate from suite2p. No resampling is needed.
-
-## 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 i. Trials are aligned to session start. Since trials are contiguous 60-second segments of the continuous recording, no event-based alignment is needed.
 
@@ -147,13 +132,28 @@ ii.
 
 iii. There is no stimulus event to align to. The recording is continuous, and trials are artificial segments starting from the beginning of the session.
 
-## 3-a. What variables in the raw data is `input` *Time* derived from?
+## 2-e. How is the `neural` data temporally binned/resampled?
 
-i. Time is not derived from any raw data variable. It is computed as the frame index divided by the frame rate, giving seconds from the start of each trial.
+i. The neural data is kept at the native suite2p frame rate of 30 Hz. No resampling is applied.
 
 ii.
 ```python
-t = (np.arange(trial_frames) / FS).astype(np.float32)
+FS = 30  # Hz
+...
+'metadata': {
+    'time_bin_size': 1.0 / FS * 1000,  # ms
+}
+```
+
+iii. The data is already at a consistent 30 Hz frame rate from suite2p. No resampling is needed.
+
+## 3-a. What variables in the raw data is `input` *Time* derived from?
+
+i. Time is not derived from any raw data variable. It is computed as the absolute frame index divided by the frame rate, giving seconds from the start of each experiment.
+
+ii.
+```python
+t = ( (s + np.arange(trial_frames)) / FS).astype(np.float32)
 inp_trials.append(t[np.newaxis, :])  # (1, trial_frames)
 ```
 
@@ -202,7 +202,7 @@ output = np.digitize(me, bin_edges[1:-1])
 
 iii. Dropped frame interpolation ensures the motion energy signal matches the neural data length frame-for-frame. Standard deviation normalization removes scale differences across sessions before pooling for percentile binning. Global percentile-based discretization ensures balanced class counts.
 
-## 4-c. How is `output` *Motion energy* aligned with the neural data?
+## 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 i. The video and neural data are acquired synchronously at 30 Hz, so they are aligned frame-for-frame in principle. However, occasional video frames are dropped, making the motion energy array shorter than the neural data. Dropped frames are detected by interframe intervals exceeding 0.04s and are filled by inserting the average of neighboring values. After interpolation, an assertion verifies the lengths match. The time unit here is a bit strange but `dt * 1000 > 0.04` seems to work well.
 
@@ -226,7 +226,7 @@ output_trials.append(out[np.newaxis, s:e])
 
 iii. The interframe interval threshold of 0.04s (slightly above the expected 1/30 ≈ 0.033s interval) identifies frames where the video missed a capture. Linear interpolation fills these gaps so that both streams can be indexed identically.
 
-## 7. How are minor mistakes in the data, e.g. missing data, handled?
+## 5. How are minor mistakes in the data, e.g. missing data, handled?
 
 i. Dropped video frames are detected and interpolated (see 4-c). An assertion verifies the motion energy length matches the neural data length after interpolation. Remainder frames at the end of a session that don't fill a complete trial are discarded.
 
@@ -243,7 +243,7 @@ if remainder > 0:
 
 iii. The assertion ensures any frame count mismatch is caught rather than silently producing misaligned data. Discarding remainder frames is a minor data loss (at most 59 seconds per session).
 
-## 8-a. What are the most time-consuming steps of the code?
+## 6-a. What are the most time-consuming steps of the code?
 
 i. The most time-consuming step is the suite2p `dcnv.preprocess` baseline correction, which runs on GPU. Loading the `.npy` files is also I/O bound but relatively fast.
 
@@ -251,7 +251,7 @@ ii. N/A
 
 iii. The baseline correction involves sliding window operations over the full session length for every neuron. GPU acceleration (`DEVICE = torch.device('cuda')`) mitigates this.
 
-## 8-b. What loops in the code could have been vectorized to improve efficiency?
+## 6-b. What loops in the code could have been vectorized to improve efficiency?
 
 i. The dropped frame interpolation loop inserts one frame at a time using `np.insert`, which reallocates the array each iteration. This could be vectorized by pre-allocating the output array and filling in all interpolated values at once.
 
@@ -259,10 +259,18 @@ ii. N/A
 
 iii. The number of dropped frames is typically very small, so the performance impact is negligible.
 
-## 8-c. What processing does the code repeat multiple times?
+## 6-c. What processing does the code repeat multiple times?
 
 N/A
 
-## 8-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+## 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
 
 N/A
+
+## 6-e. How is memory usage optimized?
+
+i. N/A
+
+ii. N/A
+
+iii. N/A

@@ -119,7 +119,18 @@ keep = is_good[spikes['clusters']]
 
 iii. This is the curation of the data paper, which reports 75,708 well-isolated neurons averaging 108 per probe; applying `label >= 1` reproduce their number.
 
-## 2-d. How is the `neural` data temporally binned/resampled?
+## 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+i. Every stream of a session is already expressed in seconds on one shared clock: spike times, trial event times, wheel timestamps and camera frame times all run from the start of the recording, because IBL synchronises them upstream through a sync channel common to the ephys and the behaviour rig. Aligning a trial is therefore just subtracting its stimulus onset from the spike times, which puts zero at the event and leaves the window running from -0.5 s to 1.5 s around it.
+
+ii. Subtracting the onset:
+```python
+spike_time = times[begin[trial]:end[trial]] - onset      # time from stimulus onset
+```
+
+iii. Because the clocks are already aligned there is additional alignment required.
+
+## 2-e. How is the `neural` data temporally binned/resampled?
 
 i. The 2 s window is divided into 100 bins of 20 ms; no resample or interpolation is applied.
 
@@ -134,17 +145,6 @@ bin_index = np.floor((spike_time - T_START) / BIN).astype(np.int64)
 ```
 
 iii. The reference code sets `'binsize': 0.02`, and both papers use 20 ms bins; the method paper describes exactly this configuration, "split into 2-s trials, each divided into 20-ms bins, producing T = 100 time steps".
-
-## 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-i. Every stream of a session is already expressed in seconds on one shared clock: spike times, trial event times, wheel timestamps and camera frame times all run from the start of the recording, because IBL synchronises them upstream through a sync channel common to the ephys and the behaviour rig. Aligning a trial is therefore just subtracting its stimulus onset from the spike times, which puts zero at the event and leaves the window running from -0.5 s to 1.5 s around it.
-
-ii. Subtracting the onset:
-```python
-spike_time = times[begin[trial]:end[trial]] - onset      # time from stimulus onset
-```
-
-iii. Because the clocks are already aligned there is additional alignment required.
 
 ## 3-a. What variables in the raw data is `input` *time_from_stimulus_onset* derived from?
 
@@ -303,7 +303,7 @@ def discretize(trace):
 
 iii. The interpolation and the filter are not choices, they are what the IBL documentation recommends for computing wheel velocity and what `SessionLoader` does by default, so the reference and this conversion get the same trace.
 
-## 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 i. The wheel trace is sampled at the same 100 bin centres as the neural data, measured from the same stimulus onset, so the two share a time axis bin for bin.
 
@@ -355,7 +355,7 @@ def discretize(trace):
 
 iii. No additional processing.
 
-## 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 i. The camera trace is sampled at the same 100 bin centres as the neural data, measured from the same stimulus onset, so the two share a time axis bin for bin.
 

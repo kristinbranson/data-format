@@ -103,7 +103,15 @@ trace = trace[:, active_mask].astype(np.float32).T
 
 iii. The `trace` array contains NaN columns for neurons not recorded in a given session (the same animal may have different neurons active across sessions). Filtering by all-NaN removes these unrecorded neurons.
 
-## 2-d. How is the `neural` data temporally binned/resampled?
+## 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+i. No event-based alignment. The recording is continuous, and trials are artificial 60-second segments.
+
+ii. N/A
+
+iii. There is no stimulus event to align to.
+
+## 2-e. How is the `neural` data temporally binned/resampled?
 
 i. The neural data is kept at the native 30 Hz frame rate. No resampling is applied.
 
@@ -114,14 +122,6 @@ TIME_BIN_SIZE = 1000.0 / SAMPLING_RATE  # ~33.33 ms
 ```
 
 iii. The data is already at a consistent 30 Hz frame rate. No resampling is needed.
-
-## 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-i. No event-based alignment. The recording is continuous, and trials are artificial 60-second segments.
-
-ii. N/A
-
-iii. There is no stimulus event to align to.
 
 ## 3-a. What variables in the raw data is `input` *Blocked positions* derived from?
 
@@ -179,7 +179,7 @@ def discretize_position(position, n_grid=N_GRID, arena_size=ARENA_SIZE):
 
 iii. A 3×3 grid gives 9 position classes, providing a coarse but balanced spatial discretization. `np.clip` ensures positions at the arena boundaries are assigned to valid bins.
 
-## 4-c. How is `output` *Position* aligned with the neural data?
+## 4-d. How is `output` *Position* aligned with the neural data?
 
 i. Position and neural data are stored at the same frame rate in the `.mat` file, so they are aligned frame-for-frame. Both are split into trials using the same indices.
 
