@@ -157,7 +157,7 @@ def compute_valid_trial_mask(
 
 **Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

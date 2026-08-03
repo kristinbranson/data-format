@@ -340,7 +340,7 @@ trial_input[0, :] = time_from_start
 
 **What this does:** Time within trial is derived from the per-trial timepoint count multiplied by the constant frame period (1 / 15.5078125 s); behavior timestamps are not used.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -358,7 +358,7 @@ time_from_start = np.arange(n_timepoints) * FRAME_PERIOD
 
 **What this does:** A numerical range `[0, 1, ..., n_timepoints-1]` is multiplied by the frame period to produce per-frame elapsed time within each trial.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 

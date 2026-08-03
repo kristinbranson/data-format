@@ -96,11 +96,11 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | concerning | concerning | match |
-| claude-code / trial2 | match | concerning | match | match |
-| claude-code / trial3 | match | concerning | concerning | match |
+| claude-code / trial1 | concerning | concerning | concerning | match |
+| claude-code / trial2 | ok | concerning | match | match |
+| claude-code / trial3 | ok | concerning | concerning | match |
 | codex / trial1 | match | concerning | match | concerning |
-| codex / trial2 | match | concerning | concerning | match |
+| codex / trial2 | ok | concerning | concerning | match |
 | codex / trial3 | match | concerning | match | match |
 
 **Overall comment:** Judge decisions are inconsistent across runs.
@@ -211,11 +211,11 @@
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
 | claude-code / trial1 | match | match | match | match |
-| claude-code / trial2 | match | incorrect | match | match |
-| claude-code / trial3 | match | incorrect | match | concerning |
-| codex / trial1 | match | incorrect | match | match |
-| codex / trial2 | match | ok | match | match |
-| codex / trial3 | match | incorrect | match | match |
+| claude-code / trial2 | incorrect | incorrect | match | match |
+| claude-code / trial3 | incorrect | incorrect | match | concerning |
+| codex / trial1 | incorrect | incorrect | match | match |
+| codex / trial2 | concerning | ok | match | match |
+| codex / trial3 | incorrect | incorrect | match | match |
 
 **Overall comment:** _(no overall comment)_
 
@@ -300,12 +300,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | ok | concerning | concerning | concerning |
-| claude-code / trial2 | ok | concerning | match | match |
-| claude-code / trial3 | ok | concerning | concerning | concerning |
-| codex / trial1 | ok | concerning | match | incorrect |
-| codex / trial2 | ok | concerning | match | match |
-| codex / trial3 | ok | concerning | concerning | concerning |
+| claude-code / trial1 | concerning | concerning | concerning | concerning |
+| claude-code / trial2 | concerning | concerning | match | match |
+| claude-code / trial3 | concerning | concerning | concerning | concerning |
+| codex / trial1 | concerning | concerning | match | incorrect |
+| codex / trial2 | concerning | concerning | match | match |
+| codex / trial3 | concerning | concerning | concerning | concerning |
 
 **Overall comment:** _(no overall comment)_
 

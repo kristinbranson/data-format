@@ -66,10 +66,10 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | concerning | match | match |
+| claude-code / trial1 | concerning | concerning | match | match |
 | claude-code / trial2 | match | match | match | concerning |
-| claude-code / trial3 | match | ok | concerning | match |
-| codex / trial1 | ok | concerning | concerning | concerning |
+| claude-code / trial3 | concerning | ok | concerning | match |
+| codex / trial1 | match | concerning | concerning | concerning |
 | codex / trial2 | ok | concerning | match | concerning |
 | codex / trial3 | incorrect | concerning | concerning | concerning |
 

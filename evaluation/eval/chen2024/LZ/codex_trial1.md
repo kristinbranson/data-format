@@ -157,9 +157,9 @@ if dropped_zero_trials:
 
 **What this does:** Trial QC is two-stage. First, only trials whose full `[-2.5, +1.5] s` window lies within the union of good-unit `obs_intervals` are kept. Second, any trial with all-zero neural activity is dropped. `is_good_trials` is used per-(unit, trial) only when its column count matches the selected trial set; otherwise per-unit `obs_intervals` overlap is recomputed and out-of-range bins are zeroed. Early-lick / photostim / ignore trials are intentionally retained.
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

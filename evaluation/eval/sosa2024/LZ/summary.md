@@ -184,16 +184,13 @@
 
 ## Q 3-a. What variables in the raw data is `input` *Time from start of trial in seconds* derived from?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
 **Overall comment:** _(no overall comment)_
@@ -202,16 +199,13 @@
 
 ## Q 3-b. What processing is involved in computing `input` *Time from start of trial in seconds*?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
 **Overall comment:** _(no overall comment)_

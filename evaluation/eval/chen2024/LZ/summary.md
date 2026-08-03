@@ -76,19 +76,16 @@
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
 | claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
 | codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | incorrect | _(no note)_ |
 
-**Overall comment:** Slightly different filtering procedures across agents; 1/6 was incorrect (used the observation window from only a *single* good unit).
+**Overall comment:** _(no overall comment)_
 
 ---
 

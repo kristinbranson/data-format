@@ -71,7 +71,7 @@ iii. The dandiset already stores one session per file, so the file boundary is t
 
 ## 1-d. Are the data correctly split into trials?
 
-i. Trials come from the NWB trials table (`nwb.trials`), one row per behavioural trial, with exactly one go-cue event per row. The row count is checked against the number of go-cue events.
+i. Trials come from the NWB trials table (`nwb.trials`), one row per behavioral trial, with exactly one go-cue event per row. The row count is checked against the number of go-cue events.
 
 ii.
 ```python
@@ -84,7 +84,7 @@ iii. Trials are clearly defined by the trials table, so it is used directly rath
 
 ## 1-e. How are trials filtered based on quality controls?
 
-i. Trials are filtered only for absence of spike data, in two cases. First, trials outside `units/obs_intervals`: in 8 sessions the ephys recording starts after the behaviour, leaving up to 376 leading trials with no spikes. Second, `free_water` trials, which have no spikes anywhere in the window even though `obs_intervals` covers them. A session is dropped entirely if fewer than 2 trials survive. No behavioural quality filter is applied.
+i. Trials are filtered only for absence of spike data, in two cases. First, trials outside `units/obs_intervals`: in 8 sessions the ephys recording starts after the behaviour, leaving up to 376 leading trials with no spikes. Second, `free_water` trials, which have no spikes anywhere in the window even though `obs_intervals` covers them. A session is dropped entirely if fewer than 2 trials survive. No behavioral quality filter is applied.
 
 ii.
 ```python

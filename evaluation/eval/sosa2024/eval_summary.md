@@ -142,11 +142,11 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | concerning | ok | concerning |
-| claude-code / trial2 | match | concerning | concerning | incorrect |
-| claude-code / trial3 | match | concerning | ok | incorrect |
+| claude-code / trial1 | concerning | concerning | ok | concerning |
+| claude-code / trial2 | concerning | concerning | concerning | incorrect |
+| claude-code / trial3 | concerning | concerning | ok | incorrect |
 | codex / trial1 | match | ok | match | ok |
-| codex / trial2 | match | concerning | match | incorrect |
+| codex / trial2 | concerning | concerning | match | incorrect |
 | codex / trial3 | match | ok | match | ok |
 
 **Overall comment:** Inconsistent ratings from the LLM judges for the same solution.
@@ -157,11 +157,11 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | concerning | ok | concerning |
-| claude-code / trial2 | match | concerning | concerning | incorrect |
-| claude-code / trial3 | match | concerning | ok | incorrect |
+| claude-code / trial1 | concerning | concerning | ok | concerning |
+| claude-code / trial2 | concerning | concerning | concerning | incorrect |
+| claude-code / trial3 | concerning | concerning | ok | incorrect |
 | codex / trial1 | match | match | match | match |
-| codex / trial2 | match | concerning | match | incorrect |
+| codex / trial2 | concerning | concerning | match | incorrect |
 | codex / trial3 | match | match | match | match |
 
 ---

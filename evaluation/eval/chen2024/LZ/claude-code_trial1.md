@@ -149,9 +149,9 @@ recording_mask = (go_times + ALIGN_START <= max_spike_time) & \
 
 **What this does:** Excludes auto_water and free_water trials, plus trials whose [-2.5s,+1.5s] window around go cue falls outside recorded spike time range. Session-level filter (perf>65%, ≥50 correct L/R) applied earlier.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

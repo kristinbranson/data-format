@@ -218,7 +218,7 @@ def compute_unit_trial_matrix(unit, go_cue, trial_to_pos, n_sel, time_edges):
 
 **Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -434,9 +434,9 @@ output_arr = np.vstack([
 
 **What this does:** Scalar per-trial label (0/1) is broadcast into a constant time series over all 1000 timepoints and stacked as the first row of the output array.
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -565,9 +565,9 @@ np.where(
 
 **What this does:** x/y position aligned to goCue via interpolation and video-offset correction, speed = sqrt(dx^2 + dy^2) via `np.gradient`. NaNs preserved on invalid tongue frames. Then binarized at the session 50th-percentile (computed only on finite samples), with non-visible frames assigned bin 0.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

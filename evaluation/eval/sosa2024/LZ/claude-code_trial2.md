@@ -291,7 +291,7 @@ time_from_start = np.arange(n_tp, dtype=np.float32) * frame_time
 
 **What this does:** Computed from the integer frame index multiplied by `1/imaging_rate`, not from the NWB `timestamps` array.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -309,7 +309,7 @@ time_from_start = np.arange(n_tp, dtype=np.float32) * frame_time
 
 **What this does:** Simple multiplication of `arange(n_timepoints)` by frame period. No subtraction needed since indexing already starts at 0 within the trial.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 

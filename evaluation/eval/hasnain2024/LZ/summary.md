@@ -112,19 +112,16 @@
 
 ## Q 2-b. How is the `neural` data processed?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
 | codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Small differences in preprocessing parameters, but all are valid. Agents were able to follow the reference solution using the paper's preprocessing code.
+**Overall comment:** _(no overall comment)_
 
 ---
 
@@ -250,17 +247,14 @@
 
 ## Q 4-b. What processing is involved in computing `output` *lick_direction*?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial2 | incorrect | _(no note)_ |
+| claude-code / trial3 | incorrect | _(no note)_ |
+| codex / trial1 | incorrect | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | incorrect | _(no note)_ |
 
 **Overall comment:** _(no overall comment)_
 
@@ -358,19 +352,16 @@
 
 ## Q 7-b. What processing is involved in computing `output` *tongue_velocity*?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | ok | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** Highly variable choices across agents, but there is no single definitive correct/incorrect solution.
+**Overall comment:** interpolation should not be used; a "not visable" category should be used instead for tracking not aviliable period
 
 ---
 

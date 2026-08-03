@@ -154,7 +154,7 @@ if len(trial_indices) < 2:
 
 **Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

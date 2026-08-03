@@ -187,9 +187,9 @@ def bin_and_smooth_spikes(clusters, ntrials, align_times, time_axis, edges):
 
 **What this does:** Per neuron, per trial: spikes are aligned to the trial's go cue, histogrammed into 10 ms bins on the [-2.5, 2.5] s axis, divided by `DT` to get firing rate, then smoothed with a causal Gaussian (N=15, reflect boundary).
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -415,9 +415,9 @@ out[0, :] = int(lick_direction[t_idx])
 
 **What this does:** Already a 0/1 boolean (R vs not-R); cast to int and tiled along the time axis. No further discretization.
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -563,9 +563,9 @@ out[3, :] = tongue_disc[:, t_idx].astype(np.int64)
 
 **What this does:** Velocity time series is interpolated onto the neural 10 ms time axis, then thresholded by the session-wide 50th percentile (>= median => 1, else 0).
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

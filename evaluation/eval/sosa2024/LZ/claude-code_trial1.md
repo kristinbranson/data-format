@@ -287,7 +287,7 @@ input_arr[0, :] = time_from_start
 
 **What this does:** Time is computed from a numerical index (0..n_t-1) divided by the effective imaging rate, rather than from any stored timestamp variable.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -305,7 +305,7 @@ time_from_start = (np.arange(n_t) / effective_rate).astype(np.float32)
 
 **What this does:** Generates an arange of length `n_t` and divides by the effective imaging rate (per-plane rate for multi-plane sessions) to produce seconds from trial start.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 

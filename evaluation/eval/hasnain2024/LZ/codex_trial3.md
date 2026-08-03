@@ -216,7 +216,7 @@ def binned_neuron_trials(probe, neuron_index, align_times, keep_trials_0based, e
 
 **Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -450,9 +450,9 @@ output_trials.append(
 
 **What this does:** Per-trial scalar value (0/1) is broadcast across the 1000-bin time axis as the first row of each trial's output matrix.
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -591,9 +591,9 @@ tongue_bin = discretize_trace(tongue_speed, tongue_thr)
 
 **What this does:** Per-feature x/y positions are interpolated to the aligned time axis, gradient -> velocity, magnitude per feature, then averaged across the tongue feature group; the resulting per-session matrix is binarized by an exact 50/50 split (sorted indices) instead of strict threshold.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

@@ -196,9 +196,9 @@ for neuron_idx, clu_idx in enumerate(good_indices):
 
 **What this does:** For each (neuron, trial), spike times are re-referenced to the trial's go-cue, histogrammed into 10 ms bins over [-2.5, 2.5] s, divided by `dt` to get spikes/s, then smoothed with a causal Gaussian (window=15, reflect padding) implemented in `causal_gaussian_smooth`.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -427,9 +427,9 @@ lick_dir = np.full((1, n_timebins), int(sess['lick_direction'][t]), dtype=np.int
 
 **What this does:** No transformation beyond cast to int and broadcast across the 500 timebins so the output array shape matches neural. Class 0 = left, 1 = right.
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -556,9 +556,9 @@ disc = (data >= threshold).astype(np.int64)
 
 **What this does:** x,y of `top_tongue` are linearly interpolated onto the neural time axis, NaN-filled with zero (tongue retracted), differenced via `np.gradient`, combined as Euclidean speed, then thresholded at the per-session 50th percentile to a binary low/high label.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

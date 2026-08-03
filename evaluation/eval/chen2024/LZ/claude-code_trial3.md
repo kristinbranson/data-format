@@ -155,9 +155,9 @@ for i in range(n_trials):
 
 **What this does:** Sessions skipped if correct rate <65% or fewer than 50 correct left/right. Trials excluded if auto_water/free_water, missing tone onset, or beyond neural recording coverage. Early lick/photostim/ignore trials are kept.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

@@ -152,7 +152,7 @@ if n_trials_dropped_all_zero:
 
 **Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

@@ -267,7 +267,7 @@ time_from_start = (np.arange(t_bins, dtype=np.float32) * TARGET_DT_S)
 
 **What this does:** Time vector is constructed from the bin index multiplied by the target bin size (1/15.5078125 s). It is not derived from any NWB timestamp series; it assumes regular sampling at the target rate.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -286,7 +286,7 @@ time_from_start = (np.arange(t_bins, dtype=np.float32) * TARGET_DT_S)
 
 **What this does:** A simple `arange` scaled by `TARGET_DT_S` (≈64.46 ms). No timestamp subtraction; the trial-start origin is implicit in the slicing.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 

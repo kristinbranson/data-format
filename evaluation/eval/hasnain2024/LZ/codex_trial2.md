@@ -231,9 +231,9 @@ kern /= np.sum(kern)
 
 **What this does:** Spike times are subtracted from each trial's `goCue`, binned into 5 ms bins over `[-2.5, 2.5]` (1000 bins) using `np.add.at`, divided by `dt` to convert counts to firing rate, and smoothed with a causal Gaussian (window length 15, only the left half non-zero, reflect boundary on the leading edge). Output cast to `float32`.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -461,9 +461,9 @@ output_trial = np.vstack([
 
 **What this does:** For each kept trial, the side of the earliest post-`goCue` lick (L vs R) becomes a single int (0 or 1) which is broadcast to a constant length-1000 trace as row 0 of the per-trial `output` matrix.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -604,9 +604,9 @@ tongue_bin = ((tongue_speed[:, trial_idx] >= tongue_threshold) & tongue_visible[
 
 **What this does:** Tongue x/y positions are linearly interpolated onto the 5 ms `TIME_AXIS` (no nearest-fill across NaNs since tongue has visibility gaps). Velocity = `np.gradient` per axis; speed = sqrt(vx^2+vy^2). The session-median threshold uses only tongue-visible samples; final binary is `speed >= threshold AND visible`, so invisible periods always go to the low bin.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

@@ -192,9 +192,9 @@ def causal_gaussian_smooth(x, N, bctype='reflect'):
 
 **What this does:** Spike times are aligned to goCue, histogrammed into 10 ms bins over [-2.5, 2.5]s, divided by `DT` to get firing rate (spk/s), then smoothed with a 15-bin causal Gaussian kernel using reflect boundary conditions.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -425,7 +425,7 @@ out[0, :] = lick_direction[t_idx]  # broadcast per-trial to time
 
 **Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -559,9 +559,9 @@ tongue_vel = np.nan_to_num(tongue_vel, nan=0.0)
 
 **What this does:** Compute frame-rate-scaled gradient of x and y to get vx, vy; magnitude = speed; NaN preserved where tongue not visible. Linearly interpolated to neural time axis, NaNs set to 0, then `discretize_per_session` thresholds at the 50th percentile -> 0/1.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

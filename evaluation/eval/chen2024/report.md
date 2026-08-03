@@ -32,7 +32,7 @@ A few notable observations on variability across agent solutions:
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🔵🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 1-c | How are the data split into sessions? | 🟡🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Performance-based session filtering is not necessary. |  | `FILTER=2` |
 | 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  | `FILTER=1` |
-| 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🔵🔵🔴 | 🟡🟢🔵 🟡🟡🟡 | 🟢🟢🟡 🟡🟢🟡 | 🟢🟡🟢 🟡🟡🟡 | Slightly different filtering procedures across agents; 1/6 was incorrect (used the observation window from only a *single* good unit). |  | `FILTER=1` |
+| 1-e | How are trials filtered based on quality controls? | 🟡🟢🟡 🟢🔵🔴 | 🟡🟢🔵 🟡🟡🟡 | 🟢🟢🟡 🟡🟢🟡 | 🟢🟡🟢 🟡🟡🟡 |  |  | `FILTER=1` |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 | Codex cast the data to float16; not strictly necessary, but acceptable for this data type. |  |  |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🔵 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟡 | All agents apply good-unit filtering; the claude agents add an additional histology-based filter. |  |  |
