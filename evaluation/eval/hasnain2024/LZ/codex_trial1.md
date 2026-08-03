@@ -493,9 +493,9 @@ outcome = np.int64(1 if raw["hit"][trial_idx] == 1 else 0)
 
 **What this does:** Derived from `obj.bp.hit`. 1 if hit==1, else 0.
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -516,9 +516,9 @@ output_arr = np.vstack([
 
 **What this does:** Scalar 0/1 broadcast to all timepoints as the third output row.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

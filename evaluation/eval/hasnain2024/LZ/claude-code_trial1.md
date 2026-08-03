@@ -483,9 +483,9 @@ outcome = hit[valid_trials].astype(np.int32)
 
 **What this does:** Derived from `bp.hit` (with `bp.miss` used implicitly via the hit|miss filter).
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -503,9 +503,9 @@ out[2, :] = outcome[t_idx]
 
 **What this does:** `hit` boolean cast to int32 (1=correct, 0=incorrect). Per-trial scalar.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

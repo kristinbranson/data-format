@@ -533,9 +533,9 @@ trial_labels.append((
 
 **What this does:** Derived only from `bp.hit` (with `bp.miss` used implicitly via the trial filter requiring `hit | miss`); `hit==1` -> correct (1), else incorrect (0).
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -557,9 +557,9 @@ output_trial = np.vstack([
 
 **What this does:** Per-trial 0/1 label broadcast to a constant length-1000 trace as row 2 of the per-trial `output` matrix.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

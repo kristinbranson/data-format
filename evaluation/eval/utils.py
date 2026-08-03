@@ -455,6 +455,7 @@ SUBTYPE_ORDER = {
     "Data Variables": [
         "Source variables",
         "Processing",
+        "Thresholding",
         "Alignment",
     ],
     "Missing-Data Handling": [""],
@@ -464,6 +465,7 @@ SUBTYPE_ORDER = {
         "Vectorization",
         "Repeated work",
         "Unnecessary work",
+        "Memory usage",
     ],
 }
 
@@ -481,16 +483,44 @@ _Q2_SUB = {
     "d": "Time resolution",
     "e": "Alignment",
 }
+# Which sub-question a Data Variables row is, keyed by what it ASKS rather
+# than by its sub-letter. The letters moved when the references were
+# renumbered (alignment went from -c to -d, and -c became "thresholded"), so
+# letter-keyed classification silently dropped every alignment row and
+# mislabelled the thresholding ones.
+_VAR_ROLE_KEYWORDS = [
+    ("derived from", "Source variables"),
+    ("processing is involved", "Processing"),
+    ("is the `output`", "Processing"),
+    ("data processed", "Processing"),
+    ("thresholded", "Thresholding"),
+    ("discretiz", "Thresholding"),
+    ("aligned", "Alignment"),
+    ("alignment", "Alignment"),
+]
+
+# Display order of the Data Variables sub-blocks.
+VAR_SUBTYPES = ("Source variables", "Processing", "Thresholding", "Alignment")
+
+# Fallback for anything the keywords miss: the historical sub-letter map.
 _VAR_SUB = {
     "a": "Source variables",
     "b": "Processing",
     "c": "Alignment",
 }
+
+
+def _var_subtype(title_lower: str) -> str | None:
+    for kw, sub in _VAR_ROLE_KEYWORDS:
+        if kw in title_lower:
+            return sub
+    return None
 _EFF_KEYWORDS = [
     ("time-consuming", "Processing time"),
     ("vectorized", "Vectorization"),
     ("repeat", "Repeated work"),
     ("unnecessary", "Unnecessary work"),
+    ("memory", "Memory usage"),
 ]
 
 _VAR_TITLE_RE = re.compile(r"`(input|output)`\s*\*([^*]+)\*")
@@ -521,7 +551,7 @@ def categorize(qid, title):
     if m and "-" in qid:
         kind, name = m.group(1), m.group(2).strip()
         sub_letter = qid.split("-", 1)[1]
-        sub = _VAR_SUB.get(sub_letter)
+        sub = _var_subtype(title_lower) or _VAR_SUB.get(sub_letter)
         if sub:
             return ("Data Variables", sub, f"{kind}: {name}")
 
@@ -539,7 +569,7 @@ def collect_rows(dataset_data, *, rating_field="best_rating"):
     ``"ratings"`` array. Valid values: ``"best_rating"`` (default — combined
     best per trial), ``"human"``, ``"claude"``, or ``"codex"``.
     """
-    var_groups = {}      # main_qid -> {sub_letter: row}
+    var_groups = {}      # main_qid -> {subtype: row}
     other_rows = []
     for main, subs in dataset_data.items():
         for sub_letter, q in subs.items():
@@ -559,7 +589,9 @@ def collect_rows(dataset_data, *, rating_field="best_rating"):
                 "trials": q["trials"],
             }
             if category == "Data Variables":
-                var_groups.setdefault(main, {})[sub_letter] = row
+                # Keyed by subtype, not sub-letter: the letters shifted in the
+                # 2026-08 renumbering and no longer identify the sub-question.
+                var_groups.setdefault(main, {})[subtype] = row
             else:
                 other_rows.append(row)
 
@@ -569,15 +601,17 @@ def collect_rows(dataset_data, *, rating_field="best_rating"):
         except ValueError:
             return m
 
-    with_align = sorted([m for m, subs in var_groups.items() if "c" in subs], key=main_key)
-    without_align = sorted([m for m, subs in var_groups.items() if "c" not in subs], key=main_key)
+    # Variables that have an alignment row come first, so the i-th row of each
+    # sub-block refers to the same variable for as far as the blocks overlap.
+    with_align = sorted([m for m, s in var_groups.items() if "Alignment" in s], key=main_key)
+    without_align = sorted([m for m, s in var_groups.items() if "Alignment" not in s], key=main_key)
     var_order = with_align + without_align
 
     var_rows = []
-    for sub_letter in ("a", "b", "c"):
+    for subtype in VAR_SUBTYPES:
         for main in var_order:
-            if sub_letter in var_groups[main]:
-                var_rows.append(var_groups[main][sub_letter])
+            if subtype in var_groups[main]:
+                var_rows.append(var_groups[main][subtype])
 
     cat_idx = {c: i for i, c in enumerate(CATEGORY_ORDER)}
 

@@ -483,9 +483,9 @@ outcome = bp['hit'][valid_trial_indices].copy()
 
 **What this does:** Direct copy of `obj.bp.hit` (1=correct/rewarded, 0=miss/no-response) at the kept-trial indices.
 
-**Rating:** match
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -503,9 +503,9 @@ outcome = bp['hit'][valid_trial_indices].copy()
 
 **What this does:** No transformation beyond integer cast; `miss` and `no` (no-response) are both lumped into class 0.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

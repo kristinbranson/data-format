@@ -298,37 +298,31 @@
 
 ## Q 6-a. What variables in the raw data is `output` *outcome* derived from?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial1 | incorrect | _(no note)_ |
+| claude-code / trial2 | incorrect | _(no note)_ |
 | claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| codex / trial1 | incorrect | _(no note)_ |
+| codex / trial2 | incorrect | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** ignore the case where there is no response
 
 ---
 
 ## Q 6-b. What processing is involved in computing `output` *outcome*?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** ignored the no response case in all solutions
 
 ---
 

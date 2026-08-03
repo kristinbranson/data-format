@@ -485,7 +485,7 @@ out[2, :] = int(outcome[t_idx])
 
 **Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -503,9 +503,9 @@ out[2, :] = int(outcome[t_idx])
 
 **What this does:** Already binary; cast to int and tiled across time bins.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

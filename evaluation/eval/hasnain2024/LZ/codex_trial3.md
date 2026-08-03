@@ -511,9 +511,9 @@ outcome = hit[keep_trials]
 
 **What this does:** Outcome is derived from `obj.bp.hit` (1 = correct) on kept trials.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
@@ -530,9 +530,9 @@ if not np.all((hit[keep_trials] + miss[keep_trials]) == 1):
 
 **What this does:** Asserts each kept trial is binary hit/miss (mutually exclusive); broadcast across time as row 2.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
