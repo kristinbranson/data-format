@@ -14,7 +14,7 @@ Four raters rate the same questions — two humans (LZ, KB) and two LLM judges
 always means the system under evaluation (claude-code / codex).
 """
 
-from . import agreement, binary, judges, loading, render
+from . import agreement, binary, display, judges, loading, render
 from .binary import collapse, confusion_counts, metrics
 from .loading import (DATASET_ORDER, EXCLUDED_TITLE_PATTERNS, HUMAN_RATERS,
                       JUDGE_RATERS, PERFORMANCE_CATEGORY, RATERS, Ratings,
@@ -27,7 +27,8 @@ __all__ = [
     "load_ratings", "Ratings", "coverage_summary", "unanswered_by_judges",
     "correctness_only", "uniform_variables", "add_null",
     "EXCLUDED_TITLE_PATTERNS", "PERFORMANCE_CATEGORY",
-    "summary_table", "agreement", "binary", "judges", "loading", "render",
+    "summary_table", "agreement", "binary", "display", "judges", "loading",
+    "render",
     "collapse", "confusion_counts", "metrics",
     "RATERS", "HUMAN_RATERS", "JUDGE_RATERS", "DATASET_ORDER",
 ]
