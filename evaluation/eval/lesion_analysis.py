@@ -1794,17 +1794,12 @@ difference_table(
     outfile=FIGURES_DIR / 'minimal_vs_maximal_difference.md')
 
 # %%
-STATLIMITS
-
-# %%
-
-# %%
 # look at the effect of STATLIMITS on results
-# change STATLIMITS to all values between 0 and 0.2, in steps of 0.002
+# change STATLIMITS to all values
 # count how many jobs of each type of test pass with the new threshold (regardless of arm, up to trial 3)
 # make a plot for each test type with this fraction. make a horizontal line
 # at the true STATLIMITS value frac jobs that pass
-statlimits_try = np.linspace(0, .5, 101)
+ratio_limits_try = np.linspace(0, .5, 101)
 
 # Each verifier threshold, the field it tests, and where it is worth sweeping.
 # Ranges are per test because the metrics live on different scales -- a ratio
@@ -1826,24 +1821,15 @@ statlimits_try = np.linspace(0, .5, 101)
 # went stale the moment input_match_cost moved from 1 to 0.5, silently marking
 # the wrong operating point on the plot.
 THRESHOLD_SWEEPS = [
-    ('nsessions',      'N sessions', 'ratio', statlimits_try, STATLIMITS['nsessions_ratio']),
-    ('ntrials_total',  'N trials',   'ratio', statlimits_try, STATLIMITS['ntrials_total_ratio']),
-    ('T_median',       'T median',   'ratio', statlimits_try, STATLIMITS['T_median_ratio']),
-    ('nsubjects',      'N subjects', 'ratio', statlimits_try, STATLIMITS['nsubjects_ratio']),
-    ('nneurons_total', 'N neurons',  'ratio', statlimits_try, STATLIMITS['nneurons_total_ratio']),
-    ('input_match_mean_cost',     'Input match cost',  'cost',
-     np.linspace(0, 1.0, 101), STATLIMITS['input_match_cost']),
-    ('output_match_mean_cost', 'Output match cost', 'cost',
-     np.linspace(0, 0.5, 101), STATLIMITS['output_match_cost']),
-    # The two range-only checks. Both are newer and less settled than the rest,
-    # which is the case for sweeping them. output_range_error is asserted per
-    # variable, so the scalar swept here is the per-trial max that
-    # trial_metrics._curate reduces the output_range_error_<var> fields to --
-    # the same thing the assert fails on, since it fails if any variable does.
+    ('nsessions',      'N sessions', 'ratio', ratio_limits_try, STATLIMITS['nsessions_ratio']),
+    ('ntrials_total',  'N trials',   'ratio', ratio_limits_try, STATLIMITS['ntrials_total_ratio']),
+    ('T_median',       'T median',   'ratio', ratio_limits_try, STATLIMITS['T_median_ratio']),
+    ('nsubjects',      'N subjects', 'ratio', ratio_limits_try, STATLIMITS['nsubjects_ratio']),
+    ('nneurons_total', 'N neurons',  'ratio', ratio_limits_try, STATLIMITS['nneurons_total_ratio']),
     ('mean_input_range_error',    'Input range error',  'cost',
-     np.linspace(0, 1.0, 101), STATLIMITS['input_range_error']),
+     np.linspace(0, 2.0, 101), STATLIMITS['input_range_error']),
     ('output_range_error_max',    'Output range error', 'cost',
-     np.linspace(0, 2.0, 101), STATLIMITS['output_range_error']),
+     np.arange(5), STATLIMITS['output_range_error']),
     ('validation_balanced_accuracy_ratio', 'Decoder accuracy', 'accuracy',
      np.linspace(.5, 1.0, 101), MIN_ACCURACY_FRAC),
 ]
@@ -1922,7 +1908,7 @@ def pass_fraction(trials, key, kind, threshold):
             float(np.mean(output_fracs)) if output_fracs else np.nan)
 
 
-def plot_threshold_sweeps(data, sweeps=THRESHOLD_SWEEPS, ncols=4):
+def plot_threshold_sweeps(data, sweeps=THRESHOLD_SWEEPS, ncols=4, lw=1.6, color_main='C0', color_pass='gray'):
     """Pass rate against threshold, one panel per verifier test.
 
     Each panel marks the fraction passing at the threshold actually in force, so
@@ -1943,35 +1929,35 @@ def plot_threshold_sweeps(data, sweeps=THRESHOLD_SWEEPS, ncols=4):
     trials = sweep_trials(data)
     nrows = int(np.ceil(len(sweeps) / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(3.1 * ncols, 2.9 * nrows),
-                             squeeze=False)
+                             squeeze=False, sharey=True)
 
     for ax, (key, label, kind, thresholds, true_value) in zip(axes.flat, sweeps):
         curve = [pass_fraction(trials, key, kind, t) for t in thresholds]
         fractions = [c[0] for c in curve]
         n_eligible = max(c[1] for c in curve)
-        ax.plot(thresholds, fractions, lw=1.6, color='#3070b0',
+        ax.plot(thresholds, fractions, lw=lw, color=color_main,
                 label='all outputs' if kind == 'accuracy' else None)
 
         if kind == 'accuracy':
             # What the decoder_accuracy_matches category measures, for contrast:
             # the gap is how often one bad variable sinks an otherwise good trial.
-            ax.plot(thresholds, [c[2] for c in curve], lw=1.2, ls='--',
-                    color='#3070b0', alpha=0.6, label='mean over outputs')
+            ax.plot(thresholds, [c[2] for c in curve], lw=lw, ls='--',
+                    color=color_main, alpha=0.6, label='mean over outputs')
             ax.legend(fontsize=6, frameon=False, loc='lower left')
 
         # The horizontal line is the reading at the threshold in force.
         at_true = pass_fraction(trials, key, kind, true_value)[0]
-        ax.axhline(at_true, color='#c0392b', lw=1.0, ls=':')
-        ax.text(0.98, at_true, f'{at_true:.2f}', transform=ax.get_yaxis_transform(),
-                ha='right', va='bottom', fontsize=6, color='#c0392b')
+        ax.axhline(at_true, color=color_pass, lw=1.0, ls=':')
+        # ax.text(0.98, at_true, f'{at_true:.2f}', transform=ax.get_yaxis_transform(),
+        #         ha='right', va='bottom', fontsize=6, color=color_pass)
 
         # ... and where that threshold sits, when it is on the axis at all.
         if thresholds[0] <= true_value <= thresholds[-1]:
-            ax.axvline(true_value, color='#c0392b', lw=1.0, ls=':')
+            ax.axvline(true_value, color=color_pass, lw=1.0, ls=':')
         else:
             ax.text(0.98, 0.06, f'in force: {true_value:g}\n(off scale)',
                     transform=ax.transAxes, ha='right', va='bottom',
-                    fontsize=6, color='#c0392b')
+                    fontsize=6, color=color_pass)
 
         ax.set_title(f'{label}  (n={n_eligible})', fontsize=8)
         ax.set_ylim(-0.03, 1.03)
@@ -1981,7 +1967,7 @@ def plot_threshold_sweeps(data, sweeps=THRESHOLD_SWEEPS, ncols=4):
     for ax in axes.flat[len(sweeps):]:
         ax.set_visible(False)
     for ax in axes[:, 0]:
-        ax.set_ylabel('fraction of jobs passing', fontsize=7)
+        ax.set_ylabel('Fraction pass', fontsize=7)
 
     fig.tight_layout()
     return fig, axes
@@ -1992,3 +1978,51 @@ fig.savefig(FIGURES_DIR / 'threshold_sensitivity.pdf', bbox_inches='tight')
 plt.show()
 
 
+
+# %%
+delta = 1.5
+ratio_limits_print = {k: [v/delta, v, v*delta] for k, v in STATLIMITS.items() if k.endswith('_ratio')}
+x = 1-MIN_ACCURACY_FRAC
+accuracy_limits_print = [1-x*delta,1-x,1-x/delta]
+
+THRESHOLDS_PRINT = [
+    ('nsessions',      'N sessions', 'ratio', ratio_limits_print['nsessions_ratio'], STATLIMITS['nsessions_ratio']),
+    ('ntrials_total',  'N trials',   'ratio', ratio_limits_print['ntrials_total_ratio'], STATLIMITS['ntrials_total_ratio']),
+    ('T_median',       'T median',   'ratio', ratio_limits_print['T_median_ratio'], STATLIMITS['T_median_ratio']),
+    ('nsubjects',      'N subjects', 'ratio', ratio_limits_print['nsubjects_ratio'], STATLIMITS['nsubjects_ratio']),
+    ('nneurons_total', 'N neurons',  'ratio', ratio_limits_print['nneurons_total_ratio'], STATLIMITS['nneurons_total_ratio']),
+    ('mean_input_range_error',    'Input range error',  'cost', [STATLIMITS['input_range_error']/delta, STATLIMITS['input_range_error'], STATLIMITS['input_range_error']*delta], STATLIMITS['input_range_error']),
+    ('output_range_error_max',    'Output range error', 'cost', [.5,1.5], STATLIMITS['output_range_error']),
+    ('validation_balanced_accuracy_ratio', 'Decoder accuracy', 'accuracy', accuracy_limits_print, MIN_ACCURACY_FRAC),
+]
+
+def print_threshold_change_effects(data, sweeps=THRESHOLDS_PRINT,filename=None):
+    """Print pass rate against threshold, one line per verifier test.
+
+
+    Args:
+        data: nested trial metrics, as loaded by utils.load_trial_metrics.
+        sweeps: the THRESHOLD_SWEEPS spec, or a subset of it.
+        ncols: panels per row.
+
+    Returns:
+        (fig, ax_array).
+
+    Side effects: creates a figure; does not write any file.
+    """
+    if filename is not None:
+        f = open(filename, 'w')
+    trials = sweep_trials(data)
+    for (key, label, kind, thresholds, true_value) in sweeps:
+        pf = [pass_fraction(trials, key, kind, t) for t in thresholds]
+        s = f'{label:<25}:'
+        for t,pfcurr in zip(thresholds, pf):
+            s += f' thresh = {t:.3f} -> {pfcurr[0]:.3f},'
+        if filename is not None:
+            f.write(s + '\n')
+        print(s)
+    if filename is not None:
+        f.close()
+
+filename = FIGURES_DIR / 'threshold_sensitivity.txt'
+print_threshold_change_effects(data, filename=filename)
