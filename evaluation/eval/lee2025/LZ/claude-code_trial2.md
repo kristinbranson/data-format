@@ -542,8 +542,8 @@ if show_processing and fig_axes is not None and n_trials > 0:
 
 **What this does:** Animals are processed sequentially with `del dat` at the end of each animal's loop iteration; no `gc.collect()`, memmap, or chunked reading. The 3-frame temporal pooling reduces each stored trial from 1800 frames to 600 bins before it is appended, and the pooled result is cast down to `float32` (the smoothing intermediate is computed in `float64`); outputs are `int64`, static inputs are shared `(9,)` arrays reused across trials of a session. All converted sessions accumulate in memory until the final pickle write.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

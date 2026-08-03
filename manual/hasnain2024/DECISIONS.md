@@ -195,7 +195,7 @@ iii. This is what the reference's `alignSpikes.m` does: `obj.clu{prb}(clu).trial
 
 ## 3-a. What variables in the raw data is `input` *time_from_go_cue* derived from?
 
-i. From `go_start_times`, the go cue of each trial, which is the event every trial is aligned on. The window is define as -2.5 to 2.5 s around it in 5 ms bins, and the input is the centre of each of the 1000 bins.
+i. This variable is defined by us based on the go cue of each trial, which is the event every trial is aligned on. The window is define as -2.5 to 2.5 s around it in 5 ms bins, and the input is the centre of each of the 1000 bins.
 
 ii. The window, and the centres taken from it:
 ```python

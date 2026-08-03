@@ -547,8 +547,8 @@ def plot_processing(ax_list, subj, session, F, Fneu, dfof, me, me_binned,
 
 **What this does:** `process_session` handles one session at a time and returns only the binned, trial-split arrays, so the raw `F`/`Fneu`/`dfof` arrays go out of scope per iteration; the neural traces are held as `float32` (line 85, 89) and stored trials re-cast to `float32` (line 182). `Fc.copy()` creates an extra full-size copy before Suite2p `preprocess`, which may run on CUDA if available (line 83). No memory-mapping, chunked reads, explicit `del`, or in-place arithmetic; motion energy is interpolated in `float64` (lines 98-103).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

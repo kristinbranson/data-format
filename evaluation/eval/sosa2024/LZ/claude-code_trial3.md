@@ -1133,8 +1133,8 @@ Per-trial arrays are preallocated with explicit dtypes (convert_data.py:545, 578
 
 **What this does:** All three ROI streams for a session (Deconvolved, Fluorescence, Neuropil) are loaded in full and, for multi-plane sessions, concatenated from per-plane lists before any ROI filtering; there is no column-subset read, chunking, memory-mapping, `del`, or `gc.collect()` anywhere in the script. Output arrays are preallocated per trial with fixed dtypes (float32 neural/input, int64 output). The dF/F path used for the interneuron check allocates two further full-session-sized arrays (`F_corr = F - 0.7 * Fneu` and `dff = np.full_like(F_corr, np.nan)`, convert_data.py:109-112) plus a per-trial `.copy()`, inheriting the source dtype rather than upcasting.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

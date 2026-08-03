@@ -1011,8 +1011,8 @@ Cell filtering and the float32 cast happen after the full matrix is materialized
 
 **What this does:** Each session's Deconvolved, Fluorescence and Neuropil matrices are read in full per plane with `[:]` and concatenated, so the whole session (all ROIs, including ones later discarded) is resident before filtering; there is no chunked or memory-mapped read, no `del`/`gc.collect()`, and no explicit release of `fluorescence`/`neuropil_data` after the interneuron check. Dtypes are set explicitly at storage time — float32 for neural and inputs, int64 for outputs — and per-trial arrays use `np.full`/preallocated stacks rather than repeated concatenation.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

@@ -577,8 +577,8 @@ def compute_fluorescence_signal(F: np.ndarray, Fneu: np.ndarray, ops: dict) -> n
 
 **What this does:** All neural arrays are kept in `float32` and every cast uses `copy=False` so no redundant copies are made (lines 78, 89, 181-183, 290-296); Suite2p `preprocess` is called with a capped `batch_size` of at most 512 neurons (line 86). Sessions are loaded and processed one at a time and only binned trial arrays are retained. `np.load` reads each array fully (no `mmap_mode`), `Fc.copy()` makes one extra full-size copy (line 80), the motion-alignment accumulators are `float64` (lines 115-116), and there is no `del`/`gc` call. When `--show-processing` is on, the raw `F`/`Fneu` arrays are passed through to the plotting function (lines 312-313).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

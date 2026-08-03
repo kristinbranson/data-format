@@ -582,8 +582,8 @@ motion_aligned, _ = align_motion_to_imaging(motion, tstamps, F.shape[1])
 
 **What this does:** The pipeline is split into two passes: pass 1 touches only the small behavior arrays (plus `mmap_mode="r"` for a neuron-count shape lookup, line 288) to compute global quantile edges, and pass 2 loads `F`/`Fneu` for one session at a time, so at most one session's full-resolution neural data is resident. Neural arrays are held as `float32` with `copy=False` casts (lines 151-163, 381) while bin means accumulate in `float64` (lines 140, 147). `fc.copy()` makes one extra full-size copy before `dcnv.preprocess`, which uses an explicit `batch_size` (lines 155, 161). No `del`/`gc` calls; with `--show-processing` the raw `F`/`Fneu` and full-resolution `dff` are passed to the plotting function (lines 386-399).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

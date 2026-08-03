@@ -303,9 +303,9 @@ trial_spk = spk[:, start:end].copy()
 
 **What this does:** `input[0]` is named `time_to_sound_cue` and is built from the behavior field `beh['SoundFr']` (per-trial sound-cue frame), the trial's frame indices anchored at `beh['StartFr']`, and a per-session sampling rate `fs` derived from the `beh['ft']` frame timestamps (falling back to the 3.17 Hz constant if `dt <= 0`).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

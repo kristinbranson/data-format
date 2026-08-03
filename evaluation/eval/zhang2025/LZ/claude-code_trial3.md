@@ -296,9 +296,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100 time bins
 
 **What this does:** The conversion produces this input as `time_since_stim_onset` (`input_names[0]`, convert_data.py:989). It is not read from a raw column; it is constructed from the constants `TIME_WINDOW = (-0.5, 1.5)` and `BINSIZE = 0.02`. The notes attribute it to `stimOn_times`, which is the raw field defining the window the bins are placed in.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -326,9 +326,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100 time bins
 
 **What this does:** A single 100-element float32 vector is built once per session as `np.linspace(-0.48, 1.5, 100)`, i.e. 0.02 s steps from -0.48 to 1.5 (the upper edge of each 20 ms bin, though the comment calls them bin centers). The same vector is written to row 0 of every trial's `(2, 100)` input array, so it is identical across trials and sessions.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -357,9 +357,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100 time bins
 
 **What this does:** Alignment is implicit in shared constants: spikes are binned into `[stimOn_times - 0.5, stimOn_times + 1.5]` with `bin_idx = clip(((t - interval_beg)/0.02), 0, 99)` (convert_data.py:383), and the time vector spans the same 2 s window in the same 100 steps, so element *k* corresponds to neural bin *k*. The stored value is the bin's upper edge, with -0.48 for the first bin.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -378,9 +378,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100 time bins
 
 **What this does:** The conversion produces this input as `trial_number_in_block` (`input_names[1]`, convert_data.py:989). It is derived from the `probabilityLeft` column of the raw trials table (`trials_df`) together with that table's row ordering.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -416,9 +416,9 @@ def compute_trial_number_in_block(prob_left):
 
 **What this does:** The function scans the full unfiltered trials table in order, records the index where `probabilityLeft` last changed, and stores `i - current_block_start`, so the count is 0-based (first trial of a block is 0) and reflects position among all trials including those later excluded. The per-trial value is then subset by `good_indices` (trial-quality plus wheel/motion-energy masks), cast to float32, and broadcast across all 100 time bins as row 1 of the input array; verification reports a range of [0, 94].
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

@@ -992,8 +992,8 @@ The speed-correlation interneuron check upcasts to float64 (convert_data.py:189-
 
 **What this does:** For each session the script reads three full-session ROI matrices (Deconvolved, Fluorescence, Neuropil) entirely into memory per plane and concatenates the per-plane lists, with no column subsetting at read time, no chunked/streaming reads, no memory-mapping, and no `del`/`gc.collect()` of the large intermediates. Stored trial arrays are preallocated with explicit dtypes — float32 for neural and inputs, int64 for outputs — while the interneuron speed-correlation step temporarily casts to float64. All sessions accumulate into a single in-memory structure that is pickled at the end.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

@@ -172,6 +172,81 @@
 
 ---
 
+## Q 3-a. What variables in the raw data is `input` *time_from_stimulus_onset* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_stimulus_onset*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 3-c. How is `input` *time_from_stimulus_onset* aligned with the neural data?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-a. What variables in the raw data is `input` *trial_number_in_block* derived from?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 4-b. What processing is involved in computing `input` *trial_number_in_block*?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
 ## Q 5-a. What variables in the raw data is `output` *choice* derived from?
 
 

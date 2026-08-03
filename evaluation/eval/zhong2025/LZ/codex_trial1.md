@@ -327,9 +327,9 @@ def session_trial_info(record: dict, trial: int, frame_idx: np.ndarray) -> tuple
 
 **What this does:** The trial produces this input as `time_to_sound_cue_s` (`input[0]`). It is derived from the trial-level `SoundTime` array in the behavior record and the per-frame imaging timestamps `ft`, indexed at the retained frame indices for that trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

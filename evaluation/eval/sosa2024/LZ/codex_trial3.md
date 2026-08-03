@@ -937,8 +937,8 @@ Behavior streams and stored arrays are cast to fixed dtypes, with int16 for disc
 
 **What this does:** Only accepted (`iscell == 1`) ROI columns are read from each plane's Deconvolved dataset via HDF5 fancy indexing, written into a single preallocated `np.empty((T, n_accepted), float32)` buffer instead of being concatenated; Fluorescence and Neuropil are never read. Casts use `copy=False` where the source is already correct, discretized outputs use int16, trials are filtered before arrays are allocated, and sessions are processed sequentially. The notes list full-session residency as a remaining inefficiency. No memory-mapping, chunked time-axis reads, `del`, or `gc.collect()`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

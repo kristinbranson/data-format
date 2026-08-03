@@ -330,9 +330,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100
 
 **What this does:** The conversion produces this input as `time_since_stim_onset` (`input_names[0]`, convert_data.py:689). No raw data field is read for it; it is generated from the constants `TIME_WINDOW = (-0.5, 1.5)` and `BINSIZE = 0.02`, which define the window taken around the raw `trials.stimOn_times` used for spike binning.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -362,9 +362,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100
 
 **What this does:** One 100-element float32 vector is computed per session as `np.linspace(-0.49, 1.49, 100)`, i.e. bin centers spaced 0.02 s apart across the 2 s window. The same vector is stacked as row 0 of every trial's `(2, 100)` input array, identical across trials and sessions. (The notes describe the range as -0.5 to 1.48; the code uses bin centers -0.49 to 1.49.)
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -392,9 +392,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100
 
 **What this does:** Alignment is by construction rather than by an explicit lookup: spikes are binned into `[stimOn_times - 0.5, stimOn_times + 1.5]` in 100 bins of 20 ms, and the time vector spans the same window with the same 100 entries, so entry *k* corresponds to neural bin *k*. Each entry is the center of its bin (neural bin *k* spans `[start + k*0.02, start + (k+1)*0.02)`).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -417,9 +417,9 @@ N_BINS = int(np.ceil(INTERVAL_LEN / BINSIZE))  # 100
 
 **What this does:** The conversion produces this input as `trial_num_in_block` (`input_names[1]`, convert_data.py:689). It is derived from the `probabilityLeft` column of the raw `_ibl_trials.table.pqt` trials table, read from the already-masked subset `trials_good` and its row ordering.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -454,9 +454,9 @@ def compute_trial_num_in_block(prob_left):
 
 **What this does:** A running counter starts at 1 and increments while `probabilityLeft` is unchanged from the previous row, resetting to 1 when it changes. It is run on `trials_good`, the subset remaining after the trial-quality mask and the wheel/whisker availability masks have been applied, so excluded trials are not counted. The resulting per-trial integer is cast to float32 and broadcast with `np.full` across all 100 time bins as row 1 of the input array; no normalization or cap is applied.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

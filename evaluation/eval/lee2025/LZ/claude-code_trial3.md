@@ -536,8 +536,8 @@ def plot_processing(animal_name, raw_data, sessions_neural, sessions_input,
 
 **What this does:** One animal file is loaded per iteration and released with `del dat, d` once its sessions are converted; no `gc.collect()`, memmap, or chunked read. Neural trials are cast to `float32` and outputs to `int64`, and trials are sliced directly out of the session array rather than built by concatenation. Trials are stored at the native 30 Hz rate (1800 frames per trial, no temporal pooling), and all sessions accumulate in memory until the final pickle dump.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

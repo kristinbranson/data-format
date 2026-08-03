@@ -555,8 +555,8 @@ me_interp = interpolate_motion_energy(me, n_frames, tstamps)
 
 **What this does:** Sessions are loaded and processed one at a time (`process_session`, lines 146-179), and only 10-frame-binned results are accumulated into `session_data` (line 358); stored trials are cast to `float32` at line 200. Inside `compute_dff` five full `(n_neurons, n_frames)` intermediates are live at once (`F_corr`, `F_corr_copy`, `F_subtracted`, `baseline`, `baseline_safe`) with no in-place operations or `del`; the Suite2p `preprocess` call is optionally routed to CUDA (lines 65-66). No memory-mapping or chunked reads — `np.load` reads each array in full (lines 160-165) — and the motion-energy path works in `float64` (lines 102-120).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

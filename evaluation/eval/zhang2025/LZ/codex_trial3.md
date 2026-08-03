@@ -294,9 +294,9 @@ INPUT_NAMES = [
 
 **What this does:** The trial produces this input under the name `time_since_stimulus_onset_s` (`input[0]`). It is not read from a raw data field; it is derived entirely from the `PARAMS` alignment settings (`time_window = (-0.5, 1.5)`, `binsize = 0.02`, `align_time = "stimOn_times"`) that also define the neural binning grid.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -328,9 +328,9 @@ def build_time_axis() -> np.ndarray:
 
 **What this does:** `build_time_axis()` returns `np.linspace(-0.5 + 0.02, 1.5, 100)`, i.e. the end time of each 20 ms bin (`[-0.48, ..., 1.50]` s). It is built once in `main` and passed into every session, where the same vector is stacked as row 0 of each trial's input matrix.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -362,9 +362,9 @@ def bin_spiking_data_current(reg_clu_ids, neural_dict, trials_df) -> np.ndarray:
 
 **What this does:** Spikes are binned over `stimOn_times + [-0.5, 1.5]` s in 20 ms bins, and `time_axis` holds the end time of each of those bins, so the two share a column index by construction. The script asserts that the aligned behavior traces match `time_axis.shape`, and a `CHECK_INPUT` verification step compares the exported input against a reconstruction from the raw trials table.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -386,9 +386,9 @@ INPUT_NAMES = [
 
 **What this does:** The trial produces this input as `input[1]`, named `trial_number_in_block`. It is derived from the `probabilityLeft` column of the raw trials table (`trials_df`) over the complete, pre-exclusion trial order, together with the `keep_idx` retained-trial indices.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -423,9 +423,9 @@ def trial_number_in_block(probability_left: np.ndarray) -> np.ndarray:
 
 **What this does:** A 1-based counter runs over the full unfiltered trial order, incrementing while `probabilityLeft` stays the same (compared with `np.isclose`) and resetting to 1 at each change. Retained trials pick their value by original index `i` from `keep_idx`, and that scalar is broadcast across all 100 time bins as row 1 of the input matrix.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

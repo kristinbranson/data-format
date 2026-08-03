@@ -966,8 +966,8 @@ session_info = {
 
 **What this does:** Reads only the `Deconvolved/plane0` response matrix via `h5py` (Fluorescence and Neuropil are never loaded), materializes it in full with `[()]` and then boolean-masks curated ROI columns, so the uncurated matrix is briefly resident. Every cast uses `copy=False` to avoid gratuitous duplicates, dtypes are pinned to float32 for neural/inputs and int64 for outputs, and sessions are handled one at a time; the notes name the remaining full-session materialization as a known inefficiency. No memory-mapping, chunked reads, `del`, or `gc.collect()`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

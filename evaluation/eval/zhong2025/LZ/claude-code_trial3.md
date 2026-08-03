@@ -305,9 +305,9 @@ for t in range(ntrials):
 
 **What this does:** `input[0]` is named `time_to_sound_cue` and is built from the behavior field `beh['SoundFr']` (per-trial sound-cue frame index), the trial frame indices set by `beh['StartFr']`/`beh['EndFr']`, and a single global `frame_period` computed from the `ft` timestamps of the first session only.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

@@ -555,8 +555,8 @@ def compute_baseline_corrected_fluorescence(s2p_dir: Path) -> tuple[np.ndarray, 
 
 **What this does:** `F.npy`/`Fneu.npy` are opened with `mmap_mode="r"` (lines 66, 130-131) so shape checks during sample selection never read the array, and neuropil subtraction is done in place on a single `float32` buffer (`corrected -= ...`, line 134). Downstream casts use `copy=False` and `mean(..., dtype=np.float32)` (lines 144, 162, 181-182), Suite2p `preprocess` runs with an explicit `batch_size`, and sessions are processed one at a time with only binned arrays retained in the returned dict (lines 226-236). Full-resolution previews are truncated to 3000 frames before being kept for plotting (lines 146-154). No explicit `del`/`gc` calls; the per-session binned arrays for all sessions are held in memory before `build_dataset` (line 335).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

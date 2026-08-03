@@ -308,9 +308,9 @@ for trial in range(int(beh["ntrials"])):
 
 **What this does:** The trial produces this input as `time_to_sound_cue` (`input[0]`). It is derived from the trial-level `SoundTime` array and the per-frame imaging timestamps `ft` in the canonical behavior dict, indexed at the retained frames of that trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

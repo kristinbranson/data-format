@@ -519,8 +519,8 @@ if show_processing and session_ref.session_id in plot_session_ids:
 
 **What this does:** A single-entry `animal_cache` holds one animal's joblib dict at a time, cleared with an explicit `gc.collect()` before the next animal loads; the index-building pass also `del`s each animal after reading its session count. Stored trials use `float16` for neural and `int8` for output, while intermediate per-day arrays are first materialized as `float64`. Trials are direct slices of a session-wide `float16` trace and of a precomputed session-wide output class array; trials remain at the native 1800-frame length.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

@@ -596,8 +596,8 @@ def plot_processing(animal, d, all_neural, all_input, all_output, session_info):
 
 **What this does:** Animals are loaded and converted one at a time, with `del d` at the end of `convert_animal` releasing that animal's joblib dict before the next is loaded; there is no `gc.collect()`, memory-mapping, or chunked read. Per-trial neural slices are cast to `float32` and outputs to `int64`; trials are stored at the native 30 Hz frame rate (1800 frames each) with no temporal pooling. Converted trials accumulate in Python lists and the whole dataset is held in memory until the final pickle dump.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

@@ -960,8 +960,8 @@ Behavioral streams are narrowed at read time and ancillary arrays use small inte
 
 **What this does:** The script uses `h5py` slicing to read only the curated ROI columns in the single-plane case, preallocates a `np.empty(..., dtype=np.float16)` destination for the multi-plane case and fills it plane by plane rather than concatenating, and stores neural trials as float16 with discretized outputs as int16. Only the deconvolved stream is loaded (Fluorescence/Neuropil are not read), sessions are processed one at a time, and the notes state both the remaining full-session-in-memory cost and the memory-bounding choices explicitly. No memory-mapping, chunked iteration, or explicit `del`/`gc.collect()` is used.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

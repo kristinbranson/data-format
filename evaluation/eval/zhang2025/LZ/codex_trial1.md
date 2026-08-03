@@ -313,9 +313,9 @@ def make_time_input() -> np.ndarray:
 
 **What this does:** The trial produces this input under the name `time_since_stimulus_onset` (`input[0]`). It is not read from any raw data field; it is constructed from the script constants `TIME_WINDOW = (-0.5, 1.5)` and `BINSIZE_S = 0.02`, which are the same window/bin size used to bin spikes relative to the raw `stimOn_times` alignment.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -345,9 +345,9 @@ def make_time_input() -> np.ndarray:
 
 **What this does:** A single 100-element vector is built once per session with `np.linspace(-0.5 + 0.02, 1.5, 100)`, i.e. the right edge of each 20 ms bin, giving values `[-0.48, ..., 1.50]` s. The same vector is stacked as row 0 of every trial's input array, so all trials share an identical time axis.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -374,9 +374,9 @@ neural_trials = bin_spikes_for_trials(
 
 **What this does:** Neural bins are cut from `stimOn_times + [-0.5, 1.5]` s in 20 ms steps, and the time input is the `np.linspace(-0.48, 1.5, 100)` grid of right bin edges over that same window. Both arrays carry `N_BINS = 100` columns, so column *i* of the time input corresponds to column *i* of the neural array by construction; no separate re-alignment step is applied.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -396,9 +396,9 @@ block_vals = block_trial_number[masked_keep["index"].to_numpy()]
 
 **What this does:** The trial produces this input as `input[1]`, named `trial_number_in_block`. It is derived from the `probabilityLeft` column of the raw trials table (`_ibl_trials.probabilityLeft`), read over the full unmasked trial sequence, plus the original trial index (`masked_keep["index"]`) used to select kept trials.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -431,9 +431,9 @@ def compute_trial_number_in_block(prob_left: np.ndarray) -> np.ndarray:
 
 **What this does:** A running counter walks the full raw trial sequence, incrementing while `probabilityLeft` is unchanged and resetting to 1 whenever it changes, so counting is 1-based and done before trial masking. Kept trials index into this per-session counter by their original trial index, and the resulting scalar is broadcast across all 100 time bins as row 1 of the input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

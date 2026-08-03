@@ -563,8 +563,8 @@ def save_processing_plot(payload):
 
 **What this does:** Animals are loaded one at a time and released with `del dat` followed by an explicit `gc.collect()` between animals; there is no memmap or chunked read. Casts use `astype(..., copy=False)` and stored arrays are `float32` neural / `int64` output. Two upstream filters shrink what is retained per trial: cells with NaNs or fewer than the activity threshold are dropped session-wide, and within each 1-minute chunk only movement-valid frames are kept and then average-pooled in groups of 3, so exported trials hold ~289 samples instead of 1800 frames.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

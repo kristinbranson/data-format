@@ -551,8 +551,8 @@ def _plot_processing(subj, sess, F, Fneu, me, interframe,
 
 **What this does:** Sessions are loaded and processed one at a time inside the main loop, so full-resolution `F`/`Fneu`/dF/F arrays for the current session are rebound (and released) on the next iteration; only the 10-frame-binned trials are accumulated, cast to `float32` at line 206. There is no memory-mapping, no explicit `del` or `gc` call, and no chunked/streaming read — `np.load` reads each array fully into RAM (lines 157-160), and the motion-energy path upcasts to `float64` (lines 100-121). The `_maximin_baseline` helper allocates several full `(n_neurons, n_frames)` intermediates (`Fc`, `Flow` ×3, `dff`) simultaneously.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

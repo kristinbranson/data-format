@@ -587,8 +587,8 @@ debug_info = {
 
 **What this does:** One animal joblib file is loaded per outer-loop iteration and rebound on the next iteration; there is no explicit `del`, `gc.collect()`, memmap, or chunked read (the module imports no `gc`). Arrays are cast to `float32`/`int64` with `copy=False` so no-op casts avoid duplicating buffers, and 3-frame temporal binning reduces each stored trial from 1800 frames to 600 bins. Per-trial neural slices are views into the session array until `temporal_bin_mean` materializes the binned copy; all converted sessions accumulate in the `converted` dict until the final pickle dump.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---

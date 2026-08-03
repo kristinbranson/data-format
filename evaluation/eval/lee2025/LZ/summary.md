@@ -341,3 +341,18 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+## Q 6-e. How is memory usage optimized?
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** memory is not really a concern for this dataset
+
+---
+
