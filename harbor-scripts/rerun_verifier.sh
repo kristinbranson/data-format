@@ -338,9 +338,22 @@ CODEX_DIR="$JUDGE_DIR/codex"
 rm -rf "$CODEX_DIR"
 mkdir -p "$CODEX_DIR"
 
+# Codex reads its credentials from /root/.codex/auth.json and nothing else -- it does not
+# look at OPENAI_API_KEY in the environment. With no such file it sends no Authorization
+# header at all and every call dies with 401 "Missing bearer or basic authentication in
+# header", which the `|| true` below swallows: the trial still reports success while
+# compute_reward.py records a null codex reward. Under --apikeys, CODEX_AUTH_JSON_B64 is
+# deliberately unset, so the OAuth branch alone left codex unauthenticated on every trial.
+# The elif mirrors tests/test.sh, which has had it all along.
+mkdir -p /root/.codex
 if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
-  mkdir -p /root/.codex
   echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
+elif [ -n "${OPENAI_API_KEY:-}" ]; then
+  cat > /root/.codex/auth.json <<EOF
+{
+  "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+}
+EOF
 fi
 
 echo "=== Running Codex judge ==="
