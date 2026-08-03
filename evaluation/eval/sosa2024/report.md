@@ -3,7 +3,7 @@
 ## Summary
 
 - Dataset: **sosa2024**
-- Questions covered: 37
+- Questions covered: 40
 - Trials per question: 6 (3 claude-code + 3 codex)
 - Human evaluators: **LZ** (this report's comments and notes), KB
 - Judges: Claude, Codex
@@ -33,8 +33,8 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔴 🟢🔴🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔴🟢 | 🔵🔵🔵 🟢🔴🟢 | 🔵🟡🟣 🟢🟡🟡 | 🟡🔴🔴 🔵🔴🟢 |  |  |  |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🟣🟣🟣 🟢🟢🟢 | 🔵🔵🔵 🟢🔵🟢 | 🟣🟡🟣 🟢🟢🟢 | 🟡🔴🔴 🟢🟢🟡 |  | Claude judge gave inconsistent ratings for the same solution. | `DETAIL` |
-| 2-d | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🔵🔴🟣 | A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing. | Both judges caught the mistake. | `TIMERES=1`, `ASSUME=1` |
-| 2-e | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | No timestamp is provided, so no additional alignment is needed. |  |  |
+| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | No timestamp is provided, so no additional alignment is needed. |  |  |
+| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🔵🔴🟣 | A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing. | Both judges caught the mistake. | `TIMERES=1`, `ASSUME=1` |
 | 3-a | What variables in the raw data is `input` *Time from start of trial in seconds* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🔵🟡🔵 | 🔵🟡🔵 🟢🟢🟢 | 🟡🔴🔴 🔵🔴🔵 |  | Inconsistent ratings from the LLM judges for the same solution. |  |
 | 3-b | What processing is involved in computing `input` *Time from start of trial in seconds*? | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🟢🟡🟢 | 🔵🟡🔵 🟢🟢🟢 | 🟡🔴🔴 🟢🔴🟢 |  |  |  |
 | 3-c | How is the `input` *Time from start of trial in seconds* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 🟢🟢🔵 🟡🔵🔵 |  |  |  |
@@ -46,10 +46,12 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 6-b | What processing is involved in computing `input` *Previous trial outcome*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🟢🟢🔵 | 🟢🟢🟢 🟣🟢🟡 |  |  |  |
 | 7-a | What variables in the raw data is `output` *Distance to reward zone* derived from? | 🟡🟡🟢 🟡🟢🟡 | 🔵🔵🔵 🔵🔵🔵 | 🔵🟡🟡 🟡🟢🟡 | 🔴🔴🔴 🔵🟡🟣 | Agents didn't verify the "30-trial switch rule" against the data — the correct approach is to identify the reward zone from the data rather than using a hard-coded switch time. | Claude caught some of the potential problems but missed others. | `ASSUME=4` |
 | 7-b | What processing is involved in computing `output` *Distance to reward zone*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 7-c | How is `output` *Distance to reward zone* aligned with the neural data? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 7-c | How is `output` *Distance to reward zone* thresholded into categories? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
+| 7-d | How is `output` *Distance to reward zone* aligned with the neural data? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 8-a | What variables in the raw data is `output` *Absolute position* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 8-b | What processing is involved in computing `output` *Absolute position*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟡🟢 | 🟢🟢🟢 🔴🔵🔴 |  |  |  |
-| 8-c | How is `output` *Absolute position* aligned with the neural data? | 🟢🟢🟢 🟢🟡🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 8-c | How is `output` *Absolute position* thresholded into categories? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
+| 8-d | How is `output` *Absolute position* aligned with the neural data? | 🟢🟢🟢 🟢🟡🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 9-a | What variables in the raw data is `output` *Lick* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 9-b | What processing is involved in computing `output` *Lick*? | 🟢🟢🟢 🟢🟡🟢 | 🔵🔵🔵 🟢🔵🟢 | 🟣🟡🟡 🟢🟢🟢 | 🟡🟡🟡 🔵🔵🔵 |  |  |  |
 | 9-c | How is `output` *Lick* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 |  |  |  |
@@ -62,3 +64,4 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 13-b | What loops in the code could have been vectorized to improve efficiency? | 🟢🔵🔵 🔵🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🔵 🟢🟢🟢 | Some per-trial loops are unnecessary. |  |  |
 | 13-c | What processing does the code repeat multiple times? | 🟢🟢🔵 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🟢 🟢🟢🟢 | 🟢🔵🔵 🟢🟢🟢 |  |  |  |
 | 13-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🔵🟣 🔵🟢🟢 | 🟢🔵🔴 🟢🔵🟢 |  |  |  |
+| 13-e | How is memory usage optimized? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | memory not an issue for this dataset |  |  |

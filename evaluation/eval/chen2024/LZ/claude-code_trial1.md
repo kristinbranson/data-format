@@ -255,33 +255,7 @@ n_neurons = len(neuron_mask)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Bin width: 50ms (non-overlapping) / N timepoints: 80 bins" (lines 192-193); "50ms bins: Task specification overrides reference code's 40ms/3.4ms sliding histogram" (line 200)
-
-**Code** (convert_data.py:30-33, 476, 498-499):
-```python
-BIN_WIDTH = 0.050  # 50 ms bins (decoder task spec)
-ALIGN_START = -2.5  # seconds before go cue
-ALIGN_END = 1.5     # seconds after go cue
-N_BINS = int((ALIGN_END - ALIGN_START) / BIN_WIDTH)  # 80 bins
-...
-bin_edges = np.linspace(align_start, align_end, n_bins + 1)
-...
-counts, _ = np.histogram(rel_spikes, bins=bin_edges)
-all_matrices[t, n, :] = counts / bin_width
-```
-
-**What this does:** 80 non-overlapping 50ms bins from -2.5s to +1.5s. Spikes counted with np.histogram, divided by bin_width → Hz.
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Alignment: go cue onset (`go_start_times`)" (line 191); "temporal_alignment_event: 'Go cue onset'" (in metadata)
@@ -302,6 +276,32 @@ for t in range(n_trials):
 ```
 
 **What this does:** Each trial's go cue time (from `BehavioralEvents.go_start_times`) defines time 0; spike times are subtracted by `go_t` and binned in [-2.5, +1.5]s.
+
+**Rating:** match
+
+**Note:** _(no note)_---
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Bin width: 50ms (non-overlapping) / N timepoints: 80 bins" (lines 192-193); "50ms bins: Task specification overrides reference code's 40ms/3.4ms sliding histogram" (line 200)
+
+**Code** (convert_data.py:30-33, 476, 498-499):
+```python
+BIN_WIDTH = 0.050  # 50 ms bins (decoder task spec)
+ALIGN_START = -2.5  # seconds before go cue
+ALIGN_END = 1.5     # seconds after go cue
+N_BINS = int((ALIGN_END - ALIGN_START) / BIN_WIDTH)  # 80 bins
+...
+bin_edges = np.linspace(align_start, align_end, n_bins + 1)
+...
+counts, _ = np.histogram(rel_spikes, bins=bin_edges)
+all_matrices[t, n, :] = counts / bin_width
+```
+
+**What this does:** 80 non-overlapping 50ms bins from -2.5s to +1.5s. Spikes counted with np.histogram, divided by bin_width → Hz.
 
 **Rating:** match
 
@@ -689,7 +689,7 @@ d[trial_y >= p60] = 2
 
 ---
 
-## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## Q 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "time-varying" (line 182)

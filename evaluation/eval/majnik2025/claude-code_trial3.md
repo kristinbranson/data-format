@@ -223,31 +223,7 @@ dfof_binned = bin_timeseries(dfof, BIN_SIZE)  # (n_neurons, n_bins)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:111):
-> Decoding bin size | 10 frames = 333ms
-
-**Code** (convert_data.py:36-40, 113-119):
-```python
-BIN_SIZE = 10              # frames per bin (paper: "bins of 10 consecutive timestamps")
-TIME_BIN_MS = BIN_SIZE / FRAME_RATE * 1000  # ~333.33 ms
-# ...
-n_bins = n_frames // bin_size
-truncated = data[..., :n_bins * bin_size]
-new_shape = truncated.shape[:-1] + (n_bins, bin_size)
-return truncated.reshape(new_shape).mean(axis=-1)
-```
-
-**What this does:** Averages every 10 consecutive 30 Hz frames into a single bin (~333.33 ms bin size, i.e. ~3 Hz).
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md:167-170):
 > No discrete trials in the original experiment (continuous spontaneous recording)
@@ -265,6 +241,30 @@ return truncated.reshape(new_shape).mean(axis=-1)
 ```
 
 **What this does:** Trials are not aligned to a stimulus event; they begin at fixed 2-minute offsets from the recording start. Metadata records the alignment event as "start of continuous recording session".
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:111):
+> Decoding bin size | 10 frames = 333ms
+
+**Code** (convert_data.py:36-40, 113-119):
+```python
+BIN_SIZE = 10              # frames per bin (paper: "bins of 10 consecutive timestamps")
+TIME_BIN_MS = BIN_SIZE / FRAME_RATE * 1000  # ~333.33 ms
+# ...
+n_bins = n_frames // bin_size
+truncated = data[..., :n_bins * bin_size]
+new_shape = truncated.shape[:-1] + (n_bins, bin_size)
+return truncated.reshape(new_shape).mean(axis=-1)
+```
+
+**What this does:** Averages every 10 consecutive 30 Hz frames into a single bin (~333.33 ms bin size, i.e. ~3 Hz).
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -388,7 +388,7 @@ me_discrete = discretize_motion_energy(me_binned, N_OUTPUT_BINS)
 
 ---
 
-## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+## Q 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:82-90):
 > Some sessions have fewer motion energy frames than neural frames... Per data README: "indices of missing frames can be obtained by looking at tstamps.npy or interframe_int.npy and treated as missing values or interpolated over"

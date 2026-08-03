@@ -6,6 +6,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -20,6 +21,7 @@
 ---
 
 ## Q 1-b. How are the data split into subjects?
+
 
 
 
@@ -40,6 +42,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -54,6 +57,7 @@
 ---
 
 ## Q 1-d. Are the data correctly split into trials?
+
 
 
 
@@ -74,6 +78,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | _(no note)_ |
@@ -88,6 +93,7 @@
 ---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
 
 
 
@@ -108,6 +114,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -125,6 +132,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -138,7 +146,8 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
 
 
 
@@ -155,7 +164,8 @@
 
 ---
 
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
 
 
 
@@ -174,6 +184,7 @@
 
 ## Q 3-a. What variables in the raw data is `input` *time_to_sound_cue* derived from?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -188,6 +199,7 @@
 ---
 
 ## Q 3-b. What processing is involved in computing `input` *time_to_sound_cue*?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -204,6 +216,7 @@
 
 ## Q 3-c. How is `input` *time_to_sound_cue* aligned with the neural data?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -218,6 +231,7 @@
 ---
 
 ## Q 4-a. What variables in the raw data is `input` *day_of_training* derived from?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -234,6 +248,7 @@
 
 ## Q 4-b. What processing is involved in computing `input` *day_of_training*?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | _(no note)_ |
@@ -248,6 +263,7 @@
 ---
 
 ## Q 5-a. What variables in the raw data is `input` *time_since_trial_start* derived from?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -264,6 +280,7 @@
 
 ## Q 5-b. What processing is involved in computing `input` *time_since_trial_start*?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -278,6 +295,7 @@
 ---
 
 ## Q 5-c. How is `input` *time_since_trial_start* aligned with the neural data?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -294,6 +312,7 @@
 
 ## Q 6-a. What variables in the raw data is `input` *reward_availability* derived from?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -309,6 +328,7 @@
 
 ## Q 6-b. What processing is involved in computing `input` *reward_availability*?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -323,6 +343,7 @@
 ---
 
 ## Q 7-a. What variables in the raw data is `output` *visual_stimulus* derived from?
+
 
 
 
@@ -343,6 +364,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -357,6 +379,7 @@
 ---
 
 ## Q 8-a. What variables in the raw data is `output` *licking* derived from?
+
 
 
 
@@ -377,6 +400,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -391,6 +415,7 @@
 ---
 
 ## Q 8-c. How is `output` *licking* aligned with the neural data?
+
 
 
 
@@ -411,6 +436,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -428,6 +454,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -441,7 +468,8 @@
 
 ---
 
-## Q 9-c. How is `output` *position* aligned with the neural data?
+## Q 9-d. How is `output` *position* aligned with the neural data?
+
 
 
 
@@ -462,6 +490,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -479,6 +508,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -492,7 +522,8 @@
 
 ---
 
-## Q 10-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-d. How is `output` *running_speed* aligned with the neural data?
+
 
 
 
@@ -513,6 +544,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -527,6 +559,7 @@
 ---
 
 ## Q 12-a. What are the most time-consuming steps of the code?
+
 
 
 
@@ -547,6 +580,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -561,6 +595,7 @@
 ---
 
 ## Q 12-c. What processing does the code repeat multiple times?
+
 
 
 
@@ -581,6 +616,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -595,6 +631,7 @@
 ---
 
 ## Q 12-e. How is memory usage optimized?
+
 
 
 

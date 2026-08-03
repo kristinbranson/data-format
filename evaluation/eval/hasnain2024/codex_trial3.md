@@ -253,7 +253,31 @@ if len(selected_neurons) < MIN_UNITS_PER_SESSION:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md:226):
+> "go-cue alignment ... matching the main neural alignment used in the code and paper."
+
+**Code** (convert_data.py:807, 619):
+```python
+align_times = to_vector(obj["bp"]["ev"]["goCue"], float)
+...
+aligned = trialtm[mask] - align_times[trials[mask] - 1]
+```
+Metadata (convert_data.py:1033):
+```python
+"temporal_alignment_event": "Auditory go cue onset",
+```
+
+**What this does:** Per-trial go cue times come from `obj.bp.ev.goCue`; each spike's `trialtm` is subtracted by the trial's go-cue time so t=0 = go cue onset.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:225):
 > "Use go-cue alignment and a common 5 ms bin width over `[-2.5 s, +2.5 s)`."
@@ -281,30 +305,6 @@ return causal_gaussian_smooth(rates, SMOOTH, BCTYPE)
 ```
 
 **What this does:** A regular grid of 5 ms bin edges from -2.5 to 2.5 s (1000 bins) is built; spike-aligned times are floored into bin indices, counts are summed, divided by DT to firing rate, then convolved with a causal Gaussian (width 15, reflect boundary).
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md:226):
-> "go-cue alignment ... matching the main neural alignment used in the code and paper."
-
-**Code** (convert_data.py:807, 619):
-```python
-align_times = to_vector(obj["bp"]["ev"]["goCue"], float)
-...
-aligned = trialtm[mask] - align_times[trials[mask] - 1]
-```
-Metadata (convert_data.py:1033):
-```python
-"temporal_alignment_event": "Auditory go cue onset",
-```
-
-**What this does:** Per-trial go cue times come from `obj.bp.ev.goCue`; each spike's `trialtm` is subtracted by the trial's go-cue time so t=0 = go cue onset.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -597,7 +597,7 @@ tongue_bin = discretize_trace(tongue_speed, tongue_thr)
 
 ---
 
-## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-d. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:60-61):
 > "DLC trajectories also use frame times corrected by a 0.5 s or computed video offset depending on loader/helper path. This is important for later consistency checks on temporal alignment."
@@ -681,7 +681,7 @@ paw_bin = discretize_trace(paw_speed, paw_thr)
 
 ---
 
-## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-d. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:60-61):
 > "DLC trajectories also use frame times corrected by a 0.5 s or computed video offset depending on loader/helper path. This is important for later consistency checks on temporal alignment."
@@ -771,7 +771,7 @@ me_bin = discretize_trace(motion_energy, me_thr)
 
 ---
 
-## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-d. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:60):
 > "Motion energy alignment is explicit: `interp1(frameTimes - video_offset - align_event_time, me.data{trial}, obj.time + advance_movement)`, then edge NaNs are filled with nearest values."

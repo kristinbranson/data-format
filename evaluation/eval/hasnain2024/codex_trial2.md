@@ -269,7 +269,31 @@ if mean_fr <= LOW_FR_HZ: continue
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Trials are aligned to the stored `bp.ev.goCue` event. In delayed-response (DR) trials this is the auditory go cue; in water-cued (WC) trials the stored field acts as the water-presentation-equivalent event used throughout the conversion." (README.md:5)
+
+**Code** (convert_data.py:25, 396, 366-368):
+```python
+ALIGN_EVENT = "goCue"
+...
+align_times = ensure_1d_numeric(bp["ev"][ALIGN_EVENT])
+...
+aligned = trialtm[valid_spikes] - align_times[trial_numbers_1based[valid_spikes] - 1]
+...
+bin_idx = np.floor((aligned - TMIN) / DT).astype(np.int64)
+```
+
+**What this does:** Per-trial `goCue` times are read from `bp.ev.goCue` and subtracted from each spike's `trialtm` so that t=0 corresponds to the go cue (or the goCue-equivalent event on WC trials). The same `align_times` vector is used for kinematics, motion energy, and lick events.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "5 ms spike binning from `-2.5` s to `+2.5` s" (CONVERSION_NOTES.md:270). "Time bin: 5 ms" (README.md:13)
@@ -290,30 +314,6 @@ rates = aligned_counts / DT
 ```
 
 **What this does:** A fixed 5 ms uniform grid spans `[-2.5, 2.5)` (1000 bins, bin centers stored in `TIME_AXIS`). Spike times relative to `goCue` are floored to bin index, accumulated into counts via `np.add.at`, divided by `DT` to give Hz, then smoothed.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Trials are aligned to the stored `bp.ev.goCue` event. In delayed-response (DR) trials this is the auditory go cue; in water-cued (WC) trials the stored field acts as the water-presentation-equivalent event used throughout the conversion." (README.md:5)
-
-**Code** (convert_data.py:25, 396, 366-368):
-```python
-ALIGN_EVENT = "goCue"
-...
-align_times = ensure_1d_numeric(bp["ev"][ALIGN_EVENT])
-...
-aligned = trialtm[valid_spikes] - align_times[trial_numbers_1based[valid_spikes] - 1]
-...
-bin_idx = np.floor((aligned - TMIN) / DT).astype(np.int64)
-```
-
-**What this does:** Per-trial `goCue` times are read from `bp.ev.goCue` and subtracted from each spike's `trialtm` so that t=0 corresponds to the go cue (or the goCue-equivalent event on WC trials). The same `align_times` vector is used for kinematics, motion energy, and lick events.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -610,7 +610,7 @@ tongue_bin = ((tongue_speed[:, trial_idx] >= tongue_threshold) & tongue_visible[
 
 ---
 
-## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-d. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Motion energy is loaded from companion files and aligned to the same trial-centered time axis by interpolating DLC/video-timestamped traces onto `obj.time + params.advance_movement`, after subtracting the video offset and the chosen alignment event time." (CONVERSION_NOTES.md:60)
@@ -701,7 +701,7 @@ paw_threshold = float(np.nanpercentile(paw_speed[:, kept_trials], 50))
 
 ---
 
-## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-d. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Kinematics are derived from DLC trajectories, producing x/y displacement and x/y velocity for each tracked feature from both views, then concatenated into a common `(time, trials, features)` representation." (CONVERSION_NOTES.md:61)
@@ -792,7 +792,7 @@ me_threshold = float(np.nanpercentile(motion_energy[:, kept_trials], 50))
 
 ---
 
-## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-d. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "motion-energy interpolation onto the neural time axis using video timestamps and video offset" (CONVERSION_NOTES.md:274)

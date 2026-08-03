@@ -110,7 +110,20 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | incorrect | — |  |
+| claude-code / trial2 | match | match | match | ok | — |  |
+| claude-code / trial3 | match | match | match | concerning | — |  |
+| codex / trial1 | match | match | match | ok | — |  |
+| codex / trial2 | match | match | match | match | — |  |
+| codex / trial3 | match | match | match | concerning | — |  |
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -122,19 +135,6 @@
 | codex / trial3 | match | match | match | match | — |  |
 
 **Overall comment:** Same as 2-b: Claude rated a partial solution "better" but the complete solution "concerning".
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | incorrect | — |  |
-| claude-code / trial2 | match | match | match | ok | — |  |
-| claude-code / trial3 | match | match | match | concerning | — |  |
-| codex / trial1 | match | match | match | ok | — |  |
-| codex / trial2 | match | match | match | match | — |  |
-| codex / trial3 | match | match | match | concerning | — |  |
 
 ---
 
@@ -194,7 +194,7 @@
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -269,3 +269,16 @@
 | codex / trial1 | match | match | match | ok | — |  |
 | codex / trial2 | match | match | match | match | — |  |
 | codex / trial3 | match | match | concerning | ok | Claude judge |  |
+
+---
+
+## Q 6-e. How is memory usage optimized?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | — | — | — | LZ |  |
+| claude-code / trial2 | match | — | — | — | LZ |  |
+| claude-code / trial3 | match | — | — | — | LZ |  |
+| codex / trial1 | match | — | — | — | LZ |  |
+| codex / trial2 | match | — | — | — | LZ |  |
+| codex / trial3 | match | — | — | — | LZ |  |

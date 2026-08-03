@@ -226,7 +226,28 @@ spikes, clusters = load_spiking_data_current(session_path, probe_name=probe_name
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Temporal alignment: stimulus onset (`stimOn_times`)" (README.md:12)
+
+**Code** (convert_data.py:272-277):
+```python
+intervals = np.vstack([
+    trials_df[PARAMS["align_time"]] + PARAMS["time_window"][0],
+    trials_df[PARAMS["align_time"]] + PARAMS["time_window"][1],
+]).T
+```
+
+**What this does:** Each trial's interval is `stimOn_times + [-0.5, +1.5] s`. Spikes within that window are binned, putting bin 25 (approximately) at stimulus onset.
+
+**Rating:** match
+
+**Note:** _(no note)_---
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "`align_time='stimOn_times'`, `time_window=(-0.5, 1.5)` seconds, `binsize=0.02` seconds" (CONVERSION_NOTES.md:55-57)
@@ -243,27 +264,6 @@ binned_tmp, _, cluster_idxs = bincount2D(times_curr, clust_curr, xbin=binsize, x
 ```
 
 **What this does:** Spikes are histogrammed into 100 fixed 20 ms bins per trial via IBL's `bincount2D`. No resampling — counts only.
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Temporal alignment: stimulus onset (`stimOn_times`)" (README.md:12)
-
-**Code** (convert_data.py:272-277):
-```python
-intervals = np.vstack([
-    trials_df[PARAMS["align_time"]] + PARAMS["time_window"][0],
-    trials_df[PARAMS["align_time"]] + PARAMS["time_window"][1],
-]).T
-```
-
-**What this does:** Each trial's interval is `stimOn_times + [-0.5, +1.5] s`. Spikes within that window are binned, putting bin 25 (approximately) at stimulus onset.
 
 **Rating:** match
 
@@ -575,7 +575,7 @@ discretize(session.wheel_continuous[trial_idx], thresholds["wheel_speed"])
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "behavior traces are linearly interpolated onto `n_bins = ceil(interval_len / binsize)` samples" (CONVERSION_NOTES.md:85-86)
@@ -651,7 +651,7 @@ discretize(session.whisker_continuous[trial_idx], thresholds["whisker_motion_ene
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "align to stimulus onset on the same 2 s / 20 ms grid as neural data" (CONVERSION_NOTES.md:235)

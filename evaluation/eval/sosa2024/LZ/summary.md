@@ -6,6 +6,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -20,6 +21,7 @@
 ---
 
 ## Q 1-b. How are the data split into subjects?
+
 
 
 
@@ -40,6 +42,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -54,6 +57,7 @@
 ---
 
 ## Q 1-d. Are the data correctly split into trials?
+
 
 
 
@@ -74,6 +78,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | better | _(no note)_ |
@@ -88,6 +93,7 @@
 ---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
 
 
 
@@ -108,6 +114,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -125,6 +132,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | better | additional filtering based on the paper implemented |
@@ -138,24 +146,8 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
-
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | incorrect | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing.
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 
 
@@ -172,7 +164,26 @@
 
 ---
 
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+
+
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | incorrect | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing.
+
+---
+
 ## Q 3-a. What variables in the raw data is `input` *Time from start of trial in seconds* derived from?
+
 
 
 
@@ -193,6 +204,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -207,6 +219,7 @@
 ---
 
 ## Q 3-c. How is the `input` *Time from start of trial in seconds* aligned with the neural data?
+
 
 
 
@@ -227,6 +240,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -241,6 +255,7 @@
 ---
 
 ## Q 4-b. What processing is involved in computing `input` *Environment type*?
+
 
 
 
@@ -261,6 +276,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -275,6 +291,7 @@
 ---
 
 ## Q 5-b. What processing is involved in computing `input` *Trial number*?
+
 
 
 
@@ -295,6 +312,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -309,6 +327,7 @@
 ---
 
 ## Q 6-b. What processing is involved in computing `input` *Previous trial outcome*?
+
 
 
 
@@ -329,6 +348,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | _(no note)_ |
@@ -346,6 +366,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -359,7 +380,8 @@
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
+
 
 
 
@@ -380,6 +402,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -397,6 +420,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -410,7 +434,8 @@
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
+
 
 
 
@@ -431,6 +456,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -445,6 +471,7 @@
 ---
 
 ## Q 9-b. What processing is involved in computing `output` *Lick*?
+
 
 
 
@@ -465,6 +492,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -479,6 +507,7 @@
 ---
 
 ## Q 10-a. What variables in the raw data is `output` *Reward zone location* derived from?
+
 
 
 
@@ -499,6 +528,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -513,6 +543,7 @@
 ---
 
 ## Q 11-a. What variables in the raw data is `output` *Reward outcome* derived from?
+
 
 
 
@@ -533,6 +564,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -547,6 +579,7 @@
 ---
 
 ## Q 12. How are minor mistakes in the data, e.g. missing data, handled?
+
 
 
 
@@ -567,6 +600,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -581,6 +615,7 @@
 ---
 
 ## Q 13-b. What loops in the code could have been vectorized to improve efficiency?
+
 
 
 
@@ -601,6 +636,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -618,6 +654,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -630,7 +667,9 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 13-e. How is memory usage optimized?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -644,4 +683,3 @@
 **Overall comment:** memory not an issue for this dataset
 
 ---
-

@@ -222,31 +222,7 @@ selected = stim_selective | reward_pred
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "calcium imaging frame rate is `3.17 Hz`" (CONVERSION_NOTES.md:48)
-> "Use actual frame times in seconds, not just frame index: Because non-running frames are dropped, elapsed time inputs must come from `ft` timestamps rather than assuming contiguous native-frame spacing." (CONVERSION_NOTES.md:259)
-
-**Code** (convert_data.py:285-288, 312-313):
-```python
-ft = np.asarray(beh["ft"][:nfr], dtype=float)
-dft = np.diff(ft)
-dft = dft[np.isfinite(dft) & (dft > 0)]
-frame_dt = float(np.median(dft) * SECONDS_PER_DAY)
-...
-neural = spk_sel[:, frames].astype(np.float32, copy=False)
-```
-
-**What this does:** No resampling; the deconvolved imaging frames are kept at native frame rate. Non-running frames within texture segment are removed, but no rebinning is applied. `frame_dt` (median sampling interval) is used only to derive time inputs.
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Temporal alignment: corridor entry (`StartFr`)" (README.md:21)
@@ -266,6 +242,30 @@ for trial_idx in range(int(beh["ntrials"])):
 ```
 
 **What this does:** Each trial begins at `StartFr` (corridor entry), ending at `GrayFr` (gray-space entry). `t=0` corresponds to corridor entry; `time_since_trial_start_sec` and `time_to_sound_cue_sec` provide alignment relative to event(s).
+
+**Rating:** match
+
+**Note:** _(no note)_---
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "calcium imaging frame rate is `3.17 Hz`" (CONVERSION_NOTES.md:48)
+> "Use actual frame times in seconds, not just frame index: Because non-running frames are dropped, elapsed time inputs must come from `ft` timestamps rather than assuming contiguous native-frame spacing." (CONVERSION_NOTES.md:259)
+
+**Code** (convert_data.py:285-288, 312-313):
+```python
+ft = np.asarray(beh["ft"][:nfr], dtype=float)
+dft = np.diff(ft)
+dft = dft[np.isfinite(dft) & (dft > 0)]
+frame_dt = float(np.median(dft) * SECONDS_PER_DAY)
+...
+neural = spk_sel[:, frames].astype(np.float32, copy=False)
+```
+
+**What this does:** No resampling; the deconvolved imaging frames are kept at native frame rate. Non-running frames within texture segment are removed, but no rebinning is applied. `frame_dt` (median sampling interval) is used only to derive time inputs.
 
 **Rating:** match
 
@@ -711,7 +711,7 @@ pos_bin = np.clip(np.floor(pos / 10.0).astype(np.int64), 0, 3)
 
 ---
 
-## Q 9-c. How is `output` *position* aligned with the neural data?
+## Q 9-d. How is `output` *position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none — alignment is implicit via shared `frames` index)"
@@ -774,7 +774,7 @@ speed_bin = np.searchsorted(thresholds, output_raw["running_speed_raw"], side="r
 
 ---
 
-## Q 10-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-d. How is `output` *running_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none — alignment is implicit via shared `frames` index)"

@@ -237,34 +237,7 @@ brain_region_labels = build_region_labels(anno_name, good_unit_mask)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Reference code uses 40 ms width / 3.4 ms stride, while this conversion intentionally uses 50 ms non-overlapping bins to satisfy the decoder task" (CONVERSION_NOTES.md:371)
-
-**Code** (convert_data.py:27-32, 339-342):
-```python
-BIN_WIDTH_S = 0.05
-WINDOW_START_S = -2.5
-WINDOW_END_S = 1.5
-BIN_EDGES_REL = np.arange(WINDOW_START_S, WINDOW_END_S + 1e-9, BIN_WIDTH_S, dtype=np.float64)
-BIN_CENTERS_REL = BIN_EDGES_REL[:-1] + BIN_WIDTH_S / 2.0
-N_BINS = len(BIN_CENTERS_REL)
-...
-edge_idx = np.searchsorted(spikes, trial_edge_matrix, side="left")
-counts = np.diff(edge_idx, axis=1)
-neural_tensor[:, unit_idx, :] = (counts / BIN_WIDTH_S).astype(np.float16)
-```
-
-**What this does:** Uses fixed 50 ms non-overlapping bins from -2.5 s to +1.5 s relative to go cue (80 bins). Spike counts per bin are computed by `np.searchsorted` on edges, then divided by 0.05 s to give Hz.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Aligns each trial to go cue by matching event timestamps into the trial interval." (CONVERSION_NOTES.md:247)
@@ -284,6 +257,33 @@ trial_edge_matrix[keep_idx] = rec["go_time"] + BIN_EDGES_REL
 ```
 
 **What this does:** Per trial, finds the go-cue timestamp by intersecting `go_start_times` events with `[trial_start, trial_stop]` (last candidate used if multiple). Bin edges are constructed as `go_time + BIN_EDGES_REL`, placing time zero at go-cue onset.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Reference code uses 40 ms width / 3.4 ms stride, while this conversion intentionally uses 50 ms non-overlapping bins to satisfy the decoder task" (CONVERSION_NOTES.md:371)
+
+**Code** (convert_data.py:27-32, 339-342):
+```python
+BIN_WIDTH_S = 0.05
+WINDOW_START_S = -2.5
+WINDOW_END_S = 1.5
+BIN_EDGES_REL = np.arange(WINDOW_START_S, WINDOW_END_S + 1e-9, BIN_WIDTH_S, dtype=np.float64)
+BIN_CENTERS_REL = BIN_EDGES_REL[:-1] + BIN_WIDTH_S / 2.0
+N_BINS = len(BIN_CENTERS_REL)
+...
+edge_idx = np.searchsorted(spikes, trial_edge_matrix, side="left")
+counts = np.diff(edge_idx, axis=1)
+neural_tensor[:, unit_idx, :] = (counts / BIN_WIDTH_S).astype(np.float16)
+```
+
+**What this does:** Uses fixed 50 ms non-overlapping bins from -2.5 s to +1.5 s relative to go cue (80 bins). Spike counts per bin are computed by `np.searchsorted` on edges, then divided by 0.05 s to give Hz.
 
 **Rating:** match
 
@@ -694,7 +694,7 @@ tongue_bin[tongue_y > tongue_info["p60"]] = 2
 
 ---
 
-## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## Q 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "For each 50 ms neural bin, assign tongue y from the processed continuous tongue trace at the bin center (or closest preceding frame)." (CONVERSION_NOTES.md:221)

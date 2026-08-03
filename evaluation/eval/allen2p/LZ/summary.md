@@ -6,6 +6,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -20,6 +21,7 @@
 ---
 
 ## Q 1-b. How are the data split into subjects?
+
 
 
 
@@ -40,6 +42,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | incorrect | did not combine "experiment id" based on "session id" |
@@ -54,6 +57,7 @@
 ---
 
 ## Q 1-d. Are the data correctly split into trials?
+
 
 
 
@@ -74,6 +78,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -88,6 +93,7 @@
 ---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
 
 
 
@@ -108,6 +114,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -125,6 +132,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -138,24 +146,8 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
-
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | incorrect | 750 ms is completely wrong |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | concerning | 100 ms time bin is a bad choice |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
-
-**Overall comment:** The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices (2-b).
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 
 
@@ -172,7 +164,26 @@
 
 ---
 
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+
+
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | incorrect | 750 ms is completely wrong |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | concerning | 100 ms time bin is a bad choice |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
+
+**Overall comment:** The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices (2-b).
+
+---
+
 ## Q 3-a. What variables in the raw data is `output` *Image identity* derived from?
+
 
 
 
@@ -193,6 +204,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -207,6 +219,7 @@
 ---
 
 ## Q 3-c. How is `output` *Image identity* aligned with the neural data?
+
 
 
 
@@ -227,6 +240,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -244,6 +258,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -257,7 +272,8 @@
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
+
 
 
 
@@ -278,6 +294,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -295,6 +312,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -308,7 +326,8 @@
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
+
 
 
 
@@ -329,6 +348,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | _(no note)_ |
@@ -346,6 +366,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -359,7 +380,8 @@
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
+
 
 
 
@@ -380,6 +402,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -394,6 +417,7 @@
 ---
 
 ## Q 7-b. What processing is involved in computing `output` *Trial outcome*?
+
 
 
 
@@ -414,6 +438,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -428,6 +453,7 @@
 ---
 
 ## Q 9-a. What are the most time-consuming steps of the code?
+
 
 
 
@@ -448,6 +474,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -462,6 +489,7 @@
 ---
 
 ## Q 9-c. What processing does the code repeat multiple times?
+
 
 
 
@@ -482,6 +510,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -496,6 +525,7 @@
 ---
 
 ## Q 9-e. How is memory usage optimized?
+
 
 
 

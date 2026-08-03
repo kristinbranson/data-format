@@ -213,28 +213,7 @@ curated_idx = np.flatnonzero(iscell[:, 0] > 0.5)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Use native imaging-frame resolution: ... ~15.5 Hz ... No rebinning in time unless a later validation forces it." (line 229)
-
-**Code** (convert_data.py:18-19, 451):
-```python
-FRAME_RATE_HZ = 15.5078125
-TIME_BIN_MS = 1000.0 / FRAME_RATE_HZ
-...
-"time_bin_size": TIME_BIN_MS,
-```
-
-**What this does:** Neural data is kept at the native imaging frame rate (~15.5 Hz, ~64.5 ms). No rebinning or resampling is performed; the rate constant is stored in metadata.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > `"temporal_alignment_event": "trial start"` (metadata, line 452 in code)
@@ -249,6 +228,27 @@ for trial_idx, (start, stop) in enumerate(trials):
 ```
 
 **What this does:** Neural data is sliced from the same `start:stop` frame range as the behavior, so the first frame of each per-trial neural array corresponds to the trial-start event. No extra offset is applied.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Use native imaging-frame resolution: ... ~15.5 Hz ... No rebinning in time unless a later validation forces it." (line 229)
+
+**Code** (convert_data.py:18-19, 451):
+```python
+FRAME_RATE_HZ = 15.5078125
+TIME_BIN_MS = 1000.0 / FRAME_RATE_HZ
+...
+"time_bin_size": TIME_BIN_MS,
+```
+
+**What this does:** Neural data is kept at the native imaging frame rate (~15.5 Hz, ~64.5 ms). No rebinning or resampling is performed; the rate constant is stored in metadata.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -521,7 +521,32 @@ def discretize_distance_to_zone(position_cm, zone_start, zone_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> Output values: `["lt_-50", "minus50_to_minus10", "minus10_to_lt0", "in_zone", "gt0_to_10", "gt10_to_50", "gt50"]` (line 48 in code)
+
+**Code** (convert_data.py:180-187):
+```python
+bins = np.full(distance.shape, 6, dtype=np.int16)
+bins[distance < -50.0] = 0
+bins[(distance >= -50.0) & (distance < -10.0)] = 1
+bins[(distance >= -10.0) & (distance < 0.0)] = 2
+bins[distance == 0.0] = 3
+bins[(distance > 0.0) & (distance <= 10.0)] = 4
+bins[(distance > 10.0) & (distance <= 50.0)] = 5
+return bins
+```
+
+**What this does:** 7 bins are assigned by hard-coded thresholds at -50, -10, 0 (exact), 10, 50 cm. The `distance == 0.0` case is its own "in_zone" bin, and any value outside the explicit ranges falls to bin 6 (`gt50`).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Use only in-trial frames; exclude teleport." (line 220)
@@ -586,7 +611,30 @@ pos_bin = discretize_absolute_position(pos_trial)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> Output values: `["bin0", "bin1", "bin2", "bin3", "bin4"]` (line 49 in code)
+
+**Code** (convert_data.py:16-17, 190-193):
+```python
+TRACK_START_CM = 0.0
+TRACK_END_CM = 450.0
+...
+clipped = np.clip(position_cm, TRACK_START_CM, np.nextafter(TRACK_END_CM, TRACK_START_CM))
+edges = np.linspace(TRACK_START_CM, TRACK_END_CM, 6)
+return np.digitize(clipped, edges[1:-1], right=False).astype(np.int16)
+```
+
+**What this does:** 5 equal-width bins of 90 cm each spanning 0-450 cm; positions are clipped to within the track before digitizing. Negative pre-sync (-500) values map to bin 0 after clipping.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Use only in-trial frames; exclude teleport." (line 220)

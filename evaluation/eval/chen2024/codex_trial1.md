@@ -260,7 +260,29 @@ if np.any(invalid_trials):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Alignment: go cue onset" (README.md:12); "`acquisition/BehavioralEvents/go_start_times.timestamps` → temporal alignment anchor; Per-trial go cue absolute timestamp; subtract from neural/behavioral timestamps" (CONVERSION_NOTES.md:185)
+
+**Code** (convert_data.py:258, 292, 385):
+```python
+go_times_all = h5["acquisition"]["BehavioralEvents"]["go_start_times"]["timestamps"][:n_behavior_trials].astype(np.float64)
+...
+go_times = go_times_all[selected_trial_idx]
+...
+abs_edges = go_times[:, None] + bin_edges_rel[None, :]
+```
+
+**What this does:** Each trial's bin edges are computed as `go_time[trial] + bin_edges_rel`, so spike-time binning is naturally anchored to per-trial go cue onset.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Window: `[-2.5 s, +1.5 s]`; Bin size: `50 ms`" (README.md:13-14); "non-overlapping 50 ms bins over [-2.5, 1.5) s relative to go cue" (CONVERSION_NOTES.md:227)
@@ -285,28 +307,6 @@ fr = counts / bin_width
 ```
 
 **What this does:** 80 non-overlapping 50 ms bins span `[-2.5, +1.5] s` relative to go cue. Spike counts per bin are computed by `np.searchsorted` between absolute edges, then divided by bin width to get Hz.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Alignment: go cue onset" (README.md:12); "`acquisition/BehavioralEvents/go_start_times.timestamps` → temporal alignment anchor; Per-trial go cue absolute timestamp; subtract from neural/behavioral timestamps" (CONVERSION_NOTES.md:185)
-
-**Code** (convert_data.py:258, 292, 385):
-```python
-go_times_all = h5["acquisition"]["BehavioralEvents"]["go_start_times"]["timestamps"][:n_behavior_trials].astype(np.float64)
-...
-go_times = go_times_all[selected_trial_idx]
-...
-abs_edges = go_times[:, None] + bin_edges_rel[None, :]
-```
-
-**What this does:** Each trial's bin edges are computed as `go_time[trial] + bin_edges_rel`, so spike-time binning is naturally anchored to per-trial go cue onset.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -702,7 +702,7 @@ tongue_discrete[tongue_y_binned > tongue_p60] = 2
 
 ---
 
-## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## Q 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Align absolute timestamps to go cue" (CONVERSION_NOTES.md:191)

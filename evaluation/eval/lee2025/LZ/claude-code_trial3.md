@@ -216,29 +216,7 @@ n_active = active_mask.sum()
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Time bin size = 1/30 s ≈ 33.33 ms (raw frame rate)" (line 190)
-
-**Code** (convert_data.py:268-270, 358):
-```python
-fps = 30  # recording frame rate
-trial_duration_sec = 60  # 1 minute trials
-trial_duration_frames = fps * trial_duration_sec  # 1800 frames
-...
-'time_bin_size': 1000.0 / fps,  # ~33.33 ms
-```
-
-**What this does:** The neural trace is kept at the native 30 Hz frame rate (≈33.33 ms bins); no resampling or temporal binning is applied.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / convert_data.py metadata):
 > "temporal_alignment_event: 'Start of 1-minute trial segment within recording session'" (convert_data.py:359)
@@ -257,6 +235,28 @@ for trial_idx in range(n_trials):
 ```
 
 **What this does:** There is no stimulus event; trials are aligned to the start of each contiguous 60-second segment of the continuous recording (frame index 0 of the trial = `trial_idx * 1800`).
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Time bin size = 1/30 s ≈ 33.33 ms (raw frame rate)" (line 190)
+
+**Code** (convert_data.py:268-270, 358):
+```python
+fps = 30  # recording frame rate
+trial_duration_sec = 60  # 1 minute trials
+trial_duration_frames = fps * trial_duration_sec  # 1800 frames
+...
+'time_bin_size': 1000.0 / fps,  # ~33.33 ms
+```
+
+**What this does:** The neural trace is kept at the native 30 Hz frame rate (≈33.33 ms bins); no resampling or temporal binning is applied.
 
 **Rating:** match
 
@@ -373,7 +373,7 @@ trial_output = bin_ids[start:end].reshape(1, -1).astype(np.int64)
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "All streams synchronous at 30 Hz" (line 128)

@@ -248,7 +248,33 @@ if len(good_indices_units) == 0:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "temporal_alignment_event: Go cue onset" (convert_data.py:769); "Spike times already aligned to go cue in source data... In NWB: spike times in absolute time, need to subtract go_start_time per trial" (CONVERSION_NOTES.md:117-118).
+
+**Code** (convert_data.py:373-376, 498-505):
+```python
+be = nwb.acquisition['BehavioralEvents']
+go_times = be.time_series['go_start_times'].timestamps[:]
+assert len(go_times) == n_trials, f"Go times ({len(go_times)}) != trials ({n_trials})"
+...
+for trial_idx in valid_indices:
+    go_time = go_times[trial_idx]
+    fr = compute_firing_rates_vectorized(
+        spike_times_good, go_time, T_START, T_END, BIN_WIDTH, N_BINS
+    )
+```
+
+**What this does:** Per trial, `go_time` is read from `go_start_times` and used as t=0; firing rates are binned over absolute spike times within `[go_time + T_START, go_time + T_END]`.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Bin size: 50ms (80 time bins per trial)" (README.md:50); "Time window: [-2.5, +1.5]s relative to go cue" (README.md:49).
@@ -269,32 +295,6 @@ fr /= bin_width
 ```
 
 **What this does:** Non-overlapping 50ms bins over [-2.5, +1.5]s relative to go cue (80 bins); spike counts per bin are divided by bin width to give Hz.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "temporal_alignment_event: Go cue onset" (convert_data.py:769); "Spike times already aligned to go cue in source data... In NWB: spike times in absolute time, need to subtract go_start_time per trial" (CONVERSION_NOTES.md:117-118).
-
-**Code** (convert_data.py:373-376, 498-505):
-```python
-be = nwb.acquisition['BehavioralEvents']
-go_times = be.time_series['go_start_times'].timestamps[:]
-assert len(go_times) == n_trials, f"Go times ({len(go_times)}) != trials ({n_trials})"
-...
-for trial_idx in valid_indices:
-    go_time = go_times[trial_idx]
-    fr = compute_firing_rates_vectorized(
-        spike_times_good, go_time, T_START, T_END, BIN_WIDTH, N_BINS
-    )
-```
-
-**What this does:** Per trial, `go_time` is read from `go_start_times` and used as t=0; firing rates are binned over absolute spike times within `[go_time + T_START, go_time + T_END]`.
 
 **Rating:** match
 
@@ -687,7 +687,7 @@ for b in range(N_BINS):
 
 ---
 
-## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## Q 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"

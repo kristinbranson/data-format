@@ -240,7 +240,31 @@ def load_neural_events(f: h5py.File) -> Tuple[np.ndarray, np.ndarray]:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:259, 778: "Alignment event = trial start ... `off_start = 0.0` and variable trial lengths (`off_end = None`)."
+
+**Code** (convert_data.py:547-549, 778-780):
+```python
+for spec in preview.trial_specs:
+    starts, ends, centers = build_bin_centers(spec.start_time, spec.stop_time, bin_size_sec)
+    frame_starts = np.searchsorted(ophys_timestamps, starts, side="left")
+...
+"temporal_alignment_event": "trial start",
+"off_start": 0.0,
+"off_end": None,
+```
+
+**What this does:** Each trial's neural data spans `[trial start_time, trial stop_time)` from the NWB trials table; the bin grid begins at `start_time` and `np.searchsorted` maps bin edges to ophys frame indices. Trial length is variable; metadata declares the alignment event as `"trial start"`.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:258: "Tentative common bin size = 100 ms: This is coarse enough to avoid pathological upsampling of 11 Hz recordings, still resolves 250 ms stimulus flashes, and remains compatible with 30 Hz behavior/eye streams."
@@ -268,30 +292,6 @@ neural_trial[:, b] = event_data[lo:hi].sum(axis=0, dtype=np.float32)
 **Rating:** concerning
 
 **Note:** 100 ms time bin is a bad choice
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:259, 778: "Alignment event = trial start ... `off_start = 0.0` and variable trial lengths (`off_end = None`)."
-
-**Code** (convert_data.py:547-549, 778-780):
-```python
-for spec in preview.trial_specs:
-    starts, ends, centers = build_bin_centers(spec.start_time, spec.stop_time, bin_size_sec)
-    frame_starts = np.searchsorted(ophys_timestamps, starts, side="left")
-...
-"temporal_alignment_event": "trial start",
-"off_start": 0.0,
-"off_end": None,
-```
-
-**What this does:** Each trial's neural data spans `[trial start_time, trial stop_time)` from the NWB trials table; the bin grid begins at `start_time` and `np.searchsorted` maps bin edges to ophys frame indices. Trial length is variable; metadata declares the alignment event as `"trial start"`.
-
-**Rating:** match
-
-**Note:** _(no note)_
 
 ---
 
@@ -449,7 +449,7 @@ for idx in row_idx:
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none specific; covered by 5-c general alignment language)
@@ -535,7 +535,7 @@ running_bins = discretize_with_edges(running_interp, running_edges)
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:216: "Align converted outputs to ophys timestamps by resampling/interpolating from their native synchronized time bases."
@@ -626,7 +626,7 @@ pupil_edges = compute_bin_edges(pupil_pool, 5)
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:216: "Align converted outputs to ophys timestamps by resampling/interpolating from their native synchronized time bases."

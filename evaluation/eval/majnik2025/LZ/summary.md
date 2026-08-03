@@ -6,6 +6,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -20,6 +21,7 @@
 ---
 
 ## Q 1-b. How are the data split into subjects?
+
 
 
 
@@ -40,6 +42,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -54,6 +57,7 @@
 ---
 
 ## Q 1-d. Are the data correctly split into trials?
+
 
 
 
@@ -74,6 +78,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -88,6 +93,7 @@
 ---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
 
 
 
@@ -108,6 +114,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | re-implementation instead of using suite2p |
@@ -125,6 +132,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -138,7 +146,26 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+
+
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
 
 
 
@@ -155,24 +182,8 @@
 
 ---
 
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-
 ## Q 3-a. What variables in the raw data is `input` *Time* derived from?
+
 
 
 
@@ -193,6 +204,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -207,6 +219,7 @@
 ---
 
 ## Q 3-c. How is `input` *Time* aligned with the neural data?
+
 
 
 
@@ -227,6 +240,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -244,6 +258,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | missing normalization |
@@ -257,7 +272,8 @@
 
 ---
 
-## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+## Q 4-d. How is `output` *Motion energy* aligned with the neural data?
+
 
 
 
@@ -278,6 +294,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -292,6 +309,7 @@
 ---
 
 ## Q 6-a. What are the most time-consuming steps of the code?
+
 
 
 
@@ -312,6 +330,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -326,6 +345,7 @@
 ---
 
 ## Q 6-c. What processing does the code repeat multiple times?
+
 
 
 
@@ -346,6 +366,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -358,7 +379,9 @@
 **Overall comment:** _(no overall comment)_
 
 ---
+
 ## Q 6-e. How is memory usage optimized?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -372,4 +395,3 @@
 **Overall comment:** memory not really an issue here
 
 ---
-

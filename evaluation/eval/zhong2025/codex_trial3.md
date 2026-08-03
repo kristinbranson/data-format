@@ -238,27 +238,7 @@ keep_mask = mhv_mask | ahv_mask
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Neural data stay on the native imaging frame bins (median `314.69 ms`), which is consistent with the reference frame-based deconvolved traces." (CONVERSION_NOTES.md:326)
->
-> README.md:11: "Time bin size: median native imaging frame interval, `314.69 ms`."
-
-**Code** (convert_data.py:457):
-```python
-"time_bin_size": float(np.median([np.median(np.diff(np.asarray(load_beh(s.canonical_exp_type)[s.canonical_beh_key]['ft'], dtype=float))) * 86400.0 for s in sessions]) * 1000.0),
-```
-
-**What this does:** No explicit re-binning; neural data stays on the native imaging-frame grid. The metadata reports the median frame interval (`ft` diff in seconds * 1000) as the time bin size.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Exported trials are aligned to corridor entry (`Trial_start_time`), while cue timing is computed from raw `SoundTime` and frame timestamps `ft`." (CONVERSION_NOTES.md:325)
@@ -277,6 +257,26 @@ for trial in range(int(beh["ntrials"])):
 ```
 
 **What this does:** Per-trial neural slices are the running-corridor frames whose `ft_trInd == trial_idx`; alignment event is corridor entry (trial start) with `off_start=0`. Cue time is encoded as the `time_to_sound_cue` input rather than as a re-alignment of the neural slice.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Neural data stay on the native imaging frame bins (median `314.69 ms`), which is consistent with the reference frame-based deconvolved traces." (CONVERSION_NOTES.md:326)
+>
+> README.md:11: "Time bin size: median native imaging frame interval, `314.69 ms`."
+
+**Code** (convert_data.py:457):
+```python
+"time_bin_size": float(np.median([np.median(np.diff(np.asarray(load_beh(s.canonical_exp_type)[s.canonical_beh_key]['ft'], dtype=float))) * 86400.0 for s in sessions]) * 1000.0),
+```
+
+**What this does:** No explicit re-binning; neural data stays on the native imaging-frame grid. The metadata reports the median frame interval (`ft` diff in seconds * 1000) as the time bin size.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -709,7 +709,7 @@ pos_bin = np.clip((pos // 10.0).astype(np.int16), 0, 3)
 
 ---
 
-## Q 9-c. How is `output` *position* aligned with the neural data?
+## Q 9-d. How is `output` *position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none)"
@@ -775,7 +775,7 @@ def speed_to_bin(values, edges):
 
 ---
 
-## Q 10-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-d. How is `output` *running_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "(none)"

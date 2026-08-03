@@ -202,32 +202,7 @@ n_valid = valid_mask.sum()
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:109, 178):
-> Decoder temporal bin: 3 frames (100ms) - From code: temporal_bin_size=3. Time bin size: 100ms (3 frames at 30Hz) = 0.1s → for metadata.
-
-**Code** (convert_data.py:31-39, 77-84):
-```python
-FPS = 30
-TEMPORAL_BIN_SIZE = 3  # frames per time bin (from reference fit_decoder)
-TIME_BIN_MS = (TEMPORAL_BIN_SIZE / FPS) * 1000  # 100 ms
-...
-smoothed = gaussian_filter1d(trace_2d.astype(np.float64), sigma=sigma, axis=1)
-n_bins = n_frames // bin_size
-trimmed = smoothed[:, :n_bins * bin_size]
-binned = trimmed.reshape(n_cells, n_bins, bin_size).mean(axis=2)
-```
-
-**What this does:** The raw 30 Hz trace is gaussian-smoothed (sigma=3 frames) then downsampled by a factor of 3 via mean pooling, yielding 100 ms bins.
-
-**Rating:** ok
-
-**Note:** agent downsamples to 10 Hz while manual keeps 30 Hz
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md:179, convert_data.py metadata):
 > Temporal alignment: Trials start at beginning of session recording. Align to session start.
@@ -250,6 +225,31 @@ for t in range(n_trials):
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:109, 178):
+> Decoder temporal bin: 3 frames (100ms) - From code: temporal_bin_size=3. Time bin size: 100ms (3 frames at 30Hz) = 0.1s → for metadata.
+
+**Code** (convert_data.py:31-39, 77-84):
+```python
+FPS = 30
+TEMPORAL_BIN_SIZE = 3  # frames per time bin (from reference fit_decoder)
+TIME_BIN_MS = (TEMPORAL_BIN_SIZE / FPS) * 1000  # 100 ms
+...
+smoothed = gaussian_filter1d(trace_2d.astype(np.float64), sigma=sigma, axis=1)
+n_bins = n_frames // bin_size
+trimmed = smoothed[:, :n_bins * bin_size]
+binned = trimmed.reshape(n_cells, n_bins, bin_size).mean(axis=2)
+```
+
+**What this does:** The raw 30 Hz trace is gaussian-smoothed (sigma=3 frames) then downsampled by a factor of 3 via mean pooling, yielding 100 ms bins.
+
+**Rating:** ok
+
+**Note:** agent downsamples to 10 Hz while manual keeps 30 Hz
 
 ---
 
@@ -359,7 +359,7 @@ pos_bins = discretize_position(binned_pos)
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:166-168):
 > Both trace and position are temporally binned by 3 frames; trials extracted using same bin indices.

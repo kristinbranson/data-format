@@ -228,29 +228,7 @@ final_cell_mask = cell_mask_concat & ~interneuron_mask
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Imaging rate | ~15.5 Hz (~64.5 ms/frame)" (CONVERSION_NOTES.md:81); "Time bin | 64.48 ms" (CONVERSION_NOTES.md:181)
-
-**Code** (convert_data.py:25, 386, 626):
-```python
-IMAGING_RATE_NOMINAL = 15.5078125  # Hz
-...
-frame_time = 1.0 / imaging_rate  # seconds per frame
-...
-time_bin_ms = 1000.0 / IMAGING_RATE_NOMINAL
-```
-
-**What this does:** Neural data is kept at the native imaging frame rate; no resampling. Frame period derived from per-session `imaging_rate`; reported `time_bin_size` in metadata uses the nominal 15.5078125 Hz.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "temporal_alignment_event: 'start of trial (entry to linear track)'" (convert_data.py:670)
@@ -268,6 +246,28 @@ for t in range(n_trials):
 ```
 
 **What this does:** Per-trial neural slice spans from the `trial_start` index to the `teleport` index, naturally aligning to trial start (no extra offset).
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Imaging rate | ~15.5 Hz (~64.5 ms/frame)" (CONVERSION_NOTES.md:81); "Time bin | 64.48 ms" (CONVERSION_NOTES.md:181)
+
+**Code** (convert_data.py:25, 386, 626):
+```python
+IMAGING_RATE_NOMINAL = 15.5078125  # Hz
+...
+frame_time = 1.0 / imaging_rate  # seconds per frame
+...
+time_bin_ms = 1000.0 / IMAGING_RATE_NOMINAL
+```
+
+**What this does:** Neural data is kept at the native imaging frame rate; no resampling. Frame period derived from per-session `imaging_rate`; reported `time_bin_size` in metadata uses the nominal 15.5078125 Hz.
 
 **Rating:** match
 
@@ -558,7 +558,34 @@ def compute_distance_to_reward_zone(position, rz_start, rz_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "distance_to_reward_zone | 7 bins, range [0,6], well-distributed" (CONVERSION_NOTES.md:196)
+
+**Code** (convert_data.py:151-169):
+```python
+def discretize_distance(distance):
+    bins = np.zeros(len(distance), dtype=np.int64)
+    bins[distance < -50] = 0
+    bins[(distance >= -50) & (distance < -10)] = 1
+    bins[(distance >= -10) & (distance < 0)] = 2
+    bins[distance == 0] = 3
+    bins[(distance > 0) & (distance <= 10)] = 4
+    bins[(distance > 10) & (distance <= 50)] = 5
+    bins[distance > 50] = 6
+    return bins
+```
+
+**What this does:** Manual masking into 7 bins matching the spec edges (-inf,-50,-10,0, exact 0, 10, 50, inf). The "in zone" bin is `distance == 0`.
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none explicit)
@@ -622,7 +649,28 @@ pos_bins = discretize_position(trial_pos)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "absolute_position | 5 bins, roughly equal (~15-23% each)" (CONVERSION_NOTES.md:197); "0-90cm', '90-180cm', ..." (convert_data.py:658)
+
+**Code** (convert_data.py:172-175):
+```python
+def discretize_position(position):
+    """Discretize absolute position into 5 equal bins (0-90, 90-180, 180-270, 270-360, 360-450)."""
+    bins = np.clip(np.floor(position / 90.0).astype(np.int64), 0, 4)
+    return bins
+```
+
+**What this does:** Floor-divides position by 90 cm and clips to [0,4], yielding 5 equal-width bins covering 0–450 cm.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none explicit)

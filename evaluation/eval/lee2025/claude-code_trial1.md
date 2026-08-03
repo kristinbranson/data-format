@@ -226,29 +226,7 @@ trace_registered = trace[registered_mask]  # (n_registered, n_frames)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:147 — "Time bin: 30Hz native sampling (33.33ms)"
-
-**Code** (convert_data.py:31-33, 320-321):
-```python
-FPS = 30  # Recording frame rate (Hz)
-TRIAL_DURATION_S = 60  # 1-minute trials
-FRAMES_PER_TRIAL = FPS * TRIAL_DURATION_S  # 1800 frames
-...
-'time_bin_size': 1000.0 / FPS,  # ~33.33 ms
-```
-
-**What this does:** No resampling. The neural trace is kept at native 30 Hz; the metadata reports `time_bin_size = 33.33 ms`.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:144 — "Trial definition: 1-minute segments (1800 frames at 30Hz)"
@@ -269,6 +247,28 @@ for start in trial_starts:
 ```
 
 **What this does:** There is no external event to align to; trials are defined as fixed 1-minute slices of the continuous recording. Metadata declares the alignment event as the start of each trial segment, with `off_start=0.0` and `off_end=60.0` seconds.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:147 — "Time bin: 30Hz native sampling (33.33ms)"
+
+**Code** (convert_data.py:31-33, 320-321):
+```python
+FPS = 30  # Recording frame rate (Hz)
+TRIAL_DURATION_S = 60  # 1-minute trials
+FRAMES_PER_TRIAL = FPS * TRIAL_DURATION_S  # 1800 frames
+...
+'time_bin_size': 1000.0 / FPS,  # ~33.33 ms
+```
+
+**What this does:** No resampling. The neural trace is kept at native 30 Hz; the metadata reports `time_bin_size = 33.33 ms`.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -384,7 +384,7 @@ output_trial = pos_bins[start:end].astype(np.int64).reshape(1, -1)
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:60-61 — both `trace` and `position` share the `n_frames` dimension per day

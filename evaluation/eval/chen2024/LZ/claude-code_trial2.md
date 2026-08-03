@@ -256,33 +256,7 @@ good_unit_indices = good_unit_indices[valid_neuron_mask]
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Spike binning: 50ms non-overlapping bins (per task spec), NOT 40ms/3.4ms stride from reference." (CONVERSION_NOTES.md:203)
-
-**Code** (convert_data.py:27-30, 191-197):
-```python
-BIN_SIZE_S = 0.05  # 50 ms bins
-T_START = -2.5     # seconds before go cue
-T_END = 1.5        # seconds after go cue
-N_TIMEBINS = int((T_END - T_START) / BIN_SIZE_S)  # 80
-...
-bin_indices = ((spikes_in_window - abs_start) / bin_size).astype(int)
-bin_indices = np.clip(bin_indices, 0, n_bins - 1)
-np.add.at(fr[i], bin_indices, 1.0)
-fr /= bin_size
-```
-
-**What this does:** Non-overlapping 50 ms bins from -2.5 s to +1.5 s relative to go cue → 80 bins. Counts converted to rates by dividing by bin width.
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "temporal_alignment_event: 'Go cue onset'" (convert_data.py:689); "Spike times are ABSOLUTE (not aligned to go cue)" (CONVERSION_NOTES.md:69)
@@ -302,6 +276,32 @@ for ti in trial_indices:
 ```
 
 **What this does:** Absolute spike times are filtered into the window [go_cue + T_START, go_cue + T_END), with bin index 0 corresponding to go_cue + T_START. Alignment event is the per-trial `go_start_times` value.
+
+**Rating:** match
+
+**Note:** _(no note)_---
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Spike binning: 50ms non-overlapping bins (per task spec), NOT 40ms/3.4ms stride from reference." (CONVERSION_NOTES.md:203)
+
+**Code** (convert_data.py:27-30, 191-197):
+```python
+BIN_SIZE_S = 0.05  # 50 ms bins
+T_START = -2.5     # seconds before go cue
+T_END = 1.5        # seconds after go cue
+N_TIMEBINS = int((T_END - T_START) / BIN_SIZE_S)  # 80
+...
+bin_indices = ((spikes_in_window - abs_start) / bin_size).astype(int)
+bin_indices = np.clip(bin_indices, 0, n_bins - 1)
+np.add.at(fr[i], bin_indices, 1.0)
+fr /= bin_size
+```
+
+**What this does:** Non-overlapping 50 ms bins from -2.5 s to +1.5 s relative to go cue → 80 bins. Counts converted to rates by dividing by bin width.
 
 **Rating:** match
 
@@ -660,7 +660,7 @@ tongue_y_disc[valid & (tongue_y_raw > p60)] = 2
 
 ---
 
-## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## Q 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > Tongue is "Time-varying" output (CONVERSION_NOTES.md:179)

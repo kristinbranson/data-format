@@ -197,29 +197,7 @@ def bin_array_mean(x: np.ndarray, bin_frames: int) -> np.ndarray:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Average non-overlapping 10-frame windows for neural and behavior streams before segmentation, matching the paper's decoder denoising (`10 consecutive timestamps`). This yields `333.33 ms` bins." [line 194]
-
-**Code** (convert_data.py:17-20, 158-162, 206):
-```python
-RAW_FS_HZ = 30.0
-BIN_FRAMES = 10
-TIME_BIN_SIZE_MS = 1000.0 * BIN_FRAMES / RAW_FS_HZ  # 333.33 ms
-# ...
-neural_binned = bin_array_mean(neural_processed, BIN_FRAMES)
-```
-
-**What this does:** The 30 Hz processed neural trace is averaged in non-overlapping 10-frame windows, producing one sample every 333.33 ms (3 Hz). `time_bin_size` is recorded in metadata as `333.33`.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Each pseudo-trial keeps its absolute position within the original recording" [line 197]
@@ -237,6 +215,28 @@ for trial_idx in range(n_trials):
 ```
 
 **What this does:** Each pseudo-trial begins at the start of its 2-minute block; alignment is to the start of the block. `off_start=0.0`, `off_end=120.0` are recorded in metadata.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Average non-overlapping 10-frame windows for neural and behavior streams before segmentation, matching the paper's decoder denoising (`10 consecutive timestamps`). This yields `333.33 ms` bins." [line 194]
+
+**Code** (convert_data.py:17-20, 158-162, 206):
+```python
+RAW_FS_HZ = 30.0
+BIN_FRAMES = 10
+TIME_BIN_SIZE_MS = 1000.0 * BIN_FRAMES / RAW_FS_HZ  # 333.33 ms
+# ...
+neural_binned = bin_array_mean(neural_processed, BIN_FRAMES)
+```
+
+**What this does:** The 30 Hz processed neural trace is averaged in non-overlapping 10-frame windows, producing one sample every 333.33 ms (3 Hz). `time_bin_size` is recorded in metadata as `333.33`.
 
 **Rating:** match
 
@@ -362,7 +362,7 @@ output_trial = np.digitize(motion_norm_binned[start:stop], motion_edges[1:-1], r
 
 ---
 
-## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+## Q 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Treat imaging frames as the master clock and reconstruct missing behavior frames from doubled timing gaps before alignment." [line 167]

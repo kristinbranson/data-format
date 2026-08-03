@@ -197,27 +197,7 @@ if not np.any(present_mask):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:182):
-> Mapping table — no temporal resampling listed. Metadata sets `time_bin_size = 1000.0/FPS` (≈33.33 ms).
-
-**Code** (convert_data.py:16, 275):
-```python
-FPS = 30.0
-...
-"time_bin_size": 1000.0 / FPS,
-```
-
-**What this does:** The native 30 Hz frame rate is preserved; no temporal binning or resampling is applied to `neural`.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (convert_data.py:276-278 metadata):
 > `"temporal_alignment_event": "start of each non-overlapping 1-minute within-session segment"`, `off_start=0.0`, `off_end=60.0`.
@@ -233,6 +213,26 @@ for trial_slice in slices:
 ```
 
 **What this does:** No external event alignment; trials are 1-minute contiguous windows aligned to the start of each segment within a continuous session.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:182):
+> Mapping table — no temporal resampling listed. Metadata sets `time_bin_size = 1000.0/FPS` (≈33.33 ms).
+
+**Code** (convert_data.py:16, 275):
+```python
+FPS = 30.0
+...
+"time_bin_size": 1000.0 / FPS,
+```
+
+**What this does:** The native 30 Hz frame rate is preserved; no temporal binning or resampling is applied to `neural`.
 
 **Rating:** match
 
@@ -336,7 +336,7 @@ def compute_position_bins(position_day, n_bins=POSITION_BINS):
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
 
 **Notes excerpt:** Both `position` and `trace` are at 30 Hz (CONVERSION_NOTES.md:122-123); same trial slices are used for both.
 

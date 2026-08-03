@@ -253,31 +253,7 @@ def select_decoder_neurons(spk, record, region_idx):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Use raw frame timestamps instead of resampling to a new clock: Median imaging frame spacing is very consistent across sessions (~314.7 ms), so keeping native frame bins is more faithful." (CONVERSION_NOTES.md:225)
-
-**Code** (convert_data.py:495, 567-571):
-```python
-    neural_trial = spk[:, frame_idx].astype(np.float32, copy=False)
-...
-        "time_bin_size": float(np.median(frame_dt_medians)),
-        "temporal_alignment_event": "corridor entry / trial start",
-        "off_start": 0.0,
-        "off_end": None,
-        "frame_bin_source": "native imaging frame timestamps; no temporal resampling",
-```
-
-**What this does:** No resampling or rebinning is performed. Each trial's neural matrix is the raw deconvolved spk columns at retained frame indices; the metadata records the median native frame interval as the time bin size.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "temporal_alignment_event: corridor entry / trial start" (convert_data.py:568); "Align trials using frame-level `ft_trInd` rather than `StartFr`/`EndFr`" (CONVERSION_NOTES.md:220)
@@ -297,6 +273,30 @@ def session_trial_info(record, trial, frame_idx):
 ```
 
 **What this does:** Trials are segmented by `ft_trInd`. The `time_since_trial_start_s` input encodes alignment to the trial-start event (`Trial_start_time`); `off_start=0.0, off_end=None` is recorded in metadata.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Use raw frame timestamps instead of resampling to a new clock: Median imaging frame spacing is very consistent across sessions (~314.7 ms), so keeping native frame bins is more faithful." (CONVERSION_NOTES.md:225)
+
+**Code** (convert_data.py:495, 567-571):
+```python
+    neural_trial = spk[:, frame_idx].astype(np.float32, copy=False)
+...
+        "time_bin_size": float(np.median(frame_dt_medians)),
+        "temporal_alignment_event": "corridor entry / trial start",
+        "off_start": 0.0,
+        "off_end": None,
+        "frame_bin_source": "native imaging frame timestamps; no temporal resampling",
+```
+
+**What this does:** No resampling or rebinning is performed. Each trial's neural matrix is the raw deconvolved spk columns at retained frame indices; the metadata records the median native frame interval as the time bin size.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -737,7 +737,7 @@ def digitize_position(pos_decimeters: np.ndarray) -> np.ndarray:
 
 ---
 
-## Q 9-c. How is `output` *position* aligned with the neural data?
+## Q 9-d. How is `output` *position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Time-varying categorical output with values `0-1m`, `1-2m`, `2-3m`, `3-4m`." (CONVERSION_NOTES.md:211)
@@ -805,7 +805,7 @@ def digitize_speed(speed: np.ndarray, edges: np.ndarray) -> np.ndarray:
 
 ---
 
-## Q 10-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-d. How is `output` *running_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Time-varying categorical output" (CONVERSION_NOTES.md:212)

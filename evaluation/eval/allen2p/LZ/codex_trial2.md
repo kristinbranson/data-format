@@ -233,7 +233,32 @@ if load_events:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:562: metadata key `temporal_alignment_event: "trial start"`, `off_start: 0.0`, `off_end: None`
+
+**Code** (convert_data.py:606-613):
+```python
+for trial_idx in np.flatnonzero(raw["keep_mask"]):
+    start = float(raw["trials"]["start_time"][trial_idx])
+    stop = float(raw["trials"]["stop_time"][trial_idx])
+    grid = session_grid(start, stop)
+
+    neural_trial = interpolate_matrix(
+        raw["ophys_timestamps"], raw["events"], grid
+    ).T.astype(np.float32)
+```
+
+**What this does:** Each trial's grid begins at the trial's `start_time` (from `intervals/trials`) and ends at `stop_time`. Neural samples are aligned to trial start (offset 0) by interpolating onto this grid. Trial length is variable.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:210: "30 Hz is the most defensible common grid"
@@ -255,31 +280,6 @@ neural_trial = interpolate_matrix(raw["ophys_timestamps"], raw["events"], grid).
 **What this does:** A fixed 30 Hz bin size (`1/30 s`, written as `33.333...` ms in metadata) is used for all sessions. Each trial's grid is built from `start_time` to `stop_time` in 30 Hz steps; events are linearly interpolated onto that grid.
 
 **Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:562: metadata key `temporal_alignment_event: "trial start"`, `off_start: 0.0`, `off_end: None`
-
-**Code** (convert_data.py:606-613):
-```python
-for trial_idx in np.flatnonzero(raw["keep_mask"]):
-    start = float(raw["trials"]["start_time"][trial_idx])
-    stop = float(raw["trials"]["stop_time"][trial_idx])
-    grid = session_grid(start, stop)
-
-    neural_trial = interpolate_matrix(
-        raw["ophys_timestamps"], raw["events"], grid
-    ).T.astype(np.float32)
-```
-
-**What this does:** Each trial's grid begins at the trial's `start_time` (from `intervals/trials`) and ends at `stop_time`. Neural samples are aligned to trial start (offset 0) by interpolating onto this grid. Trial length is variable.
-
-**Rating:** match
 
 **Note:** _(no note)_
 
@@ -420,7 +420,7 @@ image_change = stimulus_change_codes(raw["stimulus"], grid)
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -497,7 +497,7 @@ running_bins = digitize_with_edges(running_cont, running_edges)
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:210: "all trial streams are aligned in absolute experiment time and resampled to a common 30 Hz grid from raw trial start_time / stop_time"
@@ -579,7 +579,7 @@ pupil_bins = digitize_with_edges(pupil_cont, pupil_edges)
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:281: "No visual sign of cross-stream temporal misalignment in the reviewed plots."

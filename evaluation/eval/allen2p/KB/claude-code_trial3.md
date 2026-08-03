@@ -253,32 +253,7 @@ if n_valid == 0:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:210 "Resample to 30 Hz: Paper interpolates to 30 Hz. Needed for consistent time bins across Scientifica (31 Hz) and Multiscope (11 Hz). time_bin_size = 33.33 ms."
-
-**Code** (convert_data.py:30-31, 313-320):
-```python
-TARGET_RATE_HZ = 30.0  # Paper: "linearly interpolating onto a consistent set of 30hz timestamps"
-TIME_BIN_MS = 1000.0 / TARGET_RATE_HZ  # ~33.33 ms
-...
-t_start = ophys_ts[0]
-t_end = ophys_ts[-1]
-dt = 1.0 / target_rate
-regular_ts = np.arange(t_start, t_end, dt)
-events_resampled = interpolate_to_regular_grid(ophys_ts, events, regular_ts)
-```
-
-**What this does:** Neural events are resampled (linear interpolation) to a fixed 30 Hz regular grid (~33.33 ms bin). All other streams (running, pupil) are interpolated onto the same grid, so neural and behavior share timestamps.
-
-**Rating:** ok
-
-**Note:** agent uses 30 hz, manual uses native 11 hz for dff data. agent is using events, and 30 hz is the rate of some of the behavior data, so that seems ok
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:212 "Alignment event: Trial start time (stimulus onset). off_start=0, off_end=None (variable)."
@@ -303,6 +278,31 @@ for trial_idx in valid_indices:
 **Rating:** ok
 
 **Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:210 "Resample to 30 Hz: Paper interpolates to 30 Hz. Needed for consistent time bins across Scientifica (31 Hz) and Multiscope (11 Hz). time_bin_size = 33.33 ms."
+
+**Code** (convert_data.py:30-31, 313-320):
+```python
+TARGET_RATE_HZ = 30.0  # Paper: "linearly interpolating onto a consistent set of 30hz timestamps"
+TIME_BIN_MS = 1000.0 / TARGET_RATE_HZ  # ~33.33 ms
+...
+t_start = ophys_ts[0]
+t_end = ophys_ts[-1]
+dt = 1.0 / target_rate
+regular_ts = np.arange(t_start, t_end, dt)
+events_resampled = interpolate_to_regular_grid(ophys_ts, events, regular_ts)
+```
+
+**What this does:** Neural events are resampled (linear interpolation) to a fixed 30 Hz regular grid (~33.33 ms bin). All other streams (running, pupil) are interpolated onto the same grid, so neural and behavior share timestamps.
+
+**Rating:** ok
+
+**Note:** agent uses 30 hz, manual uses native 11 hz for dff data. agent is using events, and 30 hz is the rate of some of the behavior data, so that seems ok
 
 ---
 
@@ -459,7 +459,7 @@ img_change = trial_data_out['image_change'].astype(np.int64)
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -540,7 +540,7 @@ running_binned = digitize_to_bins(trial_data_out['running_speed'], running_bin_e
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)
@@ -632,7 +632,7 @@ pupil_binned = digitize_to_bins(trial_data_out['pupil_area'], pupil_bin_edges)
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none)

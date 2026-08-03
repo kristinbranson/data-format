@@ -253,33 +253,7 @@ def bin_spikes_to_firing_rates(
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Use `50 ms` bins because the decoder task explicitly requires this... Window: `-2.5 s` to `+1.5 s`" (CONVERSION_NOTES.md:232; README.md:32)
-
-**Code** (convert_data.py:18-24, 405-407):
-```python
-BIN_SIZE_S = 0.05
-REL_START_S = -2.5
-REL_END_S = 1.5
-TONE_ONSET_REL_GO_S = -1.85
-N_BINS = int(round((REL_END_S - REL_START_S) / BIN_SIZE_S))
-REL_EDGES = np.linspace(REL_START_S, REL_END_S, N_BINS + 1, dtype=np.float64)
-REL_CENTERS = (REL_EDGES[:-1] + REL_EDGES[1:]) / 2.0
-...
-        trial_edges_abs = go_times[:, None] + REL_EDGES[None, :]
-```
-
-**What this does:** Fixed `50 ms` non-overlapping bins span `[-2.5, +1.5) s` relative to go cue (`N_BINS=80`). Edges are constructed once at module level and broadcast against per-trial go times.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Temporal alignment: go cue onset" (README.md:29)
@@ -298,6 +272,32 @@ REL_CENTERS = (REL_EDGES[:-1] + REL_EDGES[1:]) / 2.0
 ```
 
 **What this does:** Per-trial absolute bin edges = `go_time + REL_EDGES`, so each trial's neural matrix is centered at the per-trial go cue onset.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Use `50 ms` bins because the decoder task explicitly requires this... Window: `-2.5 s` to `+1.5 s`" (CONVERSION_NOTES.md:232; README.md:32)
+
+**Code** (convert_data.py:18-24, 405-407):
+```python
+BIN_SIZE_S = 0.05
+REL_START_S = -2.5
+REL_END_S = 1.5
+TONE_ONSET_REL_GO_S = -1.85
+N_BINS = int(round((REL_END_S - REL_START_S) / BIN_SIZE_S))
+REL_EDGES = np.linspace(REL_START_S, REL_END_S, N_BINS + 1, dtype=np.float64)
+REL_CENTERS = (REL_EDGES[:-1] + REL_EDGES[1:]) / 2.0
+...
+        trial_edges_abs = go_times[:, None] + REL_EDGES[None, :]
+```
+
+**What this does:** Fixed `50 ms` non-overlapping bins span `[-2.5, +1.5) s` relative to go cue (`N_BINS=80`). Edges are constructed once at module level and broadcast against per-trial go times.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -689,7 +689,7 @@ def clean_tongue_tracking(x, y, likelihood):
 
 ---
 
-## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## Q 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Time-varying output over 80 bins" (CONVERSION_NOTES.md:215)

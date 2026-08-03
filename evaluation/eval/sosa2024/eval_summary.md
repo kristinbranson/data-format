@@ -110,7 +110,20 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | match | — |  |
+| codex / trial1 | match | match | match | match | — |  |
+| codex / trial2 | match | match | match | match | — |  |
+| codex / trial3 | match | match | match | match | — |  |
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -122,19 +135,6 @@
 | codex / trial3 | match | match | match | better | — |  |
 
 **Overall comment:** Both judges caught the mistake.
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | match | — |  |
-| claude-code / trial2 | match | match | match | match | — |  |
-| claude-code / trial3 | match | match | match | match | — |  |
-| codex / trial1 | match | match | match | match | — |  |
-| codex / trial2 | match | match | match | match | — |  |
-| codex / trial3 | match | match | match | match | — |  |
 
 ---
 
@@ -285,7 +285,20 @@
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | ok | ok | — | — | LZ |  |
+| claude-code / trial2 | ok | ok | — | — | LZ |  |
+| claude-code / trial3 | ok | ok | — | — | LZ |  |
+| codex / trial1 | ok | ok | — | — | LZ |  |
+| codex / trial2 | ok | ok | — | — | LZ |  |
+| codex / trial3 | ok | ok | — | — | LZ |  |
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -324,7 +337,20 @@
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | — | — | LZ |  |
+| claude-code / trial2 | match | ok | — | — | LZ |  |
+| claude-code / trial3 | match | ok | — | — | LZ |  |
+| codex / trial1 | match | ok | — | — | LZ |  |
+| codex / trial2 | match | ok | — | — | LZ |  |
+| codex / trial3 | match | ok | — | — | LZ |  |
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -490,3 +516,16 @@
 | codex / trial1 | match | ok | ok | match | — |  |
 | codex / trial2 | match | ok | match | ok | — |  |
 | codex / trial3 | match | ok | match | match | — |  |
+
+---
+
+## Q 13-e. How is memory usage optimized?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | — | — | — | LZ |  |
+| claude-code / trial2 | match | — | — | — | LZ |  |
+| claude-code / trial3 | match | — | — | — | LZ |  |
+| codex / trial1 | match | — | — | — | LZ |  |
+| codex / trial2 | match | — | — | — | LZ |  |
+| codex / trial3 | match | — | — | — | LZ |  |

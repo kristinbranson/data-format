@@ -234,7 +234,34 @@ if n_neurons < params['min_units']:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> CONVERSION_NOTES.md:128: "Temporal alignment: Align to goCue onset"
+
+**Code** (convert_data.py:451-468):
+```python
+align_times = ev[params['align_event']]
+edges = np.arange(params['tmin'], params['tmax'] + params['dt'], params['dt'])
+time_axis = edges[:-1] + params['dt'] / 2
+...
+for t_idx, trial_num in enumerate(valid_trials):
+    spk_mask = spike_trial == trial_num
+    if not np.any(spk_mask):
+        continue
+    spk_times = spike_tm[spk_mask] - align_times[trial_num - 1]
+    counts, _ = np.histogram(spk_times, bins=edges)
+```
+
+**What this does:** Each trial's spikes are subtracted by that trial's `obj.bp.ev.goCue` time, then histogrammed in the fixed [-2.5, 2.5] s window. All trials therefore share an identical 500-bin time axis centered on go-cue.
+
+**Rating:** match
+
+**Note:** _(no note)_---
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > CONVERSION_NOTES.md:115: "Neural data time bin | 10ms (dt=1/100) | WorkingWithDataObjs.m params"; CONVERSION_NOTES.md:131: "Smoothing: Causal Gaussian kernel, window=15 (via mySmooth)"
@@ -260,33 +287,6 @@ def causal_gaussian_smooth(x, N, bctype='reflect'):
 ```
 
 **What this does:** Bin edges are `np.arange(-2.5, 2.5+dt, dt)` giving 500 10-ms bins; the time axis uses bin centers. Smoothing kernel is a Gaussian with the first half zeroed out (causal), normalized to sum 1, applied via 1D convolution along time with reflect padding.
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> CONVERSION_NOTES.md:128: "Temporal alignment: Align to goCue onset"
-
-**Code** (convert_data.py:451-468):
-```python
-align_times = ev[params['align_event']]
-edges = np.arange(params['tmin'], params['tmax'] + params['dt'], params['dt'])
-time_axis = edges[:-1] + params['dt'] / 2
-...
-for t_idx, trial_num in enumerate(valid_trials):
-    spk_mask = spike_trial == trial_num
-    if not np.any(spk_mask):
-        continue
-    spk_times = spike_tm[spk_mask] - align_times[trial_num - 1]
-    counts, _ = np.histogram(spk_times, bins=edges)
-```
-
-**What this does:** Each trial's spikes are subtracted by that trial's `obj.bp.ev.goCue` time, then histogrammed in the fixed [-2.5, 2.5] s window. All trials therefore share an identical 500-bin time axis centered on go-cue.
 
 **Rating:** match
 
@@ -562,7 +562,7 @@ disc = (data >= threshold).astype(np.int64)
 
 ---
 
-## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-d. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > CONVERSION_NOTES.md:133: "Video offset: subtract 0.5s from frameTimes (or use findVideoOffset via bitcode)"
@@ -642,7 +642,7 @@ speed[:, trix] = np.sqrt(xvel**2 + yvel**2).astype(np.float32)
 
 ---
 
-## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-d. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > (none)
@@ -722,7 +722,7 @@ for trix in range(ntrials):
 
 ---
 
-## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-d. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > CONVERSION_NOTES.md:134: "Motion energy alignment: Interpolate to neural time axis using interp1, align to goCue"

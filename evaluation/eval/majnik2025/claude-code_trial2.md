@@ -196,7 +196,27 @@ def compute_dff(F, Fneu, device=None):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Temporal alignment: ME is already synced to neural (camera triggered by microscope)" (CONVERSION_NOTES.md:161)
+
+**Code** (convert_data.py:447-449):
+```python
+'temporal_alignment_event': 'Start of recording session',
+'off_start': 0.0,
+'off_end': None,
+```
+
+**What this does:** Each trial is a contiguous 2-minute block beginning at the start of the recording session; alignment metadata is set to `'Start of recording session'` with `off_start=0.0`. There is no event-driven alignment.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Binning: Both dF/F and motion energy averaged in bins of 10 frames" (CONVERSION_NOTES.md:110); "Time bin size: 10 frames / 30 Hz = 333.33 ms" (CONVERSION_NOTES.md:154)
@@ -221,26 +241,6 @@ dff_binned = bin_traces(dff, BIN_SIZE)
 ```
 
 **What this does:** dF/F (and motion energy) are averaged within non-overlapping 10-frame bins via reshape+mean, yielding a time bin size of 10/30 = 333.33 ms. Trailing frames that don't fill a full bin are trimmed.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Temporal alignment: ME is already synced to neural (camera triggered by microscope)" (CONVERSION_NOTES.md:161)
-
-**Code** (convert_data.py:447-449):
-```python
-'temporal_alignment_event': 'Start of recording session',
-'off_start': 0.0,
-'off_end': None,
-```
-
-**What this does:** Each trial is a contiguous 2-minute block beginning at the start of the recording session; alignment metadata is set to `'Start of recording session'` with `off_start=0.0`. There is no event-driven alignment.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -368,7 +368,7 @@ me_disc = discretize_me(me_t, bin_edges)
 
 ---
 
-## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+## Q 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Camera sync: Video at 30Hz triggered by microscope acquisition -> 1:1 frame correspondence; Missing frames: Some sessions have fewer ME frames than neural frames" (CONVERSION_NOTES.md:111-113); "Missing ME frames: Interpolate to match neural frame count using timestamps" (CONVERSION_NOTES.md:159)

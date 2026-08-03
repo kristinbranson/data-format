@@ -215,29 +215,7 @@ plane_idx = plane_idx_all[accepted_idx]
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> Behavior timestamps have spacing about `0.0645 s` (~15.5 Hz). (line 120) ... Use behavior timestamps / shared sample length as the aligned time base (~15.5 Hz effective). (line 234)
-
-**Code** (convert_data.py:454, 476-478):
-```python
-"time_bin_size_ms": float(np.median(np.diff(timestamps)) * 1000.0),
-...
-median_bin_ms = float(
-    np.median([sess["summary"]["time_bin_size_ms"] for sess in processed_sessions])
-)
-```
-
-**What this does:** Neural data is kept at its native frame-aligned rate (no resampling). The time-bin size in metadata is the median of behavior-timestamp diffs across sessions.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > Segment trials from `trial_start` to `teleport`. (line 272) ... `temporal_alignment_event": "trial_start"` (line 519)
@@ -252,6 +230,28 @@ neural_trial = deconv[trial_slice][frame_mask].T.astype(np.float32, copy=False)
 ```
 
 **What this does:** Per-trial neural data is sliced from the trial start frame; `time_from_trial_start_sec` starts at 0 at the trial-start frame. No offset beyond the slice.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> Behavior timestamps have spacing about `0.0645 s` (~15.5 Hz). (line 120) ... Use behavior timestamps / shared sample length as the aligned time base (~15.5 Hz effective). (line 234)
+
+**Code** (convert_data.py:454, 476-478):
+```python
+"time_bin_size_ms": float(np.median(np.diff(timestamps)) * 1000.0),
+...
+median_bin_ms = float(
+    np.median([sess["summary"]["time_bin_size_ms"] for sess in processed_sessions])
+)
+```
+
+**What this does:** Neural data is kept at its native frame-aligned rate (no resampling). The time-bin size in metadata is the median of behavior-timestamp diffs across sessions.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -520,7 +520,36 @@ def signed_distance_to_zone(position_cm, zone_start, zone_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> Bins: `<-50`, `[-50,-10]`, `[-10,0)`, `0`, `(0,10]`, `(10,50]`, `>50` cm. (line 261)
+
+**Code** (convert_data.py:178-189):
+```python
+def discretize_distance(distance_cm):
+    out = np.full(distance_cm.shape, -1, dtype=np.int16)
+    out[distance_cm < -50] = 0
+    out[(distance_cm >= -50) & (distance_cm < -10)] = 1
+    out[(distance_cm >= -10) & (distance_cm < 0)] = 2
+    out[distance_cm == 0] = 3
+    out[(distance_cm > 0) & (distance_cm <= 10)] = 4
+    out[(distance_cm > 10) & (distance_cm <= 50)] = 5
+    out[distance_cm > 50] = 6
+    if np.any(out < 0):
+        raise ValueError("Failed to discretize reward-zone distance.")
+    return out
+```
+
+**What this does:** Hand-coded boolean masks assigning each sample to one of 7 bins (0-6) by signed distance; zero distance gets its own bin (3).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > (none specific; general alignment via shared frame grid)
@@ -585,7 +614,29 @@ def discretize_absolute_position(position_cm):
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> 5 equal bins on `[0,450]`. (line 262)
+
+**Code** (convert_data.py:192-196):
+```python
+def discretize_absolute_position(position_cm):
+    clipped = np.clip(position_cm, 0.0, np.nextafter(450.0, 0.0))
+    bins = np.floor(clipped / 90.0).astype(np.int16)
+    bins[bins > 4] = 4
+    return bins
+```
+
+**What this does:** 5 bins of width 90 cm: `[0,90), [90,180), [180,270), [270,360), [360,450)`. Negative positions are clipped to 0; values >=450 to bin 4.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > (none specific; via shared `frame_mask`)

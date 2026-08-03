@@ -122,7 +122,22 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | match | — |  |
+| codex / trial1 | match | match | match | match | — |  |
+| codex / trial2 | match | match | match | concerning | — |  |
+| codex / trial3 | match | match | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -137,18 +152,42 @@
 
 ---
 
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 3-a. What variables in the raw data is `input` *time_from_go_cue* derived from?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | match | — |  |
-| claude-code / trial2 | match | match | match | match | — |  |
-| claude-code / trial3 | match | match | match | match | — |  |
-| codex / trial1 | match | match | match | match | — |  |
-| codex / trial2 | match | match | match | concerning | — |  |
-| codex / trial3 | match | match | match | match | — |  |
+| claude-code / trial1 | match | match | — | — | LZ |  |
+| claude-code / trial2 | match | match | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | match | match | — | — | LZ |  |
 
-**Overall comment:** _(no overall comment)_
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_go_cue*?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | — | — | LZ |  |
+| claude-code / trial2 | match | match | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | match | match | — | — | LZ |  |
+
+---
+
+## Q 3-c. How is `input` *time_from_go_cue* aligned with the neural data?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | — | — | LZ |  |
+| claude-code / trial2 | match | match | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | match | match | — | — | LZ |  |
 
 ---
 
@@ -272,7 +311,7 @@
 
 ---
 
-## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-d. How is `output` *tongue_velocity* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -317,7 +356,7 @@
 
 ---
 
-## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-d. How is `output` *paw_velocity* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -362,7 +401,7 @@
 
 ---
 
-## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-d. How is `output` *motion_energy* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|

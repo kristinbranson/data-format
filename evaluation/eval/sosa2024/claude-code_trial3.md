@@ -281,28 +281,7 @@ final_neuron_mask[iscell_indices[non_interneuron]] = True
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:195):
-> Time bin = 1 imaging frame: ~64.5 ms (1/15.5078125 Hz). This matches the native temporal resolution.
-
-**Code** (convert_data.py:25-26, 838-839):
-```python
-IMAGING_RATE = 15.5078125  # Hz
-FRAME_PERIOD = 1.0 / IMAGING_RATE  # seconds
-...
-'time_bin_size': 1000.0 / IMAGING_RATE,  # ms per frame
-```
-
-**What this does:** No resampling; the data is kept at the native imaging frame rate of ~15.51 Hz, with `time_bin_size` recorded in metadata.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md:840):
 > 'temporal_alignment_event': 'start of each trial (first imaging frame on track after teleport)'
@@ -318,6 +297,27 @@ for t in range(n_trials):
 ```
 
 **What this does:** Each trial's neural data is sliced from the trial-start frame index to the teleport index. No additional time-shift alignment is performed; alignment to the trial start is implicit in the slicing.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:195):
+> Time bin = 1 imaging frame: ~64.5 ms (1/15.5078125 Hz). This matches the native temporal resolution.
+
+**Code** (convert_data.py:25-26, 838-839):
+```python
+IMAGING_RATE = 15.5078125  # Hz
+FRAME_PERIOD = 1.0 / IMAGING_RATE  # seconds
+...
+'time_bin_size': 1000.0 / IMAGING_RATE,  # ms per frame
+```
+
+**What this does:** No resampling; the data is kept at the native imaging frame rate of ~15.51 Hz, with `time_bin_size` recorded in metadata.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -613,7 +613,44 @@ dist_bins = discretize_distance(dist_to_rz)
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md:185):
+> Bins: <-50, -50 to -10, -10 to 0, 0, >0 to +10, +10 to +50, >+50
+
+**Code** (convert_data.py:242-263):
+```python
+def discretize_distance(distance):
+    """
+    Discretize distance to reward zone into 7 bins:
+    0: < -50 cm
+    1: -50 to -10 cm
+    2: -10 cm to < 0 cm
+    3: 0 cm (in reward zone)
+    4: >0 cm to +10 cm
+    5: +10 to +50 cm
+    6: > +50 cm
+    """
+    bins = np.zeros(len(distance), dtype=np.int64)
+    bins[distance < -50] = 0
+    bins[(distance >= -50) & (distance < -10)] = 1
+    bins[(distance >= -10) & (distance < 0)] = 2
+    bins[distance == 0] = 3
+    bins[(distance > 0) & (distance <= 10)] = 4
+    bins[(distance > 10) & (distance <= 50)] = 5
+    bins[distance > 50] = 6
+    return bins
+```
+
+**What this does:** Custom branching assigns one of 7 integer bins, with bin 3 reserved for distance exactly equal to 0 (i.e., samples inside the reward zone).
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (none directly).
 
@@ -687,7 +724,25 @@ pos_bins = discretize_position(trial_pos)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md:186):
+> Bins: 0-90, 90-180, 180-270, 270-360, 360-450
+
+**Code** (convert_data.py:286-296):
+```python
+bins = np.clip(np.floor(position / 90.0).astype(np.int64), 0, 4)
+```
+
+**What this does:** Floor-divides the position by 90 cm and clips to a 5-bin range. Negative pre-trial values (e.g., -500 placeholder) and values >450 collapse into the end bins via clipping.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (none directly).
 

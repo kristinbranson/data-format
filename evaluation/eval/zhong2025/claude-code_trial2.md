@@ -231,32 +231,7 @@ def get_brain_region_idx(iarea):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Time bin size: Use native frame rate (~315 ms). No resampling needed." (line 188). `time_bin_size = 1000.0/3.17 ≈ 315.5 ms`.
-
-**Code** (convert_data.py:33-34, 202-205, 354):
-```python
-FRAME_RATE = 3.17  # Hz
-TIME_BIN_MS = 1000.0 / FRAME_RATE  # ~315.5 ms
-...
-ft = beh['ft']
-dt = np.median(np.diff(ft[:min(1000, len(ft))])) * 86400  # days->seconds
-fs = 1.0 / dt if dt > 0 else FRAME_RATE
-...
-'time_bin_size': TIME_BIN_MS,
-```
-
-**What this does:** No resampling. Native imaging frame rate (~3.17 Hz, ~315 ms per frame) is preserved. Per-session sampling rate `fs` is derived from median frame timestamp difference for input scaling.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Trial length: Use frames from StartFr to start of next trial (or end of session)" (line 188). `'temporal_alignment_event': 'corridor entry (trial start)'` (line 355).
@@ -276,6 +251,31 @@ trial_spk = spk[:, start:end].copy()
 ```
 
 **What this does:** Each trial's neural slice begins at frame `StartFr[i]` (corridor entry) and ends at the next trial's start. Frame index 0 of the trial corresponds to the corridor entry event.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Time bin size: Use native frame rate (~315 ms). No resampling needed." (line 188). `time_bin_size = 1000.0/3.17 ≈ 315.5 ms`.
+
+**Code** (convert_data.py:33-34, 202-205, 354):
+```python
+FRAME_RATE = 3.17  # Hz
+TIME_BIN_MS = 1000.0 / FRAME_RATE  # ~315.5 ms
+...
+ft = beh['ft']
+dt = np.median(np.diff(ft[:min(1000, len(ft))])) * 86400  # days->seconds
+fs = 1.0 / dt if dt > 0 else FRAME_RATE
+...
+'time_bin_size': TIME_BIN_MS,
+```
+
+**What this does:** No resampling. Native imaging frame rate (~3.17 Hz, ~315 ms per frame) is preserved. Per-session sampling rate `fs` is derived from median frame timestamp difference for input scaling.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -722,7 +722,7 @@ pos_bins[ft_CorrSpc & (ft_Pos >= 40)] = 3  # edge case
 
 ---
 
-## Q 9-c. How is `output` *position* aligned with the neural data?
+## Q 9-d. How is `output` *position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Time-varying" per frame (line 182).
@@ -797,7 +797,7 @@ speed_bins[ft_RunSpeed >= speed_quartiles[2]] = 3
 
 ---
 
-## Q 10-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-d. How is `output` *running_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Time-varying" per frame (line 183).

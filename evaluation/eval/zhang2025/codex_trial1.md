@@ -244,7 +244,31 @@ neural_mask = np.array([np.any(trial) for trial in neural_trials], dtype=bool)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Alignment event: stimulus onset" (README.md:12); "Temporal alignment: `TIME_WINDOW = (-0.5, 1.5)`, `BINSIZE_S = 0.02`, and `stimOn_times` alignment" (CONVERSION_NOTES.md:429)
+
+**Code** (convert_data.py:479-485):
+```python
+align_times = masked_trials["stimOn_times"].to_numpy(dtype=np.float64)
+neural_trials = bin_spikes_for_trials(
+    spike_times,
+    spike_clusters,
+    n_clusters=n_clusters_good,
+    align_times=align_times,
+)
+```
+
+**What this does:** Each trial uses `stimOn_times` as t=0 with the [-0.5, 1.5] s window passed to spike binning.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "20 ms bins over `[-0.5, 1.5]` s relative to stimulus onset" (README.md:13-14); `BINSIZE_S = 0.02`, `N_BINS = 100`.
@@ -263,30 +287,6 @@ counts, _, cluster_idx = bincount2D(
 ```
 
 **What this does:** Fixed 20 ms bins via `bincount2D` produce 100 bins per 2 s trial window.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Alignment event: stimulus onset" (README.md:12); "Temporal alignment: `TIME_WINDOW = (-0.5, 1.5)`, `BINSIZE_S = 0.02`, and `stimOn_times` alignment" (CONVERSION_NOTES.md:429)
-
-**Code** (convert_data.py:479-485):
-```python
-align_times = masked_trials["stimOn_times"].to_numpy(dtype=np.float64)
-neural_trials = bin_spikes_for_trials(
-    spike_times,
-    spike_clusters,
-    n_clusters=n_clusters_good,
-    align_times=align_times,
-)
-```
-
-**What this does:** Each trial uses `stimOn_times` as t=0 with the [-0.5, 1.5] s window passed to spike binning.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -587,7 +587,7 @@ discretize_three_bins(wheel_cont, wheel_edges),
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "both interpolated onto the shared stimulus-onset-aligned 20 ms grid" (CONVERSION_NOTES.md:287)
@@ -662,7 +662,7 @@ discretize_three_bins(whisk_cont, whisker_edges),
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "interpolated onto the shared stimulus-onset-aligned 20 ms grid" (CONVERSION_NOTES.md:287)

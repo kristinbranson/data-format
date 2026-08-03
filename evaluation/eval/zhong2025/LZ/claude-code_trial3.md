@@ -234,30 +234,7 @@ assert len(iarea) == n_neurons, ...
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:186-187):
-> Time bin = frame rate: ~315ms, no additional binning.
-
-**Code** (convert_data.py:271-272, 450-456):
-```python
-neural = spk[:, start:end].astype(np.float16)
-# ...
-sample_beh = beh_cache[sessions[0]['exp_type']][sessions[0]['beh_key']]
-ft = sample_beh['ft']
-dt = np.diff(ft) * 24 * 3600  # datenum to seconds
-frame_period = float(np.nanmedian(dt))
-```
-
-**What this does:** No resampling is performed. Neural data uses the raw Suite2p frame rate (~3.17 Hz, ~315 ms/frame). The `frame_period` is computed once from the median diff of `ft` (MATLAB datenum) of the first session and stored in metadata.
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md:184; convert_data.py:538):
 > Trial window: StartFr to EndFr. Metadata: `'temporal_alignment_event': 'Trial start (corridor entry)'`, `'off_start': 0.0`, `'off_end': None`.
@@ -276,6 +253,29 @@ for t in range(ntrials):
 ```
 
 **What this does:** Each trial's neural slice begins at `StartFr` (corridor entry) and ends at `EndFr`. Alignment event documented as trial start; trial length is variable.
+
+**Rating:** match
+
+**Note:** _(no note)_---
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:186-187):
+> Time bin = frame rate: ~315ms, no additional binning.
+
+**Code** (convert_data.py:271-272, 450-456):
+```python
+neural = spk[:, start:end].astype(np.float16)
+# ...
+sample_beh = beh_cache[sessions[0]['exp_type']][sessions[0]['beh_key']]
+ft = sample_beh['ft']
+dt = np.diff(ft) * 24 * 3600  # datenum to seconds
+frame_period = float(np.nanmedian(dt))
+```
+
+**What this does:** No resampling is performed. Neural data uses the raw Suite2p frame rate (~3.17 Hz, ~315 ms/frame). The `frame_period` is computed once from the median diff of `ft` (MATLAB datenum) of the first session and stored in metadata.
 
 **Rating:** match
 
@@ -734,7 +734,7 @@ pos_bin = digitize_position(pos)
 
 ---
 
-## Q 9-c. How is `output` *position* aligned with the neural data?
+## Q 9-d. How is `output` *position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:170):
 > Time-varying.
@@ -806,7 +806,7 @@ def digitize_speed(speed, quartiles):
 
 ---
 
-## Q 10-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-d. How is `output` *running_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:170):
 > Time-varying.

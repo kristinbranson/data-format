@@ -254,7 +254,32 @@ if kept_units < 10:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Use `goCue` as the universal alignment event" (line 223)
+> "go cue onset (stored bp.ev.goCue for every trial)" (line 889, metadata.temporal_alignment_event)
+
+**Code** (convert_data.py:23, 604-606, 729):
+```python
+ALIGN_EVENT = "goCue"
+...
+def compute_unit_trial_matrix(unit, go_cue, trial_to_pos, n_sel, time_edges):
+    aligned = unit["trialtm"] - go_cue[unit["trial"] - 1]
+    trial_pos = trial_to_pos[unit["trial"] - 1]
+...
+unit_mat = compute_unit_trial_matrix(unit, raw["events"]["goCue"], trial_to_pos, selected_trials.size, time_edges)
+```
+
+**What this does:** Each spike's within-trial time `trialtm` is shifted by subtracting that trial's `bp.ev.goCue` value, producing times relative to go-cue onset before binning over [-2.5, 2.5] s.
+
+**Rating:** match
+
+**Note:** _(no note)_---
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "tentatively prefer the paper/code-aligned 5 ms default" (line 195)
@@ -275,31 +300,6 @@ np.add.at(mat, (trial_pos[keep], bins), 1.0 / DT)
 ```
 
 **What this does:** Spike times are binned into 5 ms bins (DT = 1/200 s) over the window [-2.5, 2.5] s relative to goCue, yielding 1000 timepoints. Counts are divided by DT to get Hz, then convolved with a causal Gaussian kernel (length 15).
-
-**Rating:** match
-
-**Note:** _(no note)_---
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Use `goCue` as the universal alignment event" (line 223)
-> "go cue onset (stored bp.ev.goCue for every trial)" (line 889, metadata.temporal_alignment_event)
-
-**Code** (convert_data.py:23, 604-606, 729):
-```python
-ALIGN_EVENT = "goCue"
-...
-def compute_unit_trial_matrix(unit, go_cue, trial_to_pos, n_sel, time_edges):
-    aligned = unit["trialtm"] - go_cue[unit["trial"] - 1]
-    trial_pos = trial_to_pos[unit["trial"] - 1]
-...
-unit_mat = compute_unit_trial_matrix(unit, raw["events"]["goCue"], trial_to_pos, selected_trials.size, time_edges)
-```
-
-**What this does:** Each spike's within-trial time `trialtm` is shifted by subtracting that trial's `bp.ev.goCue` value, producing times relative to go-cue onset before binning over [-2.5, 2.5] s.
 
 **Rating:** match
 
@@ -571,7 +571,7 @@ np.where(
 
 ---
 
-## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-d. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "DLC/video alignment uses `frameTimes - vidshift - alignTimes(trial)`, where `vidshift` is computed from bitcode synchronization metadata" (line 56)
@@ -659,7 +659,7 @@ paw_thr = summarize_threshold(paw_sel)
 
 ---
 
-## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-d. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "DLC/video alignment uses `frameTimes - vidshift - alignTimes(trial)`, where `vidshift` is computed from bitcode synchronization metadata" (line 56)
@@ -753,7 +753,7 @@ motion_thr = summarize_threshold(motion_sel)
 
 ---
 
-## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-d. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Motion energy and DLC trajectories are not used at their native frame rate directly. They are interpolated onto the same `obj.time` axis as neural activity after correcting for video offset." (line 55)

@@ -218,36 +218,7 @@ trace_valid = trace_day[valid_cells].astype(np.float32, copy=False)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:211-212):
-> "Temporal bin size: store data at 100 ms resolution using non-overlapping 3-frame bins. Rationale: the reference decoder temporally bins data in 3-frame windows."
-
-**Code** (convert_data.py:17-21, 72-78):
-```python
-FPS = 30
-TRIAL_SECONDS = 60
-TRIAL_FRAMES = FPS * TRIAL_SECONDS
-TEMPORAL_BIN_FRAMES = 3
-TIME_BIN_MS = 100.0
-...
-def temporal_bin_mean(arr: np.ndarray, bin_size: int) -> np.ndarray:
-    usable = (arr.shape[-1] // bin_size) * bin_size
-    ...
-    trimmed = arr[..., :usable]
-    new_shape = arr.shape[:-1] + (usable // bin_size, bin_size)
-    return trimmed.reshape(new_shape).mean(axis=-1)
-```
-
-**What this does:** Native 30 Hz frames are pooled into non-overlapping 3-frame windows (100 ms bins) by reshaping and taking the mean along the bin axis. `TIME_BIN_MS = 100.0` is recorded in metadata.
-
-**Rating:** ok
-
-**Note:** agent downsamples to 10 Hz while manual keeps at 30 Hz
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (convert_data.py:268-271 metadata):
 > `"temporal_alignment_event": "start of each consecutive 1-minute chunk within a session"`, `"off_start": 0.0`, `"off_end": 60.0`
@@ -273,6 +244,35 @@ for start, end in trial_slices:
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:211-212):
+> "Temporal bin size: store data at 100 ms resolution using non-overlapping 3-frame bins. Rationale: the reference decoder temporally bins data in 3-frame windows."
+
+**Code** (convert_data.py:17-21, 72-78):
+```python
+FPS = 30
+TRIAL_SECONDS = 60
+TRIAL_FRAMES = FPS * TRIAL_SECONDS
+TEMPORAL_BIN_FRAMES = 3
+TIME_BIN_MS = 100.0
+...
+def temporal_bin_mean(arr: np.ndarray, bin_size: int) -> np.ndarray:
+    usable = (arr.shape[-1] // bin_size) * bin_size
+    ...
+    trimmed = arr[..., :usable]
+    new_shape = arr.shape[:-1] + (usable // bin_size, bin_size)
+    return trimmed.reshape(new_shape).mean(axis=-1)
+```
+
+**What this does:** Native 30 Hz frames are pooled into non-overlapping 3-frame windows (100 ms bins) by reshaping and taking the mean along the bin axis. `TIME_BIN_MS = 100.0` is recorded in metadata.
+
+**Rating:** ok
+
+**Note:** agent downsamples to 10 Hz while manual keeps at 30 Hz
 
 ---
 
@@ -384,7 +384,7 @@ output_binned = discretize_position_3x3(position_binned, session_max_xy).astype(
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:131):
 > "Neural and behavioral streams were acquired simultaneously at 30 Hz and timestamped for post-hoc alignment."

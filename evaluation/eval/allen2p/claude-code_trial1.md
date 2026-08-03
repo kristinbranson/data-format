@@ -229,35 +229,7 @@ if n_cells == 0:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:203 — "Time bin: Use native ophys timestamps (~31 Hz for Scientifica, ~11 Hz for Multiscope). Each session's time bin is consistent within itself."
-
-**Code** (convert_data.py:372, 379-380, 387, 710-711, 736):
-```python
-dt = np.median(np.diff(ophys_ts))  # time bin size
-...
-frame_mask = (ophys_ts >= t_start) & (ophys_ts < t_stop)
-trial_ts = ophys_ts[frame_mask]
-...
-neural = dff[:, frame_mask].astype(np.float32)
-...
-all_dts = [m['dt_ms'] for m in session_metadata]
-median_dt = np.median(all_dts)
-...
-'time_bin_size': median_dt,
-```
-
-**What this does:** Neural data is kept at the native ophys frame rate; no resampling. Per-session bin size is `np.median(np.diff(ophys_ts))`, and the global `time_bin_size` reported in metadata is the median across sessions (~32.3 ms).
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:205 — "Temporal alignment: Align to ophys timestamps. For each trial, extract the ophys frames between trial start_time and stop_time."
@@ -278,6 +250,34 @@ for trial_idx in valid_trial_idx:
 ```
 
 **What this does:** Each trial's neural slice is the dF/F columns whose ophys timestamps fall in `[start_time, stop_time)` of the trial. Alignment is to the trial start, with a variable-length window per trial.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:203 — "Time bin: Use native ophys timestamps (~31 Hz for Scientifica, ~11 Hz for Multiscope). Each session's time bin is consistent within itself."
+
+**Code** (convert_data.py:372, 379-380, 387, 710-711, 736):
+```python
+dt = np.median(np.diff(ophys_ts))  # time bin size
+...
+frame_mask = (ophys_ts >= t_start) & (ophys_ts < t_stop)
+trial_ts = ophys_ts[frame_mask]
+...
+neural = dff[:, frame_mask].astype(np.float32)
+...
+all_dts = [m['dt_ms'] for m in session_metadata]
+median_dt = np.median(all_dts)
+...
+'time_bin_size': median_dt,
+```
+
+**What this does:** Neural data is kept at the native ophys frame rate; no resampling. Per-session bin size is `np.median(np.diff(ophys_ts))`, and the global `time_bin_size` reported in metadata is the median across sessions (~32.3 ms).
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -465,7 +465,7 @@ change_trace = build_image_change_trace(ophys_ts, stim_data, t_start, t_stop)
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none — same alignment scheme as image identity)
@@ -555,7 +555,7 @@ running_binned = apply_percentile_bins(running_trial, running_edges, n_bins=5)
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:208 — "Running speed: Interpolate from 60 Hz to ophys timestamps using linear interpolation."
@@ -641,7 +641,7 @@ pupil_binned = apply_percentile_bins(pupil_trial, pupil_edges, n_bins=5)
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > (none — same approach as running speed; not separately documented)

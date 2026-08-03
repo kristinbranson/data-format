@@ -219,29 +219,7 @@ assert len(region_idx) == n_neurons, \
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Frame rate: ~3.17 Hz (dt ≈ 0.315 s per frame)" (CONVERSION_NOTES.md:80); "Time bin: 314.7 ms" (CONVERSION_NOTES.md:269)
-
-**Code** (convert_data.py:190-193, 242):
-```python
-ft = beh['ft']
-dt_days = np.nanmedian(np.diff(ft))
-dt_sec = dt_days * 24 * 3600  # convert days to seconds
-...
-trial_neural = spk[:, sfr:gfr].astype(np.float16)
-```
-
-**What this does:** No resampling or rebinning is performed. Native imaging frames (~3.17 Hz, ~315 ms) are kept as-is; `dt_sec` is computed from behavior timestamps and reported in metadata.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "'temporal_alignment_event': 'Trial start (corridor entry)', 'off_start': 0.0" (convert_data.py:547-548); "Trial window: StartFr to GrayFr" (CONVERSION_NOTES.md:167)
@@ -259,6 +237,28 @@ trial_neural = spk[:, sfr:gfr].astype(np.float16)
 ```
 
 **What this does:** Each trial's neural slice begins at `StartFr` (corridor entry) and ends at `GrayFr` (grey-space entry); thus frame 0 of each trial is aligned to corridor entry. Trial lengths are variable.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Frame rate: ~3.17 Hz (dt ≈ 0.315 s per frame)" (CONVERSION_NOTES.md:80); "Time bin: 314.7 ms" (CONVERSION_NOTES.md:269)
+
+**Code** (convert_data.py:190-193, 242):
+```python
+ft = beh['ft']
+dt_days = np.nanmedian(np.diff(ft))
+dt_sec = dt_days * 24 * 3600  # convert days to seconds
+...
+trial_neural = spk[:, sfr:gfr].astype(np.float16)
+```
+
+**What this does:** No resampling or rebinning is performed. Native imaging frames (~3.17 Hz, ~315 ms) are kept as-is; `dt_sec` is computed from behavior timestamps and reported in metadata.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -732,7 +732,7 @@ pos_binned = discretize_position(trial_pos, POSITION_BINS).astype(np.float32)
 
 ---
 
-## Q 9-c. How is `output` *position* aligned with the neural data?
+## Q 9-d. How is `output` *position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"
@@ -805,7 +805,7 @@ speed_binned = discretize_speed(trial_speed, speed_quartiles).astype(np.float32)
 
 ---
 
-## Q 10-c. How is `output` *running_speed* aligned with the neural data?
+## Q 10-d. How is `output` *running_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "(none)"

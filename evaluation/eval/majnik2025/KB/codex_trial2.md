@@ -206,7 +206,27 @@ neural_binned = average_nonoverlapping(neural_processed, BIN_FRAMES).astype(np.f
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md line 192):
+> Time input meaning: Interpret "time elapsed from the beginning of the experiment" as time from the beginning of the recording session, carried through each 2-minute trial as an absolute-within-session time vector.
+
+**Code** (convert_data.py:399-401):
+```python
+"temporal_alignment_event": "start of each consecutive 2-minute recording block",
+"off_start": 0.0,
+"off_end": float(TRIAL_SECONDS),
+```
+
+**What this does:** Trials are contiguous 2-minute blocks of the continuous recording; per-trial neural data is aligned to the start of each consecutive block. No event-based alignment is performed because the recordings are spontaneous.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md line 190):
 > Apply non-overlapping 10-frame averaging before trialization for both neural and behavioral streams, matching the paper's decoding preprocessing and giving a final bin size of 333.3 ms.
@@ -234,26 +254,6 @@ neural_binned = average_nonoverlapping(neural_processed, BIN_FRAMES)
 **Rating:** ok
 
 **Note:** agent is closer to the paper which says it averages 10 timepoints
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md line 192):
-> Time input meaning: Interpret "time elapsed from the beginning of the experiment" as time from the beginning of the recording session, carried through each 2-minute trial as an absolute-within-session time vector.
-
-**Code** (convert_data.py:399-401):
-```python
-"temporal_alignment_event": "start of each consecutive 2-minute recording block",
-"off_start": 0.0,
-"off_end": float(TRIAL_SECONDS),
-```
-
-**What this does:** Trials are contiguous 2-minute blocks of the continuous recording; per-trial neural data is aligned to the start of each consecutive block. No event-based alignment is performed because the recordings are spontaneous.
-
-**Rating:** match
-
-**Note:** _(no note)_
 
 ---
 
@@ -374,7 +374,7 @@ output_one_hot, motion_classes, motion_edges = quintile_one_hot(motion_binned_no
 
 ---
 
-## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+## Q 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md line 191):
 > Behavior alignment: Use `tstamps.npy` to map behavior samples onto the imaging-frame grid of length `n_imaging_frames`; missing camera frames become NaNs that are then interpolated.

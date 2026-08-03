@@ -110,20 +110,7 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
-|---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | concerning | match | LZ |  |
-| claude-code / trial2 | incorrect | incorrect | incorrect | incorrect | — |  |
-| claude-code / trial3 | ok | ok | concerning | incorrect | LZ |  |
-| codex / trial1 | concerning | concerning | concerning | incorrect | — |  |
-| codex / trial2 | ok | ok | incorrect | incorrect | LZ |  |
-| codex / trial3 | ok | ok | concerning | incorrect | LZ |  |
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -133,6 +120,19 @@
 | codex / trial1 | match | match | match | match | — |  |
 | codex / trial2 | match | ok | concerning | match | LZ |  |
 | codex / trial3 | match | ok | concerning | incorrect | LZ |  |
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | concerning | match | LZ |  |
+| claude-code / trial2 | incorrect | incorrect | incorrect | incorrect | — |  |
+| claude-code / trial3 | ok | ok | concerning | incorrect | LZ |  |
+| codex / trial1 | concerning | concerning | concerning | incorrect | — |  |
+| codex / trial2 | ok | ok | incorrect | incorrect | LZ |  |
+| codex / trial3 | ok | ok | concerning | incorrect | LZ |  |
 
 ---
 
@@ -201,7 +201,7 @@
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -240,7 +240,7 @@
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -279,7 +279,7 @@
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|

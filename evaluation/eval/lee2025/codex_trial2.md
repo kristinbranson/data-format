@@ -209,7 +209,30 @@ trace_active = trace_finite[activity_mask]
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> Metadata sets `temporal_alignment_event: "Start of each consecutive one-minute chunk from a continuous recording session"` (convert_data.py:568).
+
+**Code** (convert_data.py:256-263, 568):
+```python
+for trial_idx in range(n_full_trials):
+    start = trial_idx * RAW_TRIAL_FRAMES
+    end = start + RAW_TRIAL_FRAMES
+    chunk_mask = velocity_mask[start:end]
+    ...
+"temporal_alignment_event": "Start of each consecutive one-minute chunk from a continuous recording session",
+```
+
+**What this does:** Each trial is anchored to the start of a consecutive 60-second segment of the continuous recording; no external stimulus event is used for alignment.
+
+**Rating:** _(to be filled by evaluator)_
+
+**Note:** _(to be filled by evaluator)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "average-pool every 3 frames"; metadata `time_bin_size: 100.0` (ms) reflects 30 Hz × 3-frame pooling.
@@ -230,29 +253,6 @@ def trial_average_pool(values, pool_size=POOL_SIZE):
 ```
 
 **What this does:** After velocity masking and Gaussian smoothing, frames are grouped into non-overlapping 3-frame windows and averaged, yielding ~10 Hz (100 ms) effective temporal bins.
-
-**Rating:** _(to be filled by evaluator)_
-
-**Note:** _(to be filled by evaluator)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> Metadata sets `temporal_alignment_event: "Start of each consecutive one-minute chunk from a continuous recording session"` (convert_data.py:568).
-
-**Code** (convert_data.py:256-263, 568):
-```python
-for trial_idx in range(n_full_trials):
-    start = trial_idx * RAW_TRIAL_FRAMES
-    end = start + RAW_TRIAL_FRAMES
-    chunk_mask = velocity_mask[start:end]
-    ...
-"temporal_alignment_event": "Start of each consecutive one-minute chunk from a continuous recording session",
-```
-
-**What this does:** Each trial is anchored to the start of a consecutive 60-second segment of the continuous recording; no external stimulus event is used for alignment.
 
 **Rating:** _(to be filled by evaluator)_
 
@@ -375,7 +375,7 @@ pooled_bins = (pooled_rows * GEOMETRY_SIZE + pooled_cols)[np.newaxis, :].astype(
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Output is time-varying and uses the same temporally pooled samples as the neural data." (CONVERSION_NOTES.md:199).

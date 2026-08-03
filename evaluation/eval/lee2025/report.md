@@ -3,7 +3,7 @@
 ## Summary
 
 - Dataset: **lee2025**
-- Questions covered: 20
+- Questions covered: 21
 - Trials per question: 6 (3 claude-code + 3 codex)
 - Human evaluators: **LZ** (this report's comments and notes), KB
 - Judges: Claude, Codex
@@ -36,15 +36,16 @@ A square (e.g. 🟩 instead of 🟢) marks a cell where the LLM judge was deemed
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🔵 🟢🟢🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟣🟢 🟡🟣🟢 | 🟢🔵🟢 🔵🟡🟢 | 🟢🟡🟢 🟣🟡🟢 | 🟡🔴🔵 🔴🟢🟡 | Largest variability across runs/agents — some performed additional processing steps following the paper. | Claude's ratings don't make sense to me here. | `PROCESS=1` |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🟡🟡🟢 🟡🔵🟡 | 🔵🔵🟢 🔵🔵🔵 | 🟡🟢🟢 🟢🟡🟢 | 🟡🔴🟡 🔵🟢🔴 | One-frame NaN check is not robust (4/6). |  | `FILTER=4`,`ASSUME=4` |
-| 2-d | How is the `neural` data temporally binned/resampled? | 🟢🔵🟢 🟡🔵🟢 | 🟢🔵🟢 🔵🔵🟢 | 🟢🟡🟢 🟣🟡🟢 | 🟢🔴🟢 🔴🟢🟢 |  | Same as 2-b: Claude rated a partial solution "better" but the complete solution "concerning". | `PROCESS=1` |
-| 2-e | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔵🟡 🔵🟢🟡 |  |  |  |
+| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔵🟡 🔵🟢🟡 |  |  |  |
+| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🔵🟢 🟡🔵🟢 | 🟢🔵🟢 🔵🔵🟢 | 🟢🟡🟢 🟣🟡🟢 | 🟢🔴🟢 🔴🟢🟢 |  | Same as 2-b: Claude rated a partial solution "better" but the complete solution "concerning". | `PROCESS=1` |
 | 3-a | What variables in the raw data is `input` *Blocked positions* derived from? | 🔵🔵🔵 🟢🟢🟢 | 🔵🔵🔵 🟢🟢🟢 | 🟡🔵🟡 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | All claude agents used the environment-geometry-to-name mapping, which is a bit more complicated but correct. | Two possible solutions; Claude judge is inconsistent. |  |
 | 3-b | What processing is involved in computing `input` *Blocked positions*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟡🔵🟡 🔵🟡🟣 | 🔴🔴🔴 🔴🟢🔴 | Some used different conventions, but the same information is represented. | Same as above. |  |
 | 4-a | What variables in the raw data is `output` *Position* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 4-b | What processing is involved in computing `output` *Position*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🔵 🔵🟡🟪 | 🔴🔴🔴 🔴🟢🔴 | The grid/bin conventions differ across some solutions but are all valid. |  |  |
-| 4-c | How is `output` *Position* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🔵🔵🟢 | 🟢🟢🟢 🟢🟡🟢 | 🟢🟡🟢 🔵🟢🟢 |  |  |  |
+| 4-d | How is `output` *Position* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🔵🔵🟢 | 🟢🟢🟢 🟢🟡🟢 | 🟢🟡🟢 🔵🟢🟢 |  |  |  |
 | 5 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟨🟢🟢 🟢🟡🟪 | 🔴🟡🟡 🟡🟢🔵 | One agent's solution is more robust. |  |  |
 | 6-a | What are the most time-consuming steps of the code? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟡🟢 🔵🟢🔵 |  |  |  |
 | 6-b | What loops in the code could have been vectorized to improve efficiency? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🔵 🟢🟢🟢 | 🟡🟡🟡 🔵🟢🔵 |  |  |  |
 | 6-c | What processing does the code repeat multiple times? | 🟢🟢🔵 🔵🟢🔴 | 🔵🔵🟢 🔵🔵🟡 | 🟢🟢🔵 🟢🟢🟢 | 🔴🟡🟡 🔵🟢🔵 | One inefficient "two-pass" solution. |  | `INEFFICIENT` |
 | 6-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟨 | 🔴🔵🟡 🔵🟢🔵 |  |  |  |
+| 6-e | How is memory usage optimized? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | memory is not really a concern for this dataset |  |  |

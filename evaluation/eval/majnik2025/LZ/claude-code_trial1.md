@@ -197,7 +197,30 @@ def _maximin_baseline(Fc, win_frames, sig_frames):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> (none — alignment is implicit from the 2-min block segmentation)
+
+**Code** (convert_data.py:355-360):
+```python
+'metadata': {
+    'task_description': 'Decode motion energy ...',
+    'time_bin_size': BIN_SIZE / FS * 1000,  # in ms = 333.33
+    'temporal_alignment_event': 'Start of 2-minute recording block',
+    'off_start': 0.0,
+    'off_end': TRIAL_DURATION_SEC,
+```
+
+**What this does:** Each trial is aligned to the start of its 2-minute block (no external stimulus event). Metadata records this with `temporal_alignment_event = 'Start of 2-minute recording block'`, off_start=0, off_end=120s.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "averaging in bins of 10 consecutive timestamps" (effective rate: 3 Hz) (CONVERSION_NOTES.md:89)
@@ -220,29 +243,6 @@ dff_binned = bin_data(dff, bin_size)  # (n_neurons, n_bins)
 ```
 
 **What this does:** Bins dF/F by averaging consecutive groups of 10 frames, reducing the effective rate from 30 Hz to 3 Hz (333.3 ms bin size). Frames at the end that don't fill a bin are trimmed.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> (none — alignment is implicit from the 2-min block segmentation)
-
-**Code** (convert_data.py:355-360):
-```python
-'metadata': {
-    'task_description': 'Decode motion energy ...',
-    'time_bin_size': BIN_SIZE / FS * 1000,  # in ms = 333.33
-    'temporal_alignment_event': 'Start of 2-minute recording block',
-    'off_start': 0.0,
-    'off_end': TRIAL_DURATION_SEC,
-```
-
-**What this does:** Each trial is aligned to the start of its 2-minute block (no external stimulus event). Metadata records this with `temporal_alignment_event = 'Start of 2-minute recording block'`, off_start=0, off_end=120s.
 
 **Rating:** match
 
@@ -369,7 +369,7 @@ def discretize_motion_energy(all_me_trials, n_bins=N_OUTPUT_BINS):
 
 ---
 
-## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+## Q 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Missing frames: Interpolate ME to match neural frame count using interframe intervals." (CONVERSION_NOTES.md:130)

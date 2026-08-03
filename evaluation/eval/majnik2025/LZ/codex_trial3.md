@@ -212,7 +212,27 @@ def compute_suite2p_baseline_corrected(F: np.ndarray, Fneu: np.ndarray, ops: dic
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "temporal_alignment_event: start of each consecutive 2-minute block; input stores absolute elapsed time from session start" (convert_data.py:327)
+
+**Code** (convert_data.py:327-329):
+```python
+"temporal_alignment_event": "start of each consecutive 2-minute block; input stores absolute elapsed time from session start",
+"off_start": 0.0,
+"off_end": BLOCK_DURATION_SEC,
+```
+
+**What this does:** Each trial's neural data starts at the beginning of a 2-minute block; there is no stimulus event-based alignment. Metadata records the alignment event as the start of each block, with `off_start=0.0` and `off_end=120.0`.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Use 10-frame temporal averaging before segmentation: This exactly matches the paper's decoding preprocessing and converts 30 Hz traces into 3 Hz traces" (CONVERSION_NOTES.md:240)
@@ -235,26 +255,6 @@ neural_binned = bin_average_2d(neural, MOTION_BIN_SIZE_FRAMES)
 ```
 
 **What this does:** Neural data is averaged in non-overlapping 10-frame bins, downsampling from 30 Hz to 3 Hz (resulting in `time_bin_size = 1000.0 * 10 / 30 ≈ 333.33` ms).
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "temporal_alignment_event: start of each consecutive 2-minute block; input stores absolute elapsed time from session start" (convert_data.py:327)
-
-**Code** (convert_data.py:327-329):
-```python
-"temporal_alignment_event": "start of each consecutive 2-minute block; input stores absolute elapsed time from session start",
-"off_start": 0.0,
-"off_end": BLOCK_DURATION_SEC,
-```
-
-**What this does:** Each trial's neural data starts at the beginning of a 2-minute block; there is no stimulus event-based alignment. Metadata records the alignment event as the start of each block, with `off_start=0.0` and `off_end=120.0`.
 
 **Rating:** match
 
@@ -375,7 +375,7 @@ motion_disc = motion_to_bins(motion_binned_norm, quantile_edges)
 
 ---
 
-## Q 4-c. How is `output` *Motion energy* aligned with the neural data?
+## Q 4-d. How is `output` *Motion energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Treat imaging frames as the reference clock... motion energy will be aligned to the imaging grid using `tstamps.npy`, then interpolated over missing positions" (CONVERSION_NOTES.md:242)

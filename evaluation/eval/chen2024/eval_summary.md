@@ -122,7 +122,22 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | match | — |  |
+| claude-code / trial2 | match | match | match | match | — |  |
+| claude-code / trial3 | match | match | match | match | — |  |
+| codex / trial1 | match | match | match | match | — |  |
+| codex / trial2 | match | match | match | match | — |  |
+| codex / trial3 | match | match | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
@@ -137,18 +152,81 @@
 
 ---
 
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 3-a. What variables in the raw data is `input` *time_from_tone_onset* derived from?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | match | — |  |
-| claude-code / trial2 | match | match | match | match | — |  |
-| claude-code / trial3 | match | match | match | match | — |  |
-| codex / trial1 | match | match | match | match | — |  |
-| codex / trial2 | match | match | match | match | — |  |
-| codex / trial3 | match | match | match | match | — |  |
+| claude-code / trial1 | match | match | — | — | LZ |  |
+| claude-code / trial2 | match | match | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | ok | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | incorrect | incorrect | — | — | LZ |  |
 
-**Overall comment:** _(no overall comment)_
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_tone_onset*?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | — | — | LZ |  |
+| claude-code / trial2 | match | match | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | ok | — | — | LZ |  |
+| codex / trial2 | match | incorrect | — | — | LZ |  |
+| codex / trial3 | incorrect | incorrect | — | — | LZ |  |
+
+---
+
+## Q 3-c. How is `input` *time_from_tone_onset* aligned with the neural data?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | — | — | LZ |  |
+| claude-code / trial2 | match | match | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | match | match | — | — | LZ |  |
+
+---
+
+## Q 4-a. What variables in the raw data is `input` *photostim* derived from?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | — | — | LZ |  |
+| claude-code / trial2 | match | ok | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | match | match | — | — | LZ |  |
+
+---
+
+## Q 4-b. What processing is involved in computing `input` *photostim*?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | ok | — | — | LZ |  |
+| claude-code / trial2 | match | ok | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | match | match | — | — | LZ |  |
+
+---
+
+## Q 4-c. How is `input` *photostim* aligned with the neural data?
+
+| Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | — | — | LZ |  |
+| claude-code / trial2 | match | match | — | — | LZ |  |
+| claude-code / trial3 | match | match | — | — | LZ |  |
+| codex / trial1 | match | match | — | — | LZ |  |
+| codex / trial2 | match | match | — | — | LZ |  |
+| codex / trial3 | match | match | — | — | LZ |  |
 
 ---
 
@@ -272,7 +350,7 @@
 
 ---
 
-## Q 8-c. How is `output` *tongue_y_position* aligned with the neural data?
+## Q 8-d. How is `output` *tongue_y_position* aligned with the neural data?
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|---|

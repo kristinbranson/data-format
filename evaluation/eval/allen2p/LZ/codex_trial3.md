@@ -225,34 +225,7 @@ def get_cell_count_and_region_idx(f: h5py.File, region_index: int) -> np.ndarray
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:237 — "Use a common 30 Hz trial grid: Native acquisition rates vary across rigs (31 Hz single-plane, 11 Hz multiplane). Resampling all streams to 30 Hz gives one shared bin size..."
-
-**Code** (convert_data.py:27-28, 91-97):
-```python
-DT = 1.0 / 30.0
-TIME_BIN_MS = DT * 1000.0
-...
-def build_trial_bins(start_time: float, stop_time: float) -> np.ndarray:
-    if not np.isfinite(start_time) or not np.isfinite(stop_time) or stop_time <= start_time:
-        return np.asarray([], dtype=np.float64)
-    n_bins = max(1, int(np.ceil((stop_time - start_time) / DT)))
-    centers = start_time + (np.arange(n_bins, dtype=np.float64) + 0.5) * DT
-    valid = centers < (stop_time + 1e-9)
-    return centers[valid]
-```
-
-**What this does:** Neural data is linearly interpolated to a fixed 30 Hz grid (`DT = 1/30 s`, ≈33.33 ms bin) of bin centers spanning each trial's `[start_time, stop_time)`. Bin centers strictly less than `stop_time + 1e-9` are kept.
-
-**Rating:** ok
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:659 (metadata in code) — `"temporal_alignment_event": "trial start"`
@@ -274,6 +247,33 @@ neural_trial = linear_resample_matrix(ophys_time, events, centers)
 **What this does:** Each trial's bin centers begin at half a 30 Hz bin past `start_time` and tile up to `stop_time`; neural events are interpolated onto this absolute-time grid. Metadata records the alignment event as `"trial start"` with `off_start = 0.0`.
 
 **Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:237 — "Use a common 30 Hz trial grid: Native acquisition rates vary across rigs (31 Hz single-plane, 11 Hz multiplane). Resampling all streams to 30 Hz gives one shared bin size..."
+
+**Code** (convert_data.py:27-28, 91-97):
+```python
+DT = 1.0 / 30.0
+TIME_BIN_MS = DT * 1000.0
+...
+def build_trial_bins(start_time: float, stop_time: float) -> np.ndarray:
+    if not np.isfinite(start_time) or not np.isfinite(stop_time) or stop_time <= start_time:
+        return np.asarray([], dtype=np.float64)
+    n_bins = max(1, int(np.ceil((stop_time - start_time) / DT)))
+    centers = start_time + (np.arange(n_bins, dtype=np.float64) + 0.5) * DT
+    valid = centers < (stop_time + 1e-9)
+    return centers[valid]
+```
+
+**What this does:** Neural data is linearly interpolated to a fixed 30 Hz grid (`DT = 1/30 s`, ≈33.33 ms bin) of bin centers spanning each trial's `[start_time, stop_time)`. Bin centers strictly less than `stop_time + 1e-9` are kept.
+
+**Rating:** ok
 
 **Note:** _(no note)_
 
@@ -424,7 +424,7 @@ image_change = np.zeros(centers.shape[0], dtype=np.int64)
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:208 — "Running speed, pupil diameter, and stimulus variables will be interpolated or sampled onto the same 30 Hz trial grid."
@@ -501,7 +501,7 @@ running_bin = digitize_with_edges(running_trial, running_edges)
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:208 — "Running speed, pupil diameter, and stimulus variables will be interpolated or sampled onto the same 30 Hz trial grid."
@@ -583,7 +583,7 @@ pupil_bin = digitize_with_edges(pupil_trial, pupil_edges)
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:208 — "Running speed, pupil diameter, and stimulus variables will be interpolated or sampled onto the same 30 Hz trial grid."

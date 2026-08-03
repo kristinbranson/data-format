@@ -231,27 +231,7 @@ neural_data = deconv_cells[final_cell_mask]
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:227, 232):
-> Time bin = imaging frame: ~64.5 ms per frame at ~15.5 Hz. This matches the native sampling rate.
-
-**Code** (convert_data.py:367-370):
-```python
-n_planes = len(fluor_planes)
-effective_rate = imaging_rate if n_planes == 1 else imaging_rate / n_planes
-time_bin_ms = 1000.0 / effective_rate
-```
-
-**What this does:** Neural data is kept at the native imaging frame rate; for multi-plane recordings the effective per-plane rate is `imaging_rate / n_planes`. No resampling or rebinning is applied.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md:741):
 > 'temporal_alignment_event': 'Start of trial (entry to linear track)'
@@ -266,6 +246,26 @@ for i in range(n_trials):
 ```
 
 **What this does:** Each trial's neural data is the slice from `trial_start_inds[i]` to `teleport_inds[i]`, so timepoint 0 corresponds to the trial start. No additional alignment offset is applied.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:227, 232):
+> Time bin = imaging frame: ~64.5 ms per frame at ~15.5 Hz. This matches the native sampling rate.
+
+**Code** (convert_data.py:367-370):
+```python
+n_planes = len(fluor_planes)
+effective_rate = imaging_rate if n_planes == 1 else imaging_rate / n_planes
+time_bin_ms = 1000.0 / effective_rate
+```
+
+**What this does:** Neural data is kept at the native imaging frame rate; for multi-plane recordings the effective per-plane rate is `imaging_rate / n_planes`. No resampling or rebinning is applied.
 
 **Rating:** match
 
@@ -536,7 +536,36 @@ def compute_distance_to_reward_zone(position, rz_start, rz_end):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md:239-240):
+> 7 bins: < -50, [-50,-10], [-10,0), 0, (0,10], [10,50], > 50 cm
+
+**Code** (convert_data.py:226-244, 511):
+```python
+def discretize_distance_to_rz(dist):
+    out = np.zeros(len(dist), dtype=np.int64)
+    out[dist < -50] = 0
+    out[(dist >= -50) & (dist < -10)] = 1
+    out[(dist >= -10) & (dist < 0)] = 2
+    out[dist == 0] = 3
+    out[(dist > 0) & (dist <= 10)] = 4
+    out[(dist > 10) & (dist <= 50)] = 5
+    out[dist > 50] = 6
+    return out
+...
+dist_to_rz_binned = discretize_distance_to_rz(dist_to_rz)
+```
+
+**What this does:** Maps signed distance to one of 7 integer bins via boolean indexing, with bin 3 reserved for samples exactly inside (distance == 0).
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:152):
 > all behavioral and neural data at ~15.5 Hz frame rate, already synchronized
@@ -607,7 +636,32 @@ def discretize_position(position, n_bins=POSITION_BINS):
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md:242):
+> Absolute position (5 bins): [0,90), [90,180), [180,270), [270,360), [360,450] cm
+
+**Code** (convert_data.py:42-44, 247-252):
+```python
+POSITION_BINS = 5  # equal-size bins over [0, 450]
+POSITION_BIN_EDGES = np.linspace(0, TRACK_LENGTH, POSITION_BINS + 1)
+...
+def discretize_position(position, n_bins=POSITION_BINS):
+    bin_edges = np.linspace(0, TRACK_LENGTH, n_bins + 1)
+    binned = np.digitize(position, bin_edges) - 1
+    binned = np.clip(binned, 0, n_bins - 1)
+    return binned
+```
+
+**What this does:** Uses `np.linspace(0, 450, 6)` to create 5 equal-width bins over the assumed track length, with values clipped to [0, 4].
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:152):
 > all behavioral and neural data at ~15.5 Hz frame rate, already synchronized

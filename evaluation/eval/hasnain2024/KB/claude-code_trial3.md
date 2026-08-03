@@ -223,7 +223,30 @@ if len(all_clusters) < MIN_UNITS: ... return None
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Align to goCue event" (line 128)
+
+**Code** (convert_data.py:28, 663-664, 414-417):
+```python
+ALIGN_EVENT = 'goCue'
+...
+align_times = get_event_times(data, fmt, ALIGN_EVENT)
+...
+aligned_times = trialtm[spike_mask] - align_times[j]
+counts = np.histogram(aligned_times, bins=edges)[0]
+```
+
+**What this does:** Per-trial go-cue times are read from `obj.bp.ev.goCue` and subtracted from each spike's within-trial time before histogramming, placing t=0 at the go cue.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Time bin: dt = 1/100 = 10ms" (line 202); "Time range: -2.5 to 2.5 s from goCue" (line 203)
@@ -248,29 +271,6 @@ rate = counts.astype(np.float64) / DT
 **Rating:** concerning
 
 **Note:** uses 10 ms bin instead of 5 ms
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Align to goCue event" (line 128)
-
-**Code** (convert_data.py:28, 663-664, 414-417):
-```python
-ALIGN_EVENT = 'goCue'
-...
-align_times = get_event_times(data, fmt, ALIGN_EVENT)
-...
-aligned_times = trialtm[spike_mask] - align_times[j]
-counts = np.histogram(aligned_times, bins=edges)[0]
-```
-
-**What this does:** Per-trial go-cue times are read from `obj.bp.ev.goCue` and subtracted from each spike's within-trial time before histogramming, placing t=0 at the go cue.
-
-**Rating:** match
-
-**Note:** _(no note)_
 
 ---
 
@@ -569,7 +569,7 @@ out[3, :] = tongue_disc[:, t_idx].astype(np.int64)
 
 ---
 
-## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-d. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Video offset: 0.5 sec subtracted from frame times for synchronization (or computed via bitcode)" (line 63); "DLC kinematics: interpolated from video time to neural time axis, video offset subtracted (0.5s or computed via bitcode)" (line 135)
@@ -660,7 +660,7 @@ out[4, :] = paw_disc[:, t_idx].astype(np.int64)
 
 ---
 
-## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-d. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "DLC kinematics: interpolated from video time to neural time axis, video offset subtracted (0.5s or computed via bitcode)" (line 135)
@@ -755,7 +755,7 @@ out[5, :] = me_disc[:, t_idx].astype(np.int64)
 
 ---
 
-## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-d. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Motion energy: Loaded from separate files, interpolated to neural time axis at 400Hz original rate" (line 64); "Motion energy: loaded from separate files, interpolated to neural time axis, aligned to goCue" (line 134)

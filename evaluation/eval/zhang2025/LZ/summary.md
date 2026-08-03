@@ -6,6 +6,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | incorrect | _(no note)_ |
@@ -20,6 +21,7 @@
 ---
 
 ## Q 1-b. How are the data split into subjects?
+
 
 
 
@@ -40,6 +42,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -54,6 +57,7 @@
 ---
 
 ## Q 1-d. Are the data correctly split into trials?
+
 
 
 
@@ -74,6 +78,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -88,6 +93,7 @@
 ---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
 
 
 
@@ -108,6 +114,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -125,6 +132,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | _(no note)_ |
@@ -138,7 +146,8 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
 
 
 
@@ -155,7 +164,8 @@
 
 ---
 
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
 
 
 
@@ -174,6 +184,7 @@
 
 ## Q 3-a. What variables in the raw data is `input` *time_from_stimulus_onset* derived from?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -188,6 +199,7 @@
 ---
 
 ## Q 3-b. What processing is involved in computing `input` *time_from_stimulus_onset*?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -204,6 +216,7 @@
 
 ## Q 3-c. How is `input` *time_from_stimulus_onset* aligned with the neural data?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -218,6 +231,7 @@
 ---
 
 ## Q 4-a. What variables in the raw data is `input` *trial_number_in_block* derived from?
+
 
 | Agent / trial | Rating | Note |
 |---|---|---|
@@ -234,6 +248,7 @@
 
 ## Q 4-b. What processing is involved in computing `input` *trial_number_in_block*?
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -248,6 +263,7 @@
 ---
 
 ## Q 5-a. What variables in the raw data is `output` *choice* derived from?
+
 
 
 
@@ -268,6 +284,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | incorrect | _(no note)_ |
@@ -282,6 +299,7 @@
 ---
 
 ## Q 6-a. What variables in the raw data is `output` *prior_probability_left* derived from?
+
 
 
 
@@ -302,6 +320,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -316,6 +335,7 @@
 ---
 
 ## Q 7-a. What variables in the raw data is `output` *wheel_speed* derived from?
+
 
 
 
@@ -336,6 +356,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -349,7 +370,8 @@
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
+
 
 
 
@@ -370,6 +392,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -387,6 +410,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | _(no note)_ |
@@ -400,7 +424,8 @@
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
+
 
 
 
@@ -421,6 +446,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -435,6 +461,7 @@
 ---
 
 ## Q 10-a. What are the most time-consuming steps of the code?
+
 
 
 
@@ -455,6 +482,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -469,6 +497,7 @@
 ---
 
 ## Q 10-c. What processing does the code repeat multiple times?
+
 
 
 
@@ -489,6 +518,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -503,6 +533,7 @@
 ---
 
 ## Q 10-e. How is memory usage optimized?
+
 
 
 

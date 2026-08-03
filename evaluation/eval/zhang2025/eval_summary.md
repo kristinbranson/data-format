@@ -122,7 +122,22 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+| Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | match | match | — |  |
+| claude-code / trial2 | match | match | concerning | — |  |
+| claude-code / trial3 | match | match | match | — |  |
+| codex / trial1 | match | match | match | — |  |
+| codex / trial2 | match | match | match | — |  |
+| codex / trial3 | match | match | match | — |  |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -137,18 +152,68 @@
 
 ---
 
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 3-a. What variables in the raw data is `input` *time_from_stimulus_onset* derived from?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
-| claude-code / trial1 | match | match | match | — |  |
-| claude-code / trial2 | match | match | concerning | — |  |
-| claude-code / trial3 | match | match | match | — |  |
-| codex / trial1 | match | match | match | — |  |
-| codex / trial2 | match | match | match | — |  |
-| codex / trial3 | match | match | match | — |  |
+| claude-code / trial1 | match | — | — | LZ |  |
+| claude-code / trial2 | match | — | — | LZ |  |
+| claude-code / trial3 | match | — | — | LZ |  |
+| codex / trial1 | match | — | — | LZ |  |
+| codex / trial2 | match | — | — | LZ |  |
+| codex / trial3 | match | — | — | LZ |  |
 
-**Overall comment:** _(no overall comment)_
+---
+
+## Q 3-b. What processing is involved in computing `input` *time_from_stimulus_onset*?
+
+| Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | — | — | LZ |  |
+| claude-code / trial2 | match | — | — | LZ |  |
+| claude-code / trial3 | match | — | — | LZ |  |
+| codex / trial1 | match | — | — | LZ |  |
+| codex / trial2 | match | — | — | LZ |  |
+| codex / trial3 | match | — | — | LZ |  |
+
+---
+
+## Q 3-c. How is `input` *time_from_stimulus_onset* aligned with the neural data?
+
+| Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | — | — | LZ |  |
+| claude-code / trial2 | match | — | — | LZ |  |
+| claude-code / trial3 | match | — | — | LZ |  |
+| codex / trial1 | match | — | — | LZ |  |
+| codex / trial2 | match | — | — | LZ |  |
+| codex / trial3 | match | — | — | LZ |  |
+
+---
+
+## Q 4-a. What variables in the raw data is `input` *trial_number_in_block* derived from?
+
+| Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | — | — | LZ |  |
+| claude-code / trial2 | match | — | — | LZ |  |
+| claude-code / trial3 | match | — | — | LZ |  |
+| codex / trial1 | match | — | — | LZ |  |
+| codex / trial2 | match | — | — | LZ |  |
+| codex / trial3 | match | — | — | LZ |  |
+
+---
+
+## Q 4-b. What processing is involved in computing `input` *trial_number_in_block*?
+
+| Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
+|---|---|---|---|---|---|
+| claude-code / trial1 | match | — | — | LZ |  |
+| claude-code / trial2 | match | — | — | LZ |  |
+| claude-code / trial3 | match | — | — | LZ |  |
+| codex / trial1 | match | — | — | LZ |  |
+| codex / trial2 | match | — | — | LZ |  |
+| codex / trial3 | match | — | — | LZ |  |
 
 ---
 
@@ -242,7 +307,7 @@
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|
@@ -287,7 +352,7 @@
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 | Agent / trial | LZ | Claude judge | Codex judge | Best | Why |
 |---|---|---|---|---|---|

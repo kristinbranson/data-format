@@ -230,33 +230,7 @@ def remove_low_fr_neurons(trialdat, low_fr):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md:202):
-> Bin size 10 ms (dt=1/100): As in WorkingWithDataObjs.m, gives time axis from -2.5 to 2.5 s = 500 time bins.
-
-**Code** (convert_data.py:92-95, 374-376, 693-695, 718-720):
-```python
-TMIN = -2.5; TMAX = 2.5; DT = 1.0/100; SMOOTH_WINDOW = 15
-...
-edges = np.arange(TMIN, TMAX + DT, DT)
-time_axis = edges[:-1] + DT / 2
-n_time = len(time_axis)
-...
-counts, _ = np.histogram(aligned, bins=edges)
-fr = counts.astype(np.float32) / DT
-trialdat[:, neuron_offset + i, j] = causal_gaussian_smooth(fr, SMOOTH_WINDOW, BC_TYPE)
-```
-
-**What this does:** Spikes are histogrammed into fixed 10 ms bins over [-2.5, 2.5]s (500 bins; bin centers used as time axis), giving firing rate per bin, then smoothed with the causal Gaussian.
-
-**Rating:** concerning
-
-**Note:** uses 10 ms bin instead of 5 ms
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md:1013-1016 — metadata):
 > 'temporal_alignment_event': 'Go cue onset', 'align_event': 'goCue'
@@ -279,6 +253,32 @@ counts, _ = np.histogram(aligned, bins=edges)
 **Rating:** match
 
 **Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md:202):
+> Bin size 10 ms (dt=1/100): As in WorkingWithDataObjs.m, gives time axis from -2.5 to 2.5 s = 500 time bins.
+
+**Code** (convert_data.py:92-95, 374-376, 693-695, 718-720):
+```python
+TMIN = -2.5; TMAX = 2.5; DT = 1.0/100; SMOOTH_WINDOW = 15
+...
+edges = np.arange(TMIN, TMAX + DT, DT)
+time_axis = edges[:-1] + DT / 2
+n_time = len(time_axis)
+...
+counts, _ = np.histogram(aligned, bins=edges)
+fr = counts.astype(np.float32) / DT
+trialdat[:, neuron_offset + i, j] = causal_gaussian_smooth(fr, SMOOTH_WINDOW, BC_TYPE)
+```
+
+**What this does:** Spikes are histogrammed into fixed 10 ms bins over [-2.5, 2.5]s (500 bins; bin centers used as time axis), giving firing rate per bin, then smoothed with the causal Gaussian.
+
+**Rating:** concerning
+
+**Note:** uses 10 ms bin instead of 5 ms
 
 ---
 
@@ -565,7 +565,7 @@ tongue_vel = np.nan_to_num(tongue_vel, nan=0.0)
 
 ---
 
-## Q 7-c. How is `output` *tongue_velocity* aligned with the neural data?
+## Q 7-d. How is `output` *tongue_velocity* aligned with the neural data?
 
 **Notes excerpt** (none beyond above).
 
@@ -649,7 +649,7 @@ avg_speed = np.mean(speeds, axis=0)
 
 ---
 
-## Q 8-c. How is `output` *paw_velocity* aligned with the neural data?
+## Q 8-d. How is `output` *paw_velocity* aligned with the neural data?
 
 **Notes excerpt** (none).
 
@@ -733,7 +733,7 @@ if me_raw is not None:
 
 ---
 
-## Q 9-c. How is `output` *motion_energy* aligned with the neural data?
+## Q 9-d. How is `output` *motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:64):
 > Motion energy aligned: interp1(frameTimes - vidshift - alignTime, me.data, taxis)

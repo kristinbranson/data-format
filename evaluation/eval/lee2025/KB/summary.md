@@ -6,6 +6,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | agent loads the extension-less data files with joblib.load, while manual uses the mat file. agent hardcodes animal names |
@@ -20,6 +21,7 @@
 ---
 
 ## Q 1-b. How are the data split into subjects?
+
 
 
 
@@ -40,6 +42,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -54,6 +57,7 @@
 ---
 
 ## Q 1-d. Are the data correctly split into trials?
+
 
 
 
@@ -74,6 +78,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -88,6 +93,7 @@
 ---
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
+
 
 
 
@@ -108,6 +114,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -125,6 +132,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | agent uses first time point, manual checks all timepoints, spotchecked that these are the same |
@@ -138,24 +146,8 @@
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
-
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | ok | agent downsamples to 10 Hz while manual keeps 30 Hz |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | ok | agent downsamples to 10 Hz while manual keeps at 30 Hz |
-| codex / trial2 | ok | agent downsamples to 10 Hz while manual keeps 30 Hz |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 
 
@@ -172,7 +164,26 @@
 
 ---
 
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+
+
+
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | ok | agent downsamples to 10 Hz while manual keeps 30 Hz |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | ok | agent downsamples to 10 Hz while manual keeps at 30 Hz |
+| codex / trial2 | ok | agent downsamples to 10 Hz while manual keeps 30 Hz |
+| codex / trial3 | match | _(no note)_ |
+
+**Overall comment:** _(no overall comment)_
+
+---
+
 ## Q 3-a. What variables in the raw data is `input` *Blocked positions* derived from?
+
 
 
 
@@ -193,6 +204,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | uses 1 for accessible, 0 for blocked |
@@ -207,6 +219,7 @@
 ---
 
 ## Q 4-a. What variables in the raw data is `output` *Position* derived from?
+
 
 
 
@@ -227,6 +240,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -240,7 +254,8 @@
 
 ---
 
-## Q 4-c. How is `output` *Position* aligned with the neural data?
+## Q 4-d. How is `output` *Position* aligned with the neural data?
+
 
 
 
@@ -261,6 +276,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -275,6 +291,7 @@
 ---
 
 ## Q 6-a. What are the most time-consuming steps of the code?
+
 
 
 
@@ -295,6 +312,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -312,6 +330,7 @@
 
 
 
+
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | ok | _(no note)_ |
@@ -326,6 +345,7 @@
 ---
 
 ## Q 6-d. What unnecessary processing does the code do that is discarded in downstream analyses?
+
 
 
 

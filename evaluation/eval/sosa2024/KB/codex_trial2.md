@@ -200,7 +200,29 @@ roi_ids = roi_ids[iscell]
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md:574):
+> `"temporal_alignment_event": "trial_start"`
+
+**Code** (convert_data.py:469-473, 489):
+```python
+for trial_id, (start, stop_exclusive) in enumerate(trial_slices):
+    ...
+    neural_trial = arrays.neural[start:stop_exclusive].T.astype(np.float32, copy=False)
+...
+time_from_start = (np.arange(t_bins, dtype=np.float32) * TARGET_DT_S)
+```
+
+**What this does:** Trials are sliced from the trial-start frame to the teleport frame; bin index 0 corresponds to trial start. No additional offset shifting is applied beyond the trial slicing.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md:283):
 > Standardize all sessions to a common `15.5078125 Hz` bin size.
@@ -229,28 +251,6 @@ def rebin_2d_sum_time_last(x, factor):
 **Rating:** incorrect
 
 **Note:** agent is confused about data rate when multiplane
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md:574):
-> `"temporal_alignment_event": "trial_start"`
-
-**Code** (convert_data.py:469-473, 489):
-```python
-for trial_id, (start, stop_exclusive) in enumerate(trial_slices):
-    ...
-    neural_trial = arrays.neural[start:stop_exclusive].T.astype(np.float32, copy=False)
-...
-time_from_start = (np.arange(t_bins, dtype=np.float32) * TARGET_DT_S)
-```
-
-**What this does:** Trials are sliced from the trial-start frame to the teleport frame; bin index 0 corresponds to trial start. No additional offset shifting is applied beyond the trial slicing.
-
-**Rating:** match
-
-**Note:** _(no note)_
 
 ---
 
@@ -516,7 +516,34 @@ def compute_distance_to_zone(position_cm, zone_idx):
 
 ---
 
-## Q 7-c. How is `output` *Distance to reward zone* aligned with the neural data?
+## Q 7-c. How is `output` *Distance to reward zone* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md:50):
+> `["lt_-50", "-50_to_-10", "-10_to_lt_0", "0", "gt_0_to_10", "10_to_50", "gt_50"]`
+
+**Code** (convert_data.py:196-205):
+```python
+def discretize_distance(distance_cm):
+    out = np.zeros(distance_cm.shape, dtype=np.int64)
+    out[distance_cm < -50.0] = 0
+    out[(distance_cm >= -50.0) & (distance_cm < -10.0)] = 1
+    out[(distance_cm >= -10.0) & (distance_cm < 0.0)] = 2
+    out[distance_cm == 0.0] = 3
+    out[(distance_cm > 0.0) & (distance_cm <= 10.0)] = 4
+    out[(distance_cm > 10.0) & (distance_cm <= 50.0)] = 5
+    out[distance_cm > 50.0] = 6
+    return out
+```
+
+**What this does:** Hand-coded boolean masks place each value into one of 7 bins with thresholds at ±50, ±10, and exactly 0. The `==0` case is a separate bin matching the "inside zone" sentinel.
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 7-d. How is `output` *Distance to reward zone* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:570 paraphrase):
 > Per-trial slice using same trial slicing as neural; rebinned with `rebin_1d_mean` for 31 Hz sessions.
@@ -585,7 +612,27 @@ pos_bin = discretize_position(position)
 
 ---
 
-## Q 8-c. How is `output` *Absolute position* aligned with the neural data?
+## Q 8-c. How is `output` *Absolute position* thresholded into categories?
+
+**Notes excerpt** (CONVERSION_NOTES.md:271):
+> 5 equal bins on the 450 cm corridor.
+
+**Code** (convert_data.py:208-210):
+```python
+def discretize_position(position_cm):
+    clipped = np.clip(position_cm, 0.0, TRACK_LENGTH_CM - 1e-6)
+    return np.minimum((clipped / (TRACK_LENGTH_CM / 5.0)).astype(np.int64), 4)
+```
+
+**What this does:** Five equal-width bins of 90 cm spanning `[0, 450)`. Bin edges are 0, 90, 180, 270, 360, 450.
+
+**Rating:** ok
+
+**Note:** _(no note)_
+
+---
+
+## Q 8-d. How is `output` *Absolute position* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md:570 paraphrase):
 > Same per-trial slicing and rebinning as neural.

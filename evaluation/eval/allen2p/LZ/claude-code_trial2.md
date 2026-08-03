@@ -238,33 +238,7 @@ if n_neurons == 0:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> CONVERSION_NOTES.md:34: `TIME_BIN_MS = 750.0  # One bin per stimulus presentation (250ms image + 500ms grey)`. CONVERSION_NOTES.md:218: "Natural task unit, consistent across all equipment types (MESO/CAM2P)."
-
-**Code** (convert_data.py:34, 173-185):
-```python
-TIME_BIN_MS = 750.0  # One bin per stimulus presentation (250ms image + 500ms grey)
-...
-bin_duration = TIME_BIN_MS / 1000.0  # 0.75s
-all_stim_starts = stim_start
-all_stim_ends = all_stim_starts + bin_duration
-ophys_bin_starts = np.searchsorted(ophys_ts, all_stim_starts, side='left')
-ophys_bin_ends = np.searchsorted(ophys_ts, all_stim_ends, side='left')
-dff_cumsum = np.cumsum(dff_valid, axis=0)
-dff_cumsum = np.vstack([np.zeros((1, n_neurons), dtype=dff_cumsum.dtype), dff_cumsum])
-```
-
-**What this does:** Bins neural data into fixed 750ms windows aligned to each stimulus presentation onset. Each ophys frame falling within `[stim_start, stim_start+0.75)` contributes to that bin's mean. This downsamples the native ~11/31 Hz dF/F to one value per stimulus flash.
-
-**Rating:** incorrect
-
-**Note:** 750 ms is completely wrong
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:641: `'temporal_alignment_event': 'Stimulus presentation onset (each 750ms image flash)'`.
@@ -290,6 +264,32 @@ for trial_idx in np.where(trial_mask)[0]:
 **Rating:** ok
 
 **Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> CONVERSION_NOTES.md:34: `TIME_BIN_MS = 750.0  # One bin per stimulus presentation (250ms image + 500ms grey)`. CONVERSION_NOTES.md:218: "Natural task unit, consistent across all equipment types (MESO/CAM2P)."
+
+**Code** (convert_data.py:34, 173-185):
+```python
+TIME_BIN_MS = 750.0  # One bin per stimulus presentation (250ms image + 500ms grey)
+...
+bin_duration = TIME_BIN_MS / 1000.0  # 0.75s
+all_stim_starts = stim_start
+all_stim_ends = all_stim_starts + bin_duration
+ophys_bin_starts = np.searchsorted(ophys_ts, all_stim_starts, side='left')
+ophys_bin_ends = np.searchsorted(ophys_ts, all_stim_ends, side='left')
+dff_cumsum = np.cumsum(dff_valid, axis=0)
+dff_cumsum = np.vstack([np.zeros((1, n_neurons), dtype=dff_cumsum.dtype), dff_cumsum])
+```
+
+**What this does:** Bins neural data into fixed 750ms windows aligned to each stimulus presentation onset. Each ophys frame falling within `[stim_start, stim_start+0.75)` contributes to that bin's mean. This downsamples the native ~11/31 Hz dF/F to one value per stimulus flash.
+
+**Rating:** incorrect
+
+**Note:** 750 ms is completely wrong
 
 ---
 
@@ -433,7 +433,7 @@ output_arr = np.stack([
 
 ---
 
-## Q 4-c. How is `output` *Image change* aligned with the neural data?
+## Q 4-d. How is `output` *Image change* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Same per-presentation alignment as image identity / neural.
@@ -511,7 +511,7 @@ running_disc, _ = discretize_values(ot['running_speed_raw'], N_PERCENTILE_BINS, 
 
 ---
 
-## Q 5-c. How is `output` *Running speed* aligned with the neural data?
+## Q 5-d. How is `output` *Running speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > CONVERSION_NOTES.md:218-219: All outputs are computed per stimulus presentation bin, sharing the same bin index space as `neural`.
@@ -610,7 +610,7 @@ else:
 
 ---
 
-## Q 6-c. How is `output` *Pupil diameter* aligned with the neural data?
+## Q 6-d. How is `output` *Pupil diameter* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Pupil bins use the same `all_stim_starts/ends` index as neural bins (same code structure as running speed).
