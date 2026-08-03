@@ -44,19 +44,25 @@ Document the decisions of another agentic AI system, then evaluate them against 
   (via Write/Edit tools), and shell commands (via Bash/exec tools) are all captured
   in the steps list. This is the PRIMARY SOURCE for reconstructing what the agent did.
 
+**Human Reference Solution**:
+- Human-generated solution code: `/tests/reference_convert_data.py`
+- Human-generated decision descriptions: `/tests/reference_DECISIONS.md`
+
 ---
 
 ## Task
 
 The AI's goal was to load, process, and reformat the data from a neuroscience paper into a specified structure suitable for downstream analysis, using the **SAME** processing described in the provided reference paper and code.
 
-You must produce **two output files**: `DECISIONS.md` and `llm_judge_eval.json`.
+You must produce **two output files**: `DECISIONS.md` and `llm_judge_eval.json`. Write these files to the directory you are currently in, not to `/app/` or any other directory.
 
 ---
 
 ## Step 1: Understand the task
 
 - Read `/tests/instruction_reference.md` to understand what the AI was asked to do.
+- Read `/tests/reference_DECISIONS.md` to understand the human reference decisions.
+- Read `/tests/reference_convert_data.py` to understand the human reference code.
 - Read `/app/convert_data.py` to understand the AI's code.
 - Optionally read `/logs/agent/trajectory.json` to understand the AI's reasoning and process.
 
@@ -69,7 +75,7 @@ For each question below:
   ii. Provide code snippets from the AI's `convert_data.py`.
   iii. Summarize the AI's justification for its decisions (from CONVERSION_NOTES.md or trajectory).
 
-### Decision Questions **MODIFY THESE!!!**
+### Decision Questions
 
 1-a.  How are **all the data** for all subjects, sessions, and trials loaded in?
 
@@ -100,10 +106,6 @@ For each question below:
 4-a. What variables in the raw data is `input` *Day of training* derived from?
 
 4-b. What processing is involved in computing `input` *Day of training*?
-
-4-a. What variables in the raw data is `input` *Environment type* derived from?
-
-4-b. What processing is involved in computing `input` *Environment type*?
 
 5-a. What variables in the raw data is `input` *Time since trial start* derived from?
 
@@ -153,7 +155,7 @@ For each question below:
 
 ## Step 3: Evaluate the AI's decisions
 
-Compare the AI's decisions (from Step 2) with the instructions (`/tests/instruction_reference.md`), which involved replicating the analysis in the reference paper (`/app/paper.pdf`), the methods excerpt (`/app/methods.txt`), and the code (`/app/code`). No human reference solution is available for this task, so evaluate against those sources.
+Compare the AI's decisions (from Step 2) against the human reference solution (`/tests/reference_DECISIONS.md` and `/tests/reference_convert_data.py`).
 
 Create the file `llm_judge_eval.json` with the following structure:
 ```json
@@ -174,8 +176,10 @@ Create the file `llm_judge_eval.json` with the following structure:
 
 For each decision point, assess:
 
-`"decision_correctness"`: Did the AI make a decision consistent with the instructions and the reference paper and code? Rate with one of:
-- `"MATCH"`: AI's decision **matches** the instructions, reference paper, and code
+`"decision_correctness"`: Did the AI make a decision consistent with the instructions and reference? Rate with one of:
+- `"MATCH"`: AI's decision **matches** the human decision
+- `"BETTER"`: AI's decision is **better** than the human decision
+- `"OK"`: AI's decision does not match the human decision, but it is **equally as justified**
 - `"CONCERNING"`: AI's decision is not technically wrong given ambiguity in the instructions, but it is a concerning choice that should be checked by a human
 - `"INCORRECT"`: AI's decision is **incorrect**
 

@@ -138,7 +138,7 @@ _ENVIRONMENT_MARKERS = ("CUDA", "OutOfMemory", "MemoryError", "Timeout", "Cancel
 TEST_METRICS = {
     "test_required_files_exist": ("required_files_missing",),
     "test_verify_data_format": ("full_data_format_valid",),
-    "test_data_stats": ("input_range_mean_cost", "output_fraction_mean_cost"),
+    "test_data_stats": ("input_match_mean_cost", "output_match_mean_cost"),
     "test_decoder_accuracy": ("validation_balanced_accuracy",),
 }
 

@@ -46,8 +46,8 @@ DATA_STATS_FIELDS = (
     "nsessions", "ntrials_total", "T_median", "nsubjects", "nneurons_total",
     "nsessions_ratio", "ntrials_total_ratio", "T_median_ratio",
     "nsubjects_ratio", "nneurons_total_ratio",
-    "input_matches", "input_range_mean_cost",
-    "output_matches", "output_fraction_mean_cost",
+    "input_matches", "input_match_mean_cost",
+    "output_matches", "output_match_mean_cost",
 )
 DATA_STATS_PREFIXES = (
     "input_range_error_",

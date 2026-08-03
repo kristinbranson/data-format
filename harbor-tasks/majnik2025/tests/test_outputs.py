@@ -540,8 +540,12 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
     # A task with no decoder inputs (dinput == 0) is valid: there is nothing to
     # match, so there is no mismatch cost. np.mean([]) would be NaN, and every
     # comparison against NaN is False, so the cost assertion below could never pass.
+    # Named for what it is: the mean Hungarian MATCHING cost, which is dominated
+    # by name similarity and is forced to 0 for exactly-matching names before any
+    # range term is computed. It is not a mean of the input_range_error_<var>
+    # fields -- that is mean_input_range_error, recorded below.
     mean_input_cost = float(np.mean(input_match_costs)) if len(input_match_costs) else 0.0
-    metrics['input_range_mean_cost'] = mean_input_cost
+    metrics['input_match_mean_cost'] = mean_input_cost
     metrics['input_matches'] = [
         {'reference': ref, 'submitted': sub, 'cost': cost}
         for ref, sub, cost in input_matches
@@ -569,8 +573,9 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
         for ref, sub, cost in output_matches
     ]
 
-    mean_output_fraction_cost = np.mean(output_match_costs)
-    metrics['output_fraction_mean_cost'] = float(mean_output_fraction_cost)
+    # As above: the mean matching cost, not a mean of output_fraction_error_<var>.
+    mean_output_match_cost = float(np.mean(output_match_costs))
+    metrics['output_match_mean_cost'] = mean_output_match_cost
     sub_output_range = submitted_data_stats['output_range']
     ref_output_range = reference_data_stats['data_summary']['output_range']
     for ref_name, sub_name, _ in output_matches:
@@ -620,9 +625,9 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
     for ref_name, sub_name, _ in output_matches:
         assert metrics[f'output_range_error_{ref_name}'] <= STATLIMITS['output_range_error'], f"Output range error for {sub_name} ({metrics[f'output_range_error_{ref_name}']:.3f}) exceeds allowed limit ({STATLIMITS['output_range_error']})"
 
-    # check that output fractions have a reasonably low mean cost, indicating that distributions are similar
-    assert mean_output_fraction_cost < STATLIMITS['output_match_cost'], (
-        f"Output fractions mean matching cost too high ({mean_output_fraction_cost:.3f} >= {STATLIMITS['output_match_cost']}). "
+    # check that outputs match by name, range and distribution
+    assert mean_output_match_cost < STATLIMITS['output_match_cost'], (
+        f"Output mean matching cost too high ({mean_output_match_cost:.3f} >= {STATLIMITS['output_match_cost']}). "
         f"Matches: {[(r, s, f'{c:.3f}') for r, s, c in output_matches]}"
     )
 
@@ -681,11 +686,15 @@ def test_decoder_accuracy(metrics, submitted_data_full, submitted_data_stats, re
     deferred_error = None
     try:
         # find a match between output dimensions (same as test_data_stats)
-        output_matches, output_match_costs = match_outputs(
+        output_matches, _ = match_outputs(
             submitted_data_stats, reference_data_stats
         )
-
-        metrics['output_match_cost'] = float(np.mean(output_match_costs))
+        # The mean of those costs is deliberately NOT recorded here. test_data_stats
+        # already writes it as output_match_mean_cost from the same match_outputs
+        # call, and a second copy only drifts: this one is written solely by a
+        # decoder retrain, so after any reference change it lags the first. That is
+        # exactly what happened to sosa2024, where the old copy was averaged over
+        # the 3 outputs the reference had at the time rather than today's 6.
 
         # Best-effort ratio: skip any match whose reference or submitted name
         # isn't resolvable (e.g. matcher returned inf cost / None).

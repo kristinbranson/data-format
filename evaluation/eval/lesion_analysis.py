@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.19.2
 #   kernelspec:
 #     display_name: tmp-data-format
 #     language: python
@@ -328,7 +328,7 @@ def output_nclasses_matches(jobdata, refstats):
     oracle's, both derived as round(hi - lo + 1) from the respective ranges.
     """
     names = _reference_output_names(refstats)
-    if names is None or 'output_fraction_mean_cost' not in jobdata:
+    if names is None or 'output_match_mean_cost' not in jobdata:
         return np.nan
     n_match = sum(
         1 for name in names
@@ -347,7 +347,7 @@ def output_fraction_matches(jobdata, refstats):
     classes, which counts as a miss.
     """
     names = _reference_output_names(refstats)
-    if names is None or 'output_fraction_mean_cost' not in jobdata:
+    if names is None or 'output_match_mean_cost' not in jobdata:
         return np.nan
     n_match = 0
     for name in names:
@@ -1797,6 +1797,8 @@ difference_table(
 STATLIMITS
 
 # %%
+
+# %%
 # look at the effect of STATLIMITS on results
 # change STATLIMITS to all values between 0 and 0.2, in steps of 0.002
 # count how many jobs of each type of test pass with the new threshold (regardless of arm, up to trial 3)
@@ -1829,9 +1831,9 @@ THRESHOLD_SWEEPS = [
     ('T_median',       'T median',   'ratio', statlimits_try, STATLIMITS['T_median_ratio']),
     ('nsubjects',      'N subjects', 'ratio', statlimits_try, STATLIMITS['nsubjects_ratio']),
     ('nneurons_total', 'N neurons',  'ratio', statlimits_try, STATLIMITS['nneurons_total_ratio']),
-    ('input_range_mean_cost',     'Input match cost',  'cost',
+    ('input_match_mean_cost',     'Input match cost',  'cost',
      np.linspace(0, 1.0, 101), STATLIMITS['input_match_cost']),
-    ('output_fraction_mean_cost', 'Output match cost', 'cost',
+    ('output_match_mean_cost', 'Output match cost', 'cost',
      np.linspace(0, 0.5, 101), STATLIMITS['output_match_cost']),
     # The two range-only checks. Both are newer and less settled than the rest,
     # which is the case for sweeping them. output_range_error is asserted per

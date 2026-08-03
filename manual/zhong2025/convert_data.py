@@ -1,6 +1,6 @@
 """Convert the Zhong et al. 2025 virtual reality dataset into the decoder format.
 
-Usage: python -u convert_data.py <outpicklefile> [--full | --sample]
+Usage: python -u convert_data.py <outpicklefile> [--full | --sample] [--datadir DIR]
 """
 
 import argparse
@@ -11,12 +11,18 @@ import time
 import numpy as np
 from tqdm import tqdm
 
+_zhong2025_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _zhong2025_seed) % 2**31)
+
 # --- constants ---
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BEH = os.path.join(HERE, 'data', 'beh')            # behavior, one file per experiment type
-SPK = os.path.join(HERE, 'data', 'spk')            # deconvolved traces, one file per session
-RETINO = os.path.join(HERE, 'data', 'retinotopy')  # visual area of each neuron
+# Directory holding the three data subfolders. Harbor mounts the dataset at /app/data
+# while this script runs from /solution, so solve.sh overrides this with --datadir.
+#   beh/         behavior, one file per experiment type
+#   spk/         deconvolved traces, one file per session
+#   retinotopy/  visual area of each neuron
+DATA_DIR = os.path.join(HERE, 'data')
 
 SEC_PER_DAY = 24 * 60 * 60       # the times are MATLAB datenums, so in days
 FRAME_RATE = 3.17                # imaging rate, from the reference notebook
@@ -47,10 +53,14 @@ OUTPUT_VALUES = [STIMULUS, LICKING, POSITION, SPEED]
 
 # --- sessions ---
 
-def list_sessions():
-    """Every recording once, as (subject, session_id, beh_file, beh_key)."""
+def list_sessions(datadir):
+    """Every recording once, as (subject, session_id, beh_file, beh_key).
+
+    datadir: directory holding the beh/, spk/ and retinotopy/ subfolders.
+    """
     # the master index of every recording, grouped by experiment type
-    exp_info = np.load(os.path.join(BEH, 'Imaging_Exp_info.npy'), allow_pickle=True).item()
+    exp_info = np.load(os.path.join(datadir, 'beh', 'Imaging_Exp_info.npy'),
+                       allow_pickle=True).item()
 
     records, seen = [], set()
     for exp_type, db in exp_info.items():
@@ -107,14 +117,19 @@ def quartiles(values):
 
 # --- neural ---
 
-def load_spikes(session_id):
-    """Deconvolved traces of the neurons of one session, and the visual area of each."""
+def load_spikes(session_id, datadir):
+    """Deconvolved traces of the neurons of one session, and the visual area of each.
+
+    datadir: directory holding the beh/, spk/ and retinotopy/ subfolders.
+    """
     # the traces come one imaging plane at a time, in the order the retinotopy indexes them
-    planes = np.load(os.path.join(SPK, '%s_neural_data.npy' % session_id), allow_pickle=True).item()
+    planes = np.load(os.path.join(datadir, 'spk', '%s_neural_data.npy' % session_id),
+                     allow_pickle=True).item()
     spikes = np.concatenate(planes['spks'], 0)
 
     mouse, year, month, day, _ = session_id.split('_')
-    area = np.load(os.path.join(RETINO, '%s_%s_%s_%s_trans.npz' % (mouse, year, month, day)))['iarea']
+    area = np.load(os.path.join(datadir, 'retinotopy',
+                                '%s_%s_%s_%s_trans.npz' % (mouse, year, month, day)))['iarea']
 
     # a neuron outside the four areas, or with no area at all, is dropped
     region = np.full(area.size, -1)
@@ -127,9 +142,12 @@ def load_spikes(session_id):
 
 # --- session ---
 
-def process_session(subject, session_id, beh, day):
-    """One session as lists of per trial neural, input and output arrays."""
-    spikes, region = load_spikes(session_id)
+def process_session(subject, session_id, beh, day, datadir):
+    """One session as lists of per trial neural, input and output arrays.
+
+    datadir: directory holding the beh/, spk/ and retinotopy/ subfolders.
+    """
+    spikes, region = load_spikes(session_id, datadir)
 
     # the behavior can run past the imaging, so every stream is cut to the frames that were imaged
     n_frames = spikes.shape[1]
@@ -230,14 +248,17 @@ def main():
     ap.add_argument('outfile', help='output pickle path')
     ap.add_argument('--full', action='store_true', help='process all sessions (default)')
     ap.add_argument('--sample', action='store_true', help='process only 2 sessions')
+    ap.add_argument('--datadir', default=DATA_DIR,
+                    help='directory holding the beh/, spk/ and retinotopy/ subfolders '
+                         '(default: %(default)s)')
     args = ap.parse_args()
 
-    records = list_sessions()
+    records = list_sessions(args.datadir)
     days = training_days(records)                     # over every session, so the count is real
     if args.sample:
         # the two smallest spike files, so a sample run is quick
         records = sorted(records, key=lambda r: os.path.getsize(
-            os.path.join(SPK, '%s_neural_data.npy' % r[1])))[:2]
+            os.path.join(args.datadir, 'spk', '%s_neural_data.npy' % r[1])))[:2]
 
     # a behavior file holds several sessions, so it is read once for all of them
     groups = {}
@@ -250,11 +271,12 @@ def main():
     results = []
     progress = tqdm(total=len(records), unit='session')
     for beh_file, group in groups.items():
-        behavior = np.load(os.path.join(BEH, beh_file), allow_pickle=True).item()
+        behavior = np.load(os.path.join(args.datadir, 'beh', beh_file), allow_pickle=True).item()
 
         for subject, session_id, _, beh_key in group:
             try:
-                res = process_session(subject, session_id, behavior[beh_key], days[session_id])
+                res = process_session(subject, session_id, behavior[beh_key],
+                                      days[session_id], args.datadir)
             except Exception as error:
                 print('failed %s: %s: %s' % (session_id, type(error).__name__, error), flush=True)
                 progress.update()

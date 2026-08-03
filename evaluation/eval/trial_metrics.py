@@ -68,12 +68,12 @@ CURATED_FIELDS = (
     "expected_files_found", "expected_files_total",
     "contamination_detected",
     "sample_data_format_valid", "full_data_format_valid",
-    "input_range_mean_cost",
-    "output_fraction_mean_cost",
+    "input_match_mean_cost",
+    "output_match_mean_cost",
     "output_matches",
     # Range agreement on its own, with no name-similarity term. The two *_cost
     # fields above are dominated by how the agent named its variables --
-    # input_range_mean_cost is 95% semantic -- so they can pass on well-named
+    # input_match_mean_cost is 95% semantic -- so they can pass on well-named
     # variables whose ranges are wrong. Kept by name rather than by prefix:
     # "mean_input_range_error" does not start with "input_range_", and renaming
     # it so it did would put it in the per-variable namespace, where the

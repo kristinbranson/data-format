@@ -168,8 +168,8 @@ def _derive_decoder_reference_fields(test_mod, existing, submitted_data_stats,
         A one-line status string for the run report.
 
     Side effects:
-        Adds `validation_balanced_accuracy_reference`, `validation_balanced_accuracy_ratio`
-        and `output_match_cost` to `new_metrics`.
+        Adds `validation_balanced_accuracy_reference` and
+        `validation_balanced_accuracy_ratio` to `new_metrics`.
     """
     if reference_data_stats is None:
         return "derive decoder refs: skipped (unsupervised task, no reference)"
@@ -185,13 +185,13 @@ def _derive_decoder_reference_fields(test_mod, existing, submitted_data_stats,
     ref_accuracy = reference_data_stats["validation_balanced_accuracy"]
     new_metrics["validation_balanced_accuracy_reference"] = ref_accuracy
 
-    output_matches, output_match_costs = test_mod.match_outputs(
+    # The mean cost is not recorded here: test_data_stats writes it as
+    # output_match_mean_cost from this same match_outputs call, and a second copy
+    # written only on the decoder path drifts out of date after any reference
+    # change. Only the assignment is needed below.
+    output_matches, _ = test_mod.match_outputs(
         submitted_data_stats, reference_data_stats
     )
-    if output_match_costs is not None and len(output_match_costs):
-        new_metrics["output_match_cost"] = float(
-            sum(output_match_costs) / len(output_match_costs)
-        )
 
     # Same guards as the test: skip any pair the matcher could not resolve, and any
     # reference accuracy of 0, which would divide by zero.
@@ -313,7 +313,7 @@ def _max_abs_delta(old, new):
 
     Returns:
         float -- the largest absolute leaf difference; nan if any leaf pair mixes
-        nan with a number (allen2p's input_range_mean_cost goes nan -> 0.0, which
+        nan with a number (allen2p's input_match_mean_cost goes nan -> 0.0, which
         is a real fix and must not be squashed); or None when the two values are
         not comparable leaf-for-leaf -- different types, dict keys, or lengths.
         None means a structural change, which is always worth reporting whatever

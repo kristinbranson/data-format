@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.19.2
 #   kernelspec:
 #     display_name: tmp-data-format
 #     language: python
@@ -92,7 +92,7 @@ CHECK_FIELDS = [
     ("Data format",             lambda r: _truthy(r, "full_data_format_valid")),
     # ("No contamination",        lambda r: not _truthy(r, "contamination_detected")),
     # The three below require a reference (NA for unsupervised tasks):
-    ("Input variables match", lambda r: None if not _present(r, "input_range_mean_cost") else _below(r, "input_range_mean_cost", 1.0)),
+    ("Input variables match", lambda r: None if not _present(r, "input_match_mean_cost") else _below(r, "input_match_mean_cost", 1.0)),
     ("Output variables match", lambda r: _output_variables_match(r)),
     ("N output classes",     lambda r: _output_ranges_match(r)),
 ]
@@ -422,9 +422,9 @@ def _output_variables_match(r):
     class distribution. None when the matcher never ran (unsupervised tasks,
     or a trial that failed earlier).
     """
-    if not _present(r, "output_fraction_mean_cost"):
+    if not _present(r, "output_match_mean_cost"):
         return None
-    return _below(r, "output_fraction_mean_cost", 1.0)
+    return _below(r, "output_match_mean_cost", 1.0)
 
 def _output_ranges_match(r):
     """Whether every matched output variable's [min, max] range matched exactly.
