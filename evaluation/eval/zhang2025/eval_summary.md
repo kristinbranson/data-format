@@ -311,12 +311,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | — | match | match |
-| claude-code / trial2 | match | — | match | concerning |
-| claude-code / trial3 | match | — | match | match |
-| codex / trial1 | match | — | match | match |
-| codex / trial2 | match | — | match | match |
-| codex / trial3 | match | — | match | concerning |
+| claude-code / trial1 | match | match | match | match |
+| claude-code / trial2 | match | match | match | concerning |
+| claude-code / trial3 | match | match | match | match |
+| codex / trial1 | match | match | match | match |
+| codex / trial2 | match | match | match | match |
+| codex / trial3 | match | match | match | concerning |
 
 **Overall comment:** _(no overall comment)_
 
@@ -356,12 +356,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | — | match | match |
-| claude-code / trial2 | match | — | match | concerning |
-| claude-code / trial3 | match | — | match | match |
-| codex / trial1 | match | — | match | match |
-| codex / trial2 | match | — | match | match |
-| codex / trial3 | match | — | match | concerning |
+| claude-code / trial1 | match | match | match | match |
+| claude-code / trial2 | match | match | match | concerning |
+| claude-code / trial3 | match | match | match | match |
+| codex / trial1 | match | match | match | match |
+| codex / trial2 | match | match | match | match |
+| codex / trial3 | match | match | match | concerning |
 
 **Overall comment:** _(no overall comment)_
 

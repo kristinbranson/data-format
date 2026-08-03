@@ -44,10 +44,10 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 | 6-b | What processing is involved in computing `output` *prior_probability_left*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 7-a | What variables in the raw data is `output` *wheel_speed* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 7-b | What processing is involved in computing `output` *wheel_speed*? | 🟢🔴🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 | 🟢🔴🟢 🟢🟢🟢 | 1/6 trials upsampled to 1 kHz and used `np.gradient` with no low-pass filter, which is quite problematic. The other 5 trials follow the standard reference pipeline (Butterworth lowpass before differentiation). |  | `RESAMP=1`, `TIMERES=1` |
-| 7-d | How is `output` *wheel_speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |  |
+| 7-d | How is `output` *wheel_speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |  |
 | 8-a | What variables in the raw data is `output` *whisker_motion_energy* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 8-b | What processing is involved in computing `output` *whisker_motion_energy*? | 🟡🟡🔵 🟡🟢🟢 | 🟡🟡🟡 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 3/6 trials use the wrong trim direction when fixing the camera-timestamps vs motion-energy length mismatch (trim from end instead of front per IBL convention), causing the whisker ME signal to be misaligned in time with neural and behavior data. | The LLM judges missed this detail. | `ASSUME=3` |
-| 8-d | How is `output` *whisker_motion_energy* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |  |
+| 8-d | How is `output` *whisker_motion_energy* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |  |
 | 9 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟢 🟡🟢🟢 |  |  |  |
 | 10-a | What are the most time-consuming steps of the code? | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 10-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |

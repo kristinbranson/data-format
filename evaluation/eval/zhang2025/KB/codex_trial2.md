@@ -241,7 +241,32 @@ good_spike_times = np.asarray(spikes_times[spike_mask], dtype=np.float64)
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Alignment: stimulus onset (`stimOn_times`)" (README.md:8)
+
+**Code** (convert_data.py:35, 452, 398-402):
+```python
+ALIGN_EVENT = "stimOn_times"
+# build_session_payload:
+kept_align_times = prepared.trials.loc[prepared.keep_mask, ALIGN_EVENT].to_numpy(dtype=np.float64)
+# bin_spikes_by_trial:
+interval_begs = align_times + time_window[0]
+interval_ends = align_times + time_window[1]
+start_idx = np.searchsorted(spike_times, interval_begs, side="left")
+end_idx = np.searchsorted(spike_times, interval_ends, side="left")
+```
+
+**What this does:** Alignment uses each trial's `stimOn_times`; per-trial intervals are `[stimOn-0.5, stimOn+1.5]`, located by `np.searchsorted` on the merged sorted spike-time array.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Bin size: `20 ms`; Trial shape: neural: `(n_neurons, 100)`" (README.md:10-13)
@@ -260,31 +285,6 @@ counts = np.bincount(flat, minlength=n_units * n_bins).reshape(n_units, n_bins)
 ```
 
 **What this does:** Spike counts are accumulated into 100 non-overlapping 20 ms bins covering `[-0.5, 1.5]` s relative to alignment. No smoothing or rate normalization is applied; values are raw spike counts cast to float16.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Alignment: stimulus onset (`stimOn_times`)" (README.md:8)
-
-**Code** (convert_data.py:35, 452, 398-402):
-```python
-ALIGN_EVENT = "stimOn_times"
-# build_session_payload:
-kept_align_times = prepared.trials.loc[prepared.keep_mask, ALIGN_EVENT].to_numpy(dtype=np.float64)
-# bin_spikes_by_trial:
-interval_begs = align_times + time_window[0]
-interval_ends = align_times + time_window[1]
-start_idx = np.searchsorted(spike_times, interval_begs, side="left")
-end_idx = np.searchsorted(spike_times, interval_ends, side="left")
-```
-
-**What this does:** Alignment uses each trial's `stimOn_times`; per-trial intervals are `[stimOn-0.5, stimOn+1.5]`, located by `np.searchsorted` on the merged sorted spike-time array.
 
 **Rating:** match
 
@@ -613,7 +613,7 @@ wheel_bins = digitize_three_bins(prepared.wheel_cont, wheel_edges)
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "align/interpolate to the common stimulus-onset grid" (CONVERSION_NOTES.md:250)
@@ -698,7 +698,7 @@ whisker_edges = robust_tertile_edges(all_whisker)
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "align/interpolate to common stimulus-onset grid" (CONVERSION_NOTES.md:251)

@@ -229,7 +229,27 @@ def bin_spikes_fast(spike_times, spike_clusters, interval_begs, interval_ends, n
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md):
+> "Alignment event | stimOn_times" (line 117); "align_time: 'stimOn_times', time_window: (-.5, 1.5)" (lines 53-54)
+
+**Code** (convert_data.py:565-568):
+```python
+stim_times = trials_df[ALIGN_TIME].values
+interval_begs = stim_times + TIME_WINDOW[0]
+interval_ends = stim_times + TIME_WINDOW[1]
+```
+
+**What this does:** Each trial interval is computed as `stimOn_times ± [-0.5, +1.5]` seconds. Spikes are binned relative to `interval_beg`, so bin 0 corresponds to t=−0.5s before stimulus onset and bin 99 to t=+1.5s after. The same window is used for behavior interpolation, ensuring temporal alignment.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "binsize: 0.02 # 20ms bins" (line 50); "Neural data time bin | 20ms" (line 114); "T = 100" (line 116)
@@ -246,26 +266,6 @@ b = np.clip(((t - interval_begs[trial_idx]) / BINSIZE).astype(np.int32), 0, N_BI
 ```
 
 **What this does:** Spikes within the 2-second per-trial window are binned into 100 fixed 20ms bins by computing `floor((spike_time - interval_beg) / 0.02)`. No further smoothing or resampling.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md):
-> "Alignment event | stimOn_times" (line 117); "align_time: 'stimOn_times', time_window: (-.5, 1.5)" (lines 53-54)
-
-**Code** (convert_data.py:565-568):
-```python
-stim_times = trials_df[ALIGN_TIME].values
-interval_begs = stim_times + TIME_WINDOW[0]
-interval_ends = stim_times + TIME_WINDOW[1]
-```
-
-**What this does:** Each trial interval is computed as `stimOn_times ± [-0.5, +1.5]` seconds. Spikes are binned relative to `interval_beg`, so bin 0 corresponds to t=−0.5s before stimulus onset and bin 99 to t=+1.5s after. The same window is used for behavior interpolation, ensuring temporal alignment.
 
 **Rating:** match
 
@@ -559,7 +559,7 @@ wheel_discrete = discretize_to_bins(wheel_flat, n_bins=3)
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > "Behavior interpolation: linear interpolation to bin centers at interval_beg + binsize, ..., interval_end" (line 62)
@@ -638,7 +638,7 @@ me_discrete_2d = me_discrete.reshape(me_data.shape).astype(np.int32)
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md):
 > (same alignment as wheel speed via `interpolate_behavior`)

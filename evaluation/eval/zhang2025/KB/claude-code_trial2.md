@@ -250,7 +250,34 @@ def load_spikes(sdir):
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "Alignment: stimOn_times for all behaviors (matching reference code + decoder task)" (README.md:78); "Align to stimOn_times, window (-0.5, 1.5)s" (convert_data.py:9)
+
+**Code** (convert_data.py:36-40, 401-411):
+```python
+ALIGN_TIME = 'stimOn_times'
+TIME_WINDOW = (-0.5, 1.5)  # 2s trial
+...
+stim_on = trials[ALIGN_TIME].values
+interval_begs = stim_on + TIME_WINDOW[0]
+interval_ends = stim_on + TIME_WINDOW[1]
+...
+binned_spikes = bin_spikes_vectorized(
+    spike_times, spike_clusters, n_clusters, interval_begs, interval_ends
+)
+```
+
+**What this does:** Trial intervals are computed by adding the [-0.5, +1.5]s window to each trial's `stimOn_times`. Spikes within those intervals are binned, so bin 0 corresponds to -0.5s relative to stimulus onset.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "20ms bins -> 100 time steps per trial" (convert_data.py:10); "Binsize: 20ms uniformly, matching code" (CONVERSION_NOTES.md:185)
@@ -272,33 +299,6 @@ counts = np.bincount(flat_idx, minlength=n_clusters * N_BINS)
 ```
 
 **What this does:** Spike times are converted to bin indices via floor division by 20 ms (clipped to N_BINS-1=99), giving 100 non-overlapping bins per 2-second trial.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "Alignment: stimOn_times for all behaviors (matching reference code + decoder task)" (README.md:78); "Align to stimOn_times, window (-0.5, 1.5)s" (convert_data.py:9)
-
-**Code** (convert_data.py:36-40, 401-411):
-```python
-ALIGN_TIME = 'stimOn_times'
-TIME_WINDOW = (-0.5, 1.5)  # 2s trial
-...
-stim_on = trials[ALIGN_TIME].values
-interval_begs = stim_on + TIME_WINDOW[0]
-interval_ends = stim_on + TIME_WINDOW[1]
-...
-binned_spikes = bin_spikes_vectorized(
-    spike_times, spike_clusters, n_clusters, interval_begs, interval_ends
-)
-```
-
-**What this does:** Trial intervals are computed by adding the [-0.5, +1.5]s window to each trial's `stimOn_times`. Spikes within those intervals are binned, so bin 0 corresponds to -0.5s relative to stimulus onset.
 
 **Rating:** match
 
@@ -602,7 +602,7 @@ wheel_discrete = discretize_to_bins(wheel_trials, n_bins=3)
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Aligned to stimOn_times same as neural (CONVERSION_NOTES.md:79-80, 217)
@@ -682,7 +682,7 @@ whisker_discrete = discretize_to_bins(whisker_trials, n_bins=3)
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Aligned same as neural via interpolation to stimOn-anchored bins.

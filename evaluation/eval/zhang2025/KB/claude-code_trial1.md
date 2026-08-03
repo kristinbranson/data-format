@@ -231,33 +231,7 @@ else:
 
 ---
 
-## Q 2-d. How is the `neural` data temporally binned/resampled?
-
-**Notes excerpt** (CONVERSION_NOTES.md / README.md):
-> "BINSIZE = 0.02  # 20 ms time bins ... N_BINS = int(np.ceil(...)) # 100" (convert_data.py:30-33); "Time bins: 100 (20ms each)" (README.md).
-
-**Code** (convert_data.py:30-33, 248-255):
-```python
-BINSIZE = 0.02  # 20 ms time bins
-ALIGN_TIME = 'stimOn_times'
-TIME_WINDOW = (-0.5, 1.5)  # 2s window around stimOn
-N_BINS = int(np.ceil((TIME_WINDOW[1] - TIME_WINDOW[0]) / BINSIZE))  # 100
-...
-bin_idx = np.minimum(((t_sel - t_start) / binsize).astype(np.int32), n_bins - 1)
-valid = (c_sel >= 0) & (c_sel < n_clusters)
-flat_idx = c_sel[valid] * n_bins + bin_idx[valid]
-np.add.at(binned[trial_idx].ravel(), flat_idx, 1)
-```
-
-**What this does:** Spikes are binned by integer division of `(t - t_start)/0.02` into 100 fixed-width 20 ms bins per trial.
-
-**Rating:** match
-
-**Note:** _(no note)_
-
----
-
-## Q 2-e. How is the per-trial `neural` data aligned to the event described in the `instructions`?
+## Q 2-d. How is the per-trial `neural` data aligned to the event described in the `instructions`?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > "Align everything to stimOn_times: Task spec overrides reference code's firstMovement alignment" (CONVERSION_NOTES.md:198); metadata `temporal_alignment_event: 'stimulus onset (stimOn_times)'`.
@@ -276,6 +250,32 @@ binned_spikes = bin_spikes_vectorized(
 ```
 
 **What this does:** For each trial, the binning interval is `[stimOn_times - 0.5, stimOn_times + 1.5]`, so bins are aligned to stimulus onset.
+
+**Rating:** match
+
+**Note:** _(no note)_
+
+---
+
+## Q 2-e. How is the `neural` data temporally binned/resampled?
+
+**Notes excerpt** (CONVERSION_NOTES.md / README.md):
+> "BINSIZE = 0.02  # 20 ms time bins ... N_BINS = int(np.ceil(...)) # 100" (convert_data.py:30-33); "Time bins: 100 (20ms each)" (README.md).
+
+**Code** (convert_data.py:30-33, 248-255):
+```python
+BINSIZE = 0.02  # 20 ms time bins
+ALIGN_TIME = 'stimOn_times'
+TIME_WINDOW = (-0.5, 1.5)  # 2s window around stimOn
+N_BINS = int(np.ceil((TIME_WINDOW[1] - TIME_WINDOW[0]) / BINSIZE))  # 100
+...
+bin_idx = np.minimum(((t_sel - t_start) / binsize).astype(np.int32), n_bins - 1)
+valid = (c_sel >= 0) & (c_sel < n_clusters)
+flat_idx = c_sel[valid] * n_bins + bin_idx[valid]
+np.add.at(binned[trial_idx].ravel(), flat_idx, 1)
+```
+
+**What this does:** Spikes are binned by integer division of `(t - t_start)/0.02` into 100 fixed-width 20 ms bins per trial.
 
 **Rating:** match
 
@@ -560,7 +560,7 @@ wheel_disc_2d = wheel_disc.reshape(final_wheel.shape).astype(int)
 
 ---
 
-## Q 7-c. How is `output` *wheel_speed* aligned with the neural data?
+## Q 7-d. How is `output` *wheel_speed* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Same `interval_starts/interval_ends` (stimOn ± window) used as for neural; same `combined_mask` ensures matching trials.
@@ -643,7 +643,7 @@ me_disc_2d = me_disc.reshape(final_me.shape).astype(int)
 
 ---
 
-## Q 8-c. How is `output` *whisker_motion_energy* aligned with the neural data?
+## Q 8-d. How is `output` *whisker_motion_energy* aligned with the neural data?
 
 **Notes excerpt** (CONVERSION_NOTES.md / README.md):
 > Same `interval_starts/interval_ends` and `combined_mask` as neural.
