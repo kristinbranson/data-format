@@ -296,9 +296,9 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **What this does:** The trial produces this input as `time_to_sound_cue_sec` (`input[0]`). In code it is derived from the trial-level cue frame index `SoundFr`, the retained running-frame list (built from `StartFr`, `GrayFr`, `ft_move`), and a session-level median frame interval computed from `ft`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -325,9 +325,9 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **What this does:** The cue frame `SoundFr` is located within the retained running-frame list via `searchsorted` to give a cue index on the retained axis; the signed difference between that index and each retained frame's ordinal position is multiplied by the session median frame interval `frame_dt` (seconds). Values are positive before the cue and negative after; the array becomes row 0 of the `(4, T)` float32 input.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -353,9 +353,9 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **What this does:** The same `frames` array selects the neural columns and defines the retained-frame axis on which the cue time is computed, so column t of the input corresponds to column t of the neural matrix. `finalize_io` explicitly asserts the input and neural time dimensions match.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -382,9 +382,9 @@ def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
 
 **What this does:** The trial produces this input as `day_of_training` (`input[1]`). It is derived from the `datexp` (experiment date) and `mname` (mouse name) fields of the session records in `data/beh/Imaging_Exp_info.npy`; no explicit training-day field from the raw data is used.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -411,9 +411,9 @@ def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
 
 **What this does:** Session date strings are parsed to `datetime`; for each mouse the earliest date across the whole catalog is day 0, and each session's offset is the integer day difference as a float. That per-session scalar is broadcast with `np.full` across all retained timepoints of every trial, forming row 1 of the input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** concerning
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -441,9 +441,9 @@ def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
 
 **What this does:** The trial produces this input as `time_since_trial_start_sec` (`input[2]`). In code it is derived from the count of retained running frames in the trial (defined by `StartFr`, `GrayFr`, `ft_move`) together with the session median frame interval computed from `ft`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -469,9 +469,9 @@ def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
 
 **What this does:** A session-level `frame_dt` is computed as the median positive `ft` difference converted to seconds. Per trial, the retained running frames are numbered 0, 1, 2, ... and multiplied by `frame_dt`, so the value starts at exactly 0 at the first retained frame and increments uniformly, without re-reading the per-frame timestamps of the dropped non-running frames.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -497,9 +497,9 @@ def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
 
 **What this does:** The input is defined on the same retained-frame index axis used to slice the neural matrix, so it is column-for-column aligned with the neural data. Its value is 0 at the first retained (running) frame of the trial, which is the corridor-entry alignment event recorded in metadata.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -524,9 +524,9 @@ def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
 
 **What this does:** The trial produces this input as `reward_available` (`input[3]`). It is read directly from the trial-level `isRew` array in the per-session behavior dict, indexed by trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -553,9 +553,9 @@ def compute_day_offsets(catalog: list[SessionCandidate]) -> dict[str, float]:
 
 **What this does:** `isRew` is cast to float32 and the per-trial scalar is broadcast with `np.full` over all retained running frames of that trial, becoming row 3 of the `(4, T)` input array. No time-windowing or reward-delivery timing is applied; the flag is constant for the whole trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

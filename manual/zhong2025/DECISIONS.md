@@ -200,6 +200,19 @@ ii. The sessions of a mouse taken in order:
 for subject, session_id, _, _ in sorted(records):
 ```
 
+```python
+def training_days(records):
+    """How many days into training each session is, counted per mouse."""
+    days, count = {}, {}
+
+    # a session id sorts by date within a mouse, so the sessions are counted in order
+    for subject, session_id, _, _ in sorted(records):
+        days[session_id] = count.get(subject, 0)
+        count[subject] = days[session_id] + 1
+
+    return days
+```
+
 iii. The date string is the only field that orders every session of every mouse, so it is used to put them in order, and the *day_of_training* variable is computed from how many of the training session come before.
 
 ## 4-b. What processing is involved in computing `input` *day_of_training*?

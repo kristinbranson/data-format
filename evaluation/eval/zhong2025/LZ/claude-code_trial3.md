@@ -339,9 +339,9 @@ for t in range(ntrials):
 
 **What this does:** Per trial, the frame indices from `StartFr` to `EndFr` are subtracted from that trial's `SoundFr` and multiplied by the constant `frame_period`, giving seconds relative to the cue that are positive before the cue and negative after. No NaN handling is applied to `SoundFr`. The result is cast to float32 as row 0 of the `(4, n_timepoints)` input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -369,9 +369,9 @@ for t in range(ntrials):
 
 **What this does:** `frame_indices` covers the same `start:end` session frames used to slice `spk`, so element *i* of the input matches neural frame `start + i`, and both arrays have length `n_tp = end - start`. `end` is additionally clipped to `min(end, len(ft_Pos), len(ft_RunSpeed))` before the slice.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -397,9 +397,9 @@ for t in range(ntrials):
 
 **What this does:** `input[1]` is named `day_of_training` and is derived from the `mname` (mouse) and `datexp` (session date string) fields of the session entries in `beh/Imaging_Exp_info.npy`; no dedicated training-day field in the raw data is used.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -428,9 +428,9 @@ def compute_training_days(sessions):
 
 **What this does:** Sessions are grouped by mouse and sorted by the `datexp` string, then each session receives its 0-based rank in that ordering (an ordinal session index rather than a calendar-day difference). The per-session scalar is broadcast with `np.full` over all timepoints of every trial as input row 1. In `--sample` mode the ranks are computed over only the sampled sessions.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -452,9 +452,9 @@ def compute_training_days(sessions):
 
 **What this does:** `input[2]` is named `time_since_trial_start` and is derived from `beh['StartFr']` (trial-start frame) plus the within-trial frame index, scaled by the global `frame_period` computed from the `ft` frame timestamps of the first session.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -478,9 +478,9 @@ def compute_training_days(sessions):
 
 **What this does:** The trial's start frame `start` (`StartFr[t]`, cast to int) is subtracted from the trial frame indices and multiplied by the constant `frame_period`, producing a ramp in seconds beginning at 0.0. It becomes row 2 of the input array after the float32 cast. Since the window runs to `EndFr`, the ramp spans corridor plus grey-space frames.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -509,9 +509,9 @@ def compute_training_days(sessions):
 
 **What this does:** The ramp is defined on the same `start:end` frame range used to slice `spk`, so its 0.0 value falls on the first neural frame of the trial (corridor entry) and each subsequent sample advances one neural frame; both arrays have length `n_tp`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -535,9 +535,9 @@ def compute_training_days(sessions):
 
 **What this does:** `input[3]` is named `reward_availability` and comes from the per-trial behavior field `beh['isRew']`, indexed by trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -556,9 +556,9 @@ def compute_training_days(sessions):
 
 **What this does:** The trial's `isRew` entry is cast with `float()` and broadcast by `np.full` across all `n_tp` timepoints as row 3 of the input array, so it is constant within each trial; no reward-zone timing (e.g. onset after the sound cue) modulates it.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

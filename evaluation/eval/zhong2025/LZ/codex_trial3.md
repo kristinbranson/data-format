@@ -334,9 +334,9 @@ for trial in range(int(beh["ntrials"])):
 
 **What this does:** Subtracts each retained frame's `ft` timestamp from the trial's `SoundTime` and multiplies by 86400 to convert day units to seconds, cast to float32. The signed result (positive before cue, negative after) is stacked as row 0 of the per-trial `(4, T)` input array; no clipping or windowing is applied.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -364,9 +364,9 @@ def compute_trial_masks(beh: dict) -> list[np.ndarray]:
 
 **What this does:** The single per-trial `frame_idx` mask (frames of that trial passing `ft_CorrSpc & ft_move`) is used both to slice the spike chunks and to index `ft`, so each input column shares a native imaging frame with the matching neural column. No resampling is applied.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -394,9 +394,9 @@ def subject_day_map(sessions: list[SessionRef]) -> dict[str, dict[str, float]]:
 
 **What this does:** The trial produces this input as `day_of_training` (`input[1]`). It is derived from the `mname` and `datexp` session-metadata fields in `data/beh/Imaging_Exp_info.npy`; the raw data contains no explicit training-day field.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -422,9 +422,9 @@ def subject_day_map(sessions: list[SessionRef]) -> dict[str, dict[str, float]]:
 
 **What this does:** Session date strings are parsed to datetimes; per mouse the earliest session date is found and each session's value is the day difference plus 1, so the first session is day 1 rather than day 0. That session-level scalar is broadcast with `np.full` over all retained frames of each trial as row 1 of the input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** concerning
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -451,9 +451,9 @@ def subject_day_map(sessions: list[SessionRef]) -> dict[str, dict[str, float]]:
 
 **What this does:** The trial produces this input as `time_since_trial_start` (`input[2]`). It is derived from the per-frame imaging timestamps `ft` and the trial-level `Trial_start_time` array of the canonical behavior dict.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -477,9 +477,9 @@ def subject_day_map(sessions: list[SessionRef]) -> dict[str, dict[str, float]]:
 
 **What this does:** Subtracts the trial's `Trial_start_time` from each retained frame's `ft` timestamp and multiplies by 86400 to give seconds, cast to float32, stored as row 2 of the input array. No trials are dropped on the basis of this value, so gaps from removed non-running frames remain in the elapsed time.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -505,9 +505,9 @@ def subject_day_map(sessions: list[SessionRef]) -> dict[str, dict[str, float]]:
 
 **What this does:** The same per-trial `frame_idx` selects the neural columns and the `ft` values, so this input is column-for-column aligned with the neural matrix on the native frame grid. Its zero point is the raw `Trial_start_time`, which can precede the first retained running-corridor frame, so the first value is not necessarily 0.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -532,9 +532,9 @@ def subject_day_map(sessions: list[SessionRef]) -> dict[str, dict[str, float]]:
 
 **What this does:** The trial produces this input as `reward_available` (`input[3]`). It is read from the trial-level `isRew` array in the canonical behavior dict, indexed by trial number.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -557,9 +557,9 @@ def subject_day_map(sessions: list[SessionRef]) -> dict[str, dict[str, float]]:
 
 **What this does:** `isRew` is read as float and the per-trial value is broadcast with `np.full` across all retained frames of the trial, forming row 3 of the `(4, T)` float32 input array. No reward-timing or delivery-window logic is applied; the flag is constant for the whole trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

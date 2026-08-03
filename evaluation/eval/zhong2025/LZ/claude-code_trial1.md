@@ -287,9 +287,9 @@ trial_neural = spk[:, sfr:gfr].astype(np.float16)
 
 **What this does:** `input[0]` is named `time_to_sound_cue` and is built from the behavior field `beh['SoundFr']` (sound-cue frame index per trial), the trial's frame indices derived from `beh['StartFr']`/`beh['GrayFr']`, and the per-session frame duration `dt_sec` computed from the `beh['ft']` frame timestamps.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -316,9 +316,9 @@ trial_neural = spk[:, sfr:gfr].astype(np.float16)
 
 **What this does:** For each trial, the frame indices spanning `StartFr` to `GrayFr` are subtracted from that trial's (unrounded, float) `SoundFr` and multiplied by `dt_sec`, giving a continuous per-frame value in seconds that is positive before the cue and negative after. It is cast to float32 and stacked as row 0 of the `(4, n_timepoints)` input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -345,9 +345,9 @@ trial_neural = spk[:, sfr:gfr].astype(np.float16)
 
 **What this does:** The input uses the same session frame indices `sfr:gfr` used to slice the neural array `spk[:, sfr:gfr]`, so element *i* of `time_to_sound` corresponds to neural frame `sfr + i`; both have length `gfr - sfr`. No additional lag or resampling is applied.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -375,9 +375,9 @@ def get_unique_sessions():
 
 **What this does:** `input[1]` is named `day_of_training` and is derived from the `mname` (mouse name) and `datexp` (session date string) fields of the session entries in `beh/Imaging_Exp_info.npy`; no separate training-day field in the raw data is used.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -405,9 +405,9 @@ def get_unique_sessions():
 
 **What this does:** Sessions are grouped by mouse, dates parsed from `datexp` with `'%Y_%m_%d'`, sorted, and each session gets the calendar-day difference from that mouse's earliest session (first session = 0). The day map is computed over the full session list (`all_session_map`) even in sample mode, and the resulting scalar is broadcast across all timepoints of every trial in that session as input row 1.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** concerning
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -432,9 +432,9 @@ def get_unique_sessions():
 
 **What this does:** `input[2]` is named `time_since_trial_start` and is derived from `beh['StartFr']` (trial-start frame, corridor entry), the within-trial frame index, and the per-session frame duration `dt_sec` computed from `beh['ft']` timestamps.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -460,9 +460,9 @@ def get_unique_sessions():
 
 **What this does:** The rounded trial-start frame `sfr` is subtracted from the trial's frame indices and multiplied by the session frame duration `dt_sec`, yielding a ramp in seconds starting at 0.0 on the first frame of the trial. It is cast to float32 and placed as row 2 of the input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -488,9 +488,9 @@ def get_unique_sessions():
 
 **What this does:** `time_since_start` is defined on the same `sfr:gfr` frame range used to slice `spk`, so its value 0.0 falls on the first neural frame of the trial and each subsequent entry advances by one neural frame (`dt_sec`). Lengths match at `gfr - sfr`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -512,9 +512,9 @@ def get_unique_sessions():
 
 **What this does:** `input[3]` is named `reward_availability` and comes from the per-trial behavior field `beh['isRew']`, indexed by trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -542,9 +542,9 @@ def get_unique_sessions():
 
 **What this does:** The trial's `isRew` flag is cast to a float32 1.0/0.0 scalar and broadcast with `np.full` across all `n_trial_frames` timepoints as row 3 of the input array; the value is constant within a trial (no time-varying reward-zone window).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

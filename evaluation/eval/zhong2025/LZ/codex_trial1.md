@@ -353,9 +353,9 @@ SEC_PER_DAY = 24.0 * 3600.0
 
 **What this does:** Subtracts each retained frame's timestamp from the trial's `SoundTime`, multiplies by `SEC_PER_DAY` (86400) to convert the day-unit raw timestamps into seconds, and casts to float32. The result is signed (positive before the cue, negative after) and is stacked as row 0 of the per-trial `(4, T)` input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -383,9 +383,9 @@ SEC_PER_DAY = 24.0 * 3600.0
 
 **What this does:** The same `frame_idx` array selects the spike columns and the `ft` timestamps, so each input column corresponds one-to-one with a neural column at the native imaging frame. No interpolation or resampling is applied on either side.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -412,9 +412,9 @@ def parse_base(base: str) -> tuple[str, datetime, str]:
 
 **What this does:** The trial produces this input as `training_day` (`input[1]`). It is derived from the session/recording identifier string (e.g. `DR10_2022_07_12_1`), from which the mouse name and calendar date are parsed; no dedicated training-day field is read from the raw behavior files.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -439,9 +439,9 @@ def parse_base(base: str) -> tuple[str, datetime, str]:
 
 **What this does:** Sessions are sorted per subject; the earliest date for each subject becomes day 0 and every other session gets the integer day difference from it as a float. That single session-level scalar is broadcast with `np.full` across all retained timepoints of every trial in the session, giving row 1 of the input array. Reported range is `[0.0, 92.0]` (CONVERSION_NOTES.md:358).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** concerning
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -467,9 +467,9 @@ def session_trial_info(record: dict, trial: int, frame_idx: np.ndarray) -> tuple
 
 **What this does:** The trial produces this input as `time_since_trial_start_s` (`input[2]`). It is derived from the per-frame imaging timestamps `ft` and the trial-level `Trial_start_time` array in the behavior record.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -494,9 +494,9 @@ def session_trial_info(record: dict, trial: int, frame_idx: np.ndarray) -> tuple
 
 **What this does:** Subtracts the trial's `Trial_start_time` from each retained frame timestamp and scales by 86400 to get seconds, cast to float32, stored as row 2 of the input array. The same quantity also drives two trial-rejection filters: trials whose retained duration exceeds 60 s or whose inter-frame gap exceeds 10 s are dropped.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -522,9 +522,9 @@ def build_trial_frame_indices(record: dict, nfr: int) -> list[np.ndarray]:
 
 **What this does:** Both the neural matrix and this input are indexed by the identical per-trial `frame_idx` (frames assigned to the trial by `ft_trInd` and passing the corridor/running mask), so column t of the input matches column t of `neural_trial`. Because retained frames start at corridor entry rather than at the raw `Trial_start_time`, the first value per trial is not forced to zero.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -547,9 +547,9 @@ INPUT_NAMES = [
 
 **What this does:** The trial produces this input as `reward_available` (`input[3]`). It is taken from the trial-level `isRew` array in the behavior record, indexed by the raw trial index.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -569,9 +569,9 @@ INPUT_NAMES = [
 
 **What this does:** The per-trial `isRew` value is coerced to a Python bool then to float (0.0 or 1.0) and broadcast with `np.full` across all retained timepoints of the trial, forming row 3 of the `(4, T)` input array. No thresholding, timing, or reward-window logic is applied; it is a constant binary flag for the whole trial.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 

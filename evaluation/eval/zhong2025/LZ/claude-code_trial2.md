@@ -334,9 +334,9 @@ trial_spk = spk[:, start:end].copy()
 
 **What this does:** Per trial, session frame indices are subtracted from that trial's `SoundFr` and divided by the sampling rate `fs`, yielding seconds relative to the cue that are positive before the cue and negative after; trials with `SoundFr == NaN` get an all-zero row. The float32 result is row 0 of the `(4, n_timepoints)` input array.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -365,9 +365,9 @@ trial_spk = spk[:, start:end].copy()
 
 **What this does:** `frame_idx` spans the same `start:end` range used to slice `spk`, so element *i* of the input corresponds to neural frame `start + i` and both have length `end - start`. Neural and behavior frames are first truncated to a common length `nfr_use = min(nfr, len(beh['ft']))`.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -394,9 +394,9 @@ def get_session_day(db):
 
 **What this does:** `input[1]` is named `day_of_training` and is read from the `days` or `sess#` field of each session's db entry in `beh/Imaging_Exp_info.npy`; if neither key is present the value is 0. Session dates (`datexp`) are not used. Verification reports the resulting range as `day_of_training: [0.0, 15.0]` with most sessions at 0 or 1 (verification_full_out.txt:34, input dim 1 per-session ranges).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** incorrect
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -425,9 +425,9 @@ def get_session_day(db):
 
 **What this does:** The metadata field is cast to `int` then `np.float32` once per session and broadcast with `np.full` across all timepoints of every trial in that session as input row 1. No date arithmetic or per-mouse ordering is performed; the documented chronological-order fallback is not implemented in code (missing keys return 0).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** incorrect
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -452,9 +452,9 @@ def get_session_day(db):
 
 **What this does:** `input[2]` is named `time_since_trial_start` and is derived from `beh['StartFr']` (which sets the trial window start) together with the per-session sampling rate `fs` computed from the `beh['ft']` timestamps.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -475,9 +475,9 @@ def get_session_day(db):
 
 **What this does:** A within-trial counter `np.arange(n_frames)` is divided by the session sampling rate `fs`, giving a float32 ramp in seconds that starts at 0.0 on the trial's first frame and increases by `1/fs` per frame. It is placed as row 2 of the input array. Because the trial window runs to the next `StartFr`, the ramp covers corridor plus grey-space frames (verification reports a max of 1768.1 s for one session; verification_full_out.txt:35).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -507,9 +507,9 @@ def get_session_day(db):
 
 **What this does:** The ramp has the same length `n_frames = end - start` as the neural slice `spk[:, start:end]`, so its 0.0 value coincides with the first neural frame of the trial (`StartFr[i]`) and each step corresponds to one neural frame.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -531,9 +531,9 @@ def get_session_day(db):
 
 **What this does:** `input[3]` is named `reward_availability` and comes from the per-trial behavior field `beh['isRew']`, indexed by trial. `RewardFr` is described in the notes but is not read by the conversion code.
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
@@ -555,9 +555,9 @@ def get_session_day(db):
 
 **What this does:** The trial's `isRew` entry is cast with `float()` and broadcast by `np.full` across all `n_trial_frames` timepoints as row 3 of the input array, so the value is constant within a trial. Verification reports the range as `reward_availability: [0.0, 1.0]`, with entire sessions constant at 0 (verification_full_out.txt:36).
 
-**Rating:** _(to be filled by evaluator)_
+**Rating:** match
 
-**Note:** _(to be filled by evaluator)_
+**Note:** _(no note)_
 
 ---
 
