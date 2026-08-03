@@ -66,7 +66,10 @@ done
 
 # -P, not plain pwd: this repo is reached through a symlinked $HOME path on the
 # workstation, and rerun_verifier.sh bakes the path it is given into a container mount.
-REPO_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+# The harbor-jobs glob and the rerun_verifier.sh call below are both repo-relative, so
+# this has to be the repo root, one level up from harbor-scripts/.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 cd "$REPO_DIR"
 
 LOG_DIR="$HOME/rerun_judge_logs"
