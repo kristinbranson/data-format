@@ -25,11 +25,19 @@ set -euo pipefail
 RUN_CLAUDE_JUDGE=true
 RUN_CODEX_JUDGE=true
 DRY_RUN=false
+USE_APIKEYS=false
+ENV_FILE=""
+# Judges need no GPU, so unlike run_harbor.sh there is no device flag to translate
+# between the two runtimes -- only the command name differs.
+CONTAINER_CMD="docker"
 while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --claude-judge-only) RUN_CODEX_JUDGE=false; shift ;;
         --codex-judge-only)  RUN_CLAUDE_JUDGE=false; shift ;;
         --dry-run|-n)        DRY_RUN=true; shift ;;
+        --podman)            CONTAINER_CMD="podman"; shift ;;
+        --apikeys)           USE_APIKEYS=true; shift ;;
+        --env)               ENV_FILE="$2"; USE_APIKEYS=true; shift 2 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -39,7 +47,7 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 TRIAL_DIRS=("$@")
 if [ ${#TRIAL_DIRS[@]} -eq 0 ]; then
-    echo "Usage: $0 [--claude-judge-only|--codex-judge-only|--dry-run] <trial_dir> [<trial_dir> ...]"
+    echo "Usage: $0 [--claude-judge-only|--codex-judge-only|--podman|--apikeys|--dry-run] <trial_dir> [...]"
     exit 1
 fi
 
@@ -51,6 +59,11 @@ TOTAL=${#TRIAL_DIRS[@]}
 CURRENT=0
 
 for TRIAL_DIR in "${TRIAL_DIRS[@]}"; do
+
+# Absolute, because every -v below mounts this path into the container and a runtime
+# rejects a relative bind source. Also strips the trailing slash a shell glob leaves,
+# which would otherwise make the TASK_NAME dirname walk come out one level short.
+TRIAL_DIR="$(cd "$TRIAL_DIR" && pwd -P)"
 
 CURRENT=$((CURRENT + 1))
 if [ "$TOTAL" -gt 1 ]; then
@@ -171,23 +184,44 @@ if [ "$DRY_RUN" = true ]; then
     continue
 fi
 
-# Build Docker image if it doesn't exist
-if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
-    echo "Building Docker image $IMAGE_NAME..."
-    docker build -t "$IMAGE_NAME" "$TASK_DIR/environment"
+# Build the image if it doesn't exist. Images are per-runtime: podman keeps its own
+# store, so a tag docker already has still has to be built once under podman.
+if ! "$CONTAINER_CMD" image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+    echo "Building image $IMAGE_NAME with $CONTAINER_CMD..."
+    "$CONTAINER_CMD" build -t "$IMAGE_NAME" "$TASK_DIR/environment"
 else
-    echo "Using existing Docker image $IMAGE_NAME"
+    echo "Using existing image $IMAGE_NAME"
 fi
 
-# Get Claude OAuth token for LLM judge
-export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
-
-# Codex auth (uses OAuth tokens, not a plain API key)
-if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
-    export CODEX_AUTH_JSON_B64=$(base64 -w0 $HOME/.codex/auth.json 2>/dev/null || true)
-fi
-if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
-    echo "Warning: Codex auth not available. Codex judge will be skipped."
+# Judge credentials, either the org API keys or the OAuth files under $HOME.
+#
+# --apikeys keeps a long sweep off the subscription window that an interactive Claude
+# Code or Codex session also draws on; a few hundred agentic judge runs can exhaust it
+# mid-sweep, and the judge then fails without stopping the script.
+if [ "$USE_APIKEYS" = true ]; then
+    ENV_FILE="${ENV_FILE:-$REPO_DIR/.env}"
+    [ -f "$ENV_FILE" ] || { echo "Error: env file not found: $ENV_FILE"; exit 1; }
+    # shellcheck disable=SC1090
+    source "$ENV_FILE"
+    for var in ANTHROPIC_API_KEY OPENAI_API_KEY; do
+        [ -n "${!var:-}" ] || { echo "Error: $var not set in $ENV_FILE"; exit 1; }
+    done
+    export ANTHROPIC_API_KEY OPENAI_API_KEY
+    # Left unset on purpose: the in-container codex branch below keys on this to decide
+    # between the OAuth file and an auth.json synthesised from OPENAI_API_KEY.
+    unset CODEX_AUTH_JSON_B64
+    echo "Judge auth: API keys from $ENV_FILE"
+else
+    # Checked, not assumed: an unreadable credentials file yields an empty token and an
+    # unauthenticated judge run rather than an error.
+    export CLAUDE_CODE_OAUTH_TOKEN=$(python3 -c "import json; d=json.load(open('$HOME/.claude/.credentials.json')); print(d['claudeAiOauth']['accessToken'])")
+    if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+        export CODEX_AUTH_JSON_B64=$(base64 -w0 $HOME/.codex/auth.json 2>/dev/null || true)
+    fi
+    if [ -z "${CODEX_AUTH_JSON_B64:-}" ]; then
+        echo "Warning: Codex auth not available. Codex judge will be skipped."
+    fi
+    echo "Judge auth: OAuth credential files from \$HOME"
 fi
 
 # --- Prepare test files with unsupervised instructions ---
@@ -260,9 +294,20 @@ CODEX_DIR="$JUDGE_DIR/codex"
 rm -rf "$CODEX_DIR"
 mkdir -p "$CODEX_DIR"
 
+# Codex reads its credentials from /root/.codex/auth.json and nothing else -- it does not
+# look at OPENAI_API_KEY in the environment. With no such file it sends no Authorization
+# header and every call dies with 401 "Missing bearer or basic authentication in header",
+# which the `|| true` below swallows into a null reward. Same elif as rerun_verifier.sh
+# and tests/test.sh; needed here because --apikeys leaves CODEX_AUTH_JSON_B64 unset.
+mkdir -p /root/.codex
 if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
-  mkdir -p /root/.codex
   echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
+elif [ -n "${OPENAI_API_KEY:-}" ]; then
+  cat > /root/.codex/auth.json <<EOF
+{
+  "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+}
+EOF
 fi
 
 echo "=== Running Codex judge (unsupervised) ==="
@@ -290,10 +335,13 @@ chown -R "$HOST_UID:$HOST_GID" /logs/verifier/ 2>/dev/null || true
 echo "=== Unsupervised judge rerun complete ==="
 '
 
-docker run --rm \
-    --gpus all \
+# No GPU: this path runs the two judges only, never the decoder, so requesting a device
+# just fails on hosts whose CDI spec does not declare the one podman asks for.
+"$CONTAINER_CMD" run --rm \
     -e CLAUDE_CODE_OAUTH_TOKEN \
     -e CODEX_AUTH_JSON_B64 \
+    -e ANTHROPIC_API_KEY \
+    -e OPENAI_API_KEY \
     -v "$SNAPSHOT_DIR":/app \
     -v "$DATA_DIR":/app/data:ro \
     -v "$TESTS_TMPDIR":/tests:ro \

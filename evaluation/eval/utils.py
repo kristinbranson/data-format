@@ -112,8 +112,8 @@ AGENT_SHORT = {
     "Terminus/GPT": "Terminus-GPT",
 }
 
-SUPERVISED_DS   = ["allen2p", "chen2024", "hasnain2024", "lee2025", "majnik2025", "sosa2024", "zhang2025"]
-UNSUPERVISED_DS = ["zhong2025"]
+SUPERVISED_DS   = ["allen2p", "chen2024", "hasnain2024", "lee2025", "majnik2025", "sosa2024", "zhang2025", "zhong2025"]
+UNSUPERVISED_DS = []
 
 # The task variant an arm ran. "maximal" mirrors submit_harbor_cluster.py's
 # --minimal/--maximal flags; the underlying metrics field says "full".

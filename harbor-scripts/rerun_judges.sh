@@ -12,10 +12,15 @@
 #   ./rerun_judges.sh [OPTIONS]
 #
 # Options:
-#   --parallel N   Trials in flight at once (default: 5). Each trial runs its two judges
-#                  sequentially, so this is also the peak number of concurrent LLM
-#                  sessions -- shared between Anthropic and OpenAI, not N of each.
-#   --dry-run, -n  Print the ordered trial list and exit without running anything.
+#   --parallel N    Trials in flight at once (default: 5). Each trial runs its two judges
+#                   sequentially, so this is also the peak number of concurrent LLM
+#                   sessions -- shared between Anthropic and OpenAI, not N of each.
+#   --unsupervised  Run the unsupervised judges instead, via run_unsupervised_judges.sh.
+#                   Those read judge_instructions_unsupervised.md, never see the reference
+#                   solution, and write llm_judge_<model>_unsupervised_* keys plus a
+#                   judge_unsupervised/ directory, so they do not disturb the supervised
+#                   verdicts. Logs go to their own directory and summary file.
+#   --dry-run, -n   Print the ordered trial list and exit without running anything.
 #
 # Which trials run:
 #   Those named _trial1 through _trial4. The `_trial[1234]` anchor also drops the two
@@ -55,11 +60,13 @@ set -euo pipefail
 
 PARALLEL=5
 DRY_RUN=false
+UNSUPERVISED=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --parallel)   PARALLEL="$2"; shift 2 ;;
-        --dry-run|-n) DRY_RUN=true; shift ;;
-        --help|-h)    sed -n '2,52p' "$0"; exit 0 ;;
+        --parallel)     PARALLEL="$2"; shift 2 ;;
+        --dry-run|-n)   DRY_RUN=true; shift ;;
+        --unsupervised) UNSUPERVISED=true; shift ;;
+        --help|-h)      sed -n '2,58p' "$0"; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done
@@ -72,9 +79,19 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 cd "$REPO_DIR"
 
-LOG_DIR="$HOME/rerun_judge_logs"
+# The two arms write to different keys in metrics.json and different judge directories,
+# so they never collide -- but their logs would, hence the separate names.
+if [ "$UNSUPERVISED" = true ]; then
+    JUDGE_CMD="./harbor-scripts/run_unsupervised_judges.sh --podman --apikeys"
+    LOG_DIR="$HOME/rerun_judge_logs_unsupervised"
+    SUMMARY_PREFIX="rerun_judges_unsupervised_summary"
+else
+    JUDGE_CMD="./harbor-scripts/rerun_verifier.sh --judges-only --podman --apikeys"
+    LOG_DIR="$HOME/rerun_judge_logs"
+    SUMMARY_PREFIX="rerun_judges_summary"
+fi
 # Timestamped: tee truncates, and a rerun should not erase the record of the previous one.
-SUMMARY_LOG="$HOME/rerun_judges_summary_$(date +%Y%m%d_%H%M%S).log"
+SUMMARY_LOG="$HOME/${SUMMARY_PREFIX}_$(date +%Y%m%d_%H%M%S).log"
 
 # Round-robin by task: number each trial within its own task, sort by that number first
 # and task name second, then drop the two bookkeeping columns. Field 2 of the path is the
@@ -95,6 +112,7 @@ if [ "$DRY_RUN" = true ]; then
 fi
 
 echo "$count trials, $PARALLEL at a time"
+echo "judges:         $([ "$UNSUPERVISED" = true ] && echo unsupervised || echo supervised)"
 echo "per-trial logs: $LOG_DIR"
 echo "summary:        $SUMMARY_LOG"
 mkdir -p "$LOG_DIR"
@@ -102,10 +120,10 @@ mkdir -p "$LOG_DIR"
 # One log file per trial: with several running at once a shared log interleaves into
 # something unreadable. The console gets one ok/FAIL line per trial instead.
 echo "$trials" | xargs -P "$PARALLEL" -I{} sh -c '
-    log="$0/$(echo "$1" | tr / _).log"
-    ./harbor-scripts/rerun_verifier.sh --judges-only --podman --apikeys "$1" > "$log" 2>&1 \
-        && echo "ok   $1" || echo "FAIL $1"
-    ' "$LOG_DIR" {} | tee "$SUMMARY_LOG"
+    log="$1/$(echo "$2" | tr / _).log"
+    $0 "$2" > "$log" 2>&1 \
+        && echo "ok   $2" || echo "FAIL $2"
+    ' "$JUDGE_CMD" "$LOG_DIR" {} | tee "$SUMMARY_LOG"
 
 echo
 echo "Done. Check for judges that produced nothing:"

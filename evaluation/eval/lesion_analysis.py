@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: tmp-data-format
 #     language: python
@@ -66,7 +66,7 @@ _cmap = mcolors.LinearSegmentedColormap.from_list(
     "LightRdYlGn", [FAIL_RED, "#f7f1b5", PASS_GREEN]
 )
 
-TRIAL_METRICS_JSON = 'trial_metrics_all.json'
+TRIAL_METRICS_JSON = 'trial_metrics.json'
 
 data = load_trial_metrics(filename=TRIAL_METRICS_JSON)
 
