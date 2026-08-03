@@ -1755,6 +1755,50 @@ def difference_table(series, categories=CATEGORY_KEYS, fmt='markdown', color=Tru
     return table
 
 
+def prompt_difference_table(per_category, agents=None, **kwargs):
+    """Minimal - maximal difference as a category x agent table.
+
+    The table form of plot_prompt_difference, off the same input, so the cells
+    are the bar heights and the spreads are the scatter of the points drawn on
+    them. Rows are categories, columns are agents.
+
+    Only agents that ran both prompts can appear: terminus-opus and terminus-gpt
+    ran maximal only, so there is no difference to take for them.
+
+    Args:
+        per_category: {category: {agent: [minimal - maximal, one per dataset]}},
+            keyed by raw agent name ('claude-code'), which is mapped to its
+            display name here.
+        agents: raw agent keys, in column order. Defaults to whichever are
+            present, ordered as in ARM_COLUMNS so the columns match every other
+            figure.
+        **kwargs: forwarded to difference_table -- fmt, color, decimals, outfile
+            and the rest. Deliberately not restated, so the two cannot drift.
+
+    Returns:
+        The rendered table as a string. Also prints it.
+
+    Side effects:
+        Prints to stdout, and writes a file when `outfile` is passed.
+    """
+    if agents is None:
+        present = {agent for by_agent in per_category.values() for agent in by_agent}
+        # ARM_COLUMNS names each agent once per prompt, so de-duplicate.
+        agents = list(dict.fromkeys(a for a, _prompt in ARM_COLUMNS if a in present))
+
+    def label_of(agent):
+        """Display name, via whichever prompt of this agent ARM_AGENT knows."""
+        arm = (agent, 'minimal') if (agent, 'minimal') in ARM_AGENT else (agent, 'full')
+        return AGENT_SHORT[ARM_AGENT[arm]]
+
+    # Transposed: per_category is category -> agent, difference_table wants
+    # column -> category.
+    series = {label_of(agent): {category: per_category[category].get(agent, [])
+                                for category in CATEGORY_KEYS}
+              for agent in agents}
+    return difference_table(series, **kwargs)
+
+
 # The same two comparisons the figures show, as markdown.
 difference_table({'Terminus-Opus − Terminus-GPT': terminus_opusvsgpt_per_category,
                   'Codex − Terminus-GPT': codex_vs_terminusgpt_per_category},
