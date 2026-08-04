@@ -340,7 +340,7 @@ def cross_judge_latex(df: pd.DataFrame, *, caption: str | None = None,
                       label: str | None = None) -> str:
     """The same table in the paper's format, with the cross rows shaded.
 
-    Needs `booktabs`, `multirow` and `xcolor` with a `rowgray` colour defined;
+    Needs `booktabs`, `multirow` and `xcolor` with a `rowgray` color defined;
     the `\\crossrow` shorthand is emitted above the table. A `{n}` in `caption`
     is filled in with the number of rows behind each pairing.
     """
@@ -370,7 +370,7 @@ def cross_judge_latex(df: pd.DataFrame, *, caption: str | None = None,
         at += len(cs)
 
     lines = [
-        r"% requires \usepackage{booktabs, multirow} and xcolor with a rowgray colour",
+        r"% requires \usepackage{booktabs, multirow} and xcolor with a rowgray color",
         r"\newcommand{\crossrow}{\cellcolor{rowgray}}",
         r"",
         r"\begin{table}[!h]",
@@ -414,7 +414,7 @@ def binary_markdown(df: pd.DataFrame, **kwargs) -> str:
 
 def _to_markdown(df: pd.DataFrame, floats: list[str], *,
                  caption: str | None = None) -> str:
-    """GitHub-flavoured pipe table, padded so the source is readable too.
+    """GitHub-flavored pipe table, padded so the source is readable too.
 
     Written out here rather than through `DataFrame.to_markdown`, which needs
     `tabulate` — not installed in this environment, and not worth a dependency

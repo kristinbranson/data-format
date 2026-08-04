@@ -309,7 +309,7 @@ def _warn_number_fallback(dataset: str | None, qid: str,
 
 
 def _same_variable(a: str, b: str) -> bool:
-    """Do two normalised variable names refer to the same thing?
+    """Do two normalized variable names refer to the same thing?
 
     Naming drifts between a reference and an answer — `photostim` /
     `photostimulation`, `time_from_tone_onset` / `time_from_tone_onset_in_seconds`

@@ -1,7 +1,7 @@
 # Ratings
 
 How the agent-produced conversion code gets rated — by the human evaluators and
-by the LLM judges — where those ratings live, and how to analyse them.
+by the LLM judges — where those ratings live, and how to analyze them.
 
 Everything is in the `ratings` package. Two entry points:
 

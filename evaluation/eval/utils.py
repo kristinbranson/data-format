@@ -93,7 +93,7 @@ def load_trial_metrics(eval_dir: Path = EVAL_DIR, filename: str = TRIAL_METRICS_
 # Different agent runs name the same conceptual decoder variable in slightly
 # different ways (e.g., chen2024's "tongue Y" target appears as
 # `tongue_y_position`, `tongue_y_bin`, or `tongue_y` across trials). Without
-# normalising, each variant becomes its own DataFrame column and most cells
+# normalizing, each variant becomes its own DataFrame column and most cells
 # are NaN even though the underlying measurement is present in every trial.
 # Confirmed by per-trial inspection of trial_metrics.json — only the
 # unsupervised side has these variants in any column we use.

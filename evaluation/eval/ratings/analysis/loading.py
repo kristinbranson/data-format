@@ -59,8 +59,8 @@ UNSUP_RATERS = judge_columns("unsupervised")
 RATERS = HUMAN_RATERS + JUDGE_RATERS          # the four primary raters
 ALL_RATERS = RATERS + UNSUP_RATERS
 
-# Display order: supervised-behaviour datasets first, then the rest — the order
-# the summary visualisation has always used.
+# Display order: supervised-behavior datasets first, then the rest — the order
+# the summary visualization has always used.
 DATASET_ORDER = [
     "allen2p", "lee2025", "majnik2025", "sosa2024",
     "chen2024", "hasnain2024", "zhang2025", "zhong2025",
@@ -79,7 +79,7 @@ DATASET_FORMAT = {
 
 @dataclass
 class Ratings:
-    """Every rater's ratings, in the two shapes the analyses need."""
+    """Every rater's ratings, in the two shapes the analyzes need."""
 
     tidy: pd.DataFrame        # one row per (dataset, qid, agent, trial)
     nested: dict              # dataset -> main -> sub -> {...}, for figure.py's renderers
@@ -275,7 +275,7 @@ def add_null(df: pd.DataFrame, *, source: str = "LZ", name: str | None = None,
     measures (kappa) should sit at ~0 for it.
 
     Shuffling happens within whatever frame is passed, so call it on the subset
-    being analysed and the marginals match that subset. `within` restricts the
+    being analyzed and the marginals match that subset. `within` restricts the
     permutation further (e.g. `within="dataset"` keeps each dataset's own
     distribution). `seed` makes it reproducible.
     """

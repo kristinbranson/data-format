@@ -2,7 +2,7 @@
 """
 Copy LLM-judge results from a `data-format-experiments/` run into eval/.
 
-The experiment tree is organised for running trials, not for analysing them:
+The experiment tree is organized for running trials, not for analyzing them:
 
     data-format-experiments/<task>/<agent>/<timestamp>_trial<N>/verifier/
         judge/<judge>/llm_judge_eval.json          supervised (reference given)

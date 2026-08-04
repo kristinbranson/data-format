@@ -1,4 +1,4 @@
-"""The rating-square figure: one coloured cell per (question, agent, trial).
+"""The rating-square figure: one colored cell per (question, agent, trial).
 
 Pure drawing and layout arithmetic on top of the nested rating dict —
 `collect_rows` turns one dataset into ordered row specs, `compute_layout` gives
@@ -531,16 +531,16 @@ def draw_summary_column(ax, layout, summary, *,
     """Draw a single grand-average fraction per (category, subtype) as a
     rightmost column of the figure. Each subtype block shows one centered
     bold number, color-graded so high fractions read as dark/bold and low
-    fractions fade toward grey. Subtypes missing from `summary` are blank.
+    fractions fade toward gray. Subtypes missing from `summary` are blank.
     """
     sub_extents = layout["sub_extents"]
 
-    # Map frac to a grey level: values are typically in [0.5, 1.0], so
-    # stretch that range across the full grey→black gradient. Below 0.5
-    # clamps to the lightest grey.
+    # Map frac to a gray level: values are typically in [0.5, 1.0], so
+    # stretch that range across the full gray→black gradient. Below 0.5
+    # clamps to the lightest gray.
     def grade_color(frac):
         t = max(0.0, min(1.0, (frac - 0.78) / 0.22))   # 0 at frac=0.5, 1 at 1.0
-        g = int(round((1 - t) * 0xb0))               # 0xb0 grey → 0x00 black
+        g = int(round((1 - t) * 0xb0))               # 0xb0 gray → 0x00 black
         return f"#{g:02x}{g:02x}{g:02x}"
 
     for (c, s), (y_hi, y_lo) in sub_extents.items():

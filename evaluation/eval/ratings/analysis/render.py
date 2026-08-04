@@ -1,4 +1,4 @@
-"""The multi-dataset summary visualisation, for whichever rater is asked for.
+"""The multi-dataset summary visualization, for whichever rater is asked for.
 
 All the drawing lives in `ratings.figure` already — this only selects a rater's rating
 series, assembles the columns, and sizes the figure. The geometry is the same
@@ -19,7 +19,7 @@ DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
 
 # Sub-blocks left out of the figure. "Thresholding" exists only in sosa2024
 # (two questions), so it costs a row band across every column to show two
-# cells. Dropped here rather than at load time — the numeric analyses still
+# cells. Dropped here rather than at load time — the numeric analyzes still
 # see the questions.
 DEFAULT_EXCLUDE_SUBTYPES = ("Thresholding",)
 

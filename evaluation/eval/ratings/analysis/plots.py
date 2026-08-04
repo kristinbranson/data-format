@@ -79,6 +79,7 @@ def format_scatter(ratings, rater: str = "LZ", *, ax=None, seed: int = 64,
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels([display_name(ds) for ds in order], rotation=30, ha="right")
     ax.set_xlim(-0.5, len(order) - 0.5)
+    ax.set_ylim(0.5, 1.02)
     ax.set_ylabel("Proportion Correct")
     ax.legend(loc="lower right")
     _format_brackets(ax, order)
@@ -155,7 +156,7 @@ def confusion_grid(df: pd.DataFrame, raters=("KB", "claude", "codex"), *,
 
 # Okabe-Ito, which is designed so deutan, protan and tritan readers can all tell
 # the hues apart. Yellow and black are skipped: the inline counts are drawn
-# white-on-colour and need the contrast. MISC is neutral grey on purpose — it is
+# white-on-color and need the contrast. MISC is neutral gray on purpose — it is
 # the "other" bucket and should recede.
 CATEGORY_COLORS = {
     "FILTER": "#0072B2",     # blue
@@ -163,7 +164,7 @@ CATEGORY_COLORS = {
     "PROCESS": "#009E73",    # bluish green
     "ASSUME": "#D55E00",     # vermillion
     "VARNAME": "#CC79A7",    # reddish purple
-    "MISC": "#999999",       # neutral grey
+    "MISC": "#999999",       # neutral gray
 }
 
 
