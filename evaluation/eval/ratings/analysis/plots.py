@@ -98,14 +98,20 @@ def _format_brackets(ax, order):
                 ha="center", va="top", fontsize=9, fontstyle="italic", color="#555")
 
 
+# Both axes run better -> incorrect, so the agreeing-and-fine corner is at the
+# top left and severity increases away from it, the way the rating scale reads.
+CONFUSION_LEVELS = tuple(reversed(RATING_LEVELS))
+
+
 def confusion_grid(df: pd.DataFrame, raters=("KB", "claude", "codex"), *,
-                   truth: str = "LZ", levels=tuple(RATING_LEVELS), title=None):
+                   truth: str = "LZ", levels=CONFUSION_LEVELS, title=None):
     """One rating-vs-reference matrix per rater, counts annotated.
 
     The diagonal is agreement; everything off it is where that rater reads the
     same code differently from `truth`. Worth looking at before any single
     agreement number, because it shows the *direction* of a disagreement —
     a judge that is systematically harsh looks nothing like one that is noisy.
+    Above the diagonal the rater is kinder than the reference, below it harsher.
     """
     fig, axes = plt.subplots(1, len(raters),
                              figsize=(2.0 + 3.2 * len(raters), 4.0), squeeze=False)

@@ -40,6 +40,12 @@ BINARY_COLUMNS = {
     "TP": "TP", "FP": "FP", "FN": "FN", "TN": "TN",
 }
 
+# Raw accuracy sits first when asked for, next to the balanced version it should
+# be read against: mistakes are ~12% of the rows, so a rater that flags nothing
+# scores ~0.88 on it. Useful to see, misleading alone.
+BINARY_COLUMNS_ACC = {"pred": "Rater", "accuracy": "Accuracy",
+                      **{k: v for k, v in BINARY_COLUMNS.items() if k != "pred"}}
+
 FLOAT_FMT = "%.3f"
 
 # Metrics shown to three decimals; everything else (the counts) stays integer.
@@ -98,14 +104,15 @@ def agreement(df: pd.DataFrame):
     return _styled(df, AGREEMENT_COLUMNS)
 
 
-def binary(df: pd.DataFrame):
-    """Binary-accuracy table, ready to display: no index, no `n`, no accuracy.
+def binary(df: pd.DataFrame, *, accuracy: bool = False):
+    """Binary-accuracy table, ready to display: no index, no `n`.
 
-    Raw accuracy is left out on purpose: mistakes are rare, so a rater that
+    Raw accuracy is left out by default: mistakes are rare, so a rater that
     flags nothing scores ~0.9 on it — `balanced_acc` and the null row are the
-    honest comparisons.
+    honest comparisons. `accuracy=True` adds it back, first, for a table where
+    both are wanted side by side.
     """
-    return _styled(df, BINARY_COLUMNS)
+    return _styled(df, BINARY_COLUMNS_ACC if accuracy else BINARY_COLUMNS)
 
 
 def agreement_latex(df: pd.DataFrame, **kwargs) -> str:
@@ -120,6 +127,277 @@ def _to_latex(df: pd.DataFrame, *, caption: str | None = None,
               label: str | None = None) -> str:
     return df.to_latex(index=False, escape=False, float_format=FLOAT_FMT,
                        caption=caption, label=label)
+
+
+# ---- the paper's judge table -------------------------------------------------
+#
+# Rows are grouped by what the rater had in front of it, which is the comparison
+# the table exists to make: the same judge with and without the reference
+# solution, read against a second human doing the same task from the same
+# material. `Supervised` / `Unsupervised` here are the *judge run*, not a group
+# of datasets — every row covers all 8.
+
+JUDGE_SETUP = {
+    "claude": ("Supervised", "Claude"),
+    "codex": ("Supervised", "Codex"),
+    "claude_unsup": ("Unsupervised", "Claude"),
+    "codex_unsup": ("Unsupervised", "Codex"),
+    "KB": ("Human", "Second evaluator"),
+}
+# The human row leads: it is the ceiling the judge rows are read against.
+SETUP_ORDER = ("Human", "Supervised", "Unsupervised")
+
+# (header, key, decimals) in column order, grouped as the header spans them.
+JUDGE_GROUPS = [
+    ("Counts", [("TP", "TP", 0), ("FP", "FP", 0), ("FN", "FN", 0), ("TN", "TN", 0)]),
+    ("Discriminability", [(r"Bal.\ Acc.", "balanced_acc", 3), (r"$d'$", "d_prime", 3)]),
+    ("Mistake-Catching", [("Recall", "recall", 3), ("Prec.", "precision", 3),
+                          ("F1", "f1", 3)]),
+]
+
+
+def judge_latex(df: pd.DataFrame, *, setups=JUDGE_SETUP, order=SETUP_ORDER,
+                caption: str | None = None, label: str | None = None) -> str:
+    """The grouped judge table: counts, discriminability, mistake-catching.
+
+    `df` is a `binary.table` result; its `pred` column selects and names the
+    rows through `setups`, so a predictor with no entry there (the shuffled
+    null) is simply left out of the paper table.
+
+    Needs `booktabs` and `multirow`.
+    """
+    rows = {r["pred"]: r for _, r in df.iterrows()}
+    cols = [c for _group, cs in JUDGE_GROUPS for c in cs]
+
+    body = []
+    for setup in order:
+        preds = [p for p, (s, _label) in setups.items() if s == setup and p in rows]
+        for i, pred in enumerate(preds):
+            head = (rf"\multirow{{{len(preds)}}}{{*}}{{{setup}}}" if i == 0 else "")
+            cells = []
+            for _header, key, dp in cols:
+                v = rows[pred][key]
+                cells.append(f"{int(v)}" if dp == 0 else f"{v:.{dp}f}")
+            body.append(" & ".join([head, _escape(setups[pred][1]), *cells]) + r" \\")
+        if setup != order[-1] and preds:
+            body.append(r"\midrule")
+
+    spans, rules, headers = [], [], []
+    at = 3  # the two label columns come first
+    for name, cs in JUDGE_GROUPS:
+        spans.append(rf"\multicolumn{{{len(cs)}}}{{c}}{{{name}}}")
+        rules.append(rf"\cmidrule(lr){{{at}-{at + len(cs) - 1}}}")
+        headers += [h for h, _k, _d in cs]
+        at += len(cs)
+
+    lines = [
+        r"% requires \usepackage{booktabs, multirow}",
+        r"\begin{table}[!h]",
+        r"\centering",
+        r"\setlength{\tabcolsep}{4pt}",
+        r"\begin{tabular}{l l rrrr cc rrr}",
+        r"\toprule",
+        " & & " + " & ".join(spans) + r" \\",
+        " ".join(rules),
+        " & ".join(["Setup", "Rater", *headers]) + r" \\",
+        r"\midrule",
+        *body,
+        r"\bottomrule",
+        r"\end{tabular}",
+    ]
+    if caption:
+        lines.append(r"\caption{" + caption + "}")
+    if label:
+        lines.append(r"\label{" + label + "}")
+    lines.append(r"\end{table}")
+    return "\n".join(lines)
+
+
+# ---- the agreement matrix ----------------------------------------------------
+#
+# Every rater pair in one square, the way a correlation matrix is read: Pearson
+# above the diagonal, chance-corrected kappa below, so a cell and its mirror
+# image are the two readings of the same pair and the gap between them is how
+# much of that agreement was free.
+
+MATRIX_RATERS = ("LZ", "KB", "claude", "codex", "claude_unsup", "codex_unsup")
+MATRIX_LABELS = {"LZ": "Evaluator #1", "KB": "Evaluator #2",
+                 "claude": "Claude", "codex": "Codex",
+                 "claude_unsup": "Claude Unsup", "codex_unsup": "Codex Unsup"}
+
+
+def agreement_matrix_latex(df: pd.DataFrame, raters=MATRIX_RATERS, *,
+                           labels=MATRIX_LABELS, caption: str | None = None,
+                           label: str | None = None, decimals: int = 3) -> str:
+    """The rater-by-rater agreement square, as LaTeX.
+
+    Columns are numbered rather than named — six names across is wider than a
+    column — with the number repeated in the row label, which is the usual
+    correlation-matrix convention.
+
+    `df` is any frame with one column per rater; the numbers come from
+    `agreement.pair_stats`, so they match the row-per-pair table exactly.
+    """
+    from .agreement import pair_stats
+
+    n = len(raters)
+    stats = {}
+    for i, a in enumerate(raters):
+        for b in raters[i + 1:]:
+            stats[(a, b)] = pair_stats(df, a, b)
+
+    def cell(i, j):
+        if i == j:
+            return r"---"
+        a, b = (raters[i], raters[j]) if i < j else (raters[j], raters[i])
+        value = stats[(a, b)]["pearson" if i < j else "kappa"]
+        return "--" if pd.isna(value) else f"{value:.{decimals}f}"
+
+    body = []
+    for i in range(n):
+        name = _escape(labels.get(raters[i], raters[i]))
+        body.append(" & ".join([f"({i + 1}) {name}"] + [cell(i, j) for j in range(n)])
+                    + r" \\")
+
+    lines = [
+        r"% requires \usepackage{booktabs}",
+        r"\begin{table}[!h]",
+        r"\centering",
+        r"\setlength{\tabcolsep}{6pt}",
+        r"\begin{tabular}{l" + "c" * n + r"}",
+        r"\toprule",
+        " & ".join([""] + [f"({i + 1})" for i in range(n)]) + r" \\",
+        r"\midrule",
+        *body,
+        r"\bottomrule",
+        r"\end{tabular}",
+    ]
+    if caption:
+        lines += [r"\vspace{5pt}", r"\caption{" + caption + "}"]
+    if label:
+        lines.append(r"\label{" + label + "}")
+    lines.append(r"\end{table}")
+    return "\n".join(lines)
+
+
+# ---- judge vs the agent it is scoring ----------------------------------------
+#
+# The same four numbers again, split by whose trials are being judged. The
+# question is whether a judge goes easier on the agent that shares its model,
+# so the two rows where judge and target differ are the comparison and are
+# shaded in the paper table.
+
+AGENT_TARGET = {"claude-code": "Claude", "codex": "Codex"}
+CROSS_GROUPS = [
+    ("Counts", [("TP", "TP", 0), ("FP", "FP", 0), ("FN", "FN", 0), ("TN", "TN", 0)]),
+    ("Discriminability", [(r"Bal.\ Acc.", "balanced_acc", 3), (r"$d'$", "d_prime", 3)]),
+]
+CROSS_COLUMNS = {"family": "Family", "judge": "Judge", "target": "Target",
+                 "TP": "TP", "FP": "FP", "FN": "FN", "TN": "TN",
+                 "balanced_acc": "Balanced Acc", "d_prime": "d'"}
+
+
+def cross_judge_frame(df: pd.DataFrame, *, setups=JUDGE_SETUP,
+                      targets=AGENT_TARGET) -> pd.DataFrame:
+    """`binary.table(..., by="agent")` reshaped into family / judge / target rows.
+
+    Ordered judge-major inside each family, so the two middle rows of a block
+    are the cross-model ones. Adds a boolean `cross` column for the shading.
+    """
+    rows = []
+    for _, r in df.iterrows():
+        if r["pred"] not in setups or r["agent"] not in targets:
+            continue
+        family, judge = setups[r["pred"]]
+        rows.append({"family": family, "judge": judge,
+                     "target": targets[r["agent"]],
+                     "cross": judge != targets[r["agent"]],
+                     **{k: r[k] for k in
+                        ("TP", "FP", "FN", "TN", "balanced_acc", "d_prime", "n")}})
+
+    order = {f: i for i, f in enumerate(SETUP_ORDER)}
+    side = {name: i for i, name in enumerate(targets.values())}
+    out = pd.DataFrame(rows)
+    return (out.sort_values(by=["family", "judge", "target"],
+                            key=lambda c: c.map(lambda v: order.get(v, side.get(v, 0))))
+               .reset_index(drop=True))
+
+
+def cross_judge(df: pd.DataFrame):
+    """The family / judge / target table, cross-model rows shaded."""
+    frame = cross_judge_frame(df)
+    shaded = frame["cross"].to_numpy()
+    prepared = frame[[c for c in CROSS_COLUMNS if c in frame.columns]].rename(
+        columns=CROSS_COLUMNS)
+    floats = [CROSS_COLUMNS[k] for k in ("balanced_acc", "d_prime")]
+    return (prepared.style.hide(axis="index")
+            .format({c: "{:.3f}" for c in floats})
+            .apply(lambda _row: ["background-color: #f0f0f0" if shaded[_row.name] else ""]
+                   * len(prepared.columns), axis=1))
+
+
+def cross_judge_latex(df: pd.DataFrame, *, caption: str | None = None,
+                      label: str | None = None) -> str:
+    """The same table in the paper's format, with the cross rows shaded.
+
+    Needs `booktabs`, `multirow` and `xcolor` with a `rowgray` colour defined;
+    the `\\crossrow` shorthand is emitted above the table. A `{n}` in `caption`
+    is filled in with the number of rows behind each pairing.
+    """
+    frame = cross_judge_frame(df)
+    cols = [c for _group, cs in CROSS_GROUPS for c in cs]
+
+    body = []
+    families = [f for f in SETUP_ORDER if f in set(frame["family"])]
+    for family in families:
+        block = frame[frame["family"] == family]
+        for i, (_, r) in enumerate(block.iterrows()):
+            head = (rf"\multirow{{{len(block)}}}{{*}}{{{family}}}" if i == 0 else "")
+            mark = r"\crossrow " if r["cross"] else ""
+            cells = [f"{mark}{int(r[k])}" if dp == 0 else f"{mark}{r[k]:.{dp}f}"
+                     for _header, k, dp in cols]
+            body.append(" & ".join([head, f"{mark}{r['judge']}",
+                                    f"{mark}{r['target']}", *cells]) + r" \\")
+        if family != families[-1]:
+            body.append(r"\midrule")
+
+    spans, rules, headers = [], [], []
+    at = 4  # family, judge, target
+    for name, cs in CROSS_GROUPS:
+        spans.append(rf"\multicolumn{{{len(cs)}}}{{c}}{{{name}}}")
+        rules.append(rf"\cmidrule(lr){{{at}-{at + len(cs) - 1}}}")
+        headers += [h for h, _k, _d in cs]
+        at += len(cs)
+
+    lines = [
+        r"% requires \usepackage{booktabs, multirow} and xcolor with a rowgray colour",
+        r"\newcommand{\crossrow}{\cellcolor{rowgray}}",
+        r"",
+        r"\begin{table}[!h]",
+        r"\centering",
+        r"\setlength{\tabcolsep}{4pt}",
+        r"\begin{tabular}{l l l rrrr cc}",
+        r"\toprule",
+        " & & & " + " & ".join(spans) + r" \\",
+        " ".join(rules),
+        " & ".join(["Family", "Judge", "Target", *headers]) + r" \\",
+        r"\midrule",
+        *body,
+        r"\bottomrule",
+        r"\end{tabular}",
+    ]
+    if caption:
+        sizes = sorted(set(int(v) for v in frame["n"]))
+        n = sizes[0] if len(sizes) == 1 else "$-$".join(str(s) for s in sizes)
+        lines += [r"\vspace{5pt}", r"\caption{" + caption.replace("{n}", str(n)) + "}"]
+    if label:
+        lines.append(r"\label{" + label + "}")
+    lines.append(r"\end{table}")
+    return "\n".join(lines)
+
+
+def _escape(s: str) -> str:
+    return "".join(_LATEX_ESCAPES.get(ch, ch) for ch in s)
 
 
 def agreement_markdown(df: pd.DataFrame, **kwargs) -> str:

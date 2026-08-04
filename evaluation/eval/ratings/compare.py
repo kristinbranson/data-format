@@ -244,6 +244,10 @@ def fingerprint(qid: str, title: str, dataset: str | None = None) -> tuple:
         r"`(?:output|input)`\s+([A-Z][A-Za-z _\-]+?)\s+(?:derived from|thresholded|aligned|is involved|with the neural)",
         r"`(?:output|input)`\s+([A-Z][A-Za-z _\-]+?)\?",
         r"(?:output|input)\s+([A-Z][A-Za-z _\-]+?)\s+(?:derived from|thresholded|aligned|is involved|with the neural)",
+        # The same, with the variable last and no markup at all: "What
+        # processing is involved in computing output Position in corridor?"
+        # is how the judges phrase every -b question.
+        r"(?:output|input)\s+([A-Z][A-Za-z0-9 _\-]+?)\?",
         # Dossier formats without `output`/`input` prefix:
         # "final `lick_direction` data derived from" / "How is the `lick_direction` data processed"
         r"(?:final\s+)?`([a-z_][a-z0-9_]*)`\s+(?:data\s+)?(?:derived|processed|aligned|filtered|thresholded|is\b)",
@@ -350,26 +354,58 @@ def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[st
         Prints a WARNING to stderr, once per distinct pair of question
         wordings, for every pairing made by number rather than by content.
 
-    Content fingerprint first, so a question keeps its partner when the
-    dossiers number it differently (allen2p reorders its output variables;
-    sosa2024 gained sub-questions). Whatever is left over pairs by bare
-    question number: agents reword the questions freely — "Performance —
-    vectorization" for "What loops in the code could have been vectorized" —
-    and at that point the number is the better guide than the wording. That
-    fallback warns, because the same silence would also hide a dossier that
-    answers a genuinely different question under the same number.
+    Three passes, in decreasing confidence:
+
+    1. Exact content fingerprint, so a question keeps its partner when the
+       dossiers number it differently (allen2p reorders its output variables;
+       sosa2024 gained sub-questions).
+    2. Same fingerprint but for the variable's *name*, where one name contains
+       the other — the judges write out what the reference abbreviates
+       (`position` / "Position in corridor"). Only when exactly one candidate
+       is compatible; two would be a guess.
+    3. Bare question number. Agents reword questions freely — "Performance —
+       vectorization" for "What loops in the code could have been vectorized" —
+       and at that point the number is the better guide than the wording. This
+       one warns, because the same silence would also hide a dossier that
+       answers a genuinely different question under the same number.
     """
+    llm_fp = {qid: fingerprint(qid, v.get("title", ""), dataset=dataset)
+              for qid, v in llm.items()}
+    human_fp = {qid: fingerprint(qid, v.get("title", ""), dataset=dataset)
+                for qid, v in human.items()}
+
     llm_by_fp = {}
-    for qid, v in llm.items():
-        fp = fingerprint(qid, v.get("title", ""), dataset=dataset)
+    for qid, fp in llm_fp.items():
         llm_by_fp.setdefault(fp, qid)
-    qmap = {qid: llm_by_fp.get(fingerprint(qid, v.get("title", ""), dataset=dataset))
-            for qid, v in human.items()}
+    qmap = {qid: llm_by_fp.get(fp) for qid, fp in human_fp.items()}
+
+    claimed = {q for q in qmap.values() if q}
+
+    # Second content pass, for the same question asked with a different name
+    # for its variable. The judges write out what the reference abbreviates —
+    # "Position in corridor" for `position`, "Photostimulation" for
+    # `photostim`, "Behavioral context" for `context` — which is the same
+    # question, not a coincidence of numbering. Everything else about the
+    # fingerprint (input vs output, and which of source / processing /
+    # alignment / thresholding is being asked) still has to agree exactly.
+    #
+    # Only a *unique* candidate is accepted: if two of the dataset's variables
+    # are both compatible with the name, the pairing is genuinely ambiguous and
+    # is left to the number fallback, which says so out loud.
+    for qid, fp in human_fp.items():
+        if qmap[qid] is not None or fp[0] != "var":
+            continue
+        hits = [q for q, l in llm_fp.items()
+                if q not in claimed and l[0] == "var"
+                and l[1] == fp[1] and l[3] == fp[3]
+                and _same_variable(fp[2], l[2])]
+        if len(hits) == 1:
+            qmap[qid] = hits[0]
+            claimed.add(hits[0])
 
     # Number fallback. Never hand out a section that a reference question
     # already matched by content: two reference questions pointing at one
     # answer would rate it twice and silently drop the other question.
-    claimed = {q for q in qmap.values() if q}
     for qid, matched in list(qmap.items()):
         if matched is not None or qid not in llm or qid in claimed:
             continue
