@@ -202,7 +202,6 @@ eval/
     judge_import.py      import-judges
     questions.py         the question taxonomy — what a question is about
     figure.py            the rating-square figure toolkit
-    summary_md.py        reader for the derived eval_summary.md tables
     raters.json          the evaluator registry
     analysis/            loading, judges, agreement, binary, categories,
                          render, plots, display — see its docstring

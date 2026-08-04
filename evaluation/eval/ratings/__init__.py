@@ -27,7 +27,7 @@ the modules are importable for scripting:
 Importing this package reads nothing from disk and draws nothing.
 """
 
-from . import figure, paths, questions, raters, summary_md
+from . import figure, paths, questions, raters
 from .analysis import (agreement, binary, categories, display, judges,
                        loading, plots, render)
 from .analysis.binary import collapse, confusion_counts, metrics
@@ -52,7 +52,7 @@ __all__ = [
     "JUDGE_MODES", "DATASET_ORDER", "DATASET_FORMAT",
     "EXCLUDED_TITLE_PATTERNS", "PERFORMANCE_CATEGORY",
     # workflow
-    "raters", "paths", "questions", "figure", "summary_md",
+    "raters", "paths", "questions", "figure",
 ]
 
 

@@ -251,6 +251,17 @@ def rating_levels(df: pd.DataFrame, rater: str = "LZ", *, ax=None):
 SPREAD_LEVELS = [-3, -2, -1, 0]
 
 
+def question_spread(df: pd.DataFrame, rater: str = "LZ") -> pd.Series:
+    """Per question, the worst rating any trial got minus the best.
+
+    0 when every trial of that question agreed; negative otherwise. The one
+    definition, shared by the bar chart and the histograms — they disagreed on
+    nothing, but two copies of a groupby is one too many.
+    """
+    g = df.groupby(["dataset", "qid"])[rater]
+    return (g.min() - g.max()).dropna()
+
+
 def spread_bars(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
                 levels=SPREAD_LEVELS):
     """Per-question spread (worst trial minus best), the two agents side by side.
@@ -262,9 +273,7 @@ def spread_bars(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
     """
     counts = {}
     for agent in AGENT_ORDER:
-        sub = df[df.agent == agent]
-        spread = (sub.groupby(["dataset", "qid"])[rater].min()
-                  - sub.groupby(["dataset", "qid"])[rater].max()).dropna()
+        spread = question_spread(df[df.agent == agent], rater)
         counts[agent] = np.array([int((spread == lv).sum()) for lv in levels])
 
     x = np.arange(len(levels))
@@ -296,10 +305,10 @@ def trial_variability(df: pd.DataFrame, rater: str = "LZ", *, kind: str = "sprea
     or a roll of the dice?" — mass at 0 means the trials agree.
     """
     def values(sub):
-        g = sub.groupby(["dataset", "qid"])[rater]
         if kind == "spread":
-            return (g.min() - g.max()).dropna().to_numpy()
-        return (sub[rater] - g.transform("max")).dropna().to_numpy()
+            return question_spread(sub, rater).to_numpy()
+        best = sub.groupby(["dataset", "qid"])[rater].transform("max")
+        return (sub[rater] - best).dropna().to_numpy()
 
     panels = [("Combined", values(df), "gray")]
     panels += [(AGENT_LABEL[a], values(df[df.agent == a]), AGENT_COLOR[a])

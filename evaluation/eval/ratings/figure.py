@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from .questions import (CATEGORY_ORDER, SUBTYPE_ORDER, VAR_SUBTYPES,
-                        bucket, categorize)
+from .questions import (CATEGORY_ORDER, PERFORMANCE_CATEGORY, SUBTYPE_ORDER,
+                        VAR_SUBTYPES, bucket, categorize)
 
 
 def collect_rows(dataset_data, *, rating_field="best_rating"):
@@ -389,7 +389,7 @@ def draw_label_column(ax, layout, *,
         spine.set_visible(False)
 
 
-def compute_trial_scores(data, *, exclude_categories=("Code Efficiency",),
+def compute_trial_scores(data, *, exclude_categories=(PERFORMANCE_CATEGORY,),
                          rating_field="best_rating"):
     """Per-(dataset, agent, trial) overall score across questions in `data`.
 
@@ -569,6 +569,6 @@ def insert_end_to_end(rows, e2e_rows):
     """Splice End-to-End rows into a dataset row list, just before any
     Code Efficiency rows (so the section ordering matches CATEGORY_ORDER).
     """
-    pre = [r for r in rows if r["category"] != "Code Efficiency"]
-    post = [r for r in rows if r["category"] == "Code Efficiency"]
+    pre = [r for r in rows if r["category"] != PERFORMANCE_CATEGORY]
+    post = [r for r in rows if r["category"] == PERFORMANCE_CATEGORY]
     return pre + list(e2e_rows) + post

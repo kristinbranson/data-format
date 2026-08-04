@@ -24,6 +24,11 @@ RATING_SCALE = {
 }
 
 
+# The category that is advice about performance rather than a check on whether
+# the conversion is right. Every analysis that asks "is this correct?" drops it,
+# so the name lives here rather than as a literal in each of them.
+PERFORMANCE_CATEGORY = "Code Efficiency"
+
 CATEGORY_ORDER = [
     "Data Loading",
     "Neural Data",

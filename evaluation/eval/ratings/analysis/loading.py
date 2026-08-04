@@ -34,10 +34,9 @@ from . import judges as judges_mod
 # move (see the 2026-08 renumbering).
 EXCLUDED_TITLE_PATTERNS = ("memory usage",)
 
-# The category that asks about performance rather than correctness. Agreement
-# between raters is about whether they judge the same code as correct, so the
-# efficiency questions — advice, not a correctness check — are excluded there.
-PERFORMANCE_CATEGORY = "Code Efficiency"
+# Re-exported so `from ratings import PERFORMANCE_CATEGORY` keeps working; the
+# name itself is defined with the rest of the taxonomy in `questions`.
+PERFORMANCE_CATEGORY = questions.PERFORMANCE_CATEGORY
 
 HUMAN_RATERS = ("LZ", "KB")
 JUDGE_RATERS = ("claude", "codex")
