@@ -8,8 +8,8 @@ Sources per trial:
                    verifier/judge/{claude,codex}/{llm_judge_eval.json, DECISIONS.md}
 
 Usage:
-    python3 compare.py <dataset>                  # walk all trials, all questions
-    python3 compare.py <dataset> --question 1-c   # walk one question across trials
+    python3 -m ratings compare <dataset>                  # walk all trials, all questions
+    python3 -m ratings compare <dataset> --question 1-c   # walk one question across trials
 """
 
 import argparse
@@ -25,12 +25,11 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
 
-import raters as _R
+from . import raters as _R
 
 _CONSOLE = Console()
 
-REPO_ROOT = Path("/groups/zhang/home/zhangl5/Data-Format")
-EVAL_DIR = REPO_ROOT / "evaluation" / "eval"
+from .paths import EVAL_DIR, REPO_ROOT  # noqa: F401
 HARBOR_DIR = REPO_ROOT / "evaluation" / "harbor-jobs"
 
 # On-disk agent folder name (some datasets use `claude/`, others `claude-code/`)
@@ -394,7 +393,7 @@ def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[st
 
 # ---------- summary file I/O ----------
 #
-# eval_summary.md is grouped by question (mirrors rate.py's summary.md) and
+# eval_summary.md is grouped by question (mirrors `rate`'s summary.md) and
 # carries one rating column per registered evaluator:
 #
 #   ## Q <qid>. <title>
@@ -912,7 +911,7 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
                        f"summary: {summary_path}[/dim]")
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description="Walk through human vs LLM-judge mismatches.")
     ap.add_argument("dataset")
     ap.add_argument("--rater", help="Evaluator code whose ratings are compared against "
@@ -920,7 +919,7 @@ def main():
     ap.add_argument("--question", help="Limit walkthrough to one question (e.g. 1-a)")
     ap.add_argument("--overwrite", action="store_true",
                     help="Re-prompt for entries already present in eval_summary.md")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     walkthrough(args.dataset, only_qid=args.question, overwrite=args.overwrite,
                 rater=_R.resolve_rater(args.rater or _R.primary_code()))
 

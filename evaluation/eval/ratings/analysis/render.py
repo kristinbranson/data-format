@@ -1,6 +1,6 @@
 """The multi-dataset summary visualisation, for whichever rater is asked for.
 
-All the drawing lives in `utils` already — this only selects a rater's rating
+All the drawing lives in `ratings.figure` already — this only selects a rater's rating
 series, assembles the columns, and sizes the figure. The geometry is the same
 arithmetic `analysis.ipynb` worked out: the data axes are sized so cells come
 out square once figure margins and subplot spacing are accounted for.
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.patches import Rectangle
 
-import utils
+from .. import figure
 from .loading import DATASET_ORDER, Ratings
 
 DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
@@ -64,22 +64,22 @@ def summary_table(ratings: Ratings, rater: str = "LZ", *,
     n = len(datasets)
 
     trial_scores = pd.DataFrame(
-        utils.compute_trial_scores(data, rating_field=rater))
+        figure.compute_trial_scores(data, rating_field=rater))
 
     exclude_variables = exclude_variables or {}
     all_rows = []
     for ds in datasets:
-        rows = utils.collect_rows(data[ds], rating_field=rater)
+        rows = figure.collect_rows(data[ds], rating_field=rater)
         drop_vars = set(exclude_variables.get(ds, ()))
         rows = [r for r in rows
                 if r["subtype"] not in exclude_subtypes
                 and r.get("var_label") not in drop_vars]
         if show_end_to_end and not trial_scores.empty:
-            rows = utils.insert_end_to_end(rows, utils.end_to_end_rows(ds, trial_scores))
+            rows = figure.insert_end_to_end(rows, figure.end_to_end_rows(ds, trial_scores))
         all_rows.append(rows)
 
-    summary = utils.compute_subtype_summary(all_rows)
-    layout = utils.compute_layout(
+    summary = figure.compute_subtype_summary(all_rows)
+    layout = figure.compute_layout(
         all_rows, subtype_gap={"Data Variables": 0.5, "*": 0.15})
 
     # Size the figure so the natural axes box already matches the data range
@@ -102,12 +102,12 @@ def summary_table(ratings: Ratings, rater: str = "LZ", *,
     )
     fig.subplots_adjust(left=left, right=right, top=top, bottom=bottom, wspace=wspace)
 
-    utils.draw_label_column(axes[0], layout, category_label_x=0.3)
+    figure.draw_label_column(axes[0], layout, category_label_x=0.3)
     for ax, ds, rows in zip(axes[1:-1], datasets, all_rows):
-        utils.draw_dataset_column(ax, rows, layout, title=display_name(ds),
+        figure.draw_dataset_column(ax, rows, layout, title=display_name(ds),
                                   show_labels=False, keep_aspect=False,
                                   cell_size_frac=cell_size_frac)
-    utils.draw_summary_column(axes[-1], layout, summary, title="Average")
+    figure.draw_summary_column(axes[-1], layout, summary, title="Average")
 
     fig.suptitle(f"Ratings by {RATER_TITLE.get(rater, rater)}", y=0.995, fontsize=13)
     if legend:
@@ -122,9 +122,9 @@ def _draw_legend(fig):
     ax.set_axis_off()
     for i, (rating, name) in enumerate(LEGEND_ENTRIES):
         x, y, w, h = i + 0.08, 0.2, 0.105, 0.6
-        ax.add_patch(Rectangle((x, y), w, h, facecolor=utils.RATING_COLORS[rating],
+        ax.add_patch(Rectangle((x, y), w, h, facecolor=figure.RATING_COLORS[rating],
                                edgecolor="white", linewidth=0.5))
-        glyph = utils.RATING_GLYPHS.get(rating)
+        glyph = figure.RATING_GLYPHS.get(rating)
         if glyph:
             ax.text(x + w / 2, y + h / 2, glyph, ha="center", va="center",
                     color="white", fontsize=8, fontweight="bold")

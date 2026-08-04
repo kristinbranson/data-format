@@ -3,9 +3,9 @@
 Interactive Q-by-Q rating tool for the Data-Format evaluation.
 
 Usage:
-    python rate.py <dataset>                 # prompts for the evaluator code
-    python rate.py <dataset> --rater LZ      # skip the prompt
-    python rate.py <dataset> --overwrite     # re-rate everything
+    python3 -m ratings rate <dataset>                 # prompts for the evaluator code
+    python3 -m ratings rate <dataset> --rater LZ      # skip the prompt
+    python3 -m ratings rate <dataset> --overwrite     # re-rate everything
 
 For each question in the reference DECISIONS.md, walks through all 6 trial
 samples (3 claude-code + 3 codex) one at a time in random anonymized order,
@@ -31,8 +31,8 @@ import sys
 import textwrap
 from pathlib import Path
 
-import raters as R
-from compare import build_qid_map
+from . import raters as R
+from .compare import build_qid_map
 
 try:
     from rich.columns import Columns
@@ -46,9 +46,7 @@ except ImportError:
     _RICH = False
     _CONSOLE = None
 
-EVAL_DIR = R.EVAL_DIR
-REPO_ROOT = EVAL_DIR.parents[1]
-MANUAL_DIR = REPO_ROOT / "manual"
+from .paths import EVAL_DIR, MANUAL_DIR
 
 VALID_RATINGS = ["better", "match", "ok", "concerning", "incorrect", "missing"]
 # Explicit shortcut map (dict-comp on first letter would clash on m=match/missing).
@@ -311,7 +309,7 @@ def write_summary(summary_path: Path, qid: str, qtitle: str,
 
 # ---------- main ----------
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description="Interactive Q-by-Q rating tool.")
     ap.add_argument("dataset", help="Dataset name (e.g. allen2p)")
     ap.add_argument("--rater", help="Evaluator code (e.g. LZ). Prompted for if omitted; "
@@ -319,7 +317,7 @@ def main():
     ap.add_argument("--overwrite", action="store_true",
                     help="Re-rate all entries even if already filled.")
     ap.add_argument("--question", help="Only rate a specific question (e.g. 1-a)")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     dataset_dir = EVAL_DIR / args.dataset
     if not dataset_dir.exists():
@@ -348,7 +346,7 @@ def main():
     # Reference and dossier question numbers do NOT always agree: the reference
     # has been renumbered/renamed since some dossiers were generated (allen2p
     # reorders its output variables; sosa2024 gained two sub-questions). Pair
-    # them by what the question is *about* — the same fingerprint compare.py
+    # them by what the question is *about* — the same fingerprint `compare`
     # uses to line human ratings up with the judges — never by bare qid.
     # (The startup check above already reported any renumbering and refused to
     # run if a reference question matched nothing.)

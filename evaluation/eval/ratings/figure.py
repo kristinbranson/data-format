@@ -1,0 +1,574 @@
+"""The rating-square figure: one coloured cell per (question, agent, trial).
+
+Pure drawing and layout arithmetic on top of the nested rating dict —
+`collect_rows` turns one dataset into ordered row specs, `compute_layout` gives
+every row a y-position shared across datasets so a category lines up across
+columns, and the `draw_*` functions paint one axes each. `analysis.render`
+assembles them into the multi-dataset figure; nothing here reads a file.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+
+from .questions import (CATEGORY_ORDER, SUBTYPE_ORDER, VAR_SUBTYPES,
+                        bucket, categorize)
+
+
+def collect_rows(dataset_data, *, rating_field="best_rating"):
+    """Walk one dataset's nested dict -> ordered list of row specs.
+
+    Variables rows are ordered so vars-with-alignment come first within each
+    sub-type, so the i-th row of Source variables / Processing / Alignment
+    refers to the same variable for i < n_vars_with_alignment.
+
+    `rating_field` selects which rater's ratings populate the row's
+    ``"ratings"`` array. Valid values: ``"best_rating"`` (default — combined
+    best per trial), ``"human"``, ``"claude"``, or ``"codex"``.
+    """
+    var_groups = {}      # main_qid -> {subtype: row}
+    other_rows = []
+    for main, subs in dataset_data.items():
+        for sub_letter, q in subs.items():
+            qid = f"{main}-{sub_letter}" if sub_letter else main
+            cat = categorize(qid, q["title"])
+            if cat is None:
+                continue
+            category, subtype, var_label = cat
+            row = {
+                "qid": qid,
+                "category": category,
+                "subtype": subtype,
+                "var_label": var_label,
+                "title": q["title"],
+                "ratings": q[rating_field],
+                "agents": list(q["agents"]),
+                "trials": q["trials"],
+            }
+            if category == "Data Variables":
+                # Keyed by subtype, not sub-letter: the letters shifted in the
+                # 2026-08 renumbering and no longer identify the sub-question.
+                var_groups.setdefault(main, {})[subtype] = row
+            else:
+                other_rows.append(row)
+
+    def main_key(m):
+        try:
+            return int(m)
+        except ValueError:
+            return m
+
+    # Variables that have an alignment row come first, so the i-th row of each
+    # sub-block refers to the same variable for as far as the blocks overlap.
+    with_align = sorted([m for m, s in var_groups.items() if "Alignment" in s], key=main_key)
+    without_align = sorted([m for m, s in var_groups.items() if "Alignment" not in s], key=main_key)
+    var_order = with_align + without_align
+
+    var_rows = []
+    for subtype in VAR_SUBTYPES:
+        for main in var_order:
+            if subtype in var_groups[main]:
+                var_rows.append(var_groups[main][subtype])
+
+    cat_idx = {c: i for i, c in enumerate(CATEGORY_ORDER)}
+
+    def other_key(r):
+        ci = cat_idx.get(r["category"], len(CATEGORY_ORDER))
+        sub_list = SUBTYPE_ORDER.get(r["category"], [])
+        si = sub_list.index(r["subtype"]) if r["subtype"] in sub_list else len(sub_list)
+        return (ci, si, r["qid"])
+
+    other_rows.sort(key=other_key)
+
+    rows = []
+    inserted_vars = False
+    for r in other_rows:
+        if not inserted_vars and cat_idx.get(r["category"], 99) > cat_idx["Data Variables"]:
+            rows.extend(var_rows)
+            inserted_vars = True
+        rows.append(r)
+    if not inserted_vars:
+        rows.extend(var_rows)
+
+    return rows
+
+
+def compute_layout(datasets_rows, *,
+                   square=0.9, subtype_gap=0.5, category_gap=1.1):
+    """Build a unified y-layout from one or more dataset row-lists.
+
+    Pass a single rows list to lay out one dataset, or a list of rows lists to
+    align categories/subtypes across datasets (each subtype slot is sized to
+    the max row count seen across all datasets).
+
+    `subtype_gap` is either a single float (uniform gap between sub-types
+    inside every category) or a dict ``{category_name: gap}`` with optional
+    ``"*"`` key for the default — e.g. ``{"Data Variables": 0.5, "*": 0.15}`` to
+    use a tighter gap everywhere except inside the Variables block.
+    """
+    if datasets_rows and isinstance(datasets_rows[0], dict):
+        datasets_rows = [datasets_rows]
+
+    if isinstance(subtype_gap, dict):
+        default_gap = subtype_gap.get("*", 0.5)
+        gap_by_cat = subtype_gap
+    else:
+        default_gap = float(subtype_gap)
+        gap_by_cat = {}
+
+    def gap_for(cat):
+        return gap_by_cat.get(cat, default_gap)
+
+    max_per_subtype = {}
+    for rows in datasets_rows:
+        counts = {}
+        for r in rows:
+            key = (r["category"], r["subtype"])
+            counts[key] = counts.get(key, 0) + 1
+        for k, v in counts.items():
+            max_per_subtype[k] = max(max_per_subtype.get(k, 0), v)
+
+    y_pos = {}
+    sub_extents = {}
+    cat_extents = {}
+    y = 0.0
+    prev_cat = None
+    prev_sub = None
+    for cat in CATEGORY_ORDER:
+        for sub in SUBTYPE_ORDER.get(cat, []):
+            key = (cat, sub)
+            if key not in max_per_subtype:
+                continue
+            if prev_cat is not None:
+                if cat != prev_cat:
+                    y -= category_gap
+                elif sub != prev_sub:
+                    y -= gap_for(cat)
+            slot_top = y
+            for slot in range(max_per_subtype[key]):
+                y -= square
+                y_pos[(cat, sub, slot)] = y
+            sub_extents[key] = (slot_top, y)
+            if cat not in cat_extents:
+                cat_extents[cat] = [slot_top, y]
+            else:
+                cat_extents[cat][0] = max(cat_extents[cat][0], slot_top)
+                cat_extents[cat][1] = min(cat_extents[cat][1], y)
+            prev_cat, prev_sub = cat, sub
+
+    return {
+        "y_pos": y_pos,
+        "sub_extents": sub_extents,
+        "cat_extents": cat_extents,
+        "y_top": 0.0,
+        "y_bot": y,
+        "square": square,
+        "category_gap": category_gap,
+    }
+
+
+RATING_COLORS = {
+     2: "#1f77b4",   # better — blue
+     1: "#2ca02c",   # match — dark green
+     0: "#86c98a",   # ok — light green
+    -1: "#f0c419",   # concerning — yellow
+    -2: "#d62728",   # incorrect — red
+}
+NAN_COLOR = "#e8e8e8"
+
+# Redundant non-color encoding for color-blind viewers: a small white glyph
+# overlaid on each colored square. Greens (ok / match) and NaN are left
+# bare — color alone is fine when the message is "this is fine".
+RATING_GLYPHS = {
+     2: "+",         # better
+    -1: "!",         # concerning
+    -2: "✗",         # incorrect
+}
+
+
+def rating_color(v):
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return NAN_COLOR
+    return RATING_COLORS.get(int(v), NAN_COLOR)
+
+
+def rating_glyph(v):
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return None
+    return RATING_GLYPHS.get(int(v))
+
+
+def draw_dataset_column(ax, rows, layout, *,
+                        title=None,
+                        agent_gap=0.35,
+                        rating_colors=RATING_COLORS,
+                        nan_color=NAN_COLOR,
+                        show_labels=True,
+                        keep_aspect=True,
+                        cell_size_frac=1.0,
+                        subtype_label_x=-0.6,
+                        category_label_x=-6.5,
+                        band_colors=("#f3f3f3", None)):
+    """Draw one dataset column (rating squares + section bands + title) on `ax`.
+
+    Set ``show_labels=False`` to draw only the data — no left margin reserved
+    for labels — so multiple dataset axes can be packed tightly side-by-side.
+    Set ``keep_aspect=False`` when packing many columns side-by-side: the cells
+    become slightly rectangular but the axes box fills its gridspec slot, so
+    rows align physically with a separate label axes.
+    ``cell_size_frac`` shrinks each rendered cell within its layout slot
+    (1.0 = touching cells, 0.9 = small gap between adjacent cells, etc.).
+    """
+    from matplotlib.patches import Circle, Rectangle
+
+    square = layout["square"]
+    category_gap = layout["category_gap"]
+    cell_size = square * cell_size_frac
+    cell_inset = (square - cell_size) / 2
+
+    xs = []
+    x = 0.0
+    for i in range(6):
+        if i == 3:
+            x += agent_gap
+        xs.append(x)
+        x += square
+    col_width = x
+
+    y_pos = layout["y_pos"]
+    sub_extents = layout["sub_extents"]
+    cat_extents = layout["cat_extents"]
+
+    slot_counters = {}
+    row_ys = []
+    for r in rows:
+        key = (r["category"], r["subtype"])
+        slot = slot_counters.get(key, 0)
+        slot_counters[key] = slot + 1
+        row_ys.append(y_pos[(r["category"], r["subtype"], slot)])
+
+    if show_labels:
+        x_lo = category_label_x - 0.8
+    else:
+        x_lo = -0.2
+    x_hi = col_width + 0.2
+
+    if band_colors:
+        ordered_cats = sorted(cat_extents, key=lambda c: -cat_extents[c][0])
+        for i, cat in enumerate(ordered_cats):
+            band = band_colors[i % len(band_colors)]
+            if band is None:
+                continue
+            y_hi, y_lo = cat_extents[cat]
+            pad_top = category_gap / 2 if i > 0 else square / 3
+            pad_bot = category_gap / 2 if i < len(ordered_cats) - 1 else square / 3
+            ax.add_patch(Rectangle(
+                (x_lo, y_lo - pad_bot),
+                x_hi - x_lo,
+                (y_hi + pad_top) - (y_lo - pad_bot),
+                facecolor=band, edgecolor="none", zorder=-2,
+            ))
+
+    for r, y in zip(rows, row_ys):
+        kind = r.get("render", "squares")
+        if kind == "symbols":
+            # Per-cell glyph colored by the underlying rating value:
+            #   ≥ 0 → ✓, [-1, 0) → !, < -1 → ✗
+            for i, rating in enumerate(r["ratings"]):
+                if rating is None or (isinstance(rating, float) and np.isnan(rating)):
+                    continue
+                color = rating_color(rating)
+                cx = xs[i] + square / 2
+                cy = y + square / 2
+                if rating >= -1 and rating < 0:
+                    symbol = "!"
+                elif rating >= 0:
+                    symbol = "✓"
+                else:
+                    symbol = "✗"
+                ax.text(cx, cy, symbol, ha="center", va="center",
+                        color=color, fontsize=14, fontweight="bold",
+                        zorder=2)
+        elif kind == "text":
+            # Text labels in r["text"]. Length 6 → one per cell; length 2 →
+            # one per agent group (centered across that group's 3 cells).
+            text = list(r.get("text", []))
+            if len(text) == 2:
+                positions = [
+                    (xs[0] + xs[2] + square) / 2,   # claude group center
+                    (xs[3] + xs[5] + square) / 2,   # codex group center
+                ]
+                fontsize = r.get("text_fontsize", 10)
+            else:
+                positions = [xs[i] + square / 2 for i in range(len(text))]
+                fontsize = r.get("text_fontsize", 7)
+            for x_center, label in zip(positions, text):
+                if not label:
+                    continue
+                ax.text(x_center, y + square / 2, label,
+                        ha="center", va="center", fontsize=fontsize,
+                        color="#333333", zorder=2)
+        else:  # "squares"
+            for i, rating in enumerate(r["ratings"]):
+                ax.add_patch(Rectangle((xs[i] + cell_inset, y + cell_inset),
+                                       cell_size, cell_size,
+                                       facecolor=rating_color(rating),
+                                       edgecolor="white", linewidth=0.5,
+                                       zorder=1))
+                glyph = rating_glyph(rating)
+                if glyph is not None:
+                    ax.text(xs[i] + cell_inset + cell_size / 2,
+                            y + cell_inset + cell_size / 2,
+                            glyph, ha="center", va="center",
+                            color="white", fontsize=10, fontweight="bold",
+                            zorder=2)
+
+    if show_labels:
+        for (c, s), (y_hi, y_lo) in sub_extents.items():
+            label = c if c in {"Missing-Data Handling", "End-to-End"} else s
+            ax.text(subtype_label_x, (y_hi + y_lo) / 2, label,
+                    ha="right", va="center", fontsize=8)
+        for cat, (y_hi, y_lo) in cat_extents.items():
+            n_subs = sum(1 for (c2, _) in sub_extents if c2 == cat)
+            if n_subs <= 1:
+                continue
+            ax.text(category_label_x, (y_hi + y_lo) / 2, cat,
+                    ha="right", va="center", fontsize=11,
+                    fontweight="bold", rotation=90)
+
+    y_top_data = layout["y_top"]
+    y_bot_data = layout["y_bot"]
+    if title is not None:
+        ax.text(col_width / 2, y_top_data + 0.6, title,
+                ha="center", va="bottom",
+                fontsize=11, fontweight="bold")
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlim(x_lo, x_hi)
+    ax.set_ylim(y_bot_data - 0.3, y_top_data + (1.6 if title else 0.3))
+    if keep_aspect:
+        ax.set_aspect("equal")
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
+def draw_label_column(ax, layout, *,
+                      subtype_label_x=1.0,
+                      category_label_x=0.1,
+                      ax_xlim=(0.0, 1.05),
+                      title_pad=1.6):
+    """Draw row/category labels on a standalone axes, aligned to `layout`.
+
+    Use this as the leftmost axes when plotting multiple dataset columns: it
+    occupies its own gridspec slot and does not constrain the data axes.
+    No aspect ratio is forced, so this axes can be any physical width.
+    """
+    sub_extents = layout["sub_extents"]
+    cat_extents = layout["cat_extents"]
+
+    for (c, s), (y_hi, y_lo) in sub_extents.items():
+        label = c if c in {"Missing-Data Handling", "End-to-End"} else s
+        ax.text(subtype_label_x, (y_hi + y_lo) / 2, label,
+                ha="right", va="center", fontsize=8,
+                transform=ax.transData, clip_on=False)
+    for cat, (y_hi, y_lo) in cat_extents.items():
+        n_subs = sum(1 for (c2, _) in sub_extents if c2 == cat)
+        if n_subs <= 1:
+            continue
+        ax.text(category_label_x, (y_hi + y_lo) / 2, cat,
+                ha="left", va="center", fontsize=11,
+                fontweight="bold", rotation=90,
+                transform=ax.transData, clip_on=False)
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlim(*ax_xlim)
+    ax.set_ylim(layout["y_bot"] - 0.3, layout["y_top"] + title_pad)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
+def compute_trial_scores(data, *, exclude_categories=("Code Efficiency",),
+                         rating_field="best_rating"):
+    """Per-(dataset, agent, trial) overall score across questions in `data`.
+
+    For each trial slot, gather the ratings of every question that is NOT
+    in ``exclude_categories`` (Code Efficiency by default, since it is
+    "soft" advice rather than a correctness check), and summarize:
+      n_questions  count of valid (non-NaN) ratings
+      n_ok         count of ratings ≥ 0
+      min_rating   worst rating across the trial (drives the bucket)
+      bucket       one of BUCKET_ORDER
+
+    `rating_field` selects which rater's ratings to use. Valid values:
+    ``"best_rating"`` (default — combined best per trial), ``"human"``,
+    ``"claude"``, or ``"codex"``.
+
+    Returns a list of records (call ``pd.DataFrame(...)`` on the result).
+    """
+    excluded = set(exclude_categories)
+    records = []
+    for ds, mains in data.items():
+        # 6 trial slots = 3 claude-code + 3 codex.
+        trial_ratings = [[] for _ in range(6)]
+        trial_meta = [None] * 6
+        for main, subs in mains.items():
+            for sub_letter, q in subs.items():
+                qid = f"{main}-{sub_letter}" if sub_letter else main
+                cat = categorize(qid, q["title"])
+                if cat is None or cat[0] in excluded:
+                    continue
+                for i, r in enumerate(q[rating_field]):
+                    trial_ratings[i].append(r)
+                    if trial_meta[i] is None:
+                        trial_meta[i] = (q["agents"][i], int(q["trials"][i]))
+
+        for i in range(6):
+            if trial_meta[i] is None:
+                continue
+            rs = np.array(trial_ratings[i], dtype=float)
+            valid = rs[~np.isnan(rs)]
+            min_r = float(valid.min()) if valid.size else None
+            n_ok = int((valid >= 0).sum())
+            records.append({
+                "dataset": ds,
+                "agent": trial_meta[i][0],
+                "trial": trial_meta[i][1],
+                "n_questions": int(valid.size),
+                "n_ok": n_ok,
+                "min_rating": min_r,
+                "bucket": bucket(min_r),
+            })
+    return records
+
+
+def end_to_end_rows(ds, trial_scores, *, agents=("claude-code", "codex")):
+    """Build the two End-to-End row specs for one dataset's column.
+
+    `trial_scores` is the DataFrame returned by ``compute_trial_scores``.
+    Returns a list of two row dicts ready to splice into a column's row list:
+      [0] render="symbols" — worst rating per trial as ✓ / ○ / ✗
+      [1] render="text"    — mean (n_ok / n_questions) per agent (one
+                             number per agent group, e.g. "0.85")
+    """
+    sub = trial_scores[trial_scores.dataset == ds].sort_values(["agent", "trial"])
+    common = {
+        "category": "End-to-End",
+        "subtype": "",
+        "var_label": None,
+        "agents": list(sub["agent"]),
+        "trials": np.array(sub["trial"], dtype=int),
+    }
+
+    per_agent = []
+    for agent in agents:
+        ag = sub[sub.agent == agent]
+        if len(ag) == 0:
+            per_agent.append("")
+            continue
+        frac = (ag["n_ok"] / ag["n_questions"]).mean()
+        per_agent.append(f"{frac:.3f}")
+
+    return [
+        {
+            **common,
+            "qid": "ete-symbol",
+            "title": "End-to-End worst rating per trial",
+            "ratings": np.array(sub["min_rating"].tolist(), dtype=float),
+            "render": "symbols",
+        },
+        {
+            **common,
+            "qid": "ete-frac",
+            "title": "End-to-End mean n_ok/n_questions per agent",
+            "ratings": np.full(len(sub), np.nan),
+            "text": per_agent,
+            "render": "text",
+        },
+    ]
+
+
+def compute_subtype_summary(all_rows, *,
+                            exclude_categories=("End-to-End",)):
+    """Per-(category, subtype) grand-average proportion of correct ratings.
+
+    `all_rows` is a list of dataset row-lists (one per dataset). For each
+    (category, subtype) NOT in ``exclude_categories`` (End-to-End by default,
+    since it is itself a summary), pool every valid rating across every
+    dataset, every agent, every trial, and every row (so for Data Variables
+    this averages across variables too), then compute:
+
+        count(rating >= 0) / count(valid ratings)
+
+    Returns: ``{(category, subtype): float fraction or None}``.
+    """
+    excluded = set(exclude_categories)
+    counts = {}  # (cat, sub) -> [n_ok, n_total]
+    for rows in all_rows:
+        for r in rows:
+            if r["category"] in excluded:
+                continue
+            if r.get("render", "squares") != "squares":
+                continue
+            ratings = np.asarray(r["ratings"], dtype=float)
+            mask = ~np.isnan(ratings)
+            if not mask.any():
+                continue
+            key = (r["category"], r["subtype"])
+            if key not in counts:
+                counts[key] = [0, 0]
+            counts[key][0] += int((ratings[mask] >= 0).sum())
+            counts[key][1] += int(mask.sum())
+
+    return {k: (n_ok / n_total if n_total else None)
+            for k, (n_ok, n_total) in counts.items()}
+
+
+def draw_summary_column(ax, layout, summary, *,
+                        title=None,
+                        title_pad=1.6):
+    """Draw a single grand-average fraction per (category, subtype) as a
+    rightmost column of the figure. Each subtype block shows one centered
+    bold number, color-graded so high fractions read as dark/bold and low
+    fractions fade toward grey. Subtypes missing from `summary` are blank.
+    """
+    sub_extents = layout["sub_extents"]
+
+    # Map frac to a grey level: values are typically in [0.5, 1.0], so
+    # stretch that range across the full grey→black gradient. Below 0.5
+    # clamps to the lightest grey.
+    def grade_color(frac):
+        t = max(0.0, min(1.0, (frac - 0.78) / 0.22))   # 0 at frac=0.5, 1 at 1.0
+        g = int(round((1 - t) * 0xb0))               # 0xb0 grey → 0x00 black
+        return f"#{g:02x}{g:02x}{g:02x}"
+
+    for (c, s), (y_hi, y_lo) in sub_extents.items():
+        frac = summary.get((c, s))
+        if frac is None:
+            continue
+        ax.text(0.5, (y_hi + y_lo) / 2, f"{frac:.3f}",
+                ha="center", va="center", fontsize=10, fontweight="bold",
+                color=grade_color(frac), transform=ax.transData,
+                clip_on=False)
+
+    if title is not None:
+        ax.text(0.5, layout["y_top"] + 0.6, title,
+                ha="center", va="bottom",
+                fontsize=11, fontweight="bold")
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(layout["y_bot"] - 0.3, layout["y_top"] + title_pad)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
+def insert_end_to_end(rows, e2e_rows):
+    """Splice End-to-End rows into a dataset row list, just before any
+    Code Efficiency rows (so the section ordering matches CATEGORY_ORDER).
+    """
+    pre = [r for r in rows if r["category"] != "Code Efficiency"]
+    post = [r for r in rows if r["category"] == "Code Efficiency"]
+    return pre + list(e2e_rows) + post

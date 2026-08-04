@@ -3,14 +3,14 @@
 Generate a human-readable evaluation report (markdown) for one dataset.
 
 Sources (all already produced by other tools):
-  - evaluation/eval/<dataset>/<CODE>/summary.md  (rate.py output, per evaluator: solution ratings + per-Q overall comment about the SOLUTION)
-  - evaluation/eval/<dataset>/eval_summary.md  (compare.py output: one column per evaluator + Claude-judge + Codex-judge ratings + per-Q overall comment about the JUDGES)
+  - evaluation/eval/<dataset>/<CODE>/summary.md  (`rate` output, per evaluator: solution ratings + per-Q overall comment about the SOLUTION)
+  - evaluation/eval/<dataset>/eval_summary.md  (`compare` output: one column per evaluator + Claude-judge + Codex-judge ratings + per-Q overall comment about the JUDGES)
 
 Output:
   - evaluation/eval/<dataset>/report.md
 
 Usage:
-    python3 report.py <dataset>
+    python3 -m ratings report <dataset>
 """
 
 import argparse
@@ -18,7 +18,7 @@ import re
 import sys
 from pathlib import Path
 
-EVAL_DIR = Path(__file__).resolve().parent
+from .paths import EVAL_DIR
 
 # Canonical 6-trial order: cc1, cc2, cc3, cx1, cx2, cx3
 TRIAL_KEYS = [("claude-code", n) for n in (1, 2, 3)] + [("codex", n) for n in (1, 2, 3)]
@@ -73,7 +73,7 @@ def _qid_sort_key(q: str):
     return (int(m.group(1)) if m else 999, q.split("-")[1] if "-" in q else "")
 
 
-# ---------- summary.md (rate.py) ----------
+# ---------- summary.md (`rate`) ----------
 
 def parse_rate_summary(path: Path) -> tuple[dict, dict, dict]:
     """
@@ -110,7 +110,7 @@ def parse_rate_summary(path: Path) -> tuple[dict, dict, dict]:
     return ratings, titles, comments
 
 
-# ---------- eval_summary.md (compare.py) ----------
+# ---------- eval_summary.md (`compare`) ----------
 
 def _eval_header_cols(line: str, rater: str) -> dict[str, int] | None:
     """Map an eval_summary header row → {field: index}, or None if not a header.
@@ -258,7 +258,7 @@ def _norm_question(text: str) -> str:
 
 
 def build_report(dataset: str, rater: str | None = None) -> str:
-    import raters as R
+    from . import raters as R
     ddir = EVAL_DIR / dataset
     # Solution ratings now live per evaluator; the report is built from one of
     # them (the primary by default). eval_summary.md holds every evaluator.
@@ -290,7 +290,7 @@ def build_report(dataset: str, rater: str | None = None) -> str:
 
     # Question scope stays driven by the summary files, not by the dossiers: a
     # dossier may carry ratings for questions the workflow deliberately leaves
-    # out of the roll-up (rate_blind.py skips "aligned with the neural data" for
+    # out of the roll-up (`rate --blind` skips "aligned with the neural data" for
     # scalar variables, which no judge asks about). The dossiers supply the
     # ratings for these questions, not the list of them.
     qids = sorted({q for (q, _, _) in {**es_h, **rs_h}} | set(rs_titles),
@@ -362,13 +362,13 @@ def build_report(dataset: str, rater: str | None = None) -> str:
     return "\n".join(lines)
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description="Generate evaluation report markdown.")
     ap.add_argument("dataset")
     ap.add_argument("--rater", help="Evaluator whose solution ratings/notes the "
                                     "report is built from (default: primary)")
     ap.add_argument("--out", help="Output path (default: <dataset>/report.md)")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     report = build_report(args.dataset, rater=args.rater)
     out_path = Path(args.out) if args.out else EVAL_DIR / args.dataset / "report.md"

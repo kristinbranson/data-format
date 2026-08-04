@@ -1,7 +1,7 @@
 # Archived scripts
 
 One-off tools, kept for provenance and re-runnable from here — each adds the
-parent directory to `sys.path` so `import raters` keeps working:
+parent directory to `sys.path` so `from ratings import raters` keeps working:
 
     python3 archive/<script>.py --help
 
@@ -13,7 +13,7 @@ here runs as part of the normal rating workflow.
 ### `rebuild_dossiers.py` — bring the dossiers back onto the reference
 
 **Bring this one back whenever `manual/<dataset>/DECISIONS.md` changes.** It is
-the recovery path for exactly the situation `raters.py check` complains about.
+the recovery path for exactly the situation `python3 -m ratings check` complains about.
 
 Each dossier section moves under the reference qid whose question it answers —
 pairing on exact title, then on the `compare.fingerprint` (same variable *and*
@@ -35,7 +35,7 @@ threshold questions (2502 ratings carried, 0 lost).
     python3 archive/rebuild_dossiers.py --summaries --apply
 
 Follow with the extraction pass for any placeholder sections (runbook §4), then
-`raters.py merge --apply` and `report.py`.
+`python3 -m ratings merge --apply` and `python3 -m ratings report`.
 
 ### `adopt_judge_ratings.py` — fold judge wins into the evaluator's rating
 
@@ -69,15 +69,28 @@ copies to the blanked masters and reports everything as lost.
 
 ## Live tools (in `evaluation/eval/`)
 
-| script | role |
+The rating workflow is now one package with one command; see
+[RATINGS.md](../RATINGS.md).
+
+| command | role |
 |---|---|
-| `raters.py` | shared library — evaluator registry, rater folders, rating I/O, alignment check, `eval_summary.md` merge. Also a CLI: `list` (default), `check [dataset]`, `merge [dataset] [--apply]`. |
-| `rate.py` | Q-by-Q rating against a reference `DECISIONS.md` — covers all 8 datasets |
-| `rate_blind.py` | rating for a dataset with no reference at all |
-| `compare.py` | fetch the judge ratings into `eval_summary.md` |
-| `report.py` | render `report.md` |
-| `copy_judge_results.py` | mirror a `data-format-experiments/` run into `judge_supervised/` / `judge_unsupervised/` |
-| `utils.py`, `metrics.py`, `trial_metrics.py` | notebook analysis |
+| `python3 -m ratings` | registered evaluators and datasets |
+| `python3 -m ratings rate <ds>` | Q-by-Q rating against a reference `DECISIONS.md` (`--blind` where there is none) |
+| `python3 -m ratings check [ds]` | question-numbering alignment |
+| `python3 -m ratings merge [ds]` | rebuild `eval_summary.md`'s evaluator columns |
+| `python3 -m ratings compare <ds>` | fetch the judge ratings into `eval_summary.md` |
+| `python3 -m ratings report <ds>` | render `report.md` |
+| `python3 -m ratings import-judges` | mirror a `data-format-experiments/` run into `judge_<mode>/` |
+
+`ratings_analysis.ipynb` is the analysis. `utils.py`, `metrics.py` and
+`trial_metrics.py` are the other evaluation — what the verifier measured — and
+share nothing with the ratings.
+
+The two notebooks archived here, `analysis.ipynb` and `analysis_ratings.ipynb`,
+were merged into `ratings_analysis.ipynb` on 2026-08-04. `analysis.ipynb` had
+also gone stale: it read ratings from `eval_summary.md` through a `Best` column
+that no longer exists, and pruned questions with a hardcoded qid list that the
+2026-08 renumbering had silently invalidated.
 
 Per-dataset artefacts left behind by the rebuild — `rebuild_map.json` (which old
 question became which) and `rebuild_overrides.json` / `qid_aliases.json` (manual

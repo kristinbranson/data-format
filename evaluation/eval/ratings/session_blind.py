@@ -22,9 +22,9 @@ Per-trial prompt:
 
 Per-question prompts (asked once after all 6 trials of a qid):
   - Solution note  → written to <CODE>/summary.md as **Overall comment:**
-                     (matches rate.py's output format)
+                     (matches `rate`'s output format)
   - Judge note     → written to eval_summary.md   as **Overall comment:**
-                     (matches compare.py's output format; utils.py reads this)
+                     (matches `compare`'s output format; utils.py reads this)
                      — primary evaluator only
 
 Resume:
@@ -34,10 +34,10 @@ Resume:
   - --overwrite re-prompts everything.
 
 Usage:
-    python3 rate_blind.py <dataset>                # prompts for evaluator code
-    python3 rate_blind.py <dataset> --rater KB
-    python3 rate_blind.py <dataset> --question 1-c
-    python3 rate_blind.py <dataset> --overwrite
+    python3 -m ratings rate <dataset> --blind                # prompts for evaluator code
+    python3 -m ratings rate <dataset> --blind --rater KB
+    python3 -m ratings rate <dataset> --blind --question 1-c
+    python3 -m ratings rate <dataset> --blind --overwrite
 """
 
 from __future__ import annotations
@@ -56,8 +56,8 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 
-import raters as R
-from compare import (
+from . import raters as R
+from .compare import (
     EVAL_DIR,
     TRIAL_KEYS,
     PLACEHOLDER,
@@ -123,7 +123,7 @@ def write_trial_rating(path: Path, qid: str, rating: str):
 
 # ---------- per-qid summary files ----------
 #
-# Two output files (matching the formats produced by rate.py / compare.py):
+# Two output files (matching the formats produced by `rate` / `compare`):
 #
 #   summary.md (Solution-side):
 #     ## Q <qid>. <title>
@@ -556,7 +556,7 @@ def walkthrough(dataset: str, only_qid: str | None = None, overwrite: bool = Fal
     )
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("dataset")
     ap.add_argument("--rater", help="Evaluator code (e.g. LZ). Prompted for if omitted; "
@@ -564,7 +564,7 @@ def main():
     ap.add_argument("--question", help="Limit to one qid (e.g. 1-c)")
     ap.add_argument("--overwrite", action="store_true",
                     help="Re-prompt trials/qids that are already filled")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     walkthrough(args.dataset, only_qid=args.question, overwrite=args.overwrite,
                 rater=R.resolve_rater(args.rater))
 

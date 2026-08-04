@@ -29,8 +29,7 @@ import re
 import sys
 from pathlib import Path
 
-EVAL_DIR = Path(__file__).resolve().parent
-REGISTRY_PATH = EVAL_DIR / "raters.json"
+from .paths import EVAL_DIR, MANUAL_DIR, REGISTRY_PATH  # noqa: F401
 
 PLACEHOLDER_RATING = "_(to be filled by evaluator)_"
 PLACEHOLDER_NOTE = "_(to be filled by evaluator)_"
@@ -352,7 +351,7 @@ def datasets(eval_dir: Path = EVAL_DIR) -> list[str]:
 #
 #   - the reference gets renumbered after dossiers are generated (allen2p
 #     reordered its output variables and renamed one), so reference 3-a is
-#     dossier 5-a. rate.py resolves this by pairing on content.
+#     dossier 5-a. `rate` resolves this by pairing on content.
 #   - summary.md / eval_summary.md keep the numbering the reference had at
 #     rating time (sosa2024 gained two sub-questions, pushing "aligned" from
 #     7-c to 7-d). Nothing pairs those by content, so a qid-keyed merge would
@@ -361,7 +360,6 @@ def datasets(eval_dir: Path = EVAL_DIR) -> list[str]:
 # `alignment_report` reports both; `check_alignment` is the pre-flight the
 # rating tools run before letting an evaluator start.
 
-MANUAL_DIR = Path("/groups/zhang/home/zhangl5/Data-Format/manual")
 
 _SUMMARY_SEC = re.compile(
     r"^##\s+Q\s+(\d+(?:-[a-z])?)\.\s+(.+?)$(.*?)(?=^##\s+Q\s+|\Z)",
@@ -394,7 +392,7 @@ def alignment_report(dataset: str, code: str,
     `notes` are informational (drift the tools resolve on their own); each
     entry in `problems` is a message ending with the command that fixes it.
     """
-    from compare import build_qid_map  # deferred: compare.py imports this module
+    from .compare import build_qid_map  # deferred: `compare` imports this module
 
     problems: list[str] = []
     notes: list[str] = []
@@ -453,7 +451,7 @@ def merge_eval_summary(dataset: str, apply: bool = False,
     evaluator, read from the dossiers. Judge columns, Best/Why and the overall
     comments are preserved. Returns True if the file changed.
     """
-    from compare import parse_summary, write_summary  # deferred (circular import)
+    from .compare import parse_summary, write_summary  # deferred (circular import)
 
     path = eval_summary_path(dataset, eval_dir)
     if not path.exists():
@@ -528,7 +526,7 @@ def _add_unjudged_rows(dataset: str, entries: dict, titles: dict,
 
 # ---------- CLI ----------
 
-def _main():
+def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="Evaluator registry and eval-folder upkeep.")
     sub = ap.add_subparsers(dest="cmd")
@@ -539,7 +537,7 @@ def _main():
     m = sub.add_parser("merge", help="Rebuild eval_summary.md evaluator columns")
     m.add_argument("dataset", nargs="?")
     m.add_argument("--apply", action="store_true")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     if args.cmd == "check":
         code = (args.rater or primary_code()).upper()
@@ -575,4 +573,4 @@ def _main():
 
 
 if __name__ == "__main__":
-    _main()
+    main()

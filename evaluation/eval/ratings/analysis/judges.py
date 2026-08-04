@@ -19,12 +19,12 @@ import json
 import re
 from pathlib import Path
 
-import raters as R
-from compare import build_qid_map
-from utils import RATING_SCALE
+from .. import raters as R
+from ..compare import build_qid_map
+from ..questions import RATING_SCALE
 
 # <agent>_trial<N>_<judge>-judge.json — the name carries everything that
-# identifies a file, which is why copy_judge_results.py writes them flat.
+# identifies a file, which is why `import-judges` writes them flat.
 FILENAME_RE = re.compile(r"^(?P<agent>.+)_trial(?P<trial>\d+)_(?P<judge>.+)-judge\.json$")
 
 MODES = ("supervised", "unsupervised")

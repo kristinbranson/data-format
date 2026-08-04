@@ -24,8 +24,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-import raters as R
-import utils
+from .. import questions, raters as R
 from . import judges as judges_mod
 
 # Questions left out of every analysis. "How is memory usage optimized?" was
@@ -67,13 +66,23 @@ DATASET_ORDER = [
     "chen2024", "hasnain2024", "zhang2025", "zhong2025",
 ]
 
+# What the raw data arrived as, which is the one property of a dataset the agent
+# had to cope with before anything else. Insertion order groups the formats, so
+# it doubles as the column order for the by-format figure.
+DATASET_FORMAT = {
+    "chen2024": "NWB", "sosa2024": "NWB", "allen2p": "NWB",
+    "zhang2025": "IBL",
+    "zhong2025": "Numpy", "majnik2025": "Numpy",
+    "lee2025": "Numpy", "hasnain2024": "Numpy",
+}
+
 
 @dataclass
 class Ratings:
     """Every rater's ratings, in the two shapes the analyses need."""
 
     tidy: pd.DataFrame        # one row per (dataset, qid, agent, trial)
-    nested: dict              # dataset -> main -> sub -> {...}, for utils' renderers
+    nested: dict              # dataset -> main -> sub -> {...}, for figure.py's renderers
     coverage: pd.DataFrame    # per (dataset, rater): rated / missing counts
     judge_report: dict = field(default_factory=dict)
     excluded: pd.DataFrame = field(default_factory=pd.DataFrame)
@@ -159,7 +168,7 @@ def load_ratings(datasets: list[str] | None = None,
             if _is_excluded(title, exclude_titles):
                 excluded.append({"dataset": ds, "qid": qid, "title": title})
                 continue
-            cat = utils.categorize(qid, title)
+            cat = questions.categorize(qid, title)
             series = {r: [] for r in raters}
             agents, trials = [], []
 
@@ -168,7 +177,8 @@ def load_ratings(datasets: list[str] | None = None,
                 trials.append(trial)
                 cell = human.get(qid, {}).get((agent, trial), {})
                 rec = {
-                    "dataset": ds, "qid": qid, "main": main, "sub": sub,
+                    "dataset": ds, "format": DATASET_FORMAT.get(ds),
+                    "qid": qid, "main": main, "sub": sub,
                     "title": title,
                     "category": cat[0] if cat else None,
                     "subtype": cat[1] if cat else None,
@@ -176,7 +186,7 @@ def load_ratings(datasets: list[str] | None = None,
                     "agent": agent, "trial": trial,
                 }
                 for r in HUMAN_RATERS:
-                    val = utils.RATING_SCALE.get((cell.get(r) or "").lower())
+                    val = questions.RATING_SCALE.get((cell.get(r) or "").lower())
                     rec[r] = val
                     series[r].append(val)
                 for col, (mode, name) in judge_cols.items():
