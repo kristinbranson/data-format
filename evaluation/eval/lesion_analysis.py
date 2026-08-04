@@ -408,6 +408,12 @@ CATEGORIES = [
 CATEGORY_KEYS = [key for key, _label, _fn in CATEGORIES]
 CATEGORY_LABELS = {key: label for key, label, _fn in CATEGORIES}
 
+# Sentinel key for the summary row the tables append. Deliberately not a real
+# category, and never a member of CATEGORY_KEYS, so it cannot reach the scoring
+# functions or be mistaken for something the verifier measured.
+MEAN_ROW_KEY = '__mean__'
+MEAN_ROW_LABEL = 'Mean'
+
 
 # %%
 # Score every trial.
@@ -772,10 +778,10 @@ def _text_width_points(text, fontsize):
 
 def render_lesion_table(scores, datasets=SUPERVISED_DS, *, arms=None,
                         agents=None, prompts=None, suptitle=None,
-                        cell_size_in=0.20, dataset_gap_in=0.30):
+                        cell_size_in=0.20, dataset_gap_in=0.30, mean_row=True):
     """Draw the lesion categories as a grid of coloured squares.
 
-    Rows are the ten categories in verifier order; within each panel the squares
+    Rows are the categories in verifier order; within each panel the squares
     run left to right over the selected arms, TRIALS_PER_ARM squares per arm.
     Colour is the score on a 0-1 red-to-green scale, grey for nan. Booleans and
     fractions share the scale deliberately: both mean "how much of this check
@@ -800,6 +806,11 @@ def render_lesion_table(scores, datasets=SUPERVISED_DS, *, arms=None,
             afford 0.3 or more.
         dataset_gap_in: horizontal space between adjacent dataset panels, in
             inches. Constant regardless of how many datasets are drawn.
+        mean_row: draw a final "Mean" row, the mean of each column's measured
+            categories, set off by a heavier separator. Unmeasured categories are
+            dropped rather than counted as zero, so a column's mean can rest on
+            fewer than all of them. Always annotated with the number rather than
+            a tick, since a summary of 1.00 is worth reading as a value.
 
     Returns:
         The matplotlib Figure. Also draws it.
@@ -808,7 +819,7 @@ def render_lesion_table(scores, datasets=SUPERVISED_DS, *, arms=None,
     """
     arms = resolve_arms(arms, agents=agents, prompts=prompts)
     n_cells = len(arms) * TRIALS_PER_ARM
-    n_rows = len(CATEGORIES)
+    n_rows = len(CATEGORIES) + (1 if mean_row else 0)
 
     cmap = _cmap.copy()
     cmap.set_bad(NAN_GREY)
@@ -857,7 +868,15 @@ def render_lesion_table(scores, datasets=SUPERVISED_DS, *, arms=None,
         ])
         axes.append(ax)
 
-        grid = np.ma.masked_invalid(category_matrix(scores, dataset, arms))
+        raw = category_matrix(scores, dataset, arms)
+        if mean_row:
+            # Guard the all-nan column explicitly: np.nanmean warns and still
+            # returns nan for it, and one warning per empty column is noise.
+            summary = np.array([np.nan if np.all(np.isnan(raw[:, j]))
+                                else np.nanmean(raw[:, j])
+                                for j in range(raw.shape[1])])
+            raw = np.vstack([raw, summary])
+        grid = np.ma.masked_invalid(raw)
         # aspect='auto' fills the axes box, and the box was sized above to make
         # that exactly square per cell. 'equal' would re-fit the box and break
         # the fixed gap.
@@ -866,12 +885,18 @@ def render_lesion_table(scores, datasets=SUPERVISED_DS, *, arms=None,
 
         # Annotate fractions only. A tick or cross reads faster for the booleans,
         # and printing "1.00" in every cell of the first four rows is noise.
-        for i, (key, _label, _fn) in enumerate(CATEGORIES):
+        summary_row = n_rows - 1 if mean_row else None
+        for i in range(n_rows):
             for j in range(n_cells):
                 value = grid[i, j]
                 if value is np.ma.masked:
                     continue
-                if value in (0.0, 1.0):   # a check that wholly passed or wholly failed
+                if i == summary_row:
+                    # Always numeric: a mean of exactly 1.00 says every category
+                    # passed, which a tick would flatten into the same mark a
+                    # single passing check gets.
+                    text = f'{value:.2f}'.lstrip('0')
+                elif value in (0.0, 1.0):   # a check that wholly passed or wholly failed
                     text = '✓' if value >= 0.5 else '✗'
                 else:
                     text = f'{value:.2f}'.lstrip('0')
@@ -883,7 +908,10 @@ def render_lesion_table(scores, datasets=SUPERVISED_DS, *, arms=None,
             ax.axvline(k - 0.5, color='white',
                        lw=1.6 if k % TRIALS_PER_ARM == 0 else 0.5)
         for i in range(1, n_rows):
-            ax.axhline(i - 0.5, color='white', lw=0.5)
+            # Same weight the arm-group separators use, so the summary reads as
+            # a different kind of row rather than a tenth category.
+            ax.axhline(i - 0.5, color='white',
+                       lw=1.6 if i == summary_row else 0.5)
 
         # One arm header centred over each group of TRIALS_PER_ARM squares.
         # Rotated rather than stacked on two lines: "Terminus-Opus" is far wider
@@ -906,7 +934,8 @@ def render_lesion_table(scores, datasets=SUPERVISED_DS, *, arms=None,
         if panel == 0:
             ax.set_yticks(range(n_rows))
             ax.set_yticklabels(
-                [label for _key, label, _fn in CATEGORIES],
+                [label for _key, label, _fn in CATEGORIES]
+                + ([MEAN_ROW_LABEL] if mean_row else []),
                 fontsize=7.5,
             )
         else:
@@ -983,7 +1012,8 @@ plt.show()
 
 def lesion_score_table(scores, datasets=SUPERVISED_DS, *, arms=None, agents=None,
                        prompts=None, fmt='markdown', color=True, decimals=2,
-                       missing='--', heading=True, glyphs=False, outfile=None):
+                       missing='--', heading=True, glyphs=False, outfile=None,
+                       mean_row=True):
     """Text form of render_lesion_table: one table per dataset.
 
     Rows are the categories in verifier order and columns are the selected arms
@@ -1011,6 +1041,9 @@ def lesion_score_table(scores, datasets=SUPERVISED_DS, *, arms=None, agents=None
             number stays aligned with the fractional cells and survives being
             pasted somewhere without the font that renders the glyph.
         outfile: path to write the tables to. Printed to stdout when None.
+        mean_row: append a "Mean" row, the mean of each column's measured
+            categories. Unmeasured categories are dropped, not counted as
+            zero, so a column's mean can rest on fewer than all of them.
 
     Returns:
         All the tables as one string, blank-line separated.
@@ -1036,6 +1069,15 @@ def lesion_score_table(scores, datasets=SUPERVISED_DS, *, arms=None, agents=None
     blocks = []
     for dataset in datasets:
         grid = category_matrix(scores, dataset, arms)
+        row_labels = [label for _key, label, _fn in CATEGORIES]
+        if mean_row:
+            # Guard the all-nan case explicitly: np.nanmean warns and still
+            # returns nan for it, and a warning per empty column is noise.
+            summary = np.array([np.nan if np.all(np.isnan(grid[:, j]))
+                                else np.nanmean(grid[:, j])
+                                for j in range(grid.shape[1])])
+            grid = np.vstack([grid, summary])
+            row_labels = row_labels + [MEAN_ROW_LABEL]
         title = TASK_DISPLAY_NAME.get(dataset, dataset)
         lines = []
 
@@ -1054,7 +1096,7 @@ def lesion_score_table(scores, datasets=SUPERVISED_DS, *, arms=None, agents=None
             lines.append(' & ' + ' & '.join(str(t) for _label in labels
                                             for t in range(1, TRIALS_PER_ARM + 1)) + ' \\\\')
             lines.append('\\midrule')
-            for i, (key, label, _fn) in enumerate(CATEGORIES):
+            for i, label in enumerate(row_labels):
                 row = []
                 for j in range(len(headers)):
                     body = text_of(grid[i, j])
@@ -1072,7 +1114,7 @@ def lesion_score_table(scores, datasets=SUPERVISED_DS, *, arms=None, agents=None
             lines.append('<table>')
             lines.append('<tr><th></th>'
                          + ''.join(f'<th>{h}</th>' for h in headers) + '</tr>')
-            for i, (key, label, _fn) in enumerate(CATEGORIES):
+            for i, label in enumerate(row_labels):
                 row = ''.join(
                     f'<td style="background-color:#{score_hex(grid[i, j])};'
                     f'text-align:center">{text_of(grid[i, j])}</td>'
@@ -1086,7 +1128,7 @@ def lesion_score_table(scores, datasets=SUPERVISED_DS, *, arms=None, agents=None
                 lines.append('')
             lines.append('| ' + ' | '.join([''] + headers) + ' |')
             lines.append('|:---|' + ':---:|' * len(headers))
-            for i, (key, label, _fn) in enumerate(CATEGORIES):
+            for i, label in enumerate(row_labels):
                 row = [text_of(grid[i, j]) for j in range(len(headers))]
                 lines.append('| ' + ' | '.join([label] + row) + ' |')
 
@@ -1094,12 +1136,12 @@ def lesion_score_table(scores, datasets=SUPERVISED_DS, *, arms=None, agents=None
             if heading:
                 lines.append(title)
             widths = [max(len(headers[j]),
-                          max(len(text_of(grid[i, j])) for i in range(len(CATEGORIES))))
+                          max(len(text_of(grid[i, j])) for i in range(len(row_labels))))
                       for j in range(len(headers))]
-            label_width = max(len(label) for _key, label, _fn in CATEGORIES) + 2
+            label_width = max(len(label) for label in row_labels) + 2
             lines.append(' ' * label_width
                          + ' '.join(f'{h:>{w}}' for h, w in zip(headers, widths)))
-            for i, (key, label, _fn) in enumerate(CATEGORIES):
+            for i, label in enumerate(row_labels):
                 row = []
                 for j, width in enumerate(widths):
                     padded = f'{text_of(grid[i, j]):>{width}}'
@@ -1195,7 +1237,8 @@ def _ansi_cell(text, hex_colour):
 
 def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
                       arms=ARM_COLUMNS, fmt='text', color=True, decimals=2,
-                      missing='--', outfile=None):
+                      missing='--', outfile=None,
+                      mean_row=True):
     """Render {(dataset, agent, prompt): value} as an arm x dataset table.
 
     Args:
@@ -1214,6 +1257,7 @@ def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
         decimals: digits after the decimal point.
         missing: what to show where there is no number.
         outfile: path to write the table to. Printed to stdout when None.
+        mean_row: append a "Mean" row, the mean over arms for each dataset.
 
     Returns:
         The rendered table as a string.
@@ -1224,8 +1268,30 @@ def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
                   for arm in arms]
     headers = [TASK_DISPLAY_NAME.get(dataset, dataset) for dataset in datasets]
 
+    def _pm():
+        return {'latex': r' $\pm$ ', 'markdown': ' ± '}.get(fmt, ' ± ')
+
     def cell(dataset, arm):
-        """(text, hex colour) for one cell."""
+        """(text, hex colour) for one cell.
+
+        `arm` is MEAN_ROW_KEY for the summary row, where the value is the mean
+        over arms for this dataset. Arms with no number are dropped rather than
+        counted as zero, so the summary can rest on fewer arms than the column
+        shows -- and its +/- is the spread ACROSS ARMS, where every other row's
+        is across that arm's trials.
+        """
+        if arm == MEAN_ROW_KEY:
+            values = [v for a in arms
+                      for v in [mean_values.get((dataset, a[0], a[1]))]
+                      if v is not None and not np.isnan(v)]
+            if not values:
+                return missing, score_hex(np.nan)
+            mean = float(np.mean(values))
+            text = f'{mean:.{decimals}f}'
+            if std_values is not None and len(values) > 1:
+                text += f'{_pm()}{float(np.std(values, ddof=1)):.{decimals}f}'
+            return text, score_hex(mean)
+
         mean = mean_values.get((dataset, arm[0], arm[1]))
         if mean is None or np.isnan(mean):
             return missing, score_hex(np.nan)
@@ -1233,9 +1299,13 @@ def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
         if std_values is not None:
             std = std_values.get((dataset, arm[0], arm[1]))
             if std is not None and not np.isnan(std):
-                pm = {'latex': r' $\pm$ ', 'markdown': ' ± '}.get(fmt, ' ± ')
-                text += f'{pm}{std:.{decimals}f}'
+                text += f'{_pm()}{std:.{decimals}f}'
         return text, score_hex(mean)
+
+    # (arm, row label) in render order, with the summary row last.
+    rows = list(zip(arms, row_labels))
+    if mean_row:
+        rows.append((MEAN_ROW_KEY, MEAN_ROW_LABEL))
 
     lines = []
     if fmt == 'latex':
@@ -1245,7 +1315,7 @@ def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
         lines.append('\\toprule')
         lines.append(' & ' + ' & '.join(headers) + ' \\\\')
         lines.append('\\midrule')
-        for arm, label in zip(arms, row_labels):
+        for arm, label in rows:
             cells = []
             for dataset in datasets:
                 text, hex_colour = cell(dataset, arm)
@@ -1260,7 +1330,7 @@ def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
         # back to an uncoloured table, which is still readable.
         lines.append('<table>')
         lines.append('<tr><th></th>' + ''.join(f'<th>{h}</th>' for h in headers) + '</tr>')
-        for arm, label in zip(arms, row_labels):
+        for arm, label in rows:
             cells = []
             for dataset in datasets:
                 text, hex_colour = cell(dataset, arm)
@@ -1272,7 +1342,7 @@ def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
     elif fmt == 'markdown':
         lines.append('| ' + ' | '.join([''] + headers) + ' |')
         lines.append('|' + '---|' * (len(headers) + 1))
-        for arm, label in zip(arms, row_labels):
+        for arm, label in rows:
             cells = [cell(dataset, arm)[0] for dataset in datasets]
             lines.append('| ' + ' | '.join([label] + cells) + ' |')
 
@@ -1280,12 +1350,12 @@ def arm_dataset_table(mean_values, std_values=None, datasets=SUPERVISED_DS,
         # Width from the rendered text, since "0.60 ± 0.05" is far wider than a
         # bare mean and the ANSI escapes must not count toward it.
         widths = [max(len(headers[i]),
-                      max(len(cell(datasets[i], arm)[0]) for arm in arms))
+                      max(len(cell(datasets[i], arm)[0]) for arm, _ in rows))
                   for i in range(len(datasets))]
-        label_width = max(len(label) for label in row_labels) + 2
+        label_width = max(len(label) for _, label in rows) + 2
         lines.append(' ' * label_width
                      + '  '.join(f'{h:>{w}}' for h, w in zip(headers, widths)))
-        for arm, label in zip(arms, row_labels):
+        for arm, label in rows:
             cells = []
             for dataset, width in zip(datasets, widths):
                 text, hex_colour = cell(dataset, arm)
@@ -1635,7 +1705,8 @@ def difference_hex(value, limit=1.0):
 
 
 def difference_table(series, categories=CATEGORY_KEYS, fmt='markdown', color=True,
-                     decimals=2, limit=None, show_std=True, missing='--', outfile=None):
+                     decimals=2, limit=None, show_std=True, missing='--', outfile=None,
+                     mean_row=True):
     """Render per-category differences as a category x series table.
 
     The table form of the per-category difference bar plot: one row per
@@ -1656,6 +1727,10 @@ def difference_table(series, categories=CATEGORY_KEYS, fmt='markdown', color=Tru
             data rather than a fixed +/-1 that would wash everything out.
         show_std: append "+/- std" to each cell.
         missing: what to show where there is no number.
+        mean_row: append a "Mean" row, the mean of the per-category means in each
+            column. Note its +/- is the spread across categories, not across
+            datasets like the cells above it, and that it weights all categories
+            equally -- "Core files exist" counts as much as "Decoder accuracy".
 
     Returns:
         The rendered table as a string. Also prints it.
@@ -1674,6 +1749,25 @@ def difference_table(series, categories=CATEGORY_KEYS, fmt='markdown', color=Tru
 
     cells = {(label, category): summarise(label, category)
              for label in labels for category in categories}
+
+    # Summary row: the mean of the per-category means, so it is the mean of the
+    # numbers actually shown above it. Its +/- is the spread ACROSS CATEGORIES,
+    # which is a different quantity from the per-category cells, whose spread is
+    # across datasets. Categories with no number are dropped rather than counted
+    # as zero, matching the rule the rest of the analysis uses.
+    row_keys = list(categories)
+    if mean_row:
+        row_keys.append(MEAN_ROW_KEY)
+        for label in labels:
+            means = [cells[(label, c)][0] for c in categories
+                     if not np.isnan(cells[(label, c)][0])]
+            cells[(label, MEAN_ROW_KEY)] = (
+                float(np.mean(means)) if means else np.nan,
+                float(np.std(means, ddof=1)) if len(means) > 1 else np.nan)
+
+    def label_of(key):
+        """Row label, for a category key or the summary sentinel."""
+        return MEAN_ROW_LABEL if key == MEAN_ROW_KEY else CATEGORY_LABELS[key]
 
     if limit is None:
         magnitudes = [abs(mean) for mean, _std in cells.values() if not np.isnan(mean)]
@@ -1698,7 +1792,7 @@ def difference_table(series, categories=CATEGORY_KEYS, fmt='markdown', color=Tru
         lines.append('\\toprule')
         lines.append(' & ' + ' & '.join(labels) + ' \\\\')
         lines.append('\\midrule')
-        for category in categories:
+        for category in row_keys:
             row = []
             for label in labels:
                 body = text_of(label, category)
@@ -1706,45 +1800,45 @@ def difference_table(series, categories=CATEGORY_KEYS, fmt='markdown', color=Tru
                     body = (f'\\cellcolor[HTML]'
                             f'{{{difference_hex(cells[(label, category)][0], limit)}}} {body}')
                 row.append(body)
-            lines.append(f'{CATEGORY_LABELS[category]} & ' + ' & '.join(row) + ' \\\\')
+            lines.append(f'{label_of(category)} & ' + ' & '.join(row) + ' \\\\')
         lines.append('\\bottomrule')
         lines.append('\\end{tabular}')
 
     elif fmt == 'markdown' and color:
         lines.append('<table>')
         lines.append('<tr><th></th>' + ''.join(f'<th>{l}</th>' for l in labels) + '</tr>')
-        for category in categories:
+        for category in row_keys:
             row = ''.join(
                 f'<td style="background-color:#'
                 f'{difference_hex(cells[(label, category)][0], limit)};'
                 f'text-align:right">{text_of(label, category)}</td>'
                 for label in labels)
-            lines.append(f'<tr><td>{CATEGORY_LABELS[category]}</td>{row}</tr>')
+            lines.append(f'<tr><td>{label_of(category)}</td>{row}</tr>')
         lines.append('</table>')
 
     elif fmt == 'markdown':
         lines.append('| ' + ' | '.join([''] + labels) + ' |')
         # ---: right-aligns the numeric columns, left-aligns the category names.
         lines.append('|:---|' + '---:|' * len(labels))
-        for category in categories:
+        for category in row_keys:
             row = [text_of(label, category) for label in labels]
-            lines.append('| ' + ' | '.join([CATEGORY_LABELS[category]] + row) + ' |')
+            lines.append('| ' + ' | '.join([label_of(category)] + row) + ' |')
 
     else:
         widths = [max(len(label),
-                      max(len(text_of(label, c)) for c in categories))
+                      max(len(text_of(label, c)) for c in row_keys))
                   for label in labels]
-        label_width = max(len(CATEGORY_LABELS[c]) for c in categories) + 2
+        label_width = max(len(label_of(c)) for c in row_keys) + 2
         lines.append(' ' * label_width
                      + '  '.join(f'{l:>{w}}' for l, w in zip(labels, widths)))
-        for category in categories:
+        for category in row_keys:
             row = []
             for label, width in zip(labels, widths):
                 padded = f'{text_of(label, category):>{width}}'
                 row.append(_ansi_cell(padded,
                                       difference_hex(cells[(label, category)][0], limit))
                            if color else padded)
-            lines.append(f'{CATEGORY_LABELS[category]:<{label_width}}' + '  '.join(row))
+            lines.append(f'{label_of(category):<{label_width}}' + '  '.join(row))
 
     table = '\n'.join(lines)
     if outfile is None:
