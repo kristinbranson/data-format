@@ -25,7 +25,9 @@ DEFAULT_EXCLUDE_SUBTYPES = ("Thresholding",)
 
 
 RATER_TITLE = {"LZ": "LZ", "KB": "KB",
-               "claude": "Claude judge", "codex": "Codex judge"}
+               "claude": "Claude judge", "codex": "Codex judge",
+               "claude_unsup": "Claude judge (unsupervised)",
+               "codex_unsup": "Codex judge (unsupervised)"}
 
 LEGEND_ENTRIES = [(-2, "incorrect"), (-1, "concerning"), (0, "ok"),
                   (1, "match"), (2, "better")]

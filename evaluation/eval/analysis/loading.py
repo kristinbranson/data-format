@@ -42,7 +42,23 @@ PERFORMANCE_CATEGORY = "Code Efficiency"
 
 HUMAN_RATERS = ("LZ", "KB")
 JUDGE_RATERS = ("claude", "codex")
-RATERS = HUMAN_RATERS + JUDGE_RATERS
+
+# Each judge ran twice over the same trials: once with the reference solution
+# in hand (supervised) and once without it (unsupervised). They are separate
+# raters as far as every analysis here is concerned, so they get their own
+# columns — `claude` / `codex` for the supervised run, `claude_unsup` /
+# `codex_unsup` for the unsupervised one.
+JUDGE_MODES = ("supervised", "unsupervised")
+JUDGE_SUFFIX = {"supervised": "", "unsupervised": "_unsup"}
+
+
+def judge_columns(mode: str) -> tuple[str, ...]:
+    return tuple(f"{j}{JUDGE_SUFFIX[mode]}" for j in JUDGE_RATERS)
+
+
+UNSUP_RATERS = judge_columns("unsupervised")
+RATERS = HUMAN_RATERS + JUDGE_RATERS          # the four primary raters
+ALL_RATERS = RATERS + UNSUP_RATERS
 
 # Display order: supervised-behaviour datasets first, then the rest — the order
 # the summary visualisation has always used.
@@ -61,6 +77,7 @@ class Ratings:
     coverage: pd.DataFrame    # per (dataset, rater): rated / missing counts
     judge_report: dict = field(default_factory=dict)
     excluded: pd.DataFrame = field(default_factory=pd.DataFrame)
+    raters: tuple[str, ...] = RATERS   # rating columns actually loaded
 
     @property
     def correctness(self) -> pd.DataFrame:
@@ -73,7 +90,7 @@ class Ratings:
 
     def __repr__(self) -> str:
         n = len(self.tidy)
-        got = {r: int(self.tidy[r].notna().sum()) for r in RATERS}
+        got = {r: int(self.tidy[r].notna().sum()) for r in self.raters}
         return (f"Ratings({self.tidy['dataset'].nunique()} datasets, {n} rows, "
                 + ", ".join(f"{k}={v}" for k, v in got.items()) + ")")
 
@@ -89,20 +106,26 @@ def _is_excluded(title: str, patterns) -> bool:
 
 
 def load_ratings(datasets: list[str] | None = None,
-                 judge_mode: str = "supervised",
+                 judge_modes: tuple[str, ...] = JUDGE_MODES,
                  exclude_titles=EXCLUDED_TITLE_PATTERNS) -> Ratings:
     """
     Build the combined rating table.
 
     `datasets` defaults to every dataset with dossiers, in display order.
-    `judge_mode` selects `judge_supervised/` or `judge_unsupervised/`; a
-    dataset with no judge output for that mode simply contributes NaN judge
-    columns, so the unsupervised half can be analysed as it arrives.
+    `judge_modes` selects which judge runs to load — each contributes its own
+    pair of columns (see `judge_columns`). A dataset with no judge output for a
+    mode simply contributes NaN there, so a half-finished run is still loadable.
     """
     if datasets is None:
         have = set(R.datasets())
         datasets = [d for d in DATASET_ORDER if d in have]
         datasets += [d for d in sorted(have) if d not in DATASET_ORDER]
+
+    # column -> (which judge run, which judge), e.g. claude_unsup -> (unsupervised, claude)
+    judge_cols = {col: (mode, j)
+                  for mode in judge_modes
+                  for j, col in zip(JUDGE_RATERS, judge_columns(mode))}
+    raters = HUMAN_RATERS + tuple(judge_cols)
 
     rows: list[dict] = []
     excluded: list[dict] = []
@@ -117,14 +140,17 @@ def load_ratings(datasets: list[str] | None = None,
         human_codes = [c for c in HUMAN_RATERS if R.rater_dir(ds, c).is_dir()]
         human = R.collect_ratings(ds, human_codes) if human_codes else {}
 
-        if judges_mod.available(ds, judge_mode):
-            judge, report = judges_mod.load_judge_ratings(ds, judge_mode)
-        else:
-            judge, report = {}, {"files": 0, "judges": [], "unmapped_ours": [],
-                                 "extra_judge_qids": {}}
-        judge_report[ds] = report
+        judged: dict[str, dict] = {}
+        for mode in judge_modes:
+            if judges_mod.available(ds, mode):
+                judged[mode], report = judges_mod.load_judge_ratings(ds, mode)
+            else:
+                judged[mode], report = {}, {"files": 0, "judges": [],
+                                            "unmapped_ours": [],
+                                            "extra_judge_qids": {}}
+            judge_report.setdefault(ds, {})[mode] = report
 
-        per_rater_counts = {r: 0 for r in RATERS}
+        per_rater_counts = {r: 0 for r in raters}
         ds_nested: dict = {}
 
         for qid in sorted(ref, key=_qid_sort_key):
@@ -134,7 +160,7 @@ def load_ratings(datasets: list[str] | None = None,
                 excluded.append({"dataset": ds, "qid": qid, "title": title})
                 continue
             cat = utils.categorize(qid, title)
-            series = {r: [] for r in RATERS}
+            series = {r: [] for r in raters}
             agents, trials = [], []
 
             for (agent, trial) in R.TRIAL_KEYS:
@@ -153,18 +179,18 @@ def load_ratings(datasets: list[str] | None = None,
                     val = utils.RATING_SCALE.get((cell.get(r) or "").lower())
                     rec[r] = val
                     series[r].append(val)
-                for r in JUDGE_RATERS:
-                    j = judge.get((qid, agent, trial, r), {})
-                    rec[r] = j.get("rating")
-                    rec[f"{r}_code"] = j.get("code")
-                    series[r].append(j.get("rating"))
-                for r in RATERS:
+                for col, (mode, name) in judge_cols.items():
+                    j = judged[mode].get((qid, agent, trial, name), {})
+                    rec[col] = j.get("rating")
+                    rec[f"{col}_code"] = j.get("code")
+                    series[col].append(j.get("rating"))
+                for r in raters:
                     per_rater_counts[r] += rec[r] is not None
                 rows.append(rec)
 
             q = {"title": title, "agents": agents,
                  "trials": np.array(trials, dtype=int)}
-            for r in RATERS:
+            for r in raters:
                 q[r] = np.array([np.nan if v is None else v for v in series[r]],
                                 dtype=float)
             ds_nested.setdefault(main, {})[sub] = q
@@ -172,7 +198,7 @@ def load_ratings(datasets: list[str] | None = None,
         nested[ds] = ds_nested
         n_questions = sum(len(s) for s in ds_nested.values())
         n_cells = n_questions * len(R.TRIAL_KEYS)
-        for r in RATERS:
+        for r in raters:
             coverage.append({
                 "dataset": ds, "rater": r,
                 "rated": per_rater_counts[r],
@@ -183,7 +209,7 @@ def load_ratings(datasets: list[str] | None = None,
     tidy = pd.DataFrame(rows)
     return Ratings(tidy=tidy, nested=nested,
                    coverage=pd.DataFrame(coverage), judge_report=judge_report,
-                   excluded=pd.DataFrame(excluded))
+                   excluded=pd.DataFrame(excluded), raters=raters)
 
 
 def _qid_sort_key(q: str):
@@ -201,7 +227,7 @@ def coverage_summary(ratings: Ratings) -> pd.DataFrame:
     piv["cells"] = (ratings.coverage.groupby("dataset")["questions"].first()
                     * len(R.TRIAL_KEYS))
     order = [d for d in DATASET_ORDER if d in piv.index]
-    return piv.loc[order, list(RATERS) + ["cells"]]
+    return piv.loc[order, list(ratings.raters) + ["cells"]]
 
 
 def unanswered_by_judges(ratings: Ratings) -> pd.DataFrame:
@@ -212,13 +238,14 @@ def unanswered_by_judges(ratings: Ratings) -> pd.DataFrame:
     """
     kept = set(zip(ratings.tidy["dataset"], ratings.tidy["qid"]))
     recs = []
-    for ds, rep in ratings.judge_report.items():
-        for qid in rep.get("unmapped_ours", []):
-            if (ds, qid) not in kept:
-                continue
-            recs.append({"dataset": ds, "qid": qid,
-                         "title": R.reference_titles(ds).get(qid, "")})
-    return pd.DataFrame(recs)
+    for ds, by_mode in ratings.judge_report.items():
+        for mode, rep in by_mode.items():
+            for qid in rep.get("unmapped_ours", []):
+                if (ds, qid) not in kept:
+                    continue
+                recs.append({"dataset": ds, "mode": mode, "qid": qid,
+                             "title": R.reference_titles(ds).get(qid, "")})
+    return pd.DataFrame(recs, columns=["dataset", "mode", "qid", "title"])
 
 
 def correctness_only(df: pd.DataFrame) -> pd.DataFrame:

@@ -16,19 +16,21 @@ always means the system under evaluation (claude-code / codex).
 
 from . import agreement, binary, display, judges, loading, render
 from .binary import collapse, confusion_counts, metrics
-from .loading import (DATASET_ORDER, EXCLUDED_TITLE_PATTERNS, HUMAN_RATERS,
-                      JUDGE_RATERS, PERFORMANCE_CATEGORY, RATERS, Ratings,
-                      add_null, correctness_only, coverage_summary, load_ratings,
-                      uniform_variables,
+from .loading import (ALL_RATERS, DATASET_ORDER, EXCLUDED_TITLE_PATTERNS,
+                      HUMAN_RATERS, JUDGE_MODES, JUDGE_RATERS,
+                      PERFORMANCE_CATEGORY, RATERS, UNSUP_RATERS, Ratings,
+                      add_null, correctness_only, coverage_summary,
+                      judge_columns, load_ratings, uniform_variables,
                       unanswered_by_judges)
 from .render import summary_table
 
 __all__ = [
     "load_ratings", "Ratings", "coverage_summary", "unanswered_by_judges",
-    "correctness_only", "uniform_variables", "add_null",
+    "correctness_only", "uniform_variables", "add_null", "judge_columns",
     "EXCLUDED_TITLE_PATTERNS", "PERFORMANCE_CATEGORY",
     "summary_table", "agreement", "binary", "display", "judges", "loading",
     "render",
     "collapse", "confusion_counts", "metrics",
-    "RATERS", "HUMAN_RATERS", "JUDGE_RATERS", "DATASET_ORDER",
+    "RATERS", "ALL_RATERS", "HUMAN_RATERS", "JUDGE_RATERS", "UNSUP_RATERS",
+    "JUDGE_MODES", "DATASET_ORDER",
 ]
