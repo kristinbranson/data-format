@@ -28,8 +28,10 @@ Importing this package reads nothing from disk and draws nothing.
 """
 
 from . import figure, paths, questions, raters, summary_md
-from .analysis import agreement, binary, display, judges, loading, plots, render
+from .analysis import (agreement, binary, categories, display, judges,
+                       loading, plots, render)
 from .analysis.binary import collapse, confusion_counts, metrics
+from .analysis.categories import difference_categories
 from .analysis.loading import (ALL_RATERS, DATASET_FORMAT, DATASET_ORDER,
                                EXCLUDED_TITLE_PATTERNS, HUMAN_RATERS,
                                JUDGE_MODES, JUDGE_RATERS, PERFORMANCE_CATEGORY,
@@ -43,7 +45,8 @@ __all__ = [
     # analysis
     "load_ratings", "Ratings", "coverage_summary", "unanswered_by_judges",
     "correctness_only", "uniform_variables", "add_null", "judge_columns",
-    "summary_table", "agreement", "binary", "display", "plots", "render",
+    "summary_table", "agreement", "binary", "categories", "display", "plots",
+    "render", "difference_categories",
     "judges", "loading", "collapse", "confusion_counts", "metrics",
     "RATERS", "ALL_RATERS", "HUMAN_RATERS", "JUDGE_RATERS", "UNSUP_RATERS",
     "JUDGE_MODES", "DATASET_ORDER", "DATASET_FORMAT",

@@ -21,7 +21,7 @@ import pandas as pd
 
 from .. import figure
 from .agreement import RATING_LEVELS, confusion
-from .loading import DATASET_FORMAT
+from .loading import DATASET_FORMAT, DATASET_ORDER
 from .render import display_name
 
 # Claude Code is orange and Codex is blue throughout this project — the
@@ -87,15 +87,23 @@ def format_scatter(ratings, rater: str = "LZ", *, ax=None, seed: int = 64,
 
 
 def _format_brackets(ax, order):
-    """Label the format each run of columns belongs to, under the axis."""
+    """Bracket and name each run of columns that share a source format.
+
+    Above the axes, not below it: the dataset names are rotated and their
+    height depends on the font, so anything under them collides sooner or
+    later.
+    """
     runs, start = [], 0
     for i in range(1, len(order) + 1):
         if i == len(order) or DATASET_FORMAT[order[i]] != DATASET_FORMAT[order[start]]:
             runs.append((start, i - 1, DATASET_FORMAT[order[start]]))
             start = i
+
     for first, last, name in runs:
-        ax.text((first + last) / 2, -0.30, name, transform=ax.get_xaxis_transform(),
-                ha="center", va="top", fontsize=9, fontstyle="italic", color="#555")
+        ax.plot([first - 0.35, last + 0.35], [1.02, 1.02], transform=ax.get_xaxis_transform(),
+                color="#999", linewidth=0.8, clip_on=False)
+        ax.text((first + last) / 2, 1.05, name, transform=ax.get_xaxis_transform(),
+                ha="center", va="bottom", fontsize=9, fontstyle="italic", color="#555")
 
 
 # Both axes run better -> incorrect, so the agreeing-and-fine corner is at the
@@ -145,6 +153,74 @@ def confusion_grid(df: pd.DataFrame, raters=("KB", "claude", "codex"), *,
     return fig, axes
 
 
+# Okabe-Ito, which is designed so deutan, protan and tritan readers can all tell
+# the hues apart. Yellow and black are skipped: the inline counts are drawn
+# white-on-colour and need the contrast. MISC is neutral grey on purpose — it is
+# the "other" bucket and should recede.
+CATEGORY_COLORS = {
+    "FILTER": "#0072B2",     # blue
+    "TIME_RES": "#E69F00",   # orange
+    "PROCESS": "#009E73",    # bluish green
+    "ASSUME": "#D55E00",     # vermillion
+    "VARNAME": "#CC79A7",    # reddish purple
+    "MISC": "#999999",       # neutral grey
+}
+
+
+def category_breakdown(summary: pd.DataFrame, *, label_thresh: int = 3):
+    """Stacked bars of the difference-category tallies, per dataset.
+
+    `summary` is a `categories.difference_categories()` table. The top panel is
+    every dataset summed, on its own x-scale so the shape of the whole is
+    readable next to the parts; the bottom panel is one bar per dataset in
+    `DATASET_ORDER`, reading top to bottom.
+    """
+    from .categories import CATEGORY_ORDER
+
+    cats = [c for c in CATEGORY_ORDER if c in summary.index]
+    order = [ds for ds in DATASET_ORDER if ds in summary.columns]
+    matrix = (summary.drop(index="TOTAL", columns="TOTAL", errors="ignore")
+              .T.reindex(index=order, columns=cats).fillna(0).astype(int))
+    total = matrix.sum(axis=0)
+
+    def stack(ax, mat, ys):
+        left = np.zeros(len(ys))
+        for cat in cats:
+            vals = mat[cat].to_numpy(dtype=float)
+            ax.barh(ys, vals, left=left, height=0.62, color=CATEGORY_COLORS[cat],
+                    edgecolor="white", linewidth=0.8, label=cat)
+            for y, x, v in zip(ys, left, vals):
+                if v >= label_thresh:
+                    ax.text(x + v / 2, y, str(int(v)), ha="center", va="center",
+                            fontsize=7.5, color="white", fontweight="bold")
+            left += vals
+        return left
+
+    fig, (ax_top, ax_bot) = plt.subplots(
+        2, 1, figsize=(6.0, 4.4),
+        gridspec_kw={"height_ratios": [1, len(order)], "hspace": 0.45})
+
+    top_left = stack(ax_top, total.to_frame().T, [0])
+    ax_top.set_yticks([0], ["Overall"])
+    ax_top.set_xlim(0, top_left[0] * 1.02)
+
+    ys = np.arange(len(order))[::-1]          # DATASET_ORDER reads top to bottom
+    bot_left = stack(ax_bot, matrix, ys)
+    ax_bot.set_yticks(ys, [display_name(ds) for ds in order])
+    ax_bot.set_xlim(0, bot_left.max() * 1.02)
+    ax_bot.set_xlabel("Number of Instances")
+
+    for ax in (ax_top, ax_bot):
+        ax.tick_params(axis="y", length=0)
+        ax.spines["left"].set_visible(False)
+
+    handles, labels = ax_top.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.97),
+               ncol=len(cats), frameon=False, fontsize=8,
+               handlelength=1.0, handletextpad=0.5, columnspacing=1.2)
+    return fig, (ax_top, ax_bot)
+
+
 def rating_levels(df: pd.DataFrame, rater: str = "LZ", *, ax=None):
     """How many (question, trial) rows each agent earned at each rating level."""
     levels = list(RATING_LEVELS)
@@ -166,6 +242,44 @@ def rating_levels(df: pd.DataFrame, rater: str = "LZ", *, ax=None):
     ax.set_xticklabels([LEVEL_NAMES[lv] for lv in levels])
     ax.set_xlabel(f"Rating ({rater})")
     ax.set_ylabel("Number of Trials")
+    ax.legend()
+    ax.figure.tight_layout()
+    return ax.figure, ax
+
+
+SPREAD_LEVELS = [-3, -2, -1, 0]
+
+
+def spread_bars(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
+                levels=SPREAD_LEVELS):
+    """Per-question spread (worst trial minus best), the two agents side by side.
+
+    0 means all three trials of that agent were rated the same; -3 means one
+    trial was three levels worse than another. Same denominator for both agents
+    — every question is counted once per agent — so the bars are directly
+    comparable and the counts are on them.
+    """
+    counts = {}
+    for agent in AGENT_ORDER:
+        sub = df[df.agent == agent]
+        spread = (sub.groupby(["dataset", "qid"])[rater].min()
+                  - sub.groupby(["dataset", "qid"])[rater].max()).dropna()
+        counts[agent] = np.array([int((spread == lv).sum()) for lv in levels])
+
+    x = np.arange(len(levels))
+    width = 0.4
+    ax = ax or plt.subplots(figsize=(5.5, 4))[1]
+    for sign, agent in zip((-1, 1), AGENT_ORDER):
+        ax.bar(x + sign * width / 2, counts[agent], width,
+               label=AGENT_LABEL[agent], color=AGENT_COLOR[agent], alpha=0.8)
+        for i, n in enumerate(counts[agent]):
+            ax.text(i + sign * width / 2, n, str(n), ha="center", va="bottom",
+                    fontsize=8)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(lv) for lv in levels])
+    ax.set_xlabel(f"Per-question spread, min $-$ max ({rater})")
+    ax.set_ylabel("Number of Questions")
     ax.legend()
     ax.figure.tight_layout()
     return ax.figure, ax

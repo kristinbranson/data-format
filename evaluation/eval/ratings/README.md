@@ -6,11 +6,16 @@ by the LLM judges — where those ratings live, and how to analyse them.
 Everything is in the `ratings` package. Two entry points:
 
 ```bash
-python3 -m ratings <command>     # the workflow
+python3 -m ratings <command>     # rating workflow
+
 ```
 ```python
-from ratings import load_ratings, summary_table, agreement, binary   # the analysis
+from ratings import load_ratings, summary_table, agreement, binary   # rating analysis
 ```
+
+See `ratings_analysis.ipynb` for the notebook on analysis of the ratings. 
+- Inter-evaluator variability
+- Evaluating agent-as-judge (supervised vs. unsupervised)
 
 ## TL;DR
 
@@ -199,12 +204,19 @@ eval/
     figure.py            the rating-square figure toolkit
     summary_md.py        reader for the derived eval_summary.md tables
     raters.json          the evaluator registry
-    analysis/            loading, judges, agreement, binary, render, plots,
-                         display — see its docstring
+    analysis/            loading, judges, agreement, binary, categories,
+                         render, plots, display — see its docstring
+    README.md            this file
   ratings_analysis.ipynb the analysis, worked through
-  RATINGS.md             this file
+  case_studies/          the paper's worked examples -> examples.tex
   archive/               one-off migrations and the superseded notebooks
 ```
+
+`case_studies/` is the third world in this directory and the smallest: seven
+hand-written failure cases and the converter that turns them into LaTeX
+(`python3 -m case_studies`). It reads no data and imports nothing from here —
+only section 6 of the analysis notebook, which counts the *categories* those
+examples illustrate, connects them.
 
 The other half of the evaluation — what the **verifier** measured, rather than
 what a human thought of the code — is a separate world and deliberately shares
@@ -217,6 +229,8 @@ nothing with this one:
 | `lesion_analysis.py` | verifier categories scored per trial |
 | `outcome_summary.ipynb` | the outcome summary table |
 | `trial_metrics.py`, `diff_trial_metrics.py` | pulling and diffing `trial_metrics.json` |
+
+(The doc that used to be `eval/RATINGS.md` is this file.)
 
 ### If something looks wrong
 
