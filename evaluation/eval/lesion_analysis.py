@@ -212,12 +212,6 @@ def _files_present(jobdata, filenames):
     return float(all(f not in unusable for f in filenames))
 
 
-def _recorded_bool(jobdata, key):
-    """A boolean metric as 0.0/1.0, or nan when the verifier never recorded it."""
-    value = jobdata.get(key)
-    return np.nan if value is None else float(bool(value))
-
-
 def _ratio_within_limit(jobdata, field, limit=None):
     """Whether <field>_ratio (agent/reference) sits inside a tolerance band.
 
@@ -263,7 +257,10 @@ def full_data_format_valid(jobdata, refstats):
     Never False anywhere in the current data -- when the test runs at all it
     passes -- so this column reads 1-or-nan. That is the data, not a bug.
     """
-    return _recorded_bool(jobdata, 'full_data_format_valid')
+    value = jobdata.get('full_data_format_valid', np.nan)
+    if value is None:
+        value = np.nan
+    return value
 
 
 def nneurons_total_matches(jobdata, refstats):
