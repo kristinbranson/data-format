@@ -264,7 +264,13 @@ def fingerprint(qid: str, title: str, dataset: str | None = None) -> tuple:
         return ("unknown", qid)
     var_name = norm_var(var_name, dataset=dataset)
     io = "input" if "input" in tl[:60] else "output"
-    if "derived from" in tl or "derivation" in tl: role = "source"
+    # "derived from THOSE variables" is a follow-on to the source question, not
+    # a second copy of it: it asks how the value is computed from the variables
+    # the previous question named, which is the processing question worded
+    # loosely. One judge run (map_minimal/claude-code trial2, codex judge) put
+    # it that way and could then only be paired by number.
+    if "derived from those" in tl: role = "processing"
+    elif "derived from" in tl or "derivation" in tl: role = "source"
     elif "processing is involved" in tl or "computing" in tl or "processed" in tl or "processing" in tl: role = "processing"
     elif "aligned" in tl or "alignment" in tl: role = "align"
     elif "threshold" in tl or "discretiz" in tl or "binned" in tl: role = "threshold"
@@ -334,7 +340,8 @@ def _warn_number_refused(dataset: str | None, qid: str, ref_title: str,
           f"answer is titled {clip(llm_title)!r}", file=sys.stderr)
 
 
-def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[str, str | None]:
+def build_qid_map(human: dict, llm: dict, dataset: str | None = None,
+                  on_number_fallback=None) -> dict[str, str | None]:
     """Pair each reference question with the question that answers it.
 
     Args:
@@ -345,6 +352,10 @@ def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[st
             judge file, or the merged titles of several dossiers.
         dataset: dataset name, used to load its qid_aliases.json when
             normalizing variable names. None skips per-dataset aliases.
+        on_number_fallback: called as f(qid, ref_title, llm_title) for each
+            pairing made by number instead of content, so a caller that reads
+            hundreds of files can collect them per file rather than reading
+            stderr. None keeps the stderr warning alone.
 
     Returns:
         {reference qid: llm qid or None}. None only when the reference question
@@ -424,6 +435,8 @@ def build_qid_map(human: dict, llm: dict, dataset: str | None = None) -> dict[st
         qmap[qid] = qid
         claimed.add(qid)
         _warn_number_fallback(dataset, qid, h_title, l_title)
+        if on_number_fallback is not None:
+            on_number_fallback(qid, h_title, l_title)
     return qmap
 
 

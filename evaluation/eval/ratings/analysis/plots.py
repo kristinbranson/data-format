@@ -223,22 +223,46 @@ def category_breakdown(summary: pd.DataFrame, *, label_thresh: int = 3):
     return fig, (ax_top, ax_bot)
 
 
-def rating_levels(df: pd.DataFrame, rater: str = "LZ", *, ax=None):
-    """How many (question, trial) rows each agent earned at each rating level."""
+# The row column a figure splits on, and how to order/label/color its values.
+# Defaults describe the two agents the human evaluation covers; the condition
+# analysis passes `group="condition"` with `experiments.CONDITION_ORDER` /
+# `CONDITION_LABEL` / `CONDITION_COLOR` to draw the same figures for all six.
+def _grouping(df, group, order, labels, colors):
+    order = [g for g in (order or AGENT_ORDER) if g in set(df[group])]
+    labels = labels or AGENT_LABEL
+    colors = colors or AGENT_COLOR
+    return order, labels, colors
+
+
+def _grouped_bars(ax, x, counts, order, labels, colors, *, span=0.8,
+                  annotate=True):
+    """One bar per group at each x, evenly spread over `span`.
+
+    With two groups and the default span this is the +/- width/2 layout the
+    agent figures have always used.
+    """
+    width = span / len(order)
+    starts = (np.arange(len(order)) - (len(order) - 1) / 2) * width
+    for dx, g in zip(starts, order):
+        ax.bar(x + dx, counts[g], width * 0.92, label=labels.get(g, g),
+               color=colors.get(g), alpha=0.8)
+        if annotate:
+            for i, n in enumerate(counts[g]):
+                ax.text(i + dx, n, str(n), ha="center", va="bottom", fontsize=8)
+
+
+def rating_levels(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
+                  group: str = "agent", order=None, labels=None, colors=None):
+    """How many (question, trial) rows each group earned at each rating level."""
+    order, labels, colors = _grouping(df, group, order, labels, colors)
     levels = list(RATING_LEVELS)
-    counts = {agent: np.array([int((df.loc[df.agent == agent, rater] == lv).sum())
-                               for lv in levels])
-              for agent in AGENT_ORDER}
+    counts = {g: np.array([int((df.loc[df[group] == g, rater] == lv).sum())
+                           for lv in levels])
+              for g in order}
 
     x = np.arange(len(levels))
-    width = 0.4
     ax = ax or plt.subplots(figsize=(5.5, 4))[1]
-    for sign, agent in zip((-1, 1), AGENT_ORDER):
-        ax.bar(x + sign * width / 2, counts[agent], width,
-               label=AGENT_LABEL[agent], color=AGENT_COLOR[agent], alpha=0.8)
-        for i, n in enumerate(counts[agent]):
-            ax.text(i + sign * width / 2, n, str(n), ha="center", va="bottom",
-                    fontsize=8)
+    _grouped_bars(ax, x, counts, order, labels, colors)
 
     ax.set_xticks(x)
     ax.set_xticklabels([LEVEL_NAMES[lv] for lv in levels])
@@ -264,28 +288,24 @@ def question_spread(df: pd.DataFrame, rater: str = "LZ") -> pd.Series:
 
 
 def spread_bars(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
-                levels=SPREAD_LEVELS):
-    """Per-question spread (worst trial minus best), the two agents side by side.
+                levels=SPREAD_LEVELS, group: str = "agent", order=None,
+                labels=None, colors=None):
+    """Per-question spread (worst trial minus best), the groups side by side.
 
-    0 means all three trials of that agent were rated the same; -3 means one
-    trial was three levels worse than another. Same denominator for both agents
-    — every question is counted once per agent — so the bars are directly
+    0 means all three trials of that group were rated the same; -3 means one
+    trial was three levels worse than another. Same denominator for every group
+    — each question is counted once per group — so the bars are directly
     comparable and the counts are on them.
     """
+    order, labels, colors = _grouping(df, group, order, labels, colors)
     counts = {}
-    for agent in AGENT_ORDER:
-        spread = question_spread(df[df.agent == agent], rater)
-        counts[agent] = np.array([int((spread == lv).sum()) for lv in levels])
+    for g in order:
+        spread = question_spread(df[df[group] == g], rater)
+        counts[g] = np.array([int((spread == lv).sum()) for lv in levels])
 
     x = np.arange(len(levels))
-    width = 0.4
     ax = ax or plt.subplots(figsize=(5.5, 4))[1]
-    for sign, agent in zip((-1, 1), AGENT_ORDER):
-        ax.bar(x + sign * width / 2, counts[agent], width,
-               label=AGENT_LABEL[agent], color=AGENT_COLOR[agent], alpha=0.8)
-        for i, n in enumerate(counts[agent]):
-            ax.text(i + sign * width / 2, n, str(n), ha="center", va="bottom",
-                    fontsize=8)
+    _grouped_bars(ax, x, counts, order, labels, colors)
 
     ax.set_xticks(x)
     ax.set_xticklabels([str(lv) for lv in levels])
@@ -296,7 +316,9 @@ def spread_bars(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
     return ax.figure, ax
 
 
-def trial_variability(df: pd.DataFrame, rater: str = "LZ", *, kind: str = "spread"):
+def trial_variability(df: pd.DataFrame, rater: str = "LZ", *,
+                      kind: str = "spread", group: str = "agent",
+                      order=None, labels=None, colors=None):
     """How much the three trials of one agent disagree on the same question.
 
     `kind="spread"`  one point per question: its worst rating minus its best.
@@ -305,6 +327,8 @@ def trial_variability(df: pd.DataFrame, rater: str = "LZ", *, kind: str = "sprea
     Both are ≤ 0, and both answer "is a trial's rating a property of the agent
     or a roll of the dice?" — mass at 0 means the trials agree.
     """
+    order, labels, colors = _grouping(df, group, order, labels, colors)
+
     def values(sub):
         if kind == "spread":
             return question_spread(sub, rater).to_numpy()
@@ -312,11 +336,12 @@ def trial_variability(df: pd.DataFrame, rater: str = "LZ", *, kind: str = "sprea
         return (sub[rater] - best).dropna().to_numpy()
 
     panels = [("Combined", values(df), "gray")]
-    panels += [(AGENT_LABEL[a], values(df[df.agent == a]), AGENT_COLOR[a])
-               for a in AGENT_ORDER]
+    panels += [(labels.get(g, g), values(df[df[group] == g]), colors.get(g))
+               for g in order]
 
     bins = np.arange(-3.5, 1.5, 1)
-    fig, axes = plt.subplots(1, 3, figsize=(10.5, 4), sharey=True)
+    fig, axes = plt.subplots(1, len(panels), figsize=(3.5 * len(panels), 4),
+                             sharey=True)
     for ax, (label, vals, color) in zip(axes, panels):
         ax.hist(vals, bins=bins, color=color, alpha=0.8, density=True)
         ax.set_xlabel("per question min - max" if kind == "spread"

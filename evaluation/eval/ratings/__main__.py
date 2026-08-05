@@ -11,6 +11,7 @@ that module's own help rather than a copy that can drift out of date.
     python3 -m ratings report <ds>            render report.md
     python3 -m ratings compare <ds>           judge-comparison pass (primary only)
     python3 -m ratings import-judges --apply  mirror a judge run into the tree
+    python3 -m ratings validate-conditions    direct loader vs the mirror
 """
 
 from __future__ import annotations
@@ -29,6 +30,8 @@ USAGE = """usage: python3 -m ratings <command> [options]
   compare <dataset>        walk human vs LLM-judge mismatches (primary rater)
   import-judges            copy a data-format-experiments run into
                            <dataset>/judge_<mode>/ (--apply, --verify)
+  validate-conditions            check the direct-from-experiments loader against
+                           the mirrored judge files, cell for cell
 
 Run `python3 -m ratings <command> --help` for a command's own options.
 """
@@ -85,6 +88,10 @@ def main(argv: list[str] | None = None) -> int:
     if command == "import-judges":
         from . import judge_import
         return judge_import.main(rest) or 0
+
+    if command == "validate-conditions":
+        from .analysis import conditions
+        return conditions.main(rest) or 0
 
     print(f"unknown command: {command}\n", file=sys.stderr)
     print(USAGE, end="", file=sys.stderr)

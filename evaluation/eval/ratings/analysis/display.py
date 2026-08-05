@@ -58,7 +58,8 @@ RATER_COLS = ("rater_a", "rater_b", "pred", "truth")
 # Columns a caller may have grouped by; they stay in front because they are what
 # the rows are keyed by. Anything else not asked for (n, d_prime, n_mistakes,
 # specificity, ...) is dropped rather than trailing along.
-GROUP_COLS = ("dataset", "category", "subtype", "agent", "trial", "qid")
+GROUP_COLS = ("dataset", "category", "subtype", "agent", "prompt", "condition",
+              "trial", "qid")
 
 
 def _prepare(df: pd.DataFrame, columns: dict[str, str]) -> pd.DataFrame:

@@ -10,7 +10,7 @@ tables those get merged into) and the analysis that reads them back.
 
     r = load_ratings()                    # every rater, all 8 datasets
     summary_table(r, rater="LZ")          # the per-question rating grid
-    agreement.pairwise(r.correctness)     # how much two raters agree
+    agreement.pairwise(r.process_only)     # how much two raters agree
     binary.table(r.tidy, "LZ", ("KB", "claude", "codex"))
 
 `rater` always means who gave the rating — the humans LZ / KB, and the judges
@@ -27,16 +27,17 @@ the modules are importable for scripting:
 Importing this package reads nothing from disk and draws nothing.
 """
 
-from . import figure, paths, questions, raters
-from .analysis import (agreement, binary, categories, display, judges,
+from . import experiments, figure, paths, questions, raters
+from .analysis import (agreement, conditions, binary, categories, display, judges,
                        loading, plots, render)
+from .analysis.conditions import ConditionRatings, load_condition_ratings
 from .analysis.binary import collapse, confusion_counts, metrics
 from .analysis.categories import difference_categories
 from .analysis.loading import (ALL_RATERS, DATASET_FORMAT, DATASET_ORDER,
                                EXCLUDED_TITLE_PATTERNS, HUMAN_RATERS,
                                JUDGE_MODES, JUDGE_RATERS, PERFORMANCE_CATEGORY,
                                RATERS, UNSUP_RATERS, Ratings, add_combined,
-                               add_null, correctness_only, coverage_summary,
+                               add_null, coverage_summary, drop_efficiency,
                                judge_columns, load_ratings,
                                unanswered_by_judges, uniform_variables)
 from .analysis.render import summary_table
@@ -44,8 +45,9 @@ from .analysis.render import summary_table
 __all__ = [
     # analysis
     "load_ratings", "Ratings", "coverage_summary", "unanswered_by_judges",
-    "correctness_only", "uniform_variables", "add_null", "add_combined",
+    "drop_efficiency", "uniform_variables", "add_null", "add_combined",
     "judge_columns",
+    "load_condition_ratings", "ConditionRatings", "conditions", "experiments",
     "summary_table", "agreement", "binary", "categories", "display", "plots",
     "render", "difference_categories",
     "judges", "loading", "collapse", "confusion_counts", "metrics",

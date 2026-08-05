@@ -38,103 +38,53 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import re
 import shutil
 import sys
 from pathlib import Path
 
 from . import raters as R
+from .experiments import (AGENT_ALIAS, DATASET_ALIAS, EVAL_AGENTS, MAX_TRIAL,
+                          MODES, SKIP_DIRS, TRIAL_RE, discover_runs, skip_notes)
 from .paths import EXPERIMENTS_DIR
 
 SOURCE_ROOT = EXPERIMENTS_DIR
 
-# Experiment task name -> our dataset name. Verified by trial timestamps:
-# map/claude/2026-03-22__21-13-57_trial1 is chen2024's trial 1, and
-# mouseland/... is zhong2025's. `zhang2025` has its own folder under both names.
-DATASET_ALIAS = {"map": "chen2024", "mouseland": "zhong2025"}
+# The tree's own vocabulary — task and agent aliases, which runs count, where a
+# judge writes — lives in `experiments.py`, because the condition analysis walks
+# same tree for a wider slice of it. Re-exported here under the name this
+# module has always used.
+KEEP_AGENTS = EVAL_AGENTS
 
-# The Claude agent is filed as `claude` for some tasks and `claude-code` for
-# others; everything downstream calls it claude-code.
-AGENT_ALIAS = {"claude": "claude-code"}
-
-# The evaluation covers these two agents. The experiment tree also holds
-# terminus-gpt and terminus-opus runs; they are reported and skipped.
-KEEP_AGENTS = {"claude-code", "codex"}
-
-MODES = {"supervised": "judge", "unsupervised": "judge_unsupervised"}
-
-SKIP_DIRS = {"debug", "oracle"}
-TRIAL_RE = re.compile(r"_trial(\d+)$")
-
-# The evaluation is three trials per agent. zhang2025/codex has a stray fourth
-# run; it is reported and skipped rather than silently copied.
-MAX_TRIAL = 3
+__all__ = ["discover", "dest_paths", "copy_one", "run", "verify", "main",
+           "DATASET_ALIAS", "AGENT_ALIAS", "KEEP_AGENTS", "MODES", "SKIP_DIRS",
+           "TRIAL_RE", "MAX_TRIAL", "SOURCE_ROOT"]
 
 
 def discover(dataset_filter: str | None = None) -> dict:
     """
-    Walk the experiment tree.
+    Walk the experiment tree for the runs this evaluation copies.
 
     Returns {dataset: {mode: {(agent, trial): {judge: source_dir}}}}, with our
-    dataset/agent names. Trials whose folder name marks them bad, `_minimal`
-    task variants, and the oracle runs are left out.
+    dataset/agent names. Only the two evaluated agents, only the full prompt,
+    only trials 1-`MAX_TRIAL`: the minimal-prompt tasks and the other harnesses
+    are real runs, but they have no human ratings and are read straight from
+    the tree by `analysis.conditions` rather than mirrored here.
     """
-    found: dict = {}
-    skipped: list[str] = []
-    skipped_agents: set[str] = set()
-    if not SOURCE_ROOT.is_dir():
-        sys.exit(f"Experiment tree not found: {SOURCE_ROOT}")
+    runs, skipped = discover_runs(
+        datasets=[dataset_filter] if dataset_filter else None,
+        agents=KEEP_AGENTS, prompts=("full",), modes=tuple(MODES),
+        max_trial=MAX_TRIAL, root=SOURCE_ROOT)
 
-    for task_dir in sorted(SOURCE_ROOT.iterdir()):
-        if not task_dir.is_dir():
-            continue
-        task = task_dir.name
-        # `.git` and friends are not tasks; without this their internals get
-        # walked as if they were agent folders.
-        if task.startswith(".") or task in SKIP_DIRS or task.endswith("_minimal"):
-            continue
-        dataset = DATASET_ALIAS.get(task, task)
-        if dataset_filter and dataset != dataset_filter:
-            continue
-
-        for agent_dir in sorted(task_dir.iterdir()):
-            if (not agent_dir.is_dir() or agent_dir.name.startswith(".")
-                    or agent_dir.name in SKIP_DIRS):
-                continue
-            agent = AGENT_ALIAS.get(agent_dir.name, agent_dir.name)
-            if agent not in KEEP_AGENTS:
-                skipped_agents.add(agent)
-                continue
-
-            for trial_dir in sorted(agent_dir.iterdir()):
-                m = TRIAL_RE.search(trial_dir.name)
-                if not trial_dir.is_dir() or not m or "badtrial" in trial_dir.name:
-                    continue
-                trial = int(m.group(1))
-                if trial > MAX_TRIAL:
-                    skipped.append(f"{dataset}/{agent}/trial{trial}")
-                    continue
-                for mode, sub in MODES.items():
-                    judge_root = trial_dir / "verifier" / sub
-                    if not judge_root.is_dir():
-                        continue
-                    for judge_dir in sorted(judge_root.iterdir()):
-                        if not judge_dir.is_dir():
-                            continue
-                        if not (judge_dir / "llm_judge_eval.json").exists():
-                            continue
-                        (found.setdefault(dataset, {}).setdefault(mode, {})
-                              .setdefault((agent, trial), {})[judge_dir.name]) = judge_dir
-    notes = []
-    if skipped_agents:
-        notes.append(f"agents not in the evaluation: {', '.join(sorted(skipped_agents))}")
-    if skipped:
-        notes.append(f"{len(skipped)} run(s) beyond trial {MAX_TRIAL} "
-                     f"({', '.join(sorted(set(skipped)))})")
+    notes = skip_notes(skipped, MAX_TRIAL)
     for n in notes:
         print(f"  (skipping {n})")
     if notes:
         print()
+
+    found: dict = {}
+    for r in runs:
+        (found.setdefault(r.dataset, {}).setdefault(r.mode, {})
+              .setdefault((r.agent, r.trial), {})[r.judge]) = r.path
     return found
 
 

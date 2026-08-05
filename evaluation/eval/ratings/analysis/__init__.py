@@ -7,10 +7,11 @@ The package's own analysis internals. Everything here is re-exported by
 
     r = load_ratings()                       # every rater, all 8 datasets
     summary_table(r, rater="LZ")             # the per-question rating grid
-    agreement.pairwise(r.correctness)        # how much two raters agree
+    agreement.pairwise(r.process_only)        # how much two raters agree
     binary.table(r.tidy, "LZ", ("KB", "claude", "codex"))
 
     loading    dossiers + judge JSON -> one tidy frame, one nested dict
+    conditions       the same, for every run condition, read from the experiment tree
     judges     the judge runs, mapped onto our question numbering by content
     agreement  pairwise correlation and chance-corrected agreement
     binary     five levels collapsed to caught-it / missed-it
@@ -24,25 +25,27 @@ The package's own analysis internals. Everything here is re-exported by
 (claude-code / codex).
 """
 
-from . import (agreement, binary, categories, display, judges, loading,
+from . import (agreement, conditions, binary, categories, display, judges, loading,
                plots, render)
+from .conditions import ConditionRatings, load_condition_ratings
 from .binary import collapse, confusion_counts, metrics
 from .categories import difference_categories
 from .loading import (ALL_RATERS, DATASET_FORMAT, DATASET_ORDER,
                       EXCLUDED_TITLE_PATTERNS, HUMAN_RATERS, JUDGE_MODES,
                       JUDGE_RATERS, PERFORMANCE_CATEGORY, RATERS, UNSUP_RATERS,
-                      Ratings, add_combined, add_null, correctness_only,
-                      coverage_summary,
-                      judge_columns, load_ratings, uniform_variables,
-                      unanswered_by_judges)
+                      Ratings, add_combined, add_null, coverage_summary,
+                      drop_efficiency, judge_columns, load_ratings,
+                      uniform_variables, unanswered_by_judges)
 from .render import summary_table
 
 __all__ = [
     "load_ratings", "Ratings", "coverage_summary", "unanswered_by_judges",
-    "correctness_only", "uniform_variables", "add_null", "add_combined",
+    "drop_efficiency", "uniform_variables", "add_null", "add_combined",
     "judge_columns",
     "EXCLUDED_TITLE_PATTERNS", "PERFORMANCE_CATEGORY",
-    "summary_table", "agreement", "binary", "categories", "display", "judges",
+    "load_condition_ratings", "ConditionRatings",
+    "summary_table", "agreement", "conditions", "binary", "categories",
+    "display", "judges",
     "loading", "plots", "render", "difference_categories",
     "collapse", "confusion_counts", "metrics",
     "RATERS", "ALL_RATERS", "HUMAN_RATERS", "JUDGE_RATERS", "UNSUP_RATERS",

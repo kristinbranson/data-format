@@ -88,8 +88,8 @@ class Ratings:
     raters: tuple[str, ...] = RATERS   # rating columns actually loaded
 
     @property
-    def correctness(self) -> pd.DataFrame:
-        """`tidy` without the performance questions — correctness only."""
+    def process_only(self) -> pd.DataFrame:
+        """`tidy` with the Code Efficiency questions dropped."""
         return self.tidy[self.tidy["category"] != PERFORMANCE_CATEGORY]
 
     def rated(self, rater: str) -> pd.DataFrame:
@@ -111,6 +111,38 @@ def _split_qid(qid: str) -> tuple[str, str]:
 def _is_excluded(title: str, patterns) -> bool:
     low = title.lower()
     return any(p in low for p in patterns)
+
+
+def question_rows(dataset: str,
+                  exclude_titles=EXCLUDED_TITLE_PATTERNS) -> tuple[list[dict], list[dict]]:
+    """The identity half of a tidy row, one per reference question.
+
+    Returns `(kept, excluded)`. A kept dict holds everything that describes the
+    *question* — dataset, source format, numbering, title, taxonomy — and
+    nothing about who rated it; a caller adds the run columns and the ratings.
+
+    Both loaders build their frames from this, so the human-rated frame and the
+    condition frame cannot drift apart when a column is added here.
+    """
+    ref = R.reference_titles(dataset)
+    kept: list[dict] = []
+    excluded: list[dict] = []
+    for qid in sorted(ref, key=_qid_sort_key):
+        title = ref[qid]
+        if _is_excluded(title, exclude_titles):
+            excluded.append({"dataset": dataset, "qid": qid, "title": title})
+            continue
+        main, sub = _split_qid(qid)
+        cat = questions.categorize(qid, title)
+        kept.append({
+            "dataset": dataset, "format": DATASET_FORMAT.get(dataset),
+            "qid": qid, "main": main, "sub": sub,
+            "title": title,
+            "category": cat[0] if cat else None,
+            "subtype": cat[1] if cat else None,
+            "var_label": cat[2] if cat else None,
+        })
+    return kept, excluded
 
 
 def load_ratings(datasets: list[str] | None = None,
@@ -161,13 +193,11 @@ def load_ratings(datasets: list[str] | None = None,
         per_rater_counts = {r: 0 for r in raters}
         ds_nested: dict = {}
 
-        for qid in sorted(ref, key=_qid_sort_key):
-            main, sub = _split_qid(qid)
-            title = ref[qid]
-            if _is_excluded(title, exclude_titles):
-                excluded.append({"dataset": ds, "qid": qid, "title": title})
-                continue
-            cat = questions.categorize(qid, title)
+        kept, dropped = question_rows(ds, exclude_titles)
+        excluded.extend(dropped)
+
+        for base in kept:
+            qid, main, sub, title = base["qid"], base["main"], base["sub"], base["title"]
             series = {r: [] for r in raters}
             agents, trials = [], []
 
@@ -175,15 +205,7 @@ def load_ratings(datasets: list[str] | None = None,
                 agents.append(agent)
                 trials.append(trial)
                 cell = human.get(qid, {}).get((agent, trial), {})
-                rec = {
-                    "dataset": ds, "format": DATASET_FORMAT.get(ds),
-                    "qid": qid, "main": main, "sub": sub,
-                    "title": title,
-                    "category": cat[0] if cat else None,
-                    "subtype": cat[1] if cat else None,
-                    "var_label": cat[2] if cat else None,
-                    "agent": agent, "trial": trial,
-                }
+                rec = {**base, "agent": agent, "trial": trial}
                 for r in HUMAN_RATERS:
                     val = questions.RATING_SCALE.get((cell.get(r) or "").lower())
                     rec[r] = val
@@ -257,8 +279,14 @@ def unanswered_by_judges(ratings: Ratings) -> pd.DataFrame:
     return pd.DataFrame(recs, columns=["dataset", "mode", "qid", "title"])
 
 
-def correctness_only(df: pd.DataFrame) -> pd.DataFrame:
-    """Drop the performance questions — keep only correctness questions."""
+def drop_efficiency(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop the Code Efficiency questions, leaving the process ones.
+
+    Named for what it removes, because that is the editorial call: those
+    questions are advice about performance rather than a check on whether the
+    conversion is right, and every analysis that asks "is this correct?" starts
+    by dropping them. The frame it returns is `process_only` by convention.
+    """
     return df[df["category"] != PERFORMANCE_CATEGORY]
 
 
@@ -275,6 +303,11 @@ def add_combined(df: pd.DataFrame, *, sources: tuple[str, ...] = JUDGE_RATERS,
     combined rating is `<= -1` (incorrect) only when both sources are, and is
     `>= 0` (correct) as soon as either one is. Where only one source rated a
     row its rating carries; where neither did, the result stays NaN.
+
+    That makes it a *decision* rule, not a rating: read across all five levels
+    it is the more lenient source at each one, so `incorrect` is an AND while
+    `better` is an OR. Fine for the mistake/no-mistake question it exists for;
+    say so before plotting its level distribution.
     """
     out = df.copy()
     out[name] = out[list(sources)].max(axis=1)

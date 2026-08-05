@@ -46,6 +46,7 @@ figures and tables.
 | `report <dataset>` | render `<dataset>/report.md`. `--rater`, `--out` |
 | `compare <dataset>` | walk human-vs-judge mismatches (primary evaluator only) |
 | `import-judges` | copy a `data-format-experiments/` run into `<dataset>/judge_<mode>/`. `--mode`, `--apply`, `--verify` |
+| `validate-conditions` | check the direct-from-experiments loader against the mirrored judge files, cell for cell |
 
 `python3 -m ratings <command> --help` for a command's own options.
 
@@ -56,10 +57,10 @@ from ratings import load_ratings, summary_table, agreement, binary, display, plo
 
 r = load_ratings()                    # every rater, all 8 datasets
 r.tidy                                # one row per (dataset, question, agent, trial)
-r.correctness                         # the same, minus the Code Efficiency questions
+r.process_only                         # the same, minus the Code Efficiency questions
 
 summary_table(r, rater="LZ")          # the per-question rating grid
-agreement.pairwise(r.correctness)     # Pearson + weighted kappa per rater pair
+agreement.pairwise(r.process_only)     # Pearson + weighted kappa per rater pair
 binary.table(r.tidy, "LZ", ("KB", "claude", "codex"))   # who catches the mistakes
 plots.format_scatter(r)               # per-trial correctness by source format
 ```
@@ -74,6 +75,31 @@ Two more raters are derived rather than loaded, and are added to a frame on
 demand: `add_null(df)` gives `LZ_null`, LZ's own ratings shuffled — the floor
 any real rater should beat — and `add_combined(df)` gives `combined`, the two
 supervised judges required to agree before a row counts as a mistake.
+
+### The other run conditions
+
+`load_ratings()` covers what the humans rated: claude-code and codex, at the
+full prompt. The experiment tree holds four more conditions nobody rated —
+the same two agents on a **minimal prompt**, and two other harnesses
+(`terminus-gpt`, `terminus-opus`) on the full one. A **condition** is that pair,
+`(agent, prompt)`.
+
+```python
+from ratings import load_condition_ratings
+
+a = load_condition_ratings()               # 6 conditions, judge ratings only, read from
+a.tidy                               #   data-format-experiments/ directly
+a.coverage                           # per judge file: mapped / unmapped questions
+a.skipped                            # runs deliberately left out, and why
+```
+
+Same column names as `load_ratings().tidy` plus `prompt` and `condition`, so
+`agreement.pairwise`, `binary.table` and `add_combined` work on it unchanged —
+`by="condition"` is how the condition dimension enters a table. There are **no human
+ratings** for these conditions and therefore no truth column: read differences
+between conditions scored by the same judge, never the level itself. The two conditions
+both loaders cover must agree cell for cell, which is what `validate-conditions`
+checks. `ratings_experiment.ipynb` is the worked version.
 
 Ratings are numbers: `incorrect=-2, concerning=-1, ok=0, match=1, better=2`,
 and a rating nobody gave is `NaN` — never 0.
@@ -212,14 +238,16 @@ eval/
     session_blind.py     … for a dataset with no reference (rate --blind)
     compare.py           judge-comparison pass; question fingerprinting
     report.py            report.md renderer
+    experiments.py       the run tree: where a trial lives, which condition it was
     judge_import.py      import-judges
     questions.py         the question taxonomy — what a question is about
     figure.py            the rating-square figure toolkit
     raters.json          the evaluator registry
-    analysis/            loading, judges, agreement, binary, categories,
+    analysis/            loading, conditions, judges, agreement, binary, categories,
                          render, plots, display — see its docstring
     README.md            this file
   ratings_analysis.ipynb the analysis, worked through
+  ratings_experiment.ipynb  the same questions across all six run conditions
   case_studies/          the paper's worked examples -> examples.tex
   archive/               one-off migrations and the superseded notebooks
 ```
@@ -236,7 +264,7 @@ nothing with this one:
 
 | file | role |
 |---|---|
-| `utils.py` | trial metrics loading + the arm / agent vocabulary |
+| `utils.py` | trial metrics loading + the condition / agent vocabulary |
 | `metrics.py`, `metrics.ipynb` | per-trial decoder accuracy and dataset-scale tables |
 | `lesion_analysis.py` | verifier categories scored per trial |
 | `outcome_summary.ipynb` | the outcome summary table |
