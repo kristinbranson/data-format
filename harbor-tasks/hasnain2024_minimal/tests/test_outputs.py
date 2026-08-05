@@ -10,17 +10,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
-from scipy.optimize import linear_sum_assignment
-import torch
 import pytest
-from sentence_transformers import SentenceTransformer, util
-from decoder import (
-    get_trial_indices,
-    verify_data_format,
-    print_data_summary,
-    train_validate_decoder,
-    accuracy_all_sessions
-    )
 
 WORKDIR = Path(os.environ.get("WORKDIR", "/app"))
 METRICS_PATH = Path(os.environ.get("METRICS_PATH", "/logs/verifier/metrics.json"))
@@ -158,6 +148,7 @@ def get_data_stats(data_full):
     """Compute summary statistics for the given data. Returns None if data_full is None.
     Side effect: prints to stdout.
     """
+    from decoder import print_data_summary
     if data_full is None:
         return None
     stats = print_data_summary(data_full)
@@ -270,6 +261,9 @@ def test_expected_files_exist(metrics):
 
 def test_verify_data_format(metrics, submitted_data_sample, submitted_data_full):
     """Helper function to test data format and record metrics."""
+
+    from decoder import verify_data_format
+
     valid, errors, warnings = verify_data_format(submitted_data_sample)
     metrics["sample_data_format_valid"] = valid
     metrics["sample_data_format_errors"] = errors
@@ -315,6 +309,10 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
         matches: list of (ref_name, sub_name, cost) tuples
         match_costs: list of costs for each chosen assignment
     """
+    
+    from scipy.optimize import linear_sum_assignment
+    from sentence_transformers import SentenceTransformer, util
+    
     ref_names = list(reference_ranges.keys())
     sub_names = list(submitted_ranges.keys())
     n = len(ref_names)
@@ -336,7 +334,9 @@ def match_variables_by_hungarian(submitted_ranges, reference_ranges,
                 matched_sub.add(j)
 
     if not hasattr(match_variables_by_hungarian, 'SemanticMatchModel'):
+        
         match_variables_by_hungarian.SemanticMatchModel = SentenceTransformer('all-MiniLM-L6-v2')  # fast, good quality, 80MB
+        
     model = match_variables_by_hungarian.SemanticMatchModel
     # replace _ and - with spaces
     ref_sentences = [rn.replace('_', ' ').replace('-', ' ') for rn in ref_names]
@@ -517,6 +517,9 @@ def match_outputs(submitted_data_stats, reference_data_stats):
         weight_fraction=.5 / 20,
         exact_range=False,
     )
+    
+def ratio_within_limits(ratio,thresh):
+    return 1 - thresh <= ratio <= 1 + thresh
 
 def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
 
@@ -631,7 +634,7 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
             metrics[f'output_fraction_error_{ref_name}'] = None
 
     for field in fields_check:
-        assert 1-STATLIMITS[field+'_ratio'] <= metrics[field+'_ratio'] <= 1+STATLIMITS[field+'_ratio'], f"{field} in submitted data ({submitted_data_stats[field]}) is not within {STATLIMITS[field+'_ratio']*100}% of reference ({reference_data_stats['data_summary'][field]})"
+        assert ratio_within_limits(metrics[field+'_ratio'],STATLIMITS[field+'_ratio']), f"{field} in submitted data ({submitted_data_stats[field]}) is not within {STATLIMITS[field+'_ratio']*100}% of reference ({reference_data_stats['data_summary'][field]})"
 
     # check that the number of inputs and outputs matches the reference
     assert submitted_data_stats['dinput'] == reference_data_stats['data_summary']['dinput'], f"dinput in submitted data ({submitted_data_stats['dinput']}) does not match reference ({reference_data_stats['data_summary']['dinput']})"
@@ -670,6 +673,13 @@ def test_data_stats(metrics, submitted_data_stats, reference_data_stats):
 
 def test_decoder_accuracy(metrics, submitted_data_full, submitted_data_stats, reference_data_stats):
     """Run the provided train_decoder.py script on the sample data and check that it runs without error."""
+
+    from decoder import (
+        get_trial_indices,
+        train_validate_decoder,
+        accuracy_all_sessions
+    )
+    import torch
 
     train_params = {
         'npcs': 100,
