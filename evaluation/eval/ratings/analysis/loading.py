@@ -262,6 +262,25 @@ def correctness_only(df: pd.DataFrame) -> pd.DataFrame:
     return df[df["category"] != PERFORMANCE_CATEGORY]
 
 
+def add_combined(df: pd.DataFrame, *, sources: tuple[str, ...] = JUDGE_RATERS,
+                 name: str = "combined") -> pd.DataFrame:
+    """Add a consensus rater: a mistake only where *every* source calls one.
+
+    The supervised judges flag generously — high recall, low precision — so
+    most of what one of them calls a mistake the reference evaluator called
+    fine. Requiring both to agree before a row counts as a mistake trades some
+    of that recall back for precision.
+
+    On the five-level scale that rule is exactly the element-wise maximum: the
+    combined rating is `<= -1` (incorrect) only when both sources are, and is
+    `>= 0` (correct) as soon as either one is. Where only one source rated a
+    row its rating carries; where neither did, the result stays NaN.
+    """
+    out = df.copy()
+    out[name] = out[list(sources)].max(axis=1)
+    return out
+
+
 def add_null(df: pd.DataFrame, *, source: str = "LZ", name: str | None = None,
              seed: int = 0, within: str | list[str] | None = None) -> pd.DataFrame:
     """Add a frequency-matched null rater: `source`'s ratings, shuffled.

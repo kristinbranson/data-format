@@ -31,14 +31,16 @@ from .categories import difference_categories
 from .loading import (ALL_RATERS, DATASET_FORMAT, DATASET_ORDER,
                       EXCLUDED_TITLE_PATTERNS, HUMAN_RATERS, JUDGE_MODES,
                       JUDGE_RATERS, PERFORMANCE_CATEGORY, RATERS, UNSUP_RATERS,
-                      Ratings, add_null, correctness_only, coverage_summary,
+                      Ratings, add_combined, add_null, correctness_only,
+                      coverage_summary,
                       judge_columns, load_ratings, uniform_variables,
                       unanswered_by_judges)
 from .render import summary_table
 
 __all__ = [
     "load_ratings", "Ratings", "coverage_summary", "unanswered_by_judges",
-    "correctness_only", "uniform_variables", "add_null", "judge_columns",
+    "correctness_only", "uniform_variables", "add_null", "add_combined",
+    "judge_columns",
     "EXCLUDED_TITLE_PATTERNS", "PERFORMANCE_CATEGORY",
     "summary_table", "agreement", "binary", "categories", "display", "judges",
     "loading", "plots", "render", "difference_categories",

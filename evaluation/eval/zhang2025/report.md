@@ -6,7 +6,7 @@
 - Questions covered: 31
 - Trials per question: 6 (3 claude-code + 3 codex)
 - Human evaluators: **LZ** (this report's comments and notes), KB
-- Judges: Claude, Codex
+- Judges: Claude, Codex (supervised run, from `judge_supervised/`)
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
 Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
@@ -23,34 +23,34 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 
 | Q | Question | LZ | KB | Claude judge | Codex judge | Solution comment | LLM judge comment | Difference categories |
 |---|---|---|---|---|---|---|---|---|
-| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔴🔴🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔴🟢 🟢🟢🟢 | All runs read files directly from the cache directory, bypassing the ONE API. 2/6 trials hardcoded `001` subfolder in the search path instead of using the value from the BWM release CSV. |  | `ASSUME=2` |
-| 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Subjects are identified from either the BWM CSV or the file path. |  |  |
-| 1-c | How are the data split into sessions? | 🟢🔵🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 1/6 trials did not use the session info from the BWM CSV (relies on filesystem globbing instead). |  |  |
+| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔴🔴🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟡🔵🟡 🔵🔵🔵 | 🔴🔴🔴 🔴🔵🔴 | All runs read files directly from the cache directory, bypassing the ONE API. 2/6 trials hardcoded `001` subfolder in the search path instead of using the value from the BWM release CSV. |  | `ASSUME=2` |
+| 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟡🔵 🟢🟢🟢 | 🟢🔵🔵 🟢🟢🔵 | Subjects are identified from either the BWM CSV or the file path. |  |  |
+| 1-c | How are the data split into sessions? | 🟢🔵🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🔵 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 | 1/6 trials did not use the session info from the BWM CSV (relies on filesystem globbing instead). |  |  |
 | 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🟡🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟢 |  |  |  |
+| 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🟡🔵🔵 | 🔵🟡🔵 🟡🟡🟢 | 🔴🔴🔴 🔴🔴🔴 |  |  |  |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 2-b | How is the `neural` data processed? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟡🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | All solutions correctly implemented the merge + binning steps. |  |  |
-| 2-c | How is the `neural` data filtered based on quality controls? | 🟡🟡🟡 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟡 | 🟢🟢🟢 🟡🔴🟡 | The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did. | The LLM judges rated the no-filter solutions as more "correct". | `FILTER=3` |
-| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 |  |  |  |
-| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |  |
-| 3-a | What variables in the raw data is `input` *time_from_stimulus_onset* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 3-b | What processing is involved in computing `input` *time_from_stimulus_onset*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 3-c | How is `input` *time_from_stimulus_onset* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 4-a | What variables in the raw data is `input` *trial_number_in_block* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 4-b | What processing is involved in computing `input` *trial_number_in_block*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 5-a | What variables in the raw data is `output` *choice* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 5-b | What processing is involved in computing `output` *choice*? | 🔴🔴🔴 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟢 🟢🟢🟢 | There is a small trap: in the IBL data, `+1` corresponds to a left choice and `-1` to a right choice. The claude solutions have the sign flipped. | Only one judge run caught this mistake. | `ASSUME=3` |
+| 2-b | How is the `neural` data processed? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🔴🔴🔴 🔴🔴🟡 | 🔴🔴🔴 🔴🔴🔴 | All solutions correctly implemented the merge + binning steps. |  |  |
+| 2-c | How is the `neural` data filtered based on quality controls? | 🟡🟡🟡 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | 🟡🔴🔴 🟡🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did. | The LLM judges rated the no-filter solutions as more "correct". | `FILTER=3` |
+| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 3-a | What variables in the raw data is `input` *time_from_stimulus_onset* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🔵 |  |  |  |
+| 3-b | What processing is involved in computing `input` *time_from_stimulus_onset*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🟢🟡 🔴🟡🟡 | 🔴🟢🔴 🔴🔴🔴 |  |  |  |
+| 3-c | How is `input` *time_from_stimulus_onset* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🟢🟡 🔴🟡🟢 | 🔴🟢🔴 🔴🔴🔴 |  |  |  |
+| 4-a | What variables in the raw data is `input` *trial_number_in_block* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 4-b | What processing is involved in computing `input` *trial_number_in_block*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟡🔴🟢 🟡🟡🟡 | 🔴🔴🟢 🔴🔴🔴 |  |  |  |
+| 5-a | What variables in the raw data is `output` *choice* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🔴 🟢🟢🟢 |  |  |  |
+| 5-b | What processing is involved in computing `output` *choice*? | 🔴🔴🔴 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | There is a small trap: in the IBL data, `+1` corresponds to a left choice and `-1` to a right choice. The claude solutions have the sign flipped. | Only one judge run caught this mistake. | `ASSUME=3` |
 | 6-a | What variables in the raw data is `output` *prior_probability_left* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 6-b | What processing is involved in computing `output` *prior_probability_left*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 6-b | What processing is involved in computing `output` *prior_probability_left*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 |  |  |  |
 | 7-a | What variables in the raw data is `output` *wheel_speed* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 7-b | What processing is involved in computing `output` *wheel_speed*? | 🟢🔴🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 | 🟢🔴🟢 🟢🟢🟢 | 1/6 trials upsampled to 1 kHz and used `np.gradient` with no low-pass filter, which is quite problematic. The other 5 trials follow the standard reference pipeline (Butterworth lowpass before differentiation). |  | `RESAMP=1`, `TIMERES=1` |
-| 7-d | How is `output` *wheel_speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |  |
+| 7-b | What processing is involved in computing `output` *wheel_speed*? | 🟢🔴🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🔵🔴🟢 🟡🟡🟢 | 🟢🔴🔵 🟢🟢🟢 | 1/6 trials upsampled to 1 kHz and used `np.gradient` with no low-pass filter, which is quite problematic. The other 5 trials follow the standard reference pipeline (Butterworth lowpass before differentiation). |  | `RESAMP=1`, `TIMERES=1` |
+| 7-d | How is `output` *wheel_speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔴🟡 🟡🟡🟢 | 🔴🔴🔴 🔴🔴🔴 |  |  |  |
 | 8-a | What variables in the raw data is `output` *whisker_motion_energy* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 8-b | What processing is involved in computing `output` *whisker_motion_energy*? | 🟡🟡🔵 🟡🟢🟢 | 🟡🟡🟡 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 3/6 trials use the wrong trim direction when fixing the camera-timestamps vs motion-energy length mismatch (trim from end instead of front per IBL convention), causing the whisker ME signal to be misaligned in time with neural and behavior data. | The LLM judges missed this detail. | `ASSUME=3` |
-| 8-d | How is `output` *whisker_motion_energy* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟡 |  |  |  |
-| 9 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟢 🟡🟢🟢 |  |  |  |
-| 10-a | What are the most time-consuming steps of the code? | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 10-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 10-c | What processing does the code repeat multiple times? | 🟢🟢🔵 🟢🟢🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 10-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 8-b | What processing is involved in computing `output` *whisker_motion_energy*? | 🟡🟡🔵 🟡🟢🟢 | 🟡🟡🟡 🔵🟢🟢 | 🟢🟡🟢 🟡🟡🟢 | 🟢🔵🔵 🔵🟢🔵 | 3/6 trials use the wrong trim direction when fixing the camera-timestamps vs motion-energy length mismatch (trim from end instead of front per IBL convention), causing the whisker ME signal to be misaligned in time with neural and behavior data. | The LLM judges missed this detail. | `ASSUME=3` |
+| 8-d | How is `output` *whisker_motion_energy* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔴🟡 🟡🟡🟢 | 🔴🔴🔴 🔴🔴🔴 |  |  |  |
+| 9 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟡🟢🟢 | 🟡🟡🔵 🟡🟡🔵 |  |  |  |
+| 10-a | What are the most time-consuming steps of the code? | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟡🟢 🔵🟢🟢 |  |  |  |
+| 10-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🔵 🟢🟢🟢 |  |  |  |
+| 10-c | What processing does the code repeat multiple times? | 🟢🟢🔵 🟢🟢🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟡🟡 🟢🟡🟡 | 🟡🟡🔵 🟡🟡🟡 |  |  |  |
+| 10-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟡🟡🟡 🟢🟡🟢 | 🟡🟡🟡 🟡🟡🟡 |  |  |  |
 | 10-e | How is memory usage optimized? | 🔵🟢🟢 🔵🔵🟡 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |

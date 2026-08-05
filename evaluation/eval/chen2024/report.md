@@ -6,7 +6,7 @@
 - Questions covered: 31
 - Trials per question: 6 (3 claude-code + 3 codex)
 - Human evaluators: **LZ** (this report's comments and notes), KB
-- Judges: Claude, Codex
+- Judges: Claude, Codex (supervised run, from `judge_supervised/`)
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
 Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
@@ -28,34 +28,34 @@ A few notable observations on variability across agent solutions:
 
 | Q | Question | LZ | KB | Claude judge | Codex judge | Solution comment | LLM judge comment | Difference categories |
 |---|---|---|---|---|---|---|---|---|
-| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🟢🟢🟢 🔵🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 4/6 trials used the `pynwb` interface; 2/6 used `h5py` directly. Unclear what drove the difference compared to the sosa2024 dataset. |  | `SDK` |
-| 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🔵🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 1-c | How are the data split into sessions? | 🟡🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Performance-based session filtering is not necessary. |  |  |
-| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 1-e | How are trials filtered based on quality controls? | 🟡🟢🟡 🟢🔵🔴 | 🟡🟢🔵 🟡🟡🟡 | 🟢🟢🟡 🟡🟢🟡 | 🟢🟡🟢 🟡🟡🟡 |  |  | `FILTER=3` |
+| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🟢🟢🟢 🔵🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🟢🟢🟢 🟢🔵🔵 | 4/6 trials used the `pynwb` interface; 2/6 used `h5py` directly. Unclear what drove the difference compared to the sosa2024 dataset. |  | `SDK` |
+| 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🔵🟢🔵 | 🟢🟢🟢 🟢🟡🔵 | 🟢🔵🟢 🔵🔵🟡 |  |  |  |
+| 1-c | How are the data split into sessions? | 🟡🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🔵🔵🟢 | Performance-based session filtering is not necessary. |  |  |
+| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 |  |  |  |
+| 1-e | How are trials filtered based on quality controls? | 🟡🟢🟡 🟢🔵🔴 | 🟡🟢🔵 🟡🟡🟡 | 🟡🟡🔴 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 |  |  | `FILTER=3` |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 | Codex cast the data to float16; not strictly necessary, but acceptable for this data type. |  |  |
-| 2-c | How is the `neural` data filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🔵 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟡 | All agents apply good-unit filtering; the claude agents add an additional histology-based filter. |  |  |
+| 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🔵 | 🟢🟢🟢 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | Codex cast the data to float16; not strictly necessary, but acceptable for this data type. |  |  |
+| 2-c | How is the `neural` data filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🔵 🟢🟢🟢 | 🟡🟡🟡 🟢🟢🟢 | 🔴🔴🟡 🟡🟢🟢 | All agents apply good-unit filtering; the claude agents add an additional histology-based filter. |  |  |
 | 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | All agents correctly aligned the data using the go-cue onset time. |  |  |
-| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 | 50 ms binning per the task instructions — no variability across agents, presumably because the spec is explicit. |  |  |
-| 3-a | What variables in the raw data is `input` *time_from_tone_onset* derived from? | 🟢🟢🟢 🔵🟢🔴 | 🟢🟢🟢 🟢🟢🔴 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | One of the trial did not handle cases where there are restarts due to early lick but hard coded the solution |  | `ASSUME=1` |
-| 3-b | What processing is involved in computing `input` *time_from_tone_onset*? | 🟢🟢🟢 🟢🟢🔴 | 🟢🟢🟢 🔵🔴🔴 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | One trial assumed the onset time to be fixed |  | `ASSUME=1` |
-| 3-c | How is `input` *time_from_tone_onset* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 4-a | What variables in the raw data is `input` *photostim* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 4-b | What processing is involved in computing `input` *photostim*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 4-c | How is `input` *photostim* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
-| 5-a | What variables in the raw data is `output` *choice* derived from? | 🔴🔴🟢 🔵🟢🟢 | 🔴🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟡🟢🟢 | 🟢🔴🟡 🟡🟢🟢 | 2/6 trials used the *instructed* lick direction instead of the *actual* behavioral response. | The LLM judges failed to flag the trials where this mistake was made. | `VARNAME=2` |
-| 5-b | What processing is involved in computing `output` *choice*? | 🔴🔴🟡 🔵🟢🟢 | 🔴🔴🔴 🔴🟢🔴 | 🟢🟢🟡 🟡🟢🟡 | 🟢🔴🟡 🟡🟡🟡 | This part is also tricky — the agent must derive the actual behavioral response and additionally handle the case where the animal did not respond. |  | `PROCESS=3` |
+| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 50 ms binning per the task instructions — no variability across agents, presumably because the spec is explicit. |  |  |
+| 3-a | What variables in the raw data is `input` *time_from_tone_onset* derived from? | 🟢🟢🟢 🔵🟢🔴 | 🟢🟢🟢 🟢🟢🔴 | 🟢🟢🟢 🔴🟢🟡 | 🟢🟢🟢 🔴🟢🔴 | One of the trial did not handle cases where there are restarts due to early lick but hard coded the solution |  | `ASSUME=1` |
+| 3-b | What processing is involved in computing `input` *time_from_tone_onset*? | 🟢🟢🟢 🟢🟢🔴 | 🟢🟢🟢 🔵🔴🔴 | 🟢🟢🟢 🟢🟢🟡 | 🟢🟡🟢 🔴🟡🔴 | One trial assumed the onset time to be fixed |  | `ASSUME=1` |
+| 3-c | How is `input` *time_from_tone_onset* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 4-a | What variables in the raw data is `input` *photostim* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🔵🟢 |  |  |  |
+| 4-b | What processing is involved in computing `input` *photostim*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 |  |  |  |
+| 4-c | How is `input` *photostim* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 5-a | What variables in the raw data is `output` *choice* derived from? | 🔴🔴🟢 🔵🟢🟢 | 🔴🟢🟢 🔵🟢🟢 | 🔴🔴🔴 🟡🟡🔴 | 🔴🔴🔴 🟡🔴🔴 | 2/6 trials used the *instructed* lick direction instead of the *actual* behavioral response. | The LLM judges failed to flag the trials where this mistake was made. | `VARNAME=2` |
+| 5-b | What processing is involved in computing `output` *choice*? | 🔴🔴🟡 🔵🟢🟢 | 🔴🔴🔴 🔴🟢🔴 | 🔴🔴🔴 🟡🔴🔴 | 🔴🔴🔴 🟡🔴🔴 | This part is also tricky — the agent must derive the actual behavioral response and additionally handle the case where the animal did not respond. |  | `PROCESS=3` |
 | 6-a | What variables in the raw data is `output` *outcome* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 6-b | What processing is involved in computing `output` *outcome*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 7-a | What variables in the raw data is `output` *early_lick* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 7-b | What processing is involved in computing `output` *early_lick*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 8-a | What variables in the raw data is `output` *tongue_y_position* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 8-b | What processing is involved in computing `output` *tongue_y_position*? | 🔵🔵🟡 🟡🟢🟢 | 🔵🟡🔴 🟡🔵🔵 | 🟢🟡🟡 🟢🟢🟢 | 🟡🟡🟢 🟢🟢🟢 | Agents differ in how they handle issues in the tracking data (e.g., occlusion, velocity outliers). |  | `PROCESS=2` |
-| 8-d | How is `output` *tongue_y_position* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Nominally identical procedure across all agents; slight variation in implementation details. |  | `OUTLIERFILTER` |
-| 9 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🔵🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟡🟡 🟡🟢🟢 | 🟡🟡🟡 🟡🟡🟡 |  |  |  |
-| 10-a | What are the most time-consuming steps of the code? | 🔵🔵🔵 🟢🟢🟢 | 🔵🔵🟡 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | The claude variants are less efficient — they keep a per-trial spike-binning loop instead of vectorizing across trials. |  | `INEFFICIENT` |
-| 10-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🟢🟢🟢 | 🔵🔵🟡 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 10-c | What processing does the code repeat multiple times? | 🟢🟢🔵 🟢🔵🟢 | 🔵🔵🟡 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 10-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🔵🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 8-b | What processing is involved in computing `output` *tongue_y_position*? | 🔵🔵🟡 🟡🟢🟢 | 🔵🟡🔴 🟡🔵🔵 | 🔴🟡🔴 🔴🔴🔴 | 🔴🔴🔴 🔴🔴🔴 | Agents differ in how they handle issues in the tracking data (e.g., occlusion, velocity outliers). |  | `PROCESS=2` |
+| 8-d | How is `output` *tongue_y_position* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🔴 🟢🟡🟡 | 🟢🟢🔴 🟢🔴🟡 | Nominally identical procedure across all agents; slight variation in implementation details. |  | `OUTLIERFILTER` |
+| 9 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🔵🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟡🟡🟡 🟡🟡🟡 | 🟡🔴🔴 🔴🔴🟡 |  |  |  |
+| 10-a | What are the most time-consuming steps of the code? | 🔵🔵🔵 🟢🟢🟢 | 🔵🔵🟡 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟡 🟢🟢🟢 | The claude variants are less efficient — they keep a per-trial spike-binning loop instead of vectorizing across trials. |  | `INEFFICIENT` |
+| 10-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🟢🟢🟢 | 🔵🔵🟡 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟡 🔴🟡🔵 |  |  |  |
+| 10-c | What processing does the code repeat multiple times? | 🟢🟢🔵 🟢🔵🟢 | 🔵🔵🟡 🟡🟡🟡 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🔴 🔴🔴🔴 |  |  |  |
+| 10-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🔵🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟡🟡 🟢🟢🟢 | 🟡🔴🟡 🔴🔴🔴 |  |  |  |
 | 10-e | How is memory usage optimized? | 🟢🟢🟢 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | Codex used float16, which is unnecessary but acceptable for this kind of data. |  |  |

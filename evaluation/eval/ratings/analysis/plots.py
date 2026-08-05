@@ -209,6 +209,7 @@ def category_breakdown(summary: pd.DataFrame, *, label_thresh: int = 3):
     bot_left = stack(ax_bot, matrix, ys)
     ax_bot.set_yticks(ys, [display_name(ds) for ds in order])
     ax_bot.set_xlim(0, bot_left.max() * 1.02)
+    ax_bot.set_xticks(np.arange(0, bot_left.max() + 1, 5))
     ax_bot.set_xlabel("Number of Instances")
 
     for ax in (ax_top, ax_bot):

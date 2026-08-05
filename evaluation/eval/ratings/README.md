@@ -70,6 +70,11 @@ plots.format_scatter(r)               # per-trial correctness by source format
 `claude-code` or `codex`. The old notebooks used one word for both; this one
 does not.
 
+Two more raters are derived rather than loaded, and are added to a frame on
+demand: `add_null(df)` gives `LZ_null`, LZ's own ratings shuffled — the floor
+any real rater should beat — and `add_combined(df)` gives `combined`, the two
+supervised judges required to agree before a row counts as a mistake.
+
 Ratings are numbers: `incorrect=-2, concerning=-1, ok=0, match=1, better=2`,
 and a rating nobody gave is `NaN` — never 0.
 
@@ -178,10 +183,18 @@ first three trials.
 
 ### `report.md`
 
-Two parts are hand-curated and carried across regenerations: the `## Comments`
-section and the **Difference categories** column (matched to each question by
-its text, so the value follows a question through a renumbering). Everything
-else is rebuilt, so edits elsewhere will not survive.
+Hand-written parts are carried across regenerations: the `## Comments` section,
+the **Difference categories** column, and the two comment columns
+(**Solution comment**, **LLM judge comment**) — those start out generated from
+the summary files, but whatever the last report said wins, so a comment
+polished in place is never reverted to its draft. All four are matched to each
+question by its *text*, so a value follows its question through a renumbering.
+The rating columns are rebuilt every time and edits to them will not survive.
+
+The two judge columns come from `<dataset>/judge_supervised/`, the same source
+`load_ratings()` reads, mapped onto our question numbering by content — not
+from `eval_summary.md`, which is only a snapshot of whichever judge run existed
+the last time `compare` was used.
 
 ---
 
