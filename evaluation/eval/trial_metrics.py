@@ -192,6 +192,7 @@ AGENT_ALIASES = {"claude": "claude-code"}
 # each rating file. Canonicalising to the manual vocabulary here means the metrics
 # key matches manual/<name>/ and eval/<name>/, so ratings and metrics can be joined
 # on the dataset name instead of by resolving those paths.
+# this is also defined in utils.py, maybe combine??
 DATASET_ALIASES = {"map": "chen2024", "mouseland": "zhong2025"}
 
 # Not agent arms. `oracle` runs the reference solution, so its ratios are ~1.0 by

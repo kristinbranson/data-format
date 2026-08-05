@@ -125,20 +125,28 @@ def _import_task_tests(task: str, workdir: Path):
 
 
 _REF_CACHE: dict[str, dict | None] = {}
-def _reference_data_stats(task: str):
+def _reference_data_stats(task: str, test_mod):
+    """The task's reference_stats_full.json, or None if it has none.
+
+    The parsing is the task's own `load_stats_full`, not a copy of it: it derives
+    nneurons_total and densifies output_fractions, and rebuilding that here is how
+    this script drifts out of step with what a real verifier run records. Only the
+    caching is local -- a sweep asks for the same task once per trial.
+
+    Args:
+        task: harbor task directory name, e.g. 'sosa2024'.
+        test_mod: that task's freshly-imported test_outputs module.
+
+    Returns:
+        The parsed stats dict, with output_fractions under 'data_summary', or
+        None when the task ships no reference. Cached per task, so callers must
+        not mutate it.
+    """
     if task in _REF_CACHE:
         return _REF_CACHE[task]
     ref_path = HARBOR_TASKS / task / "tests" / "reference_stats_full.json"
-    if not ref_path.exists():
-        _REF_CACHE[task] = None
-        return None
-    with open(ref_path) as f:
-        stats = json.load(f)
-    stats["data_summary"]["nneurons_total"] = (
-        stats["data_summary"]["nsessions"] * stats["data_summary"]["nneurons_mean"]
-    )
-    _REF_CACHE[task] = stats
-    return stats
+    _REF_CACHE[task] = test_mod.load_stats_full(ref_path)
+    return _REF_CACHE[task]
 
 
 def _derive_decoder_reference_fields(test_mod, existing, submitted_data_stats,
@@ -407,18 +415,19 @@ def rerun_trial(trial_dir: Path, task: str, *,
             if time.time() - t0 > 2:
                 report["events"].append(f"loaded converted_data.pkl ({time.time()-t0:.1f}s)")
 
-    # Compute data-stats fixtures lazily (only if needed AND we have the pkl).
-    # print_data_summary prints ~50 lines of stats to stdout per call — silence
-    # it here since the per-test pass/fail lines below are what we care about.
+    # Compute data-stats lazily (only if needed AND we have the pkl). Delegated to
+    # the task's own get_data_stats rather than rebuilt here: it derives
+    # nneurons_total and densifies output_fractions, and reimplementing that is how
+    # this script silently drifts out of step with what a real verifier run
+    # records. It returns None for None, which is why there is no pickle check.
+    # print_data_summary prints ~50 lines of stats to stdout per call — silence it
+    # here since the per-test pass/fail lines below are what we care about.
     need_stats = run_data_stats or run_decoder or derive_decoder_refs
     submitted_data_stats = None
-    if need_stats and submitted_full is not None:
+    if need_stats:
         with contextlib.redirect_stdout(io.StringIO()):
-            submitted_data_stats = test_mod.print_data_summary(submitted_full)
-        submitted_data_stats["nneurons_total"] = (
-            submitted_data_stats["nsessions"] * submitted_data_stats["nneurons_mean"]
-        )
-    reference_data_stats = _reference_data_stats(task) if need_stats else None
+            submitted_data_stats = test_mod.get_data_stats(submitted_full)
+    reference_data_stats = _reference_data_stats(task, test_mod) if need_stats else None
 
     new_metrics: dict = {}
 

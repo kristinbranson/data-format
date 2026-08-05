@@ -12,14 +12,19 @@ shared between them now beyond the datasets they describe.
 from __future__ import annotations
 
 import json
+import re
+from collections import defaultdict
 from pathlib import Path
+from typing import NamedTuple, Optional
+import sys
 
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[2]
 
 EVAL_DIR = Path(__file__).resolve().parent
 
-
-TRIAL_METRICS_JSON = 'trial_metrics_all.json'
-
+TRIAL_METRICS_JSON = 'trial_metrics.json'
 
 TASK_DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
 
@@ -70,6 +75,13 @@ UNSUPERVISED_DS = []
 # --minimal/--maximal flags; the underlying metrics field says "full".
 PROMPT_LABEL = {"minimal": "minimal", "full": "maximal"}
 
+# The harbor task directory is sometimes named differently from the dataset.
+# Canonicalising to the manual vocabulary here means the metrics key matches
+# manual/<name>/ and eval/<name>/, so ratings and metrics can be joined on the
+# dataset name instead of by resolving those paths. Also defined in
+# trial_metrics.py, which is where it originated.
+DATASET_ALIASES = {"map": "chen2024", "mouseland": "zhong2025"}
+
 
 # ---------------------------------------------------------------------------
 # Per-trial verifier metrics (validation accuracy, scale stats, ratios).
@@ -89,6 +101,33 @@ def load_trial_metrics(eval_dir: Path = EVAL_DIR, filename: str = TRIAL_METRICS_
         )
     return json.loads(path.read_text())
 
+def load_reference_stats(dataset,root=ROOT):
+    """Oracle summary statistics for one dataset, or None if it has none.
+
+    Args:
+        dataset: metrics-side dataset name, e.g. 'chen2024'. The harbor task
+            directory may be named differently, e.g. 'map'.
+
+    Returns:
+        The 'data_summary' sub-dict of
+        harbor-tasks/<task>/tests/reference_stats_full.json: 'input_range' and
+        'output_range' as {variable_name: [lo, hi]} in the variable's own units,
+        plus the scalar scale fields. None for the unsupervised tasks, which
+        ship no reference stats.
+    """
+
+    try:
+        import test_outputs as tests
+    except ImportError:
+        sys.path.append(str(ROOT / "template-harbor-task" / "tests"))
+        import test_outputs as tests
+    
+    task_dir_name = {v: k for k, v in DATASET_ALIASES.items()}
+    
+    task = task_dir_name.get(dataset, dataset)
+    path = root / "harbor-tasks" / task / "tests" / "reference_stats_full.json"
+    stats = tests.load_stats_full(path)
+    return None if stats is None else stats['data_summary']
 
 # Different agent runs name the same conceptual decoder variable in slightly
 # different ways (e.g., chen2024's "tongue Y" target appears as
@@ -186,3 +225,81 @@ def trial_metrics_df(metrics: dict | None = None, eval_dir: Path = EVAL_DIR):
     return (pd.DataFrame(rows)
             .sort_values(["dataset", "agent", "prompt", "trial"])
             .reset_index(drop=True))
+
+
+
+def get_arm_keys(arms=None, *, agents=None, prompts=None):
+    """Get a list of (agent, prompt) keys
+
+    Left-to-right order follows what the caller asked for: the order of `arms`,
+    or of `agents` with `prompts` nested inside each agent. Only when neither is
+    given does it fall back to ARM_COLUMNS order. Ordering is a deliberate part
+    of a comparison figure -- putting the two arms you are contrasting side by
+    side -- so a caller-supplied order is honoured rather than re-sorted.
+
+    Args:
+        arms: explicit (agent, prompt) tuples, drawn in this order. Mutually
+            exclusive with agents/prompts.
+        agents: keep only these agents, drawn in this order.
+        prompts: keep only these prompts, drawn in this order within each agent.
+            Combines with `agents`; both filters apply. Accepts the display name
+            'maximal' as well as the metrics field's 'full', since the figures,
+            PROMPT_LABEL and submit_harbor_cluster.py's flags all say maximal.
+
+    Returns:
+        list of (agent, prompt) tuples, deduplicated, keeping first occurrence.
+
+    Raises:
+        ValueError: on an unknown arm, agent or prompt name, on combining `arms`
+            with `agents`/`prompts`, or when the selection matches nothing.
+    """
+    if arms is not None:
+        if agents is not None or prompts is not None:
+            raise ValueError('pass either arms, or agents/prompts, not both')
+        requested = [tuple(arm) for arm in arms]
+        unknown = [arm for arm in requested if arm not in ARM_COLUMNS]
+        if unknown:
+            raise ValueError(f'unknown arms: {unknown}; known: {ARM_COLUMNS}')
+        # dict.fromkeys rather than set(): dedupes while keeping the given order.
+        return list(dict.fromkeys(requested))
+
+    if agents is not None:
+        known = {agent for agent, _prompt in ARM_COLUMNS}
+        unknown = [a for a in agents if a not in known]
+        if unknown:
+            raise ValueError(f'unknown agents: {unknown}; known: {sorted(known)}')
+        agent_order = list(dict.fromkeys(agents))
+    else:
+        agent_order = list(dict.fromkeys(agent for agent, _prompt in ARM_COLUMNS))
+
+    if prompts is not None:
+        known = {prompt for _agent, prompt in ARM_COLUMNS}
+        # PROMPT_LABEL renames 'full' to 'maximal' for display, so accept
+        # whichever name the caller has in front of them.
+        display_to_field = {label: field for field, label in PROMPT_LABEL.items()}
+        wanted = [display_to_field.get(p, p) for p in prompts]
+        unknown = [p for p in wanted if p not in known]
+        if unknown:
+            raise ValueError(f'unknown prompts: {unknown}; '
+                             f'known: {sorted(known | set(PROMPT_LABEL.values()))}')
+        prompt_order = list(dict.fromkeys(wanted))
+    else:
+        prompt_order = None   # per-agent, in ARM_COLUMNS order
+
+    # Agent-major, prompt-minor -- the nesting ARM_COLUMNS itself uses, so a
+    # multi-prompt selection still reads as one group per agent.
+    prompts_of_agent = {}
+    for agent, prompt in ARM_COLUMNS:
+        prompts_of_agent.setdefault(agent, []).append(prompt)
+
+    selected = []
+    for agent in agent_order:
+        for prompt in (prompt_order if prompt_order is not None
+                       else prompts_of_agent[agent]):
+            if (agent, prompt) in ARM_COLUMNS:
+                selected.append((agent, prompt))
+
+    if not selected:
+        raise ValueError('arm selection is empty')
+    return selected
+
