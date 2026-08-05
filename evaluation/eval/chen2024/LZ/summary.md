@@ -197,7 +197,6 @@
 
 ## Q 3-b. What processing is involved in computing `input` *time_from_tone_onset*?
 
-
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
@@ -207,7 +206,7 @@
 | codex / trial2 | match | _(no note)_ |
 | codex / trial3 | incorrect | _(no note)_ |
 
-**Overall comment:** Smae as above, on trial hard coded the onset time
+**Overall comment:** One trial assumed the onset time to be fixed
 
 ---
 

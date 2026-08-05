@@ -30,16 +30,16 @@ A few notable observations on variability across agent solutions:
 |---|---|---|---|---|---|---|---|---|
 | 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🟢🟢🟢 🔵🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 4/6 trials used the `pynwb` interface; 2/6 used `h5py` directly. Unclear what drove the difference compared to the sosa2024 dataset. |  | `SDK` |
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🔵🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 1-c | How are the data split into sessions? | 🟡🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Performance-based session filtering is not necessary. |  | `FILTER=2` |
-| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  | `FILTER=1` |
-| 1-e | How are trials filtered based on quality controls? | 🟡🟢🟡 🟢🔵🔴 | 🟡🟢🔵 🟡🟡🟡 | 🟢🟢🟡 🟡🟢🟡 | 🟢🟡🟢 🟡🟡🟡 |  |  | `FILTER=1` |
+| 1-c | How are the data split into sessions? | 🟡🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | Performance-based session filtering is not necessary. |  |  |
+| 1-d | Are the data correctly split into trials? | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
+| 1-e | How are trials filtered based on quality controls? | 🟡🟢🟡 🟢🔵🔴 | 🟡🟢🔵 🟡🟡🟡 | 🟢🟢🟡 🟡🟢🟡 | 🟢🟡🟢 🟡🟡🟡 |  |  | `FILTER=3` |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 | Codex cast the data to float16; not strictly necessary, but acceptable for this data type. |  |  |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🔵 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟡 | All agents apply good-unit filtering; the claude agents add an additional histology-based filter. |  |  |
 | 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | All agents correctly aligned the data using the go-cue onset time. |  |  |
 | 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 | 50 ms binning per the task instructions — no variability across agents, presumably because the spec is explicit. |  |  |
 | 3-a | What variables in the raw data is `input` *time_from_tone_onset* derived from? | 🟢🟢🟢 🔵🟢🔴 | 🟢🟢🟢 🟢🟢🔴 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | One of the trial did not handle cases where there are restarts due to early lick but hard coded the solution |  |  |
-| 3-b | What processing is involved in computing `input` *time_from_tone_onset*? | 🟢🟢🟢 🟢🟢🔴 | 🟢🟢🟢 🔵🔴🔴 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | Smae as above, on trial hard coded the onset time |  |  |
+| 3-b | What processing is involved in computing `input` *time_from_tone_onset*? | 🟢🟢🟢 🟢🟢🔴 | 🟢🟢🟢 🔵🔴🔴 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ | One trial assumed the onset time to be fixed |  |  |
 | 3-c | How is `input` *time_from_tone_onset* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
 | 4-a | What variables in the raw data is `input` *photostim* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
 | 4-b | What processing is involved in computing `input` *photostim*? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🟢 🟢🟢🟢 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
