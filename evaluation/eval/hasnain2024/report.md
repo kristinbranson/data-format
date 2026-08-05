@@ -42,7 +42,7 @@ A few interesting concern / failure cases in this dataset are worth noting:
 | 4-b | What processing is involved in computing `output` *lick_direction*? | 🟢🔴🔴 🔴🟡🔴 | 🟢🔴🔴 🔴🔵🔴 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟡 🟢🟢🟢 |  |  |  |
 | 5-a | What variables in the raw data is `output` *context* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 5-b | What processing is involved in computing `output` *context*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 |  |  |  |
-| 6-a | What variables in the raw data is `output` *outcome* derived from? | 🔴🔴🟢 🔴🔴🔵 | 🔵🔴🔴 🔴🔵🔴 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟢 🟢🟢🟢 | ignore the case where there is no response |  |  |
+| 6-a | What variables in the raw data is `output` *outcome* derived from? | 🔴🔴🟢 🔴🔴🔵 | 🔵🔴🔴 🔴🔵🔴 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟢 🟢🟢🟢 | ignore the case where there is no response |  | `ASSUME=4` |
 | 6-b | What processing is involved in computing `output` *outcome*? | 🟡🟡🟡 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟡 🟢🟢🟡 | ignored the no response case in all solutions |  |  |
 | 7-a | What variables in the raw data is `output` *tongue_velocity* derived from? | 🟡🟡🟡 🟡🟡🔵 | 🟡🟡🟡 🟡🟡🔵 | 🟡🟢🟢 🟢🟢🟢 | 🟡🟡🟢 🟡🟡🟡 | The paper used a sophisticated PCA-based procedure to estimate tongue velocity from multiple markers across both cameras. None of the agents came close; only one agent attempted to combine information from multiple cameras. |  | `PROCESS=5` |
 | 7-b | What processing is involved in computing `output` *tongue_velocity*? | 🟡🟡🟡 🟡🟡🟡 | 🟡🟡🟡 🟡🟡🟡 | 🟡🟢🟡 🟢🟢🟡 | 🟡🟢🟡 🔴🟢🟡 | interpolation should not be used; a "not visable" category should be used instead for tracking not aviliable period |  |  |

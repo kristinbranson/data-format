@@ -31,11 +31,11 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 | 1-d | Are the data correctly split into trials? | 🟡🟢🟡 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟡 🟢🔵🟢 | 🟡🟡🔴 🟢🔴🟢 | Slightly different handling of potential mismatches between `trial_start` and teleport events. | Claude correctly flagged some implementations as less robust. | `ASSUME=2` |
 | 1-e | How are trials filtered based on quality controls? | 🟣🔵🟣 🔵🔵🟣 | 🟣🔵🟣 🟣🟣🟣 | 🔵🔴🟡 🟡🔴🔴 | 🔴🔴🔴 🔴🔴🔴 | Some agents implemented additional filtering based on a detail in the paper's methods. |  | `DETAIL` |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔴 🟢🔴🟢 |  |  |  |
-| 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔴🟢 | 🔵🔵🔵 🟢🔴🟢 | 🔵🟡🟣 🟢🟡🟡 | 🟡🔴🔴 🔵🔴🟢 |  |  |  |
+| 2-b | How is the `neural` data processed? | 🟢🟢🟢 🔵🔴🟢 | 🔵🔵🔵 🟢🔴🟢 | 🔵🟡🟣 🟢🟡🟡 | 🟡🔴🔴 🔵🔴🟢 |  |  | `TIMERES=1` |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🟣🟣🟣 🟢🟢🟢 | 🔵🔵🔵 🟢🔵🟢 | 🟣🟡🟣 🟢🟢🟢 | 🟡🔴🔴 🟢🟢🟡 |  | Claude judge gave inconsistent ratings for the same solution. | `DETAIL` |
 | 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | No timestamp is provided, so no additional alignment is needed. |  |  |
 | 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🟢🔴🟢 | 🟢🟢🟢 🔵🔴🟣 | A critical mistake — but only 1/6 agents made it, although the wording in the data description is somewhat confusing. | Both judges caught the mistake. | `TIMERES=1`, `ASSUME=1` |
-| 3-a | What variables in the raw data is `input` *Time from start of trial in seconds* derived from? | 🟡🟡🟡 🟢🟡🟢 | 🟡🟡🟡 🔵🟡🔵 | 🔵🟡🔵 🟢🟢🟢 | 🟡🔴🔴 🔵🔴🔵 |  | Inconsistent ratings from the LLM judges for the same solution. |  |
+| 3-a | What variables in the raw data is `input` *Time from start of trial in seconds* derived from? | 🟡🟡🟡 🟢🟡🟢 | 🟡🟡🟡 🔵🟡🔵 | 🔵🟡🔵 🟢🟢🟢 | 🟡🔴🔴 🔵🔴🔵 |  | Inconsistent ratings from the LLM judges for the same solution. | `ASSUME=4` |
 | 3-b | What processing is involved in computing `input` *Time from start of trial in seconds*? | 🟡🟡🟡 🟢🟡🟢 | 🟡🟡🟡 🟢🟡🟢 | 🔵🟡🔵 🟢🟢🟢 | 🟡🔴🔴 🟢🔴🟢 |  |  |  |
 | 3-c | How is the `input` *Time from start of trial in seconds* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 🟢🟢🔵 🟡🔵🔵 |  |  |  |
 | 4-a | What variables in the raw data is `input` *Environment type* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🔵🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | 🟢🔴🟢 🔴🟢🟢 |  |  |  |
