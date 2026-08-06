@@ -150,18 +150,52 @@ JUDGE_SETUP = {
 # The human row leads: it is the ceiling the judge rows are read against.
 SETUP_ORDER = ("Human", "Supervised", "Unsupervised")
 
-# (header, key, decimals) in column order, grouped as the header spans them.
-JUDGE_GROUPS = [
-    ("Counts", [("TP", "TP", 0), ("FP", "FP", 0), ("FN", "FN", 0), ("TN", "TN", 0)]),
-    ("Discriminability", [(r"Bal.\ Acc.", "balanced_acc", 3), (r"$d'$", "d_prime", 3)]),
-    ("Mistake-Catching", [("Recall", "recall", 3), ("Prec.", "precision", 3),
-                          ("F1", "f1", 3)]),
-]
+# (header, key, decimals) in column order, grouped as the header spans them,
+# with the column alignment the group's numbers want. Read left to right: what
+# the rater actually did, then how well it caught mistakes, then how well it
+# told the two classes apart at all.
+COUNT_COLS = [("TP", "TP", 0), ("FP", "FP", 0), ("FN", "FN", 0), ("TN", "TN", 0)]
+CATCH_COLS = [("F1", "f1", 3), ("Recall", "recall", 3), ("Prec.", "precision", 3)]
+DISC_COLS = [(r"Bal.\ Acc.", "balanced_acc", 3), (r"$d'$", "d_prime", 3)]
+
+# Both paper tables carry the same measures; only the row labels differ. Counts
+# are right-aligned because they run 2 to 4 digits; every rate is a fixed-width
+# 0.xxx, so centering those columns costs no alignment and puts a short header
+# ("F1") over the middle of its numbers instead of against their right edge.
+JUDGE_GROUPS = [("Counts", COUNT_COLS, "r"),
+                ("Catching Mistakes", CATCH_COLS, "c"),
+                ("Discriminability", DISC_COLS, "c")]
+
+
+def _header_rows(groups, lead: list[str]) -> tuple[str, list[str]]:
+    """Group spans, their rules, the column names, and the tabular spec.
+
+    Driven off `groups` so the two tables cannot drift from their own headers:
+    adding a column changes the spec and the `\\cmidrule` ranges with it.
+    """
+    spans, rules, headers, spec = [], [], [], ["l"] * len(lead)
+    at = len(lead) + 1
+    for name, cs, align in groups:
+        spans.append(rf"\multicolumn{{{len(cs)}}}{{c}}{{{name}}}")
+        rules.append(rf"\cmidrule(lr){{{at}-{at + len(cs) - 1}}}")
+        headers += [h for h, _k, _d in cs]
+        spec.append(align * len(cs))
+        at += len(cs)
+    lines = [" ".join(["&"] * len(lead)) + " " + " & ".join(spans) + r" \\",
+             " ".join(rules),
+             " & ".join([*lead, *headers]) + r" \\"]
+    return " ".join(spec), lines
+
+
+def _cells(row, groups, mark: str = "") -> list[str]:
+    """One table row's numbers, formatted to each column's decimals."""
+    return [f"{mark}{int(row[k])}" if dp == 0 else f"{mark}{row[k]:.{dp}f}"
+            for _group, cs, _align in groups for _header, k, dp in cs]
 
 
 def judge_latex(df: pd.DataFrame, *, setups=JUDGE_SETUP, order=SETUP_ORDER,
                 caption: str | None = None, label: str | None = None) -> str:
-    """The grouped judge table: counts, discriminability, mistake-catching.
+    """The grouped judge table: counts, catching mistakes, discriminability.
 
     `df` is a `binary.table` result; its `pred` column selects and names the
     rows through `setups`, so a predictor with no entry there (the shuffled
@@ -170,39 +204,27 @@ def judge_latex(df: pd.DataFrame, *, setups=JUDGE_SETUP, order=SETUP_ORDER,
     Needs `booktabs` and `multirow`.
     """
     rows = {r["pred"]: r for _, r in df.iterrows()}
-    cols = [c for _group, cs in JUDGE_GROUPS for c in cs]
 
     body = []
     for setup in order:
         preds = [p for p, (s, _label) in setups.items() if s == setup and p in rows]
         for i, pred in enumerate(preds):
             head = (rf"\multirow{{{len(preds)}}}{{*}}{{{setup}}}" if i == 0 else "")
-            cells = []
-            for _header, key, dp in cols:
-                v = rows[pred][key]
-                cells.append(f"{int(v)}" if dp == 0 else f"{v:.{dp}f}")
-            body.append(" & ".join([head, _escape(setups[pred][1]), *cells]) + r" \\")
+            body.append(" & ".join([head, _escape(setups[pred][1]),
+                                    *_cells(rows[pred], JUDGE_GROUPS)]) + r" \\")
         if setup != order[-1] and preds:
             body.append(r"\midrule")
 
-    spans, rules, headers = [], [], []
-    at = 3  # the two label columns come first
-    for name, cs in JUDGE_GROUPS:
-        spans.append(rf"\multicolumn{{{len(cs)}}}{{c}}{{{name}}}")
-        rules.append(rf"\cmidrule(lr){{{at}-{at + len(cs) - 1}}}")
-        headers += [h for h, _k, _d in cs]
-        at += len(cs)
+    spec, header = _header_rows(JUDGE_GROUPS, ["Setup", "Rater"])
 
     lines = [
         r"% requires \usepackage{booktabs, multirow}",
         r"\begin{table}[!h]",
         r"\centering",
         r"\setlength{\tabcolsep}{4pt}",
-        r"\begin{tabular}{l l rrrr cc rrr}",
+        r"\begin{tabular}{" + spec + "}",
         r"\toprule",
-        " & & " + " & ".join(spans) + r" \\",
-        " ".join(rules),
-        " & ".join(["Setup", "Rater", *headers]) + r" \\",
+        *header,
         r"\midrule",
         *body,
         r"\bottomrule",
@@ -291,13 +313,15 @@ def agreement_matrix_latex(df: pd.DataFrame, raters=MATRIX_RATERS, *,
 # shaded in the paper table.
 
 AGENT_TARGET = {"claude-code": "Claude", "codex": "Codex"}
-CROSS_GROUPS = [
-    ("Counts", [("TP", "TP", 0), ("FP", "FP", 0), ("FN", "FN", 0), ("TN", "TN", 0)]),
-    ("Discriminability", [(r"Bal.\ Acc.", "balanced_acc", 3), (r"$d'$", "d_prime", 3)]),
-]
+CROSS_GROUPS = JUDGE_GROUPS
 CROSS_COLUMNS = {"family": "Family", "judge": "Judge", "target": "Target",
                  "TP": "TP", "FP": "FP", "FN": "FN", "TN": "TN",
+                 "f1": "F1", "recall": "Recall", "precision": "Precision",
                  "balanced_acc": "Balanced Acc", "d_prime": "d'"}
+
+# What `cross_judge_frame` carries over from `binary.table`: every measure the
+# two tables show, plus `n` for the caption.
+CROSS_MEASURES = tuple(k for _g, cs, _a in CROSS_GROUPS for _h, k, _d in cs) + ("n",)
 
 
 def cross_judge_frame(df: pd.DataFrame, *, setups=JUDGE_SETUP,
@@ -315,8 +339,7 @@ def cross_judge_frame(df: pd.DataFrame, *, setups=JUDGE_SETUP,
         rows.append({"family": family, "judge": judge,
                      "target": targets[r["agent"]],
                      "cross": judge != targets[r["agent"]],
-                     **{k: r[k] for k in
-                        ("TP", "FP", "FN", "TN", "balanced_acc", "d_prime", "n")}})
+                     **{k: r[k] for k in CROSS_MEASURES}})
 
     order = {f: i for i, f in enumerate(SETUP_ORDER)}
     side = {name: i for i, name in enumerate(targets.values())}
@@ -332,7 +355,8 @@ def cross_judge(df: pd.DataFrame):
     shaded = frame["cross"].to_numpy()
     prepared = frame[[c for c in CROSS_COLUMNS if c in frame.columns]].rename(
         columns=CROSS_COLUMNS)
-    floats = [CROSS_COLUMNS[k] for k in ("balanced_acc", "d_prime")]
+    floats = [CROSS_COLUMNS[k] for k in
+              ("f1", "recall", "precision", "balanced_acc", "d_prime")]
     return (prepared.style.hide(axis="index")
             .format({c: "{:.3f}" for c in floats})
             .apply(lambda _row: ["background-color: #f0f0f0" if shaded[_row.name] else ""]
@@ -348,7 +372,6 @@ def cross_judge_latex(df: pd.DataFrame, *, caption: str | None = None,
     is filled in with the number of rows behind each pairing.
     """
     frame = cross_judge_frame(df)
-    cols = [c for _group, cs in CROSS_GROUPS for c in cs]
 
     body = []
     families = [f for f in SETUP_ORDER if f in set(frame["family"])]
@@ -357,20 +380,13 @@ def cross_judge_latex(df: pd.DataFrame, *, caption: str | None = None,
         for i, (_, r) in enumerate(block.iterrows()):
             head = (rf"\multirow{{{len(block)}}}{{*}}{{{family}}}" if i == 0 else "")
             mark = r"\crossrow " if r["cross"] else ""
-            cells = [f"{mark}{int(r[k])}" if dp == 0 else f"{mark}{r[k]:.{dp}f}"
-                     for _header, k, dp in cols]
             body.append(" & ".join([head, f"{mark}{r['judge']}",
-                                    f"{mark}{r['target']}", *cells]) + r" \\")
+                                    f"{mark}{r['target']}",
+                                    *_cells(r, CROSS_GROUPS, mark)]) + r" \\")
         if family != families[-1]:
             body.append(r"\midrule")
 
-    spans, rules, headers = [], [], []
-    at = 4  # family, judge, target
-    for name, cs in CROSS_GROUPS:
-        spans.append(rf"\multicolumn{{{len(cs)}}}{{c}}{{{name}}}")
-        rules.append(rf"\cmidrule(lr){{{at}-{at + len(cs) - 1}}}")
-        headers += [h for h, _k, _d in cs]
-        at += len(cs)
+    spec, header = _header_rows(CROSS_GROUPS, ["Family", "Judge", "Target"])
 
     lines = [
         r"% requires \usepackage{booktabs, multirow} and xcolor with a rowgray color",
@@ -379,11 +395,9 @@ def cross_judge_latex(df: pd.DataFrame, *, caption: str | None = None,
         r"\begin{table}[!h]",
         r"\centering",
         r"\setlength{\tabcolsep}{4pt}",
-        r"\begin{tabular}{l l l rrrr cc}",
+        r"\begin{tabular}{" + spec + "}",
         r"\toprule",
-        " & & & " + " & ".join(spans) + r" \\",
-        " ".join(rules),
-        " & ".join(["Family", "Judge", "Target", *headers]) + r" \\",
+        *header,
         r"\midrule",
         *body,
         r"\bottomrule",

@@ -214,23 +214,59 @@ def question_group(df: pd.DataFrame) -> pd.Series:
 
 
 def condition_scores(df: pd.DataFrame, rater: str = "combined", *,
-                     level: float = 0.0, by: str = "dataset") -> pd.DataFrame:
-    """Per (`by`, condition, trial): how much was rated at least `level`.
+                     level: float = 0.0, by: str = "dataset",
+                     unit: str = "trial") -> pd.DataFrame:
+    """Per (`by`, condition, `unit`): how much was rated at least `level`.
 
     `level=0` is "ok or better", the same cut `format_scatter` uses for the
     human ratings. Rows the rater left unrated are dropped from both numerator
     and denominator, so `frac_ok` is a share of what was actually judged.
 
-    `by="dataset"` gives one point per trial per dataset. Any other column
-    works the same way — `by="group"` pools each trial's questions across
-    datasets instead, which weights a dataset by how many questions it carries.
+    `by` is the column the figure splits on; `unit` is what one point is. The
+    two combinations we use:
+
+    * `by="dataset", unit="trial"` — a point is one run. Three per condition per
+      dataset, and their spread is run-to-run variability.
+    * `by="group", unit="dataset"` — a point is one dataset's questions in that
+      band, its three trials pooled. Eight per condition per band, and their
+      spread is between datasets.
+
+    Do not pool datasets *by trial index*: trial 1 of allen2p and trial 1 of
+    chen2024 are unrelated runs, so a "trial 1" point across datasets averages
+    things that share only a label.
     """
     sub = df[df[rater].notna()]
-    out = (sub.groupby([by, "condition", "trial"], dropna=False)[rater]
+    out = (sub.groupby([by, "condition", unit], dropna=False)[rater]
               .agg(n_questions="size", n_ok=lambda s: int((s >= level).sum()))
               .reset_index())
     out["frac_ok"] = out["n_ok"] / out["n_questions"]
     return out
+
+
+def pooled_stat(scores: pd.DataFrame, *, stat: str = "se") -> pd.DataFrame:
+    """Per condition: the mean of all its points, and how noisy that mean is.
+
+    Every point counts as one sample, so the spread collapses both sources of
+    variation at once — run to run within a dataset, and dataset to dataset:
+
+    * `stat="se"` — `sd / sqrt(n)` over the points. How tightly the overall mean
+      is pinned down given all the noise in the estimate.
+    * `stat="sd"` — the plain sd of the points, i.e. how far one of them
+      scatters rather than how well their mean is known.
+
+    `n` is every point in the panel: 24 per condition for the per-dataset
+    figures (8 datasets x 3 trials), 40 for the question bands (8 x 5). Treating
+    them as independent understates the true uncertainty, since trials within a
+    dataset are repeats of one task — read it as a floor on the noise.
+    """
+    if stat not in ("se", "sd"):
+        raise ValueError(f"stat must be 'se' or 'sd', got {stat!r}")
+    out = (scores.groupby("condition")["frac_ok"]
+                 .agg(mean="mean", sd="std", n="size").reset_index())
+    out["spread"] = out["sd"] / np.sqrt(out["n"]) if stat == "se" else out["sd"]
+    out["label"] = out.apply(
+        lambda r: f"{r['mean']:.2f} ± {r['spread']:.2f}", axis=1)
+    return out.set_index("condition")
 
 
 def condition_summary(scores: pd.DataFrame) -> pd.DataFrame:
@@ -321,26 +357,37 @@ def condition_scatter(scores: pd.DataFrame, *,
                       conditions: tuple[str, ...] | None = None,
                       x: str = "dataset", order: list | None = None,
                       title: str | None = None, labels: dict | None = None,
-                      xlabels=None, box: bool = True, figsize=None):
-    """Trial scores per column for a few conditions, plus a pooled box panel.
+                      xlabels=None, box: bool = True, box_title: str = "Overall",
+                      box_stat: str | None = "se", ylim=(0, 1.02), figsize=None):
+    """One `condition_scores` point per replicate, per column, plus a box panel.
 
     The condition version of `plots.format_scatter`: same question ("how much of
-    the conversion did the rater accept?"), one point per trial so the
-    three-trial spread stays visible, and a bar at each condition's mean within
-    the dataset. A dashed line joins those means so the per-dataset direction of
-    the comparison is readable at a glance.
+    the conversion did the rater accept?"), one point per replicate so the
+    spread stays visible, and a bar at each condition's mean within the column.
+    A dashed line joins those means so the direction of the comparison is
+    readable at a glance.
 
-    The three trials sit at fixed offsets rather than jittered — with only three
-    of them, a random x carries no information and makes two datasets look
-    different when only the seed was.
+    Points sit at fixed offsets rather than jittered — with a handful of them a
+    random x carries no information and makes two columns look different when
+    only the seed was.
 
     `box` adds a narrow right-hand panel: every point for each condition in one
-    box, which is the pooled comparison the left panel is a breakdown of. It
-    shares the y axis, so the two read together.
+    box, which is the pooled comparison the left panel is a breakdown of — every
+    column at once, so it holds more points than any one column shows. It shares
+    the y axis, so the two read together.
 
-    `x` is the column the left panel splits on — `"dataset"` by default, or any
-    other column `condition_scores(by=...)` grouped by, e.g. `"group"` for the
-    question bands.
+    `box_stat` writes `mean ± spread` under each box — see `pooled_stat`.
+    `"se"` is the noise in the mean over every point in the panel, `"sd"` is how
+    far one point scatters, `None` writes nothing.
+
+    `x` is the column the left panel splits on, and must be whatever
+    `condition_scores(by=...)` grouped by — `"dataset"` (points are trials) or
+    `"group"` for the question bands (points are datasets).
+
+    `ylim` defaults to the full 0-1 the fraction can take. Cropping it spends
+    the height on the range the points actually occupy, at the cost of hiding
+    anything below the floor — matplotlib clips silently, so check the minimum
+    first.
 
     Returns `(fig, (ax, ax_box))`; `ax_box` is None when `box=False`.
     """
@@ -365,14 +412,18 @@ def condition_scatter(scores: pd.DataFrame, *,
         fig, ax = plt.subplots(figsize=figsize)
         ax_box = None
 
-    # Each condition gets a slot within the dataset's column, and its trials sit
-    # evenly inside that slot. GAP is the distance between slot centers: wide
-    # enough that the two groups being compared read as separate, narrow enough
-    # that they still read as one dataset.
-    GAP, DOTS = 0.34, 0.10
+    # Each condition gets a slot within the column, and its points sit evenly
+    # inside that slot. GAP is the distance between slot centers: wide enough
+    # that the two groups being compared read as separate, narrow enough that
+    # they still read as one column.
+    GAP, STEP = 0.34, 0.05
     span = min(GAP * (len(conditions) - 1), 0.78)
     offsets = (np.linspace(-span / 2, span / 2, len(conditions))
                if len(conditions) > 1 else np.array([0.0]))
+
+    def dot_span(n: int) -> float:
+        """Width the n points spread over: STEP apart, capped short of the slot."""
+        return min(STEP * (n - 1), 0.55 * GAP)
 
     for i, ds in enumerate(order):
         if i % 2:
@@ -385,12 +436,14 @@ def condition_scatter(scores: pd.DataFrame, *,
             if not len(vals):
                 centers.append(None)
                 continue
-            xs = i + dx + (np.linspace(-DOTS / 2, DOTS / 2, len(vals))
+            half = dot_span(len(vals)) / 2
+            xs = i + dx + (np.linspace(-half, half, len(vals))
                            if len(vals) > 1 else np.array([0.0]))
-            ax.scatter(xs, vals, s=26, alpha=0.85, color=CONDITION_COLOR[condition],
+            ax.scatter(xs, vals, s=26 if len(vals) <= 4 else 18, alpha=0.85,
+                       color=CONDITION_COLOR[condition],
                        edgecolors="white", linewidths=0.5, zorder=3,
                        label=labels[condition] if i == 0 else None)
-            ax.plot([i + dx - DOTS / 2 - 0.02, i + dx + DOTS / 2 + 0.02],
+            ax.plot([i + dx - half - 0.02, i + dx + half + 0.02],
                     [vals.mean()] * 2, color=CONDITION_COLOR[condition],
                     lw=2.2, zorder=4)
             centers.append((i + dx, vals.mean()))
@@ -404,7 +457,7 @@ def condition_scatter(scores: pd.DataFrame, *,
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels([xlabels(d) for d in order], rotation=30, ha="right")
     ax.set_ylabel("questions rated ≥ ok")
-    ax.set_ylim(0, 1.02)
+    ax.set_ylim(*ylim)
     ax.set_xlim(-0.5, len(order) - 0.5)
 
     if ax_box is not None:
@@ -420,10 +473,21 @@ def condition_scatter(scores: pd.DataFrame, *,
         for key in ("whiskers", "caps"):
             for line in bp[key]:
                 line.set(color="0.45", lw=1.0)
+        if box_stat:
+            stats = pooled_stat(scores[scores.condition.isin(conditions)],
+                                stat=box_stat)
+            for pos, condition in enumerate(conditions, start=1):
+                # Inside the axes at the foot of the box, on a white patch: a
+                # whisker or an outlier can reach this low.
+                foot = ylim[0] + 0.015 * (ylim[1] - ylim[0])
+                ax_box.text(pos, foot, stats.loc[condition, "label"],
+                            ha="center", va="bottom", fontsize=6.5, zorder=5,
+                            bbox={"facecolor": "white", "edgecolor": "none",
+                                  "pad": 1.0, "alpha": 0.85})
         ax_box.set_xticks(range(1, len(conditions) + 1))
         ax_box.set_xticklabels([labels[c] for c in conditions],
                                rotation=30, ha="right", fontsize=8)
-        ax_box.set_title("all trials", fontsize=9, pad=4)
+        ax_box.set_title(box_title, fontsize=9, pad=4)
         # The y axis is shared with the panel on the left; a second copy of its
         # spine and ticks would read as a frame around the boxes.
         ax_box.tick_params(axis="y", left=False)
