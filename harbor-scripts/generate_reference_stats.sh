@@ -33,10 +33,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# $HOME-relative, not a literal: $HOME differs between workstation
-# (/home/bransonk@hhmi.org) and cluster (/groups/branson/home/bransonk), and this
-# script has to run on the cluster for any task needing --podman. Overridable so a
-# cluster job can send results to harbor-cluster-jobs/ instead.
 JOBS_DIR="${JOBS_DIR:-$HOME/harbor-tasks/data-format/jobs/oracle}"
 
 TASK_FLAG=""

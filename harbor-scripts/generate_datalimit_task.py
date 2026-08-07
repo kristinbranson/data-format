@@ -73,11 +73,16 @@ DATA_BULLET_PREFIX = "- **Data**"
 
 # task.toml settings that only made sense at full scale. mouseland is the sole
 # entry: it asks for 240 GB of RAM where every other task asks for 64, because the
-# full dataset loads 4.1M neurons' worth of trial arrays (~112 GB) into memory at
-# once. At 9.8% of cells that falls to ~11 GB, so keeping the exception would make
-# the capped variant need a 240 GB machine -- defeating much of the point of it.
+# full dataset loads 4.1M neurons' worth of trial arrays into memory at once.
+# Keeping that exception would make the capped variant need a 240 GB machine,
+# defeating much of the point of it.
+#
+# 128 GB is measured, not estimated: the capped oracle run peaked at 59.2 GiB, so
+# the conversion holds far more than the final arrays (per-session intermediates,
+# the float32->float16 conversion, pickling). 64 GB would fit but with only ~8%
+# headroom, and docker enforces the limit, so overshooting is an OOM kill.
 RESOURCE_OVERRIDES = {
-    "mouseland": {"memory_mb": 65536},
+    "mouseland": {"memory_mb": 131072},
 }
 
 
