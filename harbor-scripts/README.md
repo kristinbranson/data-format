@@ -457,6 +457,43 @@ python generate_minimal_task.py sosa2024 --dry-run
 python generate_minimal_task.py sosa2024 --force      # regenerate in place
 ```
 
+**generate_datalimit_task.py** — Generate the 50 GB-capped version of a task,
+`harbor-tasks/<task>_datalimit`. Copies the task (sharing this file's copy
+scaffolding), repoints the `environment/docker-compose.yaml` data mount from
+`${DATA_ROOT}/<task>` to `${DATA_ROOT}/<task>_datalimit`, and inserts a **Dataset
+subset** bullet into both `instruction.md` and `tests/instruction_reference.md`
+describing what was kept.
+
+This is **first-time scaffolding only**. A `_datalimit` task's reference solution
+(`solution/convert_data.py` and its byte-identical copy
+`tests/reference_convert_data.py`) and `tests/reference_DECISIONS.md` are
+**hand-edited afterwards**: for tasks whose conversion enumerates data from an api
+index rather than from disk — `allen2p` via `get_ophys_experiment_table()`,
+`zhang2025` via `one.search()` — the reference must be restricted to
+`DATALIMIT_SUBSET.csv`, or the oracle enumerates the whole release and fetches
+every recording the subset deliberately left out.
+
+So re-running is **safe by default**: existing files are preserved and only
+missing ones are copied in, and the derived edits (mount repoint, subset note,
+resource override) are re-applied only to files that run actually wrote — a second
+subset bullet would otherwise be inserted. `--force` replaces the directory
+wholesale and discards hand edits, listing what differs from the parent first.
+
+The subset itself is decided by `download/select_datalimit.py` (frozen into
+`download/datalimit/<task>.csv`) and built by `download/make_datalimit.py`; this
+script only wires the result into harbor. **`tests/reference_stats_full.json` is
+copied from the parent and still describes the full dataset** — regenerate it
+against the capped data before scoring, or `test_data_stats` will fail.
+```
+python generate_datalimit_task.py sosa2024
+python generate_datalimit_task.py --all
+python generate_datalimit_task.py sosa2024 --dry-run
+python generate_datalimit_task.py sosa2024 --force     # regenerate in place
+
+# then, per subsampled task:
+harbor-scripts/generate_reference_stats.sh sosa2024_datalimit
+```
+
 **generate_unsupervised_task.py** — Generate an unsupervised version of a task
 **OBSOLETE, do not use**
 (removes reference files from tests/).

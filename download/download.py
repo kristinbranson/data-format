@@ -20,6 +20,15 @@ Supported tasks and where each one's data is fetched from:
     zhang2025    IBL reproducible-ephys release (via upstream code_zhang2025 caching script)
 
 All downloaders are resumable: re-running skips files already on disk.
+
+Pass --datalimit to fetch the 50 GB-capped variant of a dataset into
+`data/<task>_datalimit/` instead of the full release, using the subset frozen in
+`download/datalimit/<task>.csv`. allen2p, map and sosa2024 filter at download
+time and never transfer the omitted data; hasnain2024, lee2025 and majnik2025 are
+already under the cap and download in full; zhang2025 caches only the selected
+sessions through the ONE api. Only mouseland must be downloaded whole and then
+reduced with `download/make_datalimit.py`, because its subset is a per-session
+cell subsample living inside the published files.
 """
 
 import argparse
@@ -109,6 +118,49 @@ def download_figshare(article_id, out_dir):
 
 # ---------------- DANDI (shell out to CLI, then rename) ----------------
 
+def download_dandi_assets(dandiset_id, out_dir, keep_paths):
+    """Download only the named assets of a dandiset, via the REST API.
+
+    Used by --datalimit, where fetching the whole dandiset and deleting most of
+    it would waste the bandwidth the flag exists to save. Falls back on the same
+    resumable writer as the Zenodo/Figshare paths.
+
+    Args:
+        dandiset_id: e.g. '001361'.
+        out_dir: destination directory; asset paths are recreated beneath it.
+        keep_paths: iterable of asset paths relative to the dandiset root, e.g.
+            'sub-m11/sub-m11_ses-03_behavior+ophys.nwb'.
+
+    Side effects:
+        Writes one file per kept asset under `out_dir`.
+    """
+    wanted = set(keep_paths)
+    base = f"https://api.dandiarchive.org/api/dandisets/{dandiset_id}/versions/draft/assets/"
+    url, found = f"{base}?page_size=500", []
+    while url:
+        page = requests.get(url, timeout=120).json()
+        for asset in page["results"]:
+            if asset["path"] in wanted:
+                found.append(asset)
+        url = page.get("next")
+
+    missing = wanted - {asset["path"] for asset in found}
+    if missing:
+        print(f"Warning: {len(missing)} manifest asset(s) not found on DANDI, "
+              f"e.g. {sorted(missing)[0]}", file=sys.stderr)
+
+    print(f"Downloading {len(found)} of {len(wanted)} requested assets from "
+          f"dandiset {dandiset_id}")
+    for asset in found:
+        destination = os.path.join(out_dir, asset["path"])
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+        _download_files(
+            [{"key": os.path.basename(asset["path"]),
+              "links": f"{base}{asset['asset_id']}/download/",
+              "size": asset["size"]}],
+            os.path.dirname(destination), name_key="key", url_key="links")
+
+
 def download_dandi(dandiset_id, out_dir):
     if not shutil.which("dandi"):
         sys.exit("dandi CLI not found on PATH. Install with `pip install dandi`.")
@@ -131,7 +183,18 @@ def download_dandi(dandiset_id, out_dir):
 
 # ---------------- AllenSDK (Visual Behavior 2P) ----------------
 
-def download_allen2p(out_dir):
+def download_allen2p(out_dir, keep_experiments=None):
+    """Populate an AllenSDK cache with the VisualBehavior ophys experiments.
+
+    Args:
+        out_dir: cache directory.
+        keep_experiments: optional set of ophys_experiment_id ints. When given
+            (i.e. --datalimit), only those experiments are fetched, turning a
+            247 GB download into ~48 GB.
+
+    Side effects:
+        Writes an AllenSDK S3 cache under `out_dir`.
+    """
     import warnings
     warnings.filterwarnings("ignore", message="Ignoring the following cached namespace")
     import allensdk.brain_observatory.behavior.behavior_project_cache as bpc
@@ -142,6 +205,8 @@ def download_allen2p(out_dir):
 
     table = bc.get_ophys_experiment_table()
     vb = table[table.project_code == "VisualBehavior"]
+    if keep_experiments is not None:
+        vb = vb[vb.index.isin(keep_experiments)]
     print(f"VisualBehavior project: {len(vb)} experiments across "
           f"{vb.mouse_id.nunique()} mice")
 
@@ -178,21 +243,119 @@ def download_zhang2025(out_dir, n_sessions=10, n_workers=1):
     subprocess.run(cmd, cwd=code_dir, check=True)
 
 
+def download_zhang2025_datalimit(out_dir, eids):
+    """Cache only the named IBL sessions, via the ONE api.
+
+    The upstream caching script populates its cache one eid at a time --
+    `prepare_data(one, eid, ...)` calls `one.eid2pid(eid)` and then
+    `load_spiking_data(one, pid, ...)` (`ibl_data_utils.py:727-740`), each of
+    which downloads on demand. So the set of eids processed *is* the set of data
+    fetched; the only thing the upstream `--n_sessions` flag cannot do is express
+    an arbitrary eid list, since it slices a fixed release list.
+
+    This fetches every dataset the release holds for each requested session, so
+    the result matches a full-release cache restricted to those sessions.
+
+    Args:
+        out_dir: destination; the ONE cache is created at `<out_dir>/one_cache`.
+        eids: iterable of session eids from the datalimit manifest.
+
+    Side effects:
+        Downloads roughly 1.3 GB per session into the cache.
+    """
+    from one.api import ONE
+
+    cache_dir = os.path.join(out_dir, "one_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    one = ONE(base_url="https://openalyx.internationalbrainlab.org",
+              password="international", silent=True, cache_dir=cache_dir)
+    one.load_cache(tag="Brainwidemap")
+
+    eids = list(eids)
+    print(f"Caching {len(eids)} of the release's sessions into {cache_dir}")
+    for index, eid in enumerate(eids, start=1):
+        datasets = one.list_datasets(eid, details=False)
+        failed = 0
+        for dataset in datasets:
+            try:
+                one.load_dataset(eid, dataset, download_only=True)
+            except Exception as error:  # a missing revision shouldn't abort the run
+                failed += 1
+                if failed == 1:
+                    print(f"  [{index}/{len(eids)}] {eid}: {dataset} failed ({error})",
+                          file=sys.stderr)
+        print(f"  [{index}/{len(eids)}] {eid}: {len(datasets) - failed} datasets"
+              + (f", {failed} failed" if failed else ""))
+
+
 # ---------------- Entry point ----------------
 
-def _run_one(task, out_dir, n_sessions, n_workers):
+# ---------------- datalimit (50 GB-capped) variants ----------------
+
+# mouseland is the one task whose subset lives *inside* the published files
+# rather than in which files are published: it is a per-session cell subsample,
+# and figshare serves whole .npy files. Nothing can be filtered at download time,
+# so the full dataset is fetched once and reduced locally. Every other task,
+# zhang2025 included, selects at download time.
+DATALIMIT_NEEDS_FULL_DOWNLOAD = {"mouseland"}
+
+
+def load_datalimit_manifest(task):
+    """Read the frozen subset manifest for a task.
+
+    Args:
+        task: benchmark task name.
+
+    Returns:
+        DataFrame of the manifest body. Empty when the dataset is already under
+        the cap and is kept whole.
+    """
+    manifest = REPO_ROOT / "download" / "datalimit" / f"{task}.csv"
+    if not manifest.exists():
+        # RuntimeError, not sys.exit: main() catches Exception per task, so one
+        # missing manifest must not abort a multi-task run.
+        raise RuntimeError(f"no datalimit manifest at {manifest}; generate it with "
+                           f"`python download/select_datalimit.py {task}`")
+    import pandas as pd
+    return pd.read_csv(manifest, comment="#")
+
+
+def _run_one(task, out_dir, n_sessions, n_workers, datalimit=False):
     cfg = TASKS[task]
     kind = cfg["kind"]
+
+    entries = load_datalimit_manifest(task) if datalimit else None
+    if datalimit and task in DATALIMIT_NEEDS_FULL_DOWNLOAD:
+        # RuntimeError rather than sys.exit so that `--all --datalimit` still
+        # downloads the six tasks that CAN be filtered, and reports these two.
+        raise RuntimeError(
+            f"--datalimit cannot filter at download time -- {task}'s subset is "
+            f"inside the published files, not a choice of which files to fetch. "
+            f"Download the full dataset first, then reduce it locally:\n"
+            f"    python download/download.py {task}\n"
+            f"    python download/make_datalimit.py {task}")
+
     if kind == "zenodo":
+        # hasnain2024 / lee2025 / majnik2025 are already under the cap: the
+        # datalimit variant is the complete dataset.
         download_zenodo(cfg["record_id"], out_dir)
     elif kind == "figshare":
         download_figshare(cfg["article_id"], out_dir)
     elif kind == "dandi":
-        download_dandi(cfg["dandiset"], out_dir)
+        if datalimit:
+            download_dandi_assets(cfg["dandiset"], out_dir, entries.nwb_path)
+        else:
+            download_dandi(cfg["dandiset"], out_dir)
     elif kind == "allensdk":
-        download_allen2p(out_dir)
+        keep = None
+        if datalimit:
+            keep = set(entries.ophys_experiment_id)
+        download_allen2p(out_dir, keep_experiments=keep)
     elif kind == "zhang2025":
-        download_zhang2025(out_dir, n_sessions=n_sessions, n_workers=n_workers)
+        if datalimit:
+            download_zhang2025_datalimit(out_dir, entries.eid)
+        else:
+            download_zhang2025(out_dir, n_sessions=n_sessions, n_workers=n_workers)
     else:
         sys.exit(f"Unknown kind: {kind}")
 
@@ -211,6 +374,11 @@ def main():
                     help="(zhang2025 only) sessions to cache. Default: 10.")
     ap.add_argument("--n-workers", type=int, default=1,
                     help="(zhang2025 only) parallel workers. Default: 1.")
+    ap.add_argument("--datalimit", action="store_true",
+                    help="Download the 50 GB-capped variant into data/<task>_datalimit, "
+                         "using the subset frozen in download/datalimit/<task>.csv. "
+                         "mouseland cannot be filtered at download time; for it, "
+                         "download in full and run download/make_datalimit.py.")
     args = ap.parse_args()
 
     if args.all:
@@ -227,10 +395,12 @@ def main():
 
     failures = []
     for i, task in enumerate(tasks, start=1):
-        out_dir = args.output_dir or str(REPO_ROOT / "data" / task)
-        print(f"\n========== [{i}/{len(tasks)}] {task}  ->  {out_dir} ==========")
+        suffix = "_datalimit" if args.datalimit else ""
+        out_dir = args.output_dir or str(REPO_ROOT / "data" / f"{task}{suffix}")
+        print(f"\n========== [{i}/{len(tasks)}] {task}{suffix}  ->  {out_dir} ==========")
         try:
-            _run_one(task, out_dir, args.n_sessions, args.n_workers)
+            _run_one(task, out_dir, args.n_sessions, args.n_workers,
+                     datalimit=args.datalimit)
         except Exception as e:
             print(f"!! {task} FAILED: {e}", file=sys.stderr)
             failures.append(task)

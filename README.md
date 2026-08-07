@@ -31,7 +31,7 @@ We cover 8 neuroscience datasets spanning calcium imaging and electrophysiology 
 - **RAM**: Code requires loading entire dataset into RAM.
 - **Container runtime**: either Docker (default) with `nvidia-container-toolkit` for GPU passthrough, or Podman with `podman-compose` (the env yaml installs `podman-compose`; pass `--podman` to `run_harbor.sh`).
 - **Conda / mamba** for the Python environment (Miniforge / Miniconda / mambaforge all work).
-- **Disk space**: ≥ 50 GB free per task you download; ~1.4 TB free if downloading everything.
+- **Disk space**: ≥ 50 GB free per task you download; ~1.4 TB free if downloading everything. Every task also has a 50 GB-capped `<task>_datalimit` variant — ~294 GB for all eight — see [Data-limited task variants](#data-limited-task-variants).
 - **API access** for running real LLM agents:
   - `ANTHROPIC_API_KEY` (or a Claude Code OAuth token in `~/.claude/.credentials.json`) for the Claude agent and Claude judge. 
   - `OPENAI_API_KEY` (or a Codex auth.json in `~/.codex/`) for the Codex agent and Codex judge.
@@ -68,7 +68,7 @@ Results land in `~/harbor-tasks/data-format/jobs/<task>/<agent>/<timestamp>_tria
 
 To run a real LLM agent instead of the oracle, swap --agent oracle for --agent claude or --agent codex (requires ANTHROPIC_API_KEY / OPENAI_API_KEY in env, or --apikeys pointing at a .env file). To sweep multiple tasks × agents, use harbor-scripts/submit_harbor_cluster.py, which submits one cluster job per (task, agent, trial). Harness and model versions are pinned in harbor-scripts/config_<YYYYMMDD>.json.
 
-The smallest tasks for first-run testing are lee2025 (15 GB) and hasnain2024 (16 GB); the largest is zhang2025 (566 GB). Full benchmark download is ~1.4 TB — see Data sources and downloading below.
+The smallest tasks for first-run testing are lee2025 (15 GB) and hasnain2024 (16 GB); the largest is zhang2025 (566 GB). Full benchmark download is ~1.4 TB — see Data sources and downloading below. If 1.4 TB is impractical, run the `_datalimit` variants instead: the same eight tasks capped at 50 GB of data each (~294 GB total), described in [Data-limited task variants](#data-limited-task-variants).
 
 ## Organization
 
@@ -81,6 +81,8 @@ data-format/
 ├── harbor-tasks/                  # Tasks set up for harbor (one subdir per task):
 │   └── {task_name}/               # task_name = ['allen2p','hasnain2024','lee2025','majnik2025',
 |                                  #              'map', 'mouseland', 'sosa2024', 'zhang2025']
+|                                  # Each also has a {task_name}_minimal (stripped prompt) and a
+|                                  # {task_name}_datalimit (50 GB-capped data) variant
 |                                  # Reference code, paper, and data provided to agents
 │                                  # Code/paper sources documented below TODO
 │                                  # Dataset download setup documented below TODO
@@ -242,6 +244,103 @@ If you don't pass -o flag, data is downloaded to `data/<task>/` relative to the 
 | `sosa2024` | https://dandiarchive.org/dandiset/001361 | 87 GB |
 | `zhang2025` | IBL Neuropixels (reproducible-ephys release, public openalyx server) | 566 GB |
 | **Total** | | **~1.4 TB** |
+
+## Data-limited task variants
+
+Each of the eight datasets also has a **`<task>_datalimit`** variant capped at **50 GB**, for
+running the benchmark without 1.4 TB of disk. These are additional harbor tasks that sit
+alongside the full-size ones — the full tasks are unchanged, and the results in the preprint
+refer to those.
+
+The guiding rule is that a `_datalimit` dataset **never drops a *type* of data** — every
+variable, trace variant, stimulus template and auxiliary array the full release contains is
+still present, because working out which fields to use is the benchmark task itself. Only
+*samples* are dropped: mice, subjects, sessions, or cells. Where mice had to go, they were
+drawn to cover every design stratum (Cre line × imaging depth, recording lab) rather than to
+minimise bytes, since taking the cheapest mice would systematically strip the sessions with the
+most cells. All draws use a fixed seed.
+
+| Task | Full | Capped | What was dropped |
+|---|---:|---:|---|
+| `hasnain2024_datalimit` | 16 GB | 16 GB | nothing — already under the cap |
+| `lee2025_datalimit` | 15 GB | 15 GB | nothing — already under the cap |
+| `majnik2025_datalimit` | 16 GB | 16 GB | nothing — already under the cap |
+| `map_datalimit` | 54 GB | 50 GB | 6 of 174 sessions (the largest); all 28 subjects kept |
+| `sosa2024_datalimit` | 92 GB | 50 GB | 5 of 11 mice; every session and trial of the rest kept |
+| `allen2p_datalimit` | 254 GB | 48 GB | 28 of 37 mice; every experiment of the rest kept |
+| `mouseland_datalimit` | 442 GB | 50 GB | 90.2% of cells per session; all 89 sessions, 19 mice and trials kept |
+| `zhang2025_datalimit` | 608 GB | 49 GB | 121 of 139 subjects; every session and trial of the rest kept |
+
+`mouseland` is the only dataset cut on the cell axis, because it is the only one with a huge
+number of cells per session (46,128 on average, ~23× `decoder.py`'s `svd_max_neurons = 2000`);
+every other dataset sits at or below that threshold, so cells there are not redundant.
+`mouseland` is also the only variant whose files are rewritten — the other seven select whole
+published files, which stay byte-for-byte identical to the original release.
+
+The cap lowers the RAM ceiling as well as the disk one. `mouseland` is the only task whose
+`task.toml` asks for more than 64 GB — it requests 240 GB, because the full dataset loads 4.1M
+neurons' worth of trial arrays (~112 GB) into memory at once. At 9.8% of cells that falls to
+~11 GB, so `mouseland_datalimit` asks for the same 64 GB as every other task.
+
+### Building and running them
+
+```bash
+# 1. Freeze the subset decisions into download/datalimit/<task>.csv (already committed)
+python download/select_datalimit.py
+
+# 2a. Download only the capped subset. Seven of the eight tasks never transfer the
+#     data they leave out: allen2p by ophys_experiment_id (AllenSDK), map/sosa2024 by
+#     asset (DANDI), zhang2025 by eid (ONE); the three under-cap tasks download in full.
+python download/download.py sosa2024 --datalimit
+
+# 2b. mouseland is the exception — its subset is a per-session cell subsample inside
+#     the published .npy files, so fetch it whole once, then reduce locally:
+python download/download.py mouseland
+python download/make_datalimit.py mouseland
+
+# 3. Generate the harbor tasks (copies each task, repoints its data mount, documents the subset)
+python harbor-scripts/generate_datalimit_task.py --all
+
+# 4. Regenerate the reference statistics against the capped data, then run as usual
+harbor-scripts/generate_reference_stats.sh sosa2024_datalimit
+harbor-scripts/run_harbor.sh --agent oracle --task sosa2024_datalimit
+```
+
+**The capped datasets are unmodified downloads.** AllenSDK's `project_metadata/*.csv` and
+ONE's release index are byte-identical to the originals, so each `data/<task>_datalimit/`
+tree is exactly what really downloading those files would produce — and those indexes
+still describe the *full* release, referring to recordings that are not present.
+
+Staying inside the cap is therefore an instruction. Every capped dataset ships a **subset
+list** naming exactly what to use, written in the form that task's own api takes:
+
+It is always a CSV, `data/DATALIMIT_SUBSET.csv` (for allen2p,
+`data/visual-behavior-ophys-1.1.0/DATALIMIT_SUBSET.csv`, since that task mounts only
+the release subdirectory):
+
+| Task | Columns | Identifier to use |
+|---|---|---|
+| `allen2p` | same as `ophys_experiment_table.csv` | `ophys_experiment_id` |
+| `zhang2025` | same as the release freeze `bwm_release.csv` | `eid` |
+| `map`, `sosa2024` | `subject`, `nwb_path` | `nwb_path` |
+| `mouseland` | `session`, `n_cells_total`, `n_cells_kept` | `session` |
+
+Each `_datalimit` prompt gains a **Dataset subset** bullet telling the agent to read that
+file, process exactly what it names, and not download anything missing — which matters
+because every `task.toml` sets `allow_internet = true`, and both clients' metadata still
+advertises the full release. The bullet is load-bearing for a second reason too: the
+conversion workflow asks the agent to record dataset totals (Step 2) and reconcile them
+against the paper (Step 4), so an undocumented subsample would read as a discrepancy to
+chase. For `zhang2025`, `bwm_release.csv` is also the universe the subset is drawn from,
+so the capped dataset is by construction a subset of the published release.
+
+**Reference statistics must be regenerated per variant.** `test_outputs.py` asserts `nsubjects`
+exactly and `nsessions` / `ntrials_total` / `nneurons_total` / `T_median` within 10%, so a
+`_datalimit` task scored against the full task's `reference_stats_full.json` will fail. The
+three under-cap variants are exempt: their data is identical, so their reference stats are too.
+Expect the capped variants' decoder accuracies to differ from the published ones — dropping
+sessions and mice tends to raise accuracy (fewer per-session projections for the shared decoder
+head to reconcile), while dropping cells lowers it.
 
 ## Task
 

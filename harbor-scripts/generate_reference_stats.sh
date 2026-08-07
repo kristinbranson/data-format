@@ -33,14 +33,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-JOBS_DIR="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs/oracle"
+# $HOME-relative, not a literal: $HOME differs between workstation
+# (/home/bransonk@hhmi.org) and cluster (/groups/branson/home/bransonk), and this
+# script has to run on the cluster for any task needing --podman. Overridable so a
+# cluster job can send results to harbor-cluster-jobs/ instead.
+JOBS_DIR="${JOBS_DIR:-$HOME/harbor-tasks/data-format/jobs/oracle}"
 
 TASK_FLAG=""
 if [ -n "$TASK" ]; then
     TASK_FLAG="-t $TASK"
 fi
 
-source /home/bransonk@hhmi.org/miniforge3/etc/profile.d/conda.sh
+source "$HOME/miniforge3/etc/profile.d/conda.sh"
 # Same split as run_harbor.sh: the podman-capable harbor lives in its own env.
 if [ "$USE_PODMAN" = true ]; then
     conda activate eval-data-format-podman
