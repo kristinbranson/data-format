@@ -243,7 +243,8 @@ def condition_scores(df: pd.DataFrame, rater: str = "combined", *,
     return out
 
 
-def pooled_stat(scores: pd.DataFrame, *, stat: str = "se") -> pd.DataFrame:
+def pooled_stat(scores: pd.DataFrame, *, stat: str = "se",
+                value: str = "frac_ok") -> pd.DataFrame:
     """Per condition: the mean of all its points, and how noisy that mean is.
 
     Every point counts as one sample, so the spread collapses both sources of
@@ -261,7 +262,7 @@ def pooled_stat(scores: pd.DataFrame, *, stat: str = "se") -> pd.DataFrame:
     """
     if stat not in ("se", "sd"):
         raise ValueError(f"stat must be 'se' or 'sd', got {stat!r}")
-    out = (scores.groupby("condition")["frac_ok"]
+    out = (scores.groupby("condition")[value]
                  .agg(mean="mean", sd="std", n="size").reset_index())
     out["spread"] = out["sd"] / np.sqrt(out["n"]) if stat == "se" else out["sd"]
     out["label"] = out.apply(
@@ -356,6 +357,8 @@ def condition_labels(conditions) -> dict:
 def condition_scatter(scores: pd.DataFrame, *,
                       conditions: tuple[str, ...] | None = None,
                       x: str = "dataset", order: list | None = None,
+                      value: str = "frac_ok",
+                      ylabel: str = "questions rated ≥ ok",
                       title: str | None = None, labels: dict | None = None,
                       xlabels=None, box: bool = True, box_title: str = "Overall",
                       box_stat: str | None = "se", ylim=(0, 1.02), figsize=None):
@@ -383,6 +386,10 @@ def condition_scatter(scores: pd.DataFrame, *,
     `x` is the column the left panel splits on, and must be whatever
     `condition_scores(by=...)` grouped by — `"dataset"` (points are trials) or
     `"group"` for the question bands (points are datasets).
+
+    `value` is the column holding each point's height and `ylabel` names it --
+    the outcome half plots a share of verifier metrics passed rather than a
+    share of questions rated ok, and wants the same figure.
 
     `ylim` defaults to the full 0-1 the fraction can take. Cropping it spends
     the height on the range the points actually occupy, at the cost of hiding
@@ -432,7 +439,7 @@ def condition_scatter(scores: pd.DataFrame, *,
         centers = []
         for condition, dx in zip(conditions, offsets):
             vals = scores[(scores[x] == ds)
-                          & (scores.condition == condition)]["frac_ok"].to_numpy()
+                          & (scores.condition == condition)][value].to_numpy()
             if not len(vals):
                 centers.append(None)
                 continue
@@ -456,12 +463,12 @@ def condition_scatter(scores: pd.DataFrame, *,
 
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels([xlabels(d) for d in order], rotation=30, ha="right")
-    ax.set_ylabel("questions rated ≥ ok")
+    ax.set_ylabel(ylabel)
     ax.set_ylim(*ylim)
     ax.set_xlim(-0.5, len(order) - 0.5)
 
     if ax_box is not None:
-        data = [scores[scores.condition == c]["frac_ok"].to_numpy()
+        data = [scores[scores.condition == c][value].to_numpy()
                 for c in conditions]
         bp = ax_box.boxplot(data, widths=0.6, patch_artist=True,
                             medianprops={"color": "0.2", "lw": 1.4},
@@ -475,7 +482,7 @@ def condition_scatter(scores: pd.DataFrame, *,
                 line.set(color="0.45", lw=1.0)
         if box_stat:
             stats = pooled_stat(scores[scores.condition.isin(conditions)],
-                                stat=box_stat)
+                                stat=box_stat, value=value)
             for pos, condition in enumerate(conditions, start=1):
                 # Inside the axes at the foot of the box, on a white patch: a
                 # whisker or an outlier can reach this low.

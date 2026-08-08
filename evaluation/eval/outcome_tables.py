@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from utils import (AGENT_SHORT, ARM_AGENT, DECODER_VAR_ALIASES,
+from utils import (AGENT_SHORT, ARM_AGENT, ARM_COLUMNS, DECODER_VAR_ALIASES,
                    TASK_DISPLAY_NAME, load_reference_stats,
                    load_trial_metrics, trial_metrics_df)
 
@@ -703,7 +703,10 @@ CHECKS_CAPTION = (
     "and reference variables, at the matching costs the verifier enforces; "
     "Allen2P has no decoder inputs, so its \\emph{Inputs} cells do not apply. "
     "\\emph{N classes} checks whether the number of output classes matched the "
-    "reference for every matched output variable. \\vspace{5pt} \\\\\n"
+    "reference for every output variable; where the variables could not be "
+    "matched at all it is marked as failing, since an agent that did not "
+    "produce the reference's variables cannot have given them the right class "
+    "counts. \\vspace{5pt} \\\\\n"
     "\\footnotesize{*For Lee2025 the matching cost exceeds the verifier's limit "
     "on all six trials, but only because of naming: the reference calls its "
     "nine one-hot environment indicators \\texttt{blocked\\_0..8} while the "
@@ -715,8 +718,9 @@ CHECKS_CAPTION = (
     "on every mismatched variable, in every trial and for both agents. The "
     "manual reference reserves an additional category for samples where the "
     "behavior is undefined -- no-response trials in Chen2024 (14.9\\% of "
-    "trials, the same set the \\emph{outcome} variable marks) and in Hasnain2024 "
-    "(13.1\\%) -- whereas the agents excluded those samples instead. This is a "
+    "trials, the same fraction the \\emph{outcome} variable marks as such) and "
+    "in Hasnain2024 (13.1\\%) -- whereas the agents excluded those samples "
+    "instead. This is a "
     "difference in convention rather than an error in the conversion.}")
 
 
@@ -912,7 +916,9 @@ SUMMARY_CAPTION = (
     "whether the conversion is defined as the reference defines it rather than "
     "whether its values are right. A measurement the verifier did not record "
     "is excluded from both the numerator and the denominator, so denominators "
-    "differ between datasets. Green text highlights high agreement rates.")
+    "differ between datasets; the exception is a measurement that could not be "
+    "taken because of an earlier failure by the agent, which counts as a "
+    "failure rather than a gap. Green text highlights high agreement rates.")
 
 
 def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
@@ -984,3 +990,101 @@ TABLES = {
     "sup_datasize": scale_table,
     "sup_decoder": decoder_table,
 }
+
+
+# ---------- comparing conditions ----------
+#
+# The figures `ratings_experiment` uses for the judge ratings, applied to the
+# verifier metrics: harness (agent vs Terminus on the same model) and prompt
+# (maximal vs minimal for the same agent). One point per trial, a bar at the
+# condition's mean within the dataset, a dashed line joining the two means, and
+# a pooled box panel.
+#
+# A point is a **share of metrics passed**, not a mean of the ratios. Averaging
+# ratios does not work here: they are two-sided and unbounded above, so
+# zhang2025/claude's 7-8x neuron count would score better than a perfect 1.0.
+# `lesion_analysis` reaches the same conclusion -- every one of its nine
+# categories is a fraction of pass/fail indicators, never a ratio magnitude --
+# and this reuses the pass rules the three tables above already apply, so a point
+# is the summary table's cell broken out by trial.
+#
+# The figure itself is `ratings.analysis.conditions.condition_scatter`. The two
+# halves of the evaluation deliberately share no data vocabulary, but this is
+# layout, and the requirement is that the two sets of figures look identical --
+# which a copy cannot guarantee. Importing costs one module and reads nothing.
+from ratings.analysis import conditions as _conditions  # noqa: E402
+from ratings.experiments import condition_key  # noqa: E402
+
+# Every condition the run tree holds, not just the two the paper's tables show.
+# The comparisons below need the minimal-prompt and Terminus arms.
+ALL_ARMS = tuple(tuple(a) for a in ARM_COLUMNS)
+
+# What one point measures. Statistics and Decoder are the two categories that
+# speak to whether the data is right; the checks mostly catch naming and
+# convention differences, which is why `E2E_CATEGORIES` excludes them too.
+SCORE_CATEGORIES = E2E_CATEGORIES
+
+SCORE_LABEL = "verifier metrics passed"
+
+# The four contrasts, in the order `ratings_experiment` makes them: the harness
+# held against the same underlying model, then the prompt held against the same
+# agent.
+HARNESS_PAIRS = (
+    ("Opus 4.6: Claude Code vs Terminus",
+     ("claude-code/full", "terminus-opus/full")),
+    ("GPT: Codex vs Terminus", ("codex/full", "terminus-gpt/full")),
+)
+PROMPT_PAIRS = tuple(
+    (f"{ARM_AGENT[(agent, 'full')]}: full vs minimal prompt",
+     (condition_key(agent, "full"), condition_key(agent, "minimal")))
+    for agent in ("claude-code", "codex"))
+
+
+def trial_scores(df: pd.DataFrame, *, arms=ALL_ARMS) -> pd.DataFrame:
+    """One row per (dataset, condition, trial, category): the share that passed.
+
+    Rows for each of `CATEGORIES` plus `"Outcome"`, which pools
+    `SCORE_CATEGORIES` and is what the comparison figures plot.
+
+    `n` is how many metrics the share rests on, which varies -- a dataset has
+    between one and six decoded variables, and majnik2025 contributes three
+    scale metrics rather than five. A category with nothing measured for a trial
+    is omitted rather than scored 0.
+    """
+    rows = []
+    for dataset in [d for d in DATASET_ORDER if d in set(df.dataset)]:
+        for agent, prompt in arms:
+            sub = df[(df.dataset == dataset) & (df.agent == agent)
+                     & (df.prompt == prompt)]
+            for _, row in sub.iterrows():
+                flags = trial_flags(row, df, dataset)
+                flags["Outcome"] = [f for c in SCORE_CATEGORIES for f in flags[c]]
+                for category, got in flags.items():
+                    if not got:
+                        continue
+                    rows.append({
+                        "dataset": dataset, "agent": agent, "prompt": prompt,
+                        "condition": condition_key(agent, prompt),
+                        "trial": int(row["trial"]), "category": category,
+                        "n": len(got), "passed": sum(got),
+                        "score": sum(got) / len(got),
+                    })
+    return pd.DataFrame(rows)
+
+
+def condition_scatter(scores: pd.DataFrame, pair, *, category: str = "Outcome",
+                      **kw):
+    """One comparison figure. Returns `(fig, (ax, ax_box))`.
+
+    `pair` is the two conditions to contrast; `condition_labels` drops whichever
+    half they share, so a harness pair is labelled by agent and a prompt pair by
+    prompt.
+    """
+    kw.setdefault("ylabel", SCORE_LABEL)
+    kw.setdefault("labels", _conditions.condition_labels(pair))
+    # Axis ticks use the same short names the paper's tables do, so Zhang2025
+    # keeps its qualifier on screen but not under a figure.
+    kw.setdefault("xlabels", lambda ds: display_name(ds, latex=True))
+    return _conditions.condition_scatter(
+        scores[scores.category == category], conditions=tuple(pair),
+        value="score", **kw)
