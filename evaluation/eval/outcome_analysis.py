@@ -13,7 +13,7 @@ flattens it. This module turns that frame into the four tables the paper shows:
     decoder_table   agent / reference decoder accuracy, per output variable
 
 The main table is a pure aggregation of the other three, and
-`outcome_tables.ipynb` asserts that rather than trusting it.
+`outcome_analysis.ipynb` asserts that rather than trusting it.
 
 Every threshold is imported from the verifier's own `test_outputs.py`, never
 restated here, so a limit cannot drift from what the tests assert. Three named
@@ -927,7 +927,7 @@ def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
     """The main table: one row per dataset, one line per agent inside each cell.
 
     Every number is a count over the other three tables, so this cannot say
-    anything they do not; `outcome_tables.ipynb` asserts that rather than
+    anything they do not; `outcome_analysis.ipynb` asserts that rather than
     trusting it.
     """
     counts = pass_counts(df)
