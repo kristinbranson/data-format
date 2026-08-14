@@ -37,7 +37,11 @@ DEFAULT_JOB_DIR = EVAL_DIR.parent / "harbor-jobs"
 DEFAULT_OUT = ROOT / "figures" / "resource_summary.tex"
 
 QUANTILES = (25, 50, 75)
-QUANTILE_HEADER = {25: "25th %ile", 50: "median", 75: "75th %ile"}
+
+# Column headers. Anything not named here falls back to `P<q>`, so changing
+# QUANTILES needs no edit. `Q1 / Median / Q3` reads better but only while these
+# stay the quartiles.
+QUANTILE_HEADER = {}
 
 # Both judges are pooled into one distribution per row, which is why the judge
 # rows report twice the trial count. They do not report the same fields: the
@@ -121,7 +125,7 @@ def summary(rows: list[dict], *, quantiles=QUANTILES) -> list[dict]:
 
 def table(stats: list[dict], *, fmt: str = "markdown", quantiles=QUANTILES) -> str:
     """The resource table, at two significant figures throughout."""
-    header = ["metric", "n trials"] + [QUANTILE_HEADER.get(q, f"p{q}")
+    header = ["metric", "n trials"] + [QUANTILE_HEADER.get(q, f"P{q}")
                                        for q in quantiles]
     body = [[s["metric"], str(s["n"]), *[_cell(s[q], s["unit"]) for q in quantiles]]
             for s in stats]
