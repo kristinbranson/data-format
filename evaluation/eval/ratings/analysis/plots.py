@@ -1,6 +1,6 @@
 """The figures that are not the big rating grid.
 
-Four views that used to be written out cell by cell in `analysis.ipynb`, moved
+The views that used to be written out cell by cell in `analysis.ipynb`, moved
 here so a notebook cell is one line and so they read whichever rater is asked
 for — the originals were hardwired to a `best_rating` column that no longer
 exists and could only ever show one human.
@@ -8,7 +8,11 @@ exists and could only ever show one human.
     format_scatter(r)                    per-trial correctness, grouped by
                                          the raw data's format
     confusion_grid(df, ("KB", "claude")) where a rater drifts from the reference
+    rater_confusion(df)                  the two human evaluators against each
+                                         other, five levels and collapsed
     rating_levels(df)                    how often each agent earned each rating
+    score_scatter(df)                    per-trial scores, judge and second
+                                         human against the reference human
     trial_variability(df)                how much three trials of the same
                                          agent disagree with each other
 """
@@ -128,24 +132,12 @@ def confusion_grid(df: pd.DataFrame, raters=("KB", "claude", "codex"), *,
     if title:
         fig.suptitle(title, fontsize=12, fontweight="bold", y=1.02)
 
+    names = [LEVEL_NAMES[v] for v in levels]
     for col, rater in enumerate(raters):
         ax = axes[col]
         cm = confusion(df, rater, truth).reindex(index=list(levels),
                                                  columns=list(levels), fill_value=0)
-        counts = cm.to_numpy()
-        ax.imshow(counts, cmap="Blues")
-        vmax = counts.max() or 1
-        for i in range(len(levels)):
-            for j in range(len(levels)):
-                v = int(counts[i, j])
-                if v:
-                    ax.text(j, i, str(v), ha="center", va="center", fontsize=9,
-                            color="white" if v > 0.55 * vmax else "black")
-        names = [LEVEL_NAMES[v] for v in levels]
-        ax.set_xticks(range(len(levels)))
-        ax.set_yticks(range(len(levels)))
-        ax.set_xticklabels(names, rotation=30, ha="right", fontsize=8)
-        ax.set_yticklabels(names, fontsize=8)
+        _annotated_matrix(ax, cm.to_numpy(), names, names, skip_zero=True)
         ax.set_title(rater, fontsize=10, fontweight="bold")
         ax.set_xlabel(f"{truth} (reference)", fontsize=9)
         if col == 0:
@@ -352,3 +344,177 @@ def trial_variability(df: pd.DataFrame, rater: str = "LZ", *,
                        else "Proportion of trials")
     fig.tight_layout()
     return fig, axes
+
+
+def _annotated_matrix(ax, counts, xlabels, ylabels, *, cmap="Blues", fontsize=9,
+                      skip_zero=False):
+    """Counts as a heatmap with the number written in each cell.
+
+    Drawn with `pcolormesh` rather than `imshow` on purpose: an image goes into
+    an exported PDF as one raster block a few pixels across, which Illustrator
+    then interpolates into a blur. A mesh writes real rectangles, so the cells
+    stay crisp and can be recolored by hand.
+
+    Row 0 is at the top and the aspect is locked square, i.e. `imshow`'s layout.
+    """
+    nrow, ncol = counts.shape
+    ax.pcolormesh(np.arange(ncol + 1) - 0.5, np.arange(nrow + 1) - 0.5, counts,
+                  cmap=cmap, edgecolors="white", linewidth=0.5)
+    ax.set_aspect("equal")
+    ax.set_xlim(-0.5, ncol - 0.5)
+    ax.set_ylim(nrow - 0.5, -0.5)
+
+    vmax = counts.max() or 1
+    for i in range(nrow):
+        for j in range(ncol):
+            v = int(counts[i, j])
+            if v or not skip_zero:
+                ax.text(j, i, str(v), ha="center", va="center", fontsize=fontsize,
+                        color="white" if v > 0.55 * vmax else "black")
+    ax.set_xticks(range(len(xlabels)))
+    ax.set_yticks(range(len(ylabels)))
+    ax.set_xticklabels(xlabels, rotation=30, ha="right", fontsize=8)
+    ax.set_yticklabels(ylabels, fontsize=8)
+    ax.tick_params(length=0)
+
+
+def rater_confusion(df: pd.DataFrame, a: str = "LZ", b: str = "KB", *,
+                    levels=CONFUSION_LEVELS, figsize=(7.6, 3.8)):
+    """The two human evaluators against each other, at both resolutions.
+
+    Left: the five rating levels. Right: the same rows collapsed at the
+    `concerning` boundary, which is the split section 4 scores every rater on.
+    `a` runs along x and `b` up y; neither is truth here, so the matrix is
+    shown as counts rather than named TP/FP/FN/TN.
+    """
+    from .binary import BINARY_NAMES, confusion as binary_confusion
+
+    fig, axes = plt.subplots(1, 2, figsize=figsize,
+                             gridspec_kw={"width_ratios": [5, 2]})
+
+    ratings = confusion(df, b, a).reindex(index=list(levels), columns=list(levels),
+                                       fill_value=0)
+    names = [LEVEL_NAMES[v] for v in levels]
+    _annotated_matrix(axes[0], ratings.to_numpy(), names, names)
+    axes[0].set_title("Ratings", fontsize=10)
+
+    two = binary_confusion(df, b, a)
+    _annotated_matrix(axes[1], two.to_numpy(), list(BINARY_NAMES),
+                      list(BINARY_NAMES))
+    axes[1].set_title("Binary Category", fontsize=10)
+
+    for ax in axes:
+        ax.set_xlabel(a, fontsize=10)
+        ax.set_ylabel(b, fontsize=10)
+    fig.tight_layout()
+    # Both panels have square cells, so the 2x2 would otherwise be drawn with
+    # cells 2.5x the size of the 5x5's. Match the cell size and hang the small
+    # panel from the top of the tall one.
+    _match_cell_size(axes[0], axes[1], len(levels), 2)
+    return fig, axes
+
+
+def _match_cell_size(ref, ax, n_ref: int, n: int, *, pad: float = 0.1):
+    """Resize `ax` so its `n` cells come out the size of `ref`'s `n_ref` cells.
+
+    Both axes hold an `imshow`, which fixes the aspect and so shrinks the axes
+    box inside the slot the gridspec gave it — a draw has to happen first for
+    that adjusted box to exist, and it is the adjusted one to measure. The
+    shrinking is also why `ax` is repositioned `pad` past the right edge of
+    `ref` instead of being left where the gridspec put it.
+    """
+    ax.figure.canvas.draw()
+    ref_box = ref.get_position(original=False)
+    side = ref_box.height * n / n_ref
+    ax.set_position([ref_box.x1 + pad, ref_box.y1 - side,
+                     ref_box.width * n / n_ref, side])
+
+
+def trial_frac_ok(df: pd.DataFrame, rater: str, *, level: float = 0.0) -> pd.DataFrame:
+    """Per (dataset, agent, trial): the share of `rater`'s ratings at `level` or better.
+
+    The tidy-frame counterpart of `figure.compute_trial_scores`, which reads the
+    nested dict and so cannot see a rater added to the frame afterward —
+    `combined` is built by `add_combined`. Rows the rater left unrated drop out
+    of both numerator and denominator, so each rater scores a trial on the
+    questions it actually answered.
+    """
+    sub = df[df[rater].notna()]
+    out = (sub.groupby(["dataset", "agent", "trial"], dropna=False)[rater]
+              .agg(n_questions="size", n_ok=lambda s: int((s >= level).sum()))
+              .reset_index())
+    out["frac_ok"] = out["n_ok"] / out["n_questions"]
+    return out
+
+
+# Okabe-Ito again, and a marker per panel as well as a color, so the two are
+# still separable in grayscale or for a colorblind reader.
+SCORE_STYLE = {"KB": ("#009E73", "o"), "combined": ("#D55E00", "^")}
+SCORE_LABEL = {"LZ": "Evaluator 1", "KB": "Evaluator 2",
+               "combined": "Combined judge"}
+
+
+def score_scatter(df: pd.DataFrame, raters=("KB", "combined"), *,
+                  truth: str = "LZ", level: float = 0.0,
+                  labels=None, colors=None, lim=(0.35, 1.05)):
+    """One panel per rater: its per-trial score against `truth`'s for the same trial.
+
+    One point per (dataset, agent, trial) — 48 of them, or fewer for a rater
+    that skipped a dataset. The score is the same "proportion of questions
+    rated at least ok" that section 5 reads off the ratings, so the figure asks
+    whether a judge could stand in for a human when *scoring* a run, which is a
+    weaker requirement than agreeing question by question.
+
+    Each rater scores on the questions it answered, so a point's x is `truth`'s
+    own score for that trial and does not move between panels. The dashed line
+    is equality, not a fit: below it the rater is harsher than `truth`.
+
+    A panel apiece rather than two series on one axes — the judge's cloud sits
+    under the human's and would otherwise be half hidden by it. Both panels
+    share one range, so the two are still read against each other.
+    """
+    ref = trial_frac_ok(df, truth, level=level)
+    key = ["dataset", "agent", "trial"]
+    label_of = labels or SCORE_LABEL
+    truth_label = label_of.get(truth, truth)
+
+    fig, axes = plt.subplots(1, len(raters), figsize=(4.0 * len(raters), 4.2),
+                             sharex=True, sharey=True, squeeze=False)
+    axes = axes[0]
+
+    stats = {}
+    for ax, rater in zip(axes, raters):
+        color, marker = SCORE_STYLE.get(rater, ("C0", "o"))
+        color = (colors or {}).get(rater, color)
+        pair = ref.merge(trial_frac_ok(df, rater, level=level), on=key,
+                         suffixes=("_truth", ""))
+        r = pair["frac_ok_truth"].corr(pair["frac_ok"])
+        stats[rater] = {"n": len(pair), "pearson": r}
+
+        ax.plot([0, 1], [0, 1], color="#bbb", linestyle="--", linewidth=1, zorder=0)
+        ax.scatter(pair["frac_ok_truth"], pair["frac_ok"], color=color,
+                   marker=marker, s=42, alpha=0.8, edgecolor="white",
+                   linewidth=0.5)
+        # Least squares of rater on truth, drawn only across the range that has
+        # data — every trial scores > 0.6 with `truth`, so the fit says nothing
+        # about the rest of the axes and should not be extended into it.
+        x = pair["frac_ok_truth"].to_numpy()
+        slope, intercept = np.polyfit(x, pair["frac_ok"].to_numpy(), 1)
+        span = np.array([x.min(), x.max()])
+        ax.plot(span, slope * span + intercept, color=color, linewidth=1.5,
+                zorder=1)
+        stats[rater].update(slope=slope, intercept=intercept)
+        ax.text(0.04, 0.96, f"$r$ = {r:.2f}   $n$ = {len(pair)}",
+                transform=ax.transAxes, ha="left", va="top", fontsize=9)
+        ax.set_title(f"{truth_label} vs {label_of.get(rater, rater)}", fontsize=10)
+        ax.set_xlabel(f"{truth_label} score")
+        # Every trial scores well above chance, so the full 0-1 square would be
+        # mostly empty. Both axes get the same range, so equality stays the
+        # 45-degree line and the two directions are read the same way.
+        ax.set_xlim(*lim)
+        ax.set_ylim(*lim)
+        ax.set_aspect("equal")
+
+    axes[0].set_ylabel("Rater score")
+    fig.tight_layout()
+    return fig, axes, pd.DataFrame(stats).T
