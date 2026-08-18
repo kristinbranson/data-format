@@ -447,9 +447,10 @@ def trial_frac_ok(df: pd.DataFrame, rater: str, *, level: float = 0.0) -> pd.Dat
     return out
 
 
-# Okabe-Ito again, and a marker per panel as well as a color, so the two are
-# still separable in grayscale or for a colorblind reader.
-SCORE_STYLE = {"KB": ("#009E73", "o"), "combined": ("#D55E00", "^")}
+# Okabe-Ito again. One marker for both panels: they are separate axes, so the
+# color is a label for the panel rather than something to tell apart at a
+# glance, and a single shape keeps the two clouds directly comparable.
+SCORE_STYLE = {"KB": ("#009E73", "o"), "combined": ("#D55E00", "o")}
 SCORE_LABEL = {"LZ": "Evaluator 1", "KB": "Evaluator 2",
                "combined": "Combined judge"}
 
@@ -478,7 +479,7 @@ def score_scatter(df: pd.DataFrame, raters=("KB", "combined"), *,
     label_of = labels or SCORE_LABEL
     truth_label = label_of.get(truth, truth)
 
-    fig, axes = plt.subplots(1, len(raters), figsize=(4.0 * len(raters), 4.2),
+    fig, axes = plt.subplots(1, len(raters), figsize=(4.0 * len(raters), 4.0),
                              sharex=True, sharey=True, squeeze=False)
     axes = axes[0]
 
@@ -493,7 +494,7 @@ def score_scatter(df: pd.DataFrame, raters=("KB", "combined"), *,
 
         ax.plot([0, 1], [0, 1], color="#bbb", linestyle="--", linewidth=1, zorder=0)
         ax.scatter(pair["frac_ok_truth"], pair["frac_ok"], color=color,
-                   marker=marker, s=42, alpha=0.8, edgecolor="white",
+                   marker=marker, s=32, alpha=0.8, edgecolor="white",
                    linewidth=0.5)
         # Least squares of rater on truth, drawn only across the range that has
         # data — every trial scores > 0.6 with `truth`, so the fit says nothing
