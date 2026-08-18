@@ -350,12 +350,9 @@ def _annotated_matrix(ax, counts, xlabels, ylabels, *, cmap="Blues", fontsize=9,
                       skip_zero=False):
     """Counts as a heatmap with the number written in each cell.
 
-    Drawn with `pcolormesh` rather than `imshow` on purpose: an image goes into
-    an exported PDF as one raster block a few pixels across, which Illustrator
-    then interpolates into a blur. A mesh writes real rectangles, so the cells
-    stay crisp and can be recolored by hand.
-
-    Row 0 is at the top and the aspect is locked square, i.e. `imshow`'s layout.
+    `pcolormesh` rather than `imshow`: an image goes into an exported PDF as
+    one raster block a few pixels across, which Illustrator blurs. Row 0 at the
+    top and square cells, i.e. `imshow`'s layout.
     """
     nrow, ncol = counts.shape
     ax.pcolormesh(np.arange(ncol + 1) - 0.5, np.arange(nrow + 1) - 0.5, counts,
@@ -383,9 +380,8 @@ def rater_confusion(df: pd.DataFrame, a: str = "LZ", b: str = "KB", *,
     """The two human evaluators against each other, at both resolutions.
 
     Left: the five rating levels. Right: the same rows collapsed at the
-    `concerning` boundary, which is the split section 4 scores every rater on.
-    `a` runs along x and `b` up y; neither is truth here, so the matrix is
-    shown as counts rather than named TP/FP/FN/TN.
+    `concerning` boundary. `a` runs along x and `b` up y, as counts — neither
+    is truth here, so TP/FP/FN/TN would not name anything.
     """
     from .binary import BINARY_NAMES, confusion as binary_confusion
 
@@ -417,11 +413,9 @@ def rater_confusion(df: pd.DataFrame, a: str = "LZ", b: str = "KB", *,
 def _match_cell_size(ref, ax, n_ref: int, n: int, *, pad: float = 0.1):
     """Resize `ax` so its `n` cells come out the size of `ref`'s `n_ref` cells.
 
-    Both axes hold an `imshow`, which fixes the aspect and so shrinks the axes
-    box inside the slot the gridspec gave it — a draw has to happen first for
-    that adjusted box to exist, and it is the adjusted one to measure. The
-    shrinking is also why `ax` is repositioned `pad` past the right edge of
-    `ref` instead of being left where the gridspec put it.
+    A fixed aspect shrinks each axes inside its gridspec slot, so the box has
+    to be drawn before it can be measured, and `ax` is repositioned `pad` past
+    `ref` rather than left where the gridspec put it.
     """
     ax.figure.canvas.draw()
     ref_box = ref.get_position(original=False)
@@ -433,11 +427,9 @@ def _match_cell_size(ref, ax, n_ref: int, n: int, *, pad: float = 0.1):
 def trial_frac_ok(df: pd.DataFrame, rater: str, *, level: float = 0.0) -> pd.DataFrame:
     """Per (dataset, agent, trial): the share of `rater`'s ratings at `level` or better.
 
-    The tidy-frame counterpart of `figure.compute_trial_scores`, which reads the
-    nested dict and so cannot see a rater added to the frame afterward —
-    `combined` is built by `add_combined`. Rows the rater left unrated drop out
-    of both numerator and denominator, so each rater scores a trial on the
-    questions it actually answered.
+    The tidy-frame counterpart of `figure.compute_trial_scores`, which reads
+    the nested dict and so cannot see `combined`. Unrated rows leave both
+    numerator and denominator, so a rater scores the questions it answered.
     """
     sub = df[df[rater].notna()]
     out = (sub.groupby(["dataset", "agent", "trial"], dropna=False)[rater]
@@ -460,19 +452,15 @@ def score_scatter(df: pd.DataFrame, raters=("KB", "combined"), *,
                   labels=None, colors=None, lim=(0.35, 1.05)):
     """One panel per rater: its per-trial score against `truth`'s for the same trial.
 
-    One point per (dataset, agent, trial) — 48 of them, or fewer for a rater
-    that skipped a dataset. The score is the same "proportion of questions
-    rated at least ok" that section 5 reads off the ratings, so the figure asks
-    whether a judge could stand in for a human when *scoring* a run, which is a
-    weaker requirement than agreeing question by question.
+    One point per (dataset, agent, trial), scored as section 5 scores a trial:
+    the proportion of its questions rated at least ok. Asks whether a judge
+    could stand in for a human when *scoring* a run, a weaker requirement than
+    agreeing question by question.
 
-    Each rater scores on the questions it answered, so a point's x is `truth`'s
-    own score for that trial and does not move between panels. The dashed line
-    is equality, not a fit: below it the rater is harsher than `truth`.
-
-    A panel apiece rather than two series on one axes — the judge's cloud sits
-    under the human's and would otherwise be half hidden by it. Both panels
-    share one range, so the two are still read against each other.
+    Dashed line is equality, not a fit: below it the rater is harsher than
+    `truth`. The solid line is the least-squares fit, over the range with data.
+    A panel apiece so the judge's cloud does not hide under the human's; both
+    share one range.
     """
     ref = trial_frac_ok(df, truth, level=level)
     key = ["dataset", "agent", "trial"]

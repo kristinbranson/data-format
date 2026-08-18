@@ -1,6 +1,6 @@
 # Evaluation
 
-Two halves, one notebook each.
+Two halves, one notebook each, and a third that puts them side by side.
 
 **Outcome** — what the verifier measured about the converted data.
 **Ratings** — how humans and LLM judges rated the agents' conversion code.
@@ -11,6 +11,7 @@ Two halves, one notebook each.
 |---|---|
 | `ratings_analysis.ipynb` | The paper's ratings results and analysos, rater agreement, binary accuracy against the human reference, and the per-condition comparisons (harness, prompt) |
 | `outcome_analysis.ipynb` | The paper's outcome tables, plus the same per-condition comparisons scored on verifier metrics |
+| `condition_summary.ipynb` | Both evaluations pooled over datasets: all six conditions as one box apiece, outcome above process |
 
 ## Standalone files
 

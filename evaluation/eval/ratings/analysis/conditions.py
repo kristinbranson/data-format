@@ -37,8 +37,8 @@ import numpy as np
 import pandas as pd
 
 from .. import experiments, paths
-from ..experiments import (CONDITION_COLOR, CONDITION_LABEL, CONDITION_ORDER,
-                           condition_key)
+from ..experiments import (CONDITION_COLOR, CONDITION_GROUPS, CONDITION_LABEL,
+                           CONDITION_ORDER, CONDITION_SHORT, condition_key)
 from . import judges as judges_mod
 from . import loading
 from .loading import (DATASET_ORDER, EXCLUDED_TITLE_PATTERNS, judge_columns,
@@ -468,33 +468,8 @@ def condition_scatter(scores: pd.DataFrame, *,
     ax.set_xlim(-0.5, len(order) - 0.5)
 
     if ax_box is not None:
-        data = [scores[scores.condition == c][value].to_numpy()
-                for c in conditions]
-        bp = ax_box.boxplot(data, widths=0.6, patch_artist=True,
-                            medianprops={"color": "0.2", "lw": 1.4},
-                            flierprops={"marker": "o", "ms": 3, "mfc": "0.5",
-                                        "mec": "none"})
-        for patch, condition in zip(bp["boxes"], conditions):
-            patch.set(facecolor=CONDITION_COLOR[condition], alpha=0.45,
-                      edgecolor=CONDITION_COLOR[condition], lw=1.2)
-        for key in ("whiskers", "caps"):
-            for line in bp[key]:
-                line.set(color="0.45", lw=1.0)
-        if box_stat:
-            stats = pooled_stat(scores[scores.condition.isin(conditions)],
-                                stat=box_stat, value=value)
-            for pos, condition in enumerate(conditions, start=1):
-                # Inside the axes at the foot of the box, on a white patch: a
-                # whisker or an outlier can reach this low.
-                foot = ylim[0] + 0.015 * (ylim[1] - ylim[0])
-                ax_box.text(pos, foot, stats.loc[condition, "label"],
-                            ha="center", va="bottom", fontsize=6.5, zorder=5,
-                            bbox={"facecolor": "white", "edgecolor": "none",
-                                  "pad": 1.0, "alpha": 0.85})
-        ax_box.set_xticks(range(1, len(conditions) + 1))
-        ax_box.set_xticklabels([labels[c] for c in conditions],
-                               rotation=30, ha="right", fontsize=8)
-        ax_box.set_title(box_title, fontsize=9, pad=4)
+        _box_panel(ax_box, scores, conditions, value=value, box_stat=box_stat,
+                   ylim=ylim, labels=labels, title=box_title)
         # The y axis is shared with the panel on the left; a second copy of its
         # spine and ticks would read as a frame around the boxes.
         ax_box.tick_params(axis="y", left=False)
@@ -580,3 +555,217 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
+               box_stat: str | None, ylim, labels: dict,
+               title: str | None = None, tick_fontsize: float = 8,
+               positions=None, width: float = 0.6, alpha: float = 0.45):
+    """One box per condition on `ax`, `mean ± spread` written under each.
+
+    Shared by `condition_scatter` and `condition_boxes`, so a box means the
+    same thing in both.
+    """
+    data = [scores[scores.condition == c][value].to_numpy() for c in conditions]
+    positions = list(positions or range(1, len(conditions) + 1))
+    bp = ax.boxplot(data, positions=positions, widths=width, patch_artist=True,
+                    medianprops={"color": "0.2", "lw": 1.4},
+                    flierprops={"marker": "o", "ms": 3, "mfc": "0.5",
+                                "mec": "none"})
+    # Fill only, no stroke: a patch carrying both a fill and an edge at partial
+    # alpha comes out of Illustrator as two stacked objects with a visible seam.
+    for patch, condition in zip(bp["boxes"], conditions):
+        patch.set(facecolor=CONDITION_COLOR[condition], alpha=alpha,
+                  edgecolor="none", lw=0)
+    for key in ("whiskers", "caps"):
+        for line in bp[key]:
+            line.set(color="0.45", lw=1.0)
+
+    if box_stat:
+        stats = pooled_stat(scores[scores.condition.isin(conditions)],
+                            stat=box_stat, value=value)
+        for pos, condition in enumerate(conditions, start=1):
+            # Inside the axes at the foot of the box, on a white patch: a
+            # whisker or an outlier can reach this low.
+            foot = ylim[0] + 0.015 * (ylim[1] - ylim[0])
+            ax.text(positions[pos - 1], foot, stats.loc[condition, "label"],
+                    ha="center", va="bottom", fontsize=6.5, zorder=5,
+                    bbox={"facecolor": "white", "edgecolor": "none",
+                          "pad": 1.0, "alpha": 0.85})
+
+    ax.set_xticks(positions)
+    ax.set_xticklabels([labels[c] for c in conditions], rotation=30, ha="right",
+                       fontsize=tick_fontsize)
+    if title:
+        ax.set_title(title, fontsize=9, pad=4)
+    return ax
+
+
+def condition_test(scores: pd.DataFrame, a: str, b: str, *,
+                   value: str = "frac_ok", n_iter: int = 20000,
+                   seed: int = 0) -> dict:
+    """A dataset-level paired permutation test on the gap between two conditions.
+
+    The statistic is each dataset's mean under `a` minus its mean under `b`,
+    averaged over datasets. The null is built by permuting the two conditions'
+    trials within each dataset, so a draw relabels every dataset at once and
+    the two-sided p is how often that average reaches the observed gap. The
+    observed arrangement is counted in, so p is never 0 and bottoms out at
+    `1 / (n_iter + 1)`.
+
+    Returns the p value, the number of datasets, the mean gap, and `wins`, the
+    datasets on which `a` came out ahead — worth reading alongside p, since the
+    null's spread is run-to-run noise and a large gap on a few datasets can
+    clear it while the rest disagree.
+    """
+    rng = np.random.default_rng(seed)
+    sub = scores[scores.condition.isin((a, b))]
+
+    blocks, gaps = [], []
+    for _ds, g in sub.groupby("dataset"):
+        va = g[g.condition == a][value].to_numpy()
+        vb = g[g.condition == b][value].to_numpy()
+        if not len(va) or not len(vb):
+            continue
+        blocks.append((va, vb))
+        gaps.append(va.mean() - vb.mean())
+
+    if not blocks:
+        return {"n_datasets": 0, "wins": 0, "delta": float("nan"),
+                "p": float("nan")}
+
+    draws = np.zeros(n_iter)
+    for va, vb in blocks:
+        pool = np.concatenate([va, vb])
+        order = np.argsort(rng.random((n_iter, len(pool))), axis=1)
+        dealt = pool[order]
+        draws += dealt[:, :len(va)].mean(axis=1) - dealt[:, len(va):].mean(axis=1)
+    draws /= len(blocks)
+
+    obs = float(np.mean(gaps))
+    hits = int((np.abs(draws) >= abs(obs) - 1e-12).sum())
+    return {"n_datasets": len(blocks), "wins": int(sum(g > 0 for g in gaps)),
+            "delta": obs, "p": (hits + 1) / (n_iter + 1)}
+
+
+def format_p(p: float) -> str:
+    return "p n/a" if p != p else ("p < 0.001" if p < 0.001 else f"p = {p:.3f}")
+
+
+def _bar_levels(spans, *, pad: float = 0.1) -> list[int]:
+    """A stacking level per span, so no two bars on a level overlap.
+
+    Separate from the drawing because the number of levels decides how much
+    room to leave above the axes.
+    """
+    levels: list[list[tuple[float, float]]] = []
+    out = []
+    for lo, hi in spans:
+        level = next((i for i, taken in enumerate(levels)
+                      if all(hi < s - pad or lo > e + pad for s, e in taken)),
+                     len(levels))
+        if level == len(levels):
+            levels.append([])
+        levels[level].append((lo, hi))
+        out.append(level)
+    return out
+
+
+def _sig_bars(ax, bars, *, base: float, step: float, fontsize: float = 7):
+    """Horizontal bars with a p value over them, above the axes.
+
+    `bars` is a list of `(x0, x1, level, label)`. y is in axes coordinates, so
+    the bars sit above the data instead of stretching the y axis to fit them.
+    """
+    for lo, hi, level, label in bars:
+        y = base + step * level
+        ax.plot([lo, lo, hi, hi], [y - step * 0.18, y, y, y - step * 0.18],
+                transform=ax.get_xaxis_transform(), color="0.35", lw=0.9,
+                clip_on=False, zorder=6)
+        ax.text((lo + hi) / 2, y + step * 0.06, label, ha="center", va="bottom",
+                transform=ax.get_xaxis_transform(), fontsize=fontsize,
+                color="0.25", clip_on=False, zorder=6)
+
+
+def condition_boxes(panels, *, groups=CONDITION_GROUPS, box_stat: str = "se",
+                    ylim=(0, 1.02), figsize=None, labels=None, gap: float = 0.9,
+                    width: float = 0.5, spacing: float = 0.8,
+                    alpha: float = 0.75, row_height: float = 2.75,
+                    tests=(), n_iter: int = 20000, seed: int = 0):
+    """Every condition's pooled box, one row per evaluation.
+
+    `condition_scatter`'s right-hand panel for every condition at once, with
+    the datasets pooled. `panels` is a list of `(ylabel, scores, value)`, one
+    row each; the same columns in every row, so a column is one condition
+    scored two ways. `groups` is the x order, as blocks separated by `gap`, and
+    labels leave the maximal prompt unmarked for a caption to explain.
+
+    `tests` is a list of `(a, b)` to compare; each draws a bar over its two
+    columns carrying `condition_test`'s p value, computed per row and left
+    uncorrected.
+
+    Returns `(fig, axes)`; the p values are on `fig.stats`, one frame per row.
+    """
+    have = {c for _l, s, _v in panels for c in set(s["condition"])}
+    groups = [[c for c in g if c in have] for g in groups]
+    groups = [g for g in groups if g]
+    conditions = [c for g in groups for c in g]
+    labels = labels or {c: CONDITION_SHORT[c] for c in conditions}
+
+    positions, x = [], 1.0
+    for i, group in enumerate(groups):
+        x += gap if i else 0
+        for _c in group:
+            positions.append(x)
+            x += spacing
+
+    at = dict(zip(conditions, positions))
+    tests = [(a, b) for a, b in tests if a in at and b in at]
+
+    # The bars go above the axes rather than inside it: the y axis stays the
+    # range the scores can take, and the room they need is added to the figure
+    # instead. How much depends on how many levels they stack into, which is
+    # geometry and so is known before any test runs.
+    spans = [tuple(sorted((at[a], at[b]))) for a, b in tests]
+    levels = _bar_levels(spans)
+    step, base = 0.09, 1.03
+    # Up to the top bar, plus a line of text above it.
+    head = (base - 1 + step * max(levels) + 0.05) if levels else 0.0
+
+    span = positions[-1] - positions[0] + spacing
+    figsize = figsize or (1.2 * span + 1.5,
+                          row_height * (1 + head) * len(panels) + 0.6)
+    fig, axes = plt.subplots(len(panels), 1, figsize=figsize, sharex=True,
+                             squeeze=False)
+    axes = axes[:, 0]
+
+    stats = []
+    for ax, (ylabel, scores, value) in zip(axes, panels):
+        _box_panel(ax, scores, conditions, value=value, box_stat=box_stat,
+                   ylim=ylim, labels=labels, positions=positions, width=width,
+                   alpha=alpha)
+        ax.set_ylabel(ylabel)
+        ax.set_ylim(*ylim)
+        ax.set_xlim(positions[0] - 0.75 * spacing, positions[-1] + 0.75 * spacing)
+        ax.tick_params(axis="x", length=0)
+
+        rows = [{"a": a, "b": b,
+                 **condition_test(scores, a, b, value=value, n_iter=n_iter,
+                                  seed=seed)}
+                for a, b in tests]
+        stats.append(pd.DataFrame(rows))
+        if rows:
+            _sig_bars(ax, [(lo, hi, lv, format_p(r["p"]))
+                           for (lo, hi), lv, r in zip(spans, levels, rows)],
+                      base=base, step=step)
+
+    fig.tight_layout()
+    if head:
+        # tight_layout measures the axes and their decorations, not artists
+        # drawn outside them, so the bars' room has to be taken back by hand.
+        pars = fig.subplotpars
+        axes_h = (pars.top - pars.bottom) / (len(panels) + (len(panels) - 1) * pars.hspace)
+        fig.subplots_adjust(top=pars.top - head * axes_h,
+                            hspace=pars.hspace + head)
+    fig.stats = stats
+    return fig, axes

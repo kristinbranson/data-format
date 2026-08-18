@@ -116,6 +116,21 @@ CONDITION_ORDER = tuple(condition_key(a, p) for a, p in CONDITIONS)
 CONDITION_LABEL = {condition_key(a, p): f"{AGENT_LABEL.get(a, a)} ({PROMPT_LABEL[p]})"
                    for a, p in CONDITIONS}
 
+# Figure labels: the maximal prompt is the default and goes unmarked, so only
+# the minimal runs carry a qualifier. A figure using these has to say so in its
+# caption.
+CONDITION_SHORT = {condition_key(a, p):
+                   AGENT_LABEL.get(a, a) + ("" if p == "full" else " (minimal)")
+                   for a, p in CONDITIONS}
+
+# The two model families, each read as: the agent's own harness, the same model
+# under Terminus, then the agent again on the cut-down prompt. Figure order, so
+# the two families sit as blocks and the harness swap is the neighboring column.
+CONDITION_GROUPS = (
+    ("claude-code/full", "terminus-opus/full", "claude-code/minimal"),
+    ("codex/full", "terminus-gpt/full", "codex/minimal"),
+)
+
 
 def split_task(task: str) -> tuple[str, str]:
     """Task folder name -> (our dataset name, prompt variant)."""
