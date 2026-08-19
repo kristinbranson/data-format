@@ -35,6 +35,7 @@ from dataclasses import dataclass, field
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.colors import to_rgba
 
 from .. import experiments, paths
 from ..experiments import (CONDITION_COLOR, CONDITION_GROUPS, CONDITION_LABEL,
@@ -560,7 +561,8 @@ if __name__ == "__main__":
 def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
                box_stat: str | None, ylim, labels: dict,
                title: str | None = None, tick_fontsize: float = 8,
-               positions=None, width: float = 0.6, alpha: float = 0.45):
+               positions=None, width: float = 0.6, alpha: float = 0.45,
+               edge: str = "0.45", edge_lw: float = 1.0):
     """One box per condition on `ax`, `mean ± spread` written under each.
 
     Shared by `condition_scatter` and `condition_boxes`, so a box means the
@@ -572,14 +574,15 @@ def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
                     medianprops={"color": "0.2", "lw": 1.4},
                     flierprops={"marker": "o", "ms": 3, "mfc": "0.5",
                                 "mec": "none"})
-    # Fill only, no stroke: a patch carrying both a fill and an edge at partial
-    # alpha comes out of Illustrator as two stacked objects with a visible seam.
+    # The alpha goes into the face color rather than onto the patch: setting it
+    # on the patch fades the edge with the fill, and a half-transparent edge
+    # over a half-transparent face is what Illustrator draws as a seam.
     for patch, condition in zip(bp["boxes"], conditions):
-        patch.set(facecolor=CONDITION_COLOR[condition], alpha=alpha,
-                  edgecolor="none", lw=0)
+        patch.set(facecolor=to_rgba(CONDITION_COLOR[condition], alpha),
+                  edgecolor=edge, lw=edge_lw)
     for key in ("whiskers", "caps"):
         for line in bp[key]:
-            line.set(color="0.45", lw=1.0)
+            line.set(color=edge, lw=edge_lw)
 
     if box_stat:
         stats = pooled_stat(scores[scores.condition.isin(conditions)],
@@ -690,7 +693,8 @@ def _sig_bars(ax, bars, *, base: float, step: float, fontsize: float = 7):
 def condition_boxes(panels, *, groups=CONDITION_GROUPS, box_stat: str = "se",
                     ylim=(0, 1.02), figsize=None, labels=None, gap: float = 0.9,
                     width: float = 0.5, spacing: float = 0.8,
-                    alpha: float = 0.75, row_height: float = 2.75,
+                    alpha: float = 0.75, edge: str = "0.45",
+                    row_height: float = 2.75,
                     tests=(), n_iter: int = 20000, seed: int = 0):
     """Every condition's pooled box, one row per evaluation.
 
@@ -743,7 +747,7 @@ def condition_boxes(panels, *, groups=CONDITION_GROUPS, box_stat: str = "se",
     for ax, (ylabel, scores, value) in zip(axes, panels):
         _box_panel(ax, scores, conditions, value=value, box_stat=box_stat,
                    ylim=ylim, labels=labels, positions=positions, width=width,
-                   alpha=alpha)
+                   alpha=alpha, edge=edge)
         ax.set_ylabel(ylabel)
         ax.set_ylim(*ylim)
         ax.set_xlim(positions[0] - 0.75 * spacing, positions[-1] + 0.75 * spacing)
