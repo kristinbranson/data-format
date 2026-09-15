@@ -12,8 +12,8 @@ Supported tasks and where each one's data is fetched from:
 
     allen2p      Allen Brain Observatory: Visual Behavior 2P (via AllenSDK S3 cache)
     hasnain2024  Zenodo record 13941415
-    lee2025      Zenodo record 13993254
-    majnik2025   Zenodo record 17091226
+    lee2025      Zenodo record 14867736 (data.zip + results.zip, extracted)
+    majnik2025   Zenodo record 17091226 (data.zip, extracted)
     map          DANDI dandiset 000363 (via `dandi` CLI)
     mouseland    Figshare article 28811129
     sosa2024     DANDI dandiset 001361 (via `dandi` CLI)
@@ -25,10 +25,9 @@ Pass --datalimit to fetch the 50 GB-capped variant of a dataset into
 `data/<task>_datalimit/` instead of the full release, using the subset frozen in
 `download/datalimit/<task>.csv`. allen2p, map and sosa2024 filter at download
 time and never transfer the omitted data; hasnain2024, lee2025 and majnik2025 are
-already under the cap and download in full; zhang2025 caches only the selected
-sessions through the ONE api. Only mouseland must be downloaded whole and then
-reduced with `download/make_datalimit.py`, because its subset is a per-session
-cell subsample living inside the published files.
+already under the cap and download in full. mouseland and zhang2025 come from
+reduced copies published on Hugging Face at a pinned revision (see
+DATALIMIT_HF_SOURCE); pass --from-ibl to rebuild zhang2025's copy from IBL instead.
 """
 
 import argparse
@@ -36,6 +35,7 @@ import os
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import requests
@@ -48,8 +48,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 TASKS = {
     "allen2p":     {"kind": "allensdk"},
     "hasnain2024": {"kind": "zenodo", "record_id": "13941415"},
-    "lee2025":     {"kind": "zenodo", "record_id": "13993254"},
-    "majnik2025":  {"kind": "zenodo", "record_id": "17091226"},
+    # 13993254 publishes the 7 .mat files loose; 14867736 is the same series and
+    # is a superset -- data.zip holds those .mat files AND behav_dict and the
+    # per-animal files, results.zip holds precomputed_results. Fetching 13993254
+    # gets 4.31 GB of the 15.7 GB the task ships.
+    "lee2025":     {"kind": "zenodo", "record_id": "14867736", "unzip": True},
+    # data.zip (9.86 GB -> 16.19 GB) alongside load_data.ipynb and README.md. No
+    # wrapper directory in this one, so extract_zips only unpacks and deletes.
+    "majnik2025":  {"kind": "zenodo", "record_id": "17091226", "unzip": True},
     "map":         {"kind": "dandi",  "dandiset": "000363"},
     "mouseland":   {"kind": "figshare", "article_id": "28811129"},
     "sosa2024":    {"kind": "dandi",  "dandiset": "001361"},
@@ -108,6 +114,53 @@ def download_zenodo(record_id, out_dir):
     url = f"https://zenodo.org/api/records/{record_id}"
     r = requests.get(url); r.raise_for_status()
     _download_files(r.json()["files"], out_dir, name_key="key", url_key="links")
+
+
+def extract_zips(out_dir):
+    """Unpack every .zip in out_dir, flatten a single wrapper directory, delete the zips.
+
+    Zenodo record 14867736 nests its payload one level down: data.zip holds everything
+    under `data/`, while results.zip holds `precomputed_results/` at the top. Left as-is
+    the first would put the .mat files at `<out_dir>/data/*.mat`, one level deeper than
+    the conversion looks, which is the failure hasnain2024 hit -- a good multi-GB
+    download rejected later by a layout check.
+
+    macOS resource forks (`__MACOSX/`, `.DS_Store`) are skipped: they are packaging
+    residue, and shipping them into the task image would be noise the agent has to read
+    past.
+
+    Args:
+        out_dir: str, directory holding the downloaded archives; extracted in place.
+
+    Side effects:
+        Creates the extracted trees, removes each .zip and any wrapper directory named
+        after its archive.
+    """
+    for name in sorted(os.listdir(out_dir)):
+        if not name.endswith(".zip"):
+            continue
+        archive = os.path.join(out_dir, name)
+        print(f"Extracting {name} ...")
+        with zipfile.ZipFile(archive) as zf:
+            members = [m for m in zf.namelist()
+                       if not m.startswith("__MACOSX/")
+                       and not os.path.basename(m) == ".DS_Store"]
+            zf.extractall(out_dir, members=members)
+
+        # A single top-level directory named for the archive is a wrapper: lift its
+        # contents up. Renaming rather than copying -- same filesystem by construction,
+        # so gigabytes move in milliseconds.
+        wrapper = os.path.join(out_dir, os.path.splitext(name)[0])
+        if os.path.isdir(wrapper):
+            for entry in os.listdir(wrapper):
+                os.replace(os.path.join(wrapper, entry), os.path.join(out_dir, entry))
+            os.rmdir(wrapper)
+            print(f"  flattened {os.path.basename(wrapper)}/")
+        os.remove(archive)
+    # __MACOSX is created by extractall for directory entries even when filtered above.
+    junk = os.path.join(out_dir, "__MACOSX")
+    if os.path.isdir(junk):
+        shutil.rmtree(junk)
 
 
 def download_figshare(article_id, out_dir):
@@ -292,12 +345,45 @@ def download_zhang2025_datalimit(out_dir, eids):
 
 # ---------------- datalimit (50 GB-capped) variants ----------------
 
-# mouseland is the one task whose subset lives *inside* the published files
-# rather than in which files are published: it is a per-session cell subsample,
-# and figshare serves whole .npy files. Nothing can be filtered at download time,
-# so the full dataset is fetched once and reduced locally. Every other task,
-# zhang2025 included, selects at download time.
-DATALIMIT_NEEDS_FULL_DOWNLOAD = {"mouseland"}
+# Capped datasets that --datalimit fetches as an already-reduced copy from Hugging
+# Face, rather than filtering the original source. The FULL tasks still download
+# from their original sources; only the dataset-size-capped variants come from here.
+#
+#   mouseland  its subset lives *inside* the published files: a per-session cell
+#              subsample, and figshare serves whole .npy files, so nothing can be
+#              filtered at download time. Publishing the reduced copy spares every
+#              user a 412 GB download to keep 47.
+#   zhang2025  its subset CAN be fetched from IBL (download_zhang2025_datalimit),
+#              but not reproducibly: the ONE client resolves each dataset's current
+#              default revision, so the same query returns different files once IBL
+#              publishes corrections. The mirror is the copy the reference statistics
+#              were computed on, including the one_cache/.rest metadata that pins
+#              revisions offline. --from-ibl still rebuilds it from the source.
+#
+# Pinned to a revision, not a branch: the point of the dataset-size-capped variant is
+# that every run sees the same bytes, and a moving `main` would silently change the
+# dataset.
+#
+# This is distribution, not production. mouseland's copy is built by
+# `download/make_datalimit.py mouseland`, zhang2025's by `download.py zhang2025
+# --datalimit --from-ibl`, and uploaded with download/upload_zhang2025_hf.py for the
+# latter. Rebuild, re-upload, and update the revision below if a subset ever changes.
+DATALIMIT_HF_SOURCE = {
+    "mouseland": {
+        "repo_id": "kristinbranson/neurodata-reuse-zhong2025",
+        "revision": "82c2c31abe3e22672b40be58f749a03475b70f63",
+    },
+    "zhang2025": {
+        "repo_id": "kristinbranson/neurodata-reuse-zhang2025",
+        "revision": "b134ad2d41cc7ad3c2ac5a3f70b02287c47ce210",
+    },
+}
+
+# huggingface_hub's default transfer backend, Xet, stalls on the zhang2025 mirror:
+# every download thread blocks at zero bytes, reproduced three times at ~33 GB of 46
+# (terminal-bench-science zhang2025 fork, commit bb0bfd9). Plain HTTP finishes the same
+# download in ~5 minutes. huggingface_hub reads this at import time.
+HF_DISABLE_XET_ENV = "HF_HUB_DISABLE_XET"
 
 
 def load_datalimit_manifest(task):
@@ -320,25 +406,69 @@ def load_datalimit_manifest(task):
     return pd.read_csv(manifest, comment="#")
 
 
-def _run_one(task, out_dir, n_sessions, n_workers, datalimit=False):
+def download_datalimit_from_hf(task, out_dir):
+    """Fetch a pre-reduced dataset-size-capped dataset from Hugging Face.
+
+    For tasks whose subset cannot be expressed as a choice of files to download,
+    the reduced copy is published rather than rebuilt by every user. See
+    DATALIMIT_HF_SOURCE for why it is pinned to a revision.
+
+    Args:
+        task: benchmark task name; must be a key of DATALIMIT_HF_SOURCE.
+        out_dir: str or Path to populate. Created if absent.
+
+    Returns:
+        Path, the populated directory.
+
+    Side effects:
+        Downloads into `out_dir`. Re-running is cheap: huggingface_hub verifies
+        each file against the revision and skips what already matches.
+        Sets HF_HUB_DISABLE_XET=1 in this process's environment unless already set.
+
+    Raises:
+        RuntimeError: if huggingface_hub is not installed.
+    """
+    src = DATALIMIT_HF_SOURCE[task]
+    out_dir = Path(out_dir)
+    # Must precede the import below; see HF_DISABLE_XET_ENV.
+    os.environ.setdefault(HF_DISABLE_XET_ENV, "1")
+    try:
+        from huggingface_hub import snapshot_download
+    except ImportError:
+        raise RuntimeError(
+            f"{task} --datalimit needs huggingface_hub:  pip install huggingface_hub")
+
+    print(f"{task}: fetching dataset-size-capped dataset from {src['repo_id']} "
+          f"@ {src['revision'][:12]}")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_download(
+        repo_id=src["repo_id"],
+        revision=src["revision"],
+        repo_type="dataset",
+        local_dir=str(out_dir),
+    )
+    return out_dir
+
+
+def _run_one(task, out_dir, n_sessions, n_workers, datalimit=False, from_ibl=False):
     cfg = TASKS[task]
     kind = cfg["kind"]
 
+    # --from-ibl only has an alternative to offer for zhang2025; mouseland's subset
+    # is rebuilt with make_datalimit.py, not downloaded.
+    use_mirror = task in DATALIMIT_HF_SOURCE and not (from_ibl and task == "zhang2025")
+    if datalimit and use_mirror:
+        # Already-reduced copy: fetch it whole, no manifest to filter against.
+        return download_datalimit_from_hf(task, out_dir)
+
     entries = load_datalimit_manifest(task) if datalimit else None
-    if datalimit and task in DATALIMIT_NEEDS_FULL_DOWNLOAD:
-        # RuntimeError rather than sys.exit so that `--all --datalimit` still
-        # downloads the six tasks that CAN be filtered, and reports these two.
-        raise RuntimeError(
-            f"--datalimit cannot filter at download time -- {task}'s subset is "
-            f"inside the published files, not a choice of which files to fetch. "
-            f"Download the full dataset first, then reduce it locally:\n"
-            f"    python download/download.py {task}\n"
-            f"    python download/make_datalimit.py {task}")
 
     if kind == "zenodo":
         # hasnain2024 / lee2025 / majnik2025 are already under the cap: the
         # datalimit variant is the complete dataset.
         download_zenodo(cfg["record_id"], out_dir)
+        if cfg.get("unzip"):
+            extract_zips(out_dir)
     elif kind == "figshare":
         download_figshare(cfg["article_id"], out_dir)
     elif kind == "dandi":
@@ -377,8 +507,12 @@ def main():
     ap.add_argument("--datalimit", action="store_true",
                     help="Download the 50 GB-capped variant into data/<task>_datalimit, "
                          "using the subset frozen in download/datalimit/<task>.csv. "
-                         "mouseland cannot be filtered at download time; for it, "
-                         "download in full and run download/make_datalimit.py.")
+                         "mouseland and zhang2025 come from pinned Hugging Face copies.")
+    ap.add_argument("--from-ibl", action="store_true",
+                    help="(zhang2025 --datalimit only) rebuild the dataset-size-capped "
+                         "copy from IBL through the ONE api instead of the Hugging Face "
+                         "copy. Not reproducible: returns different files once IBL "
+                         "publishes new dataset revisions.")
     args = ap.parse_args()
 
     if args.all:
@@ -400,7 +534,7 @@ def main():
         print(f"\n========== [{i}/{len(tasks)}] {task}{suffix}  ->  {out_dir} ==========")
         try:
             _run_one(task, out_dir, args.n_sessions, args.n_workers,
-                     datalimit=args.datalimit)
+                     datalimit=args.datalimit, from_ibl=args.from_ibl)
         except Exception as e:
             print(f"!! {task} FAILED: {e}", file=sys.stderr)
             failures.append(task)

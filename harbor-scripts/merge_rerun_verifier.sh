@@ -108,6 +108,16 @@ PY
     fi
 done
 
+# A rerun that supplies reward.json makes any inherited reward.txt stale, and stale in the
+# worst way: harbor prefers reward.json, so the merged trial scores correctly while the
+# file with the obvious name still shows the old run's outcome. Tasks used to write both
+# (reward.txt early as a crash fallback, reward.json at the end with the average); the ones
+# that now write only reward.json leave nothing to overwrite the inherited copy.
+if [ -f "$NEWDIR/reward.json" ] && [ -f "$BASEDIR/reward.txt" ] && [ ! -f "$NEWDIR/reward.txt" ]; then
+    echo "Remove stale reward.txt (superseded by the rerun's reward.json)"
+    [ "$DRY_RUN" = false ] && rm -f "$BASEDIR/reward.txt"
+fi
+
 # 2. Replace judge model dirs that have actual results
 if [ -d "$NEWDIR/judge" ]; then
     for model_dir in "$NEWDIR"/judge/*/; do
@@ -137,7 +147,29 @@ fi
 echo ""
 echo "Done."
 if [ -f "$BASEDIR/metrics.json" ] && [ "$DRY_RUN" = false ]; then
-    echo "Reward: $(cat "$BASEDIR/reward.txt" 2>/dev/null || echo 'N/A')"
+    # reward.json first, matching harbor's own precedence. reward.txt carries the outcome
+    # alone and is never updated after judging, so reading it reported 0 for a trial that
+    # scored 0.43 -- and after this merge it may not exist at all.
+    # The pass/fail key is 'outcome_all'; 'outcome' is its name in the earliest reward.json
+    # files. A missing 'process' means the judges were switched off or did not finish.
+    echo "Reward: $(python3 -c "
+import json, pathlib
+j = pathlib.Path('$BASEDIR/reward.json'); t = pathlib.Path('$BASEDIR/reward.txt')
+if j.is_file():
+    d = json.loads(j.read_text())
+    outcome = d.get('outcome_all', d.get('outcome'))
+    per_category = d.get('outcome_mean_per_category')
+    parts = [f'outcome_all={outcome:.1f}']
+    if per_category is not None:
+        parts.append(f'per_category={per_category:.4f}')
+    parts.append(f\"process={d['process']:.4f}\" if 'process' in d
+                 else 'no process score: judges off or did not finish')
+    print(f\"{d['reward']:.4f} ({'; '.join(parts)})\")
+elif t.is_file():
+    print(f'{float(t.read_text()):.4f}  (reward.txt: outcome only)')
+else:
+    print('N/A')
+" 2>/dev/null || echo 'N/A')"
     echo "Judge:  $(python3 -c "
 import json
 d = json.load(open('$BASEDIR/metrics.json'))

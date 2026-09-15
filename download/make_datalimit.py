@@ -399,10 +399,22 @@ def build_mouseland(task: str, full: Path, out: Path, entries: list[str],
         print(f"      [{index}/{len(entries)}] {session}: {n_keep} of {n_cells} cells")
 
 
-# Where DATALIMIT_SUBSET.csv has to go so the container can read it. Every task
-# mounts its dataset root at /app/data except allen2p, which mounts only the
-# release subdirectory -- a file at that dataset's root would be invisible.
-SUBSET_LIST_SUBDIR = {"allen2p": "visual-behavior-ophys-1.1.0"}
+# Where DATALIMIT_SUBSET.csv goes within a built dataset. The default -- the
+# dataset root -- applies to every task, so this map is empty.
+#
+# allen2p is the one task where that needs care: its container mounts only the
+# release subdirectory `visual-behavior-ophys-1.1.0/` at /app/data, so a file at the
+# dataset root is not inside that mount. Both places that run the task handle it
+# without moving the file:
+#   * data-format's allen2p_datalimit mounts the root copy separately, as the single
+#     file /app/data/DATALIMIT_SUBSET.csv (environment/docker-compose.yaml).
+#   * terminal-bench-science's allen2p task bakes its own copy into the image, and its
+#     environment/fetch_data.py writes its completion marker at this same root. Put
+#     the list back under the release directory and that fetcher finds no marker and
+#     revalidates all 65 files on the next run.
+# Keeping the list at the root also leaves the release directory a faithful allensdk
+# release.
+SUBSET_LIST_SUBDIR: dict[str, str] = {}
 
 # Task-specific sentence appended to the list's preamble, explaining what the
 # entries are and how they map onto what the client's own api will report.

@@ -38,7 +38,7 @@ task fails the rest still run, and the failures are listed at the end.
 
 ## Data-limited
 
-Versions of the data that are capped to 50 GB. Data will be downloaded to the directory `<dataset>_limited`. 
+Dataset-size-capped versions of the data, limited to 50 GB each. Data will be downloaded to the directory `data/<dataset>_datalimit`. 
 Each directory will have a file `DATALIMIT_SUBSET.csv`
 
 ### Selecting data subsets
@@ -69,33 +69,47 @@ python download/download.py sosa2024 --datalimit         # -> data/sosa2024_data
 python download/download.py --all --datalimit
 ```
 
-Seven of the eight tasks are handled entirely by that one command, and never
-transfer the data they leave out:
+All eight tasks are handled by that one command:
 
 - `allen2p` fetches only the listed `ophys_experiment_id`s through the AllenSDK.
 - `map`, `sosa2024` fetch only the listed assets through the DANDI REST api.
-- `zhang2025` caches only the listed `eid`s through the ONE api. This works
-  because the upstream caching script populates its cache one eid at a time —
+- `hasnain2024`, `lee2025`, `majnik2025` are under the cap and download in full.
+- `mouseland` and `zhang2025` download an already-reduced copy from Hugging Face
+  (`kristinbranson/neurodata-reuse-zhong2025` and
+  `kristinbranson/neurodata-reuse-zhang2025`), pinned to a revision in
+  `DATALIMIT_HF_SOURCE` so every download gets the same bytes. This needs
+  `pip install huggingface_hub`.
+
+**Why those two come from Hugging Face.**
+
+- `mouseland`'s subset is a per-session *cell* subsample living inside the
+  published `.npy` files, and figshare serves whole files, so there is nothing to
+  filter at download time. The published copy was built from the full dataset:
+
+  ```bash
+  python download/download.py mouseland
+  python download/make_datalimit.py mouseland
+  ```
+
+- `zhang2025`'s subset *can* be fetched from IBL, but not reproducibly: the ONE
+  client resolves each dataset's current default revision, so the same request
+  returns different files once IBL publishes corrections. The published copy is the
+  one the reference statistics were computed on, including the `one_cache/.rest`
+  metadata that pins revisions. To rebuild it from IBL (what produced the copy;
+  uploaded with `download/upload_zhang2025_hf.py`):
+
+  ```bash
+  python download/download.py zhang2025 --datalimit --from-ibl
+  ```
+
+  This caches only the listed `eid`s through the ONE api. It works because the
+  upstream caching script populates its cache one eid at a time —
   `prepare_data(one, eid, ...)` calls `one.eid2pid(eid)` then
   `load_spiking_data(one, pid, ...)` (`ibl_data_utils.py:727-740`), each
-  downloading on demand — so the eids processed *are* the data fetched. The
-  upstream `--n_sessions` flag cannot express an arbitrary eid list (it just
-  slices a fixed release list), but the ONE api can.
-- `hasnain2024`, `lee2025`, `majnik2025` are under the cap and download in full.
+  downloading on demand — so the eids processed *are* the data fetched.
 
-**Only `mouseland` is different.** Its subset is a per-session *cell* subsample
-living inside the published `.npy` files, and figshare serves whole files, so
-there is nothing to filter at download time. Fetch it in full once, then reduce:
-
-```bash
-python download/download.py mouseland
-python download/make_datalimit.py mouseland
-```
-
-`download.py --datalimit mouseland` refuses with exactly that instruction rather
-than silently downloading the wrong thing. `--all --datalimit` still handles the
-other seven, then lists `mouseland` as a failure and exits non-zero — expected,
-not a broken run.
+The Hugging Face downloads turn off huggingface_hub's default "Xet" transfer
+backend, which stalls partway through the zhang2025 copy; plain HTTP completes it.
 
 `make_datalimit.py` works for any task, so if you already have the full data
 locally you can build every capped variant without re-downloading anything:

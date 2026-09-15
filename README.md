@@ -280,7 +280,8 @@ published files, which stay byte-for-byte identical to the original release.
 The cap lowers the RAM ceiling as well as the disk one. `mouseland` is the only task whose
 `task.toml` asks for more than 64 GB — it requests 240 GB, because the full dataset loads 4.1M
 neurons' worth of trial arrays (~112 GB) into memory at once. At 9.8% of cells that falls to
-~11 GB, so `mouseland_datalimit` asks for the same 64 GB as every other task.
+~11 GB; the oracle run on the dataset-size-capped data peaked at 12.4 GiB, so `mouseland_datalimit` asks for
+the same 64 GB as every other task.
 
 ### Building and running them
 
@@ -288,15 +289,19 @@ neurons' worth of trial arrays (~112 GB) into memory at once. At 9.8% of cells t
 # 1. Freeze the subset decisions into download/datalimit/<task>.csv (already committed)
 python download/select_datalimit.py
 
-# 2a. Download only the capped subset. Seven of the eight tasks never transfer the
-#     data they leave out: allen2p by ophys_experiment_id (AllenSDK), map/sosa2024 by
-#     asset (DANDI), zhang2025 by eid (ONE); the three under-cap tasks download in full.
+# 2. Download only the dataset-size-capped subset. allen2p (by ophys_experiment_id, AllenSDK) and
+#    map/sosa2024 (by asset, DANDI) never transfer the data they leave out; the three
+#    under-cap tasks download in full; mouseland and zhang2025 come from reduced copies
+#    published on Hugging Face at a pinned revision.
 python download/download.py sosa2024 --datalimit
 
-# 2b. mouseland is the exception — its subset is a per-session cell subsample inside
-#     the published .npy files, so fetch it whole once, then reduce locally:
+# 2b. Only needed to rebuild the two published copies from their original sources.
+#     mouseland's subset is a per-session cell subsample inside the published .npy
+#     files, so fetch it whole once, then reduce locally. zhang2025's can be fetched
+#     by eid through ONE, but returns different files once IBL publishes new revisions.
 python download/download.py mouseland
 python download/make_datalimit.py mouseland
+python download/download.py zhang2025 --datalimit --from-ibl
 
 # 3. Generate the harbor tasks (copies each task, repoints its data mount, documents the subset)
 python harbor-scripts/generate_datalimit_task.py --all

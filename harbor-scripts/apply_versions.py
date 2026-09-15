@@ -93,8 +93,11 @@ def render_versions_json(cfg: dict, source_name: str) -> str:
 
     out = {
         "_comment": [
-            f"GENERATED from harbor-scripts/{source_name} by apply_versions.py.",
-            "Do not edit here -- edit the source config and re-run that script.",
+            # Names the role rather than the path: this file ships to
+            # terminal-bench-science, where neither this script nor the source config
+            # exists, so a reader there cannot act on a path from this repository.
+            f"GENERATED from the harness version config ({source_name}).",
+            "Do not edit here -- edit that config and re-run the generator.",
             "Ships into the verifier container as /tests/versions.json, where the",
             "judge scripts read the model; the container cannot see the host config.",
             "Judge tools only: run arms defined in the source config are deliberately",
