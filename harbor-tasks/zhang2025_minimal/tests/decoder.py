@@ -13,6 +13,10 @@ import torch.optim as optim
 import matplotlib
 import matplotlib.pyplot as plt
 
+# Fraction of each session's trials that train_validate_decoder trains on; the rest are
+# held out for validation. Applied per session, so every session contributes to both sets.
+DEFAULT_FRAC_TRAIN = 0.8
+
 def verify_data_format(data: dict):
     """
     Verifies that data is correctly formatted for train_decoder functions.
@@ -1312,7 +1316,7 @@ def cross_validate_decoder(neural: list, input: list, output: list, metadata: st
 
 
 def train_validate_decoder(neural: list, input: list, output: list, metadata: str | None = None,
-                            frac_train: float = 0.8,
+                            frac_train: float = DEFAULT_FRAC_TRAIN,
                             eval_fn=None, state=None,
                             **kwargs):
     """
@@ -1331,7 +1335,8 @@ def train_validate_decoder(neural: list, input: list, output: list, metadata: st
                 length ntrials[session], and output[session][trial] is a numpy array of shape (doutput, T[session][trial]),
                 dtype = float32 or int. with the output variable(s) for each timepoint.
         metadata: optional dict with additional information about the experiment.
-        frac_train: fraction of trials to use for training (default: 0.8). Rest used for testing.
+        frac_train: fraction of trials to use for training (default: DEFAULT_FRAC_TRAIN).
+                Rest used for testing.
         eval_fn: evaluation function to compute performance metric. Should have the signature
                 scores = eval_fn(predictions, output)
                 Default: accuracy_all_sessions

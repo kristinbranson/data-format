@@ -63,5 +63,20 @@ WORKDIR /app
 
 COPY . .
 
+# /app/data is image content, not a mount, so it stays writable: the dataset is mounted
+# read-only at /mnt/dataset and stage_cache.sh assembles the cache here at container
+# start. ONE needs to write inside the cache directory while it reads. Same arrangement
+# as the terminal-bench-science version of this task.
+#
+# The entrypoint lives OUTSIDE /app, unlike terminal-bench-science's, because
+# harbor-scripts/rerun_verifier.sh bind-mounts a trial's snapshot over /app. An
+# entrypoint at /app/stage_cache.sh is invisible under that mount, and the container
+# dies before it starts with
+#   crun: executable file `/app/stage_cache.sh` not found
+RUN cp /app/stage_cache.sh /usr/local/bin/stage_cache.sh \
+    && chmod +x /usr/local/bin/stage_cache.sh \
+    && mkdir -p /app/data/one_cache
+ENTRYPOINT ["/usr/local/bin/stage_cache.sh"]
+
 # Create manifest of original files for snapshot diffing
 RUN find /app -type f | sort > /app/.manifest

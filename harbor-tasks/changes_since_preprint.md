@@ -83,12 +83,13 @@ Two rules keep the categories honest:
 **Before.** The agent's decoder accuracy for each output variable had to be at least 95% of
 the reference solution's accuracy from a single training run.
 
-**Now.** The reference solution's decoder is trained 20 times, each on a different random
-split into training and validation trials. The agent's accuracy for each output variable
-must be at least
+**Now.** The reference solution's decoder is retrained n times, each on a different random
+split into training and validation trials, where n is `DEFAULT_N_REPLICATES` in
+`harbor-scripts/compute_decoder_stats.py` (currently 20). The agent's accuracy for each
+output variable must be at least
 
 ```
-mean − 3.5 × standard deviation   (of those 20 reference accuracies)
+mean − 4.5 × standard deviation   (of those n reference accuracies)
 ```
 
 So the tolerance for each variable reflects how much that variable's accuracy actually
@@ -96,6 +97,53 @@ varies from split to split. In the terminal-bench-science versions of the tasks 
 the datalimit data), this threshold was 95–99% of the reference mean for most
 variables, i.e. somewhat stricter than before, and looser for a few noisier variables in
 sosa2024 and mouseland. The full-data numbers will be added here once they are computed.
+
+#### How the multiplier is chosen
+
+The multiplier sets how often an honest run is rejected, so it is chosen from that failure
+rate rather than picked by eye.
+
+The standard deviation is **estimated from n re-splits, not known** — n is
+`DEFAULT_N_REPLICATES` in `harbor-scripts/compute_decoder_stats.py`, currently 20, and each
+reference file records it as `n_replicates`. The reference distribution for a new run is
+therefore Student's t with n − 1 degrees of freedom rather than a Gaussian, widened by
+√(1 + 1/n) because the new run carries its own variability on top of the uncertainty in the
+mean:
+
+```
+multiplier = t(n − 1, α) × √(1 + 1/n)
+```
+
+A sweep grades one output variable per classifier per task, and any one of them failing
+fails the sweep — so α is the per-variable rate, and the rate that matters is that times the
+number of variables graded. The 8 tasks have 31 output variables between them (allen2p 5,
+hasnain2024 6, lee2025 1, majnik2025 1, map 4, mouseland 4, sosa2024 6, zhang2025 4), and
+the 5 `_datalimit` tasks add 23 more on their own data, for 54. The `_minimal` twins are not
+counted: they grade the same conversion against the same reference file as the full tasks.
+At n = 20:
+
+| tolerated failure rate | multiplier |
+|---|---|
+| 1% per variable | 2.60 |
+| 5% across all 54 | 3.70 |
+| 1% across all 54 | 4.43 |
+| 0.01% per variable | 4.70 |
+
+**4.5 puts the chance that any of the 54 spuriously fails at 0.8%** (1.6 × 10⁻⁴ per
+variable). The
+largest shortfall actually measured is 3.7 standard deviations, for map's
+`tongue_y_position`, so 4.5 also clears the observed worst case with margin — which matters
+because that worst case is one observation, and the reference solution has to pass every
+time rather than once.
+
+Student's t is the right family here, not something heavier-tailed. Pooling all 860
+replicate accuracies as z-scores gives skew −0.18 and excess kurtosis −0.17, and the lower
+tail sits close to a Gaussian (1% point: −2.41 observed, −2.33 predicted). A Laplace fit
+would predict −2.77 there and make the threshold too lenient. Per-variable skews as large as
+−1.3 appear, but the standard error of skew at n = 20 is 0.55, so those are sampling noise.
+
+The value depends on n and on how many outputs a sweep grades. Recompute it from the
+formula above if either changes substantially.
 
 ### 1.4 Only the two files the score depends on are required
 

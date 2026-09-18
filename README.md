@@ -376,7 +376,7 @@ data = {
 Each converted dataset is evaluated by training a neural decoder that maps the standardized `data['neural']` to `data['output']`. The decoder code and runner are bundled into every harbor task and are identical across tasks; the canonical copies live at:
 - **`template-harbor-task/environment/decoder.py`** — the decoder library. Exposes `verify_data_format`, `print_data_summary`, `train_decoder`, `predict`, `cross_validate_decoder`, `train_validate_decoder`, `accuracy_all_sessions`, `f1scores_all_sessions`, and plotting helpers. The default model (`_train_decoder_pca_logistic`) projects the per-session neural matrix to a fixed number of PCs and fits an L1-regularized logistic regression per output dimension; outputs are assumed categorical and chance is computed from the training-set class fractions.
 
-- **`template-harbor-task/environment/train_decoder.py`** — the entry point. Loads a `data.pkl` (the conversion artifact the agent produces), verifies the dict structure with `verify_data_format`, prints a summary, runs `train_validate_decoder` on a 70/30 train/test split, and reports balanced accuracy per output dimension against chance.
+- **`template-harbor-task/environment/train_decoder.py`** — the entry point. Loads a `data.pkl` (the conversion artifact the agent produces), verifies the dict structure with `verify_data_format`, prints a summary, runs `train_validate_decoder` on a random train/validation split, and reports balanced accuracy per output dimension against chance.
 
 The same decoder.py and train_decoder.py are also propagated into each harbor task at harbor-tasks/<task>/environment/ (use `harbor-scripts/sync_template.py` to keep them in sync with the template).
 

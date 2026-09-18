@@ -16,6 +16,11 @@
 #                         credential files. REQUIRED on a batch node, where $HOME
 #                         is not the workstation home holding those files.
 #   --env FILE            Env file for --apikeys (implies it; default <repo>/.env).
+#   --gpu-device ID       Give the container only this GPU, e.g. --gpu-device 1.
+#                         decoder.py trains on cuda:0, so with several cards of
+#                         different sizes the default (all of them) can land on the
+#                         smallest. Check with
+#                           nvidia-smi --query-gpu=index,name,memory.total --format=csv
 #   --no-gpu              Do not request a GPU. Use when the host's CDI spec does
 #                         not declare the device podman asks for; test_gpu_available
 #                         then fails and decoder training runs on CPU.
@@ -24,7 +29,9 @@
 #                         trial's snapshot (converted_data.pkl + stats_full.json from an
 #                         oracle run) inside the task's image, and writes
 #                         <trial>/decoder_stats_<time>/reference_stats_full.json.
-#   --n-replicates N      Splits for --decoder-stats (default 20).
+#   --n-replicates N      Splits for --decoder-stats. Unset, compute_decoder_stats.py
+#                         uses its own DEFAULT_N_REPLICATES, which is the n the
+#                         verifier's ACCURACY_NSTD is derived from.
 #   --task NAME           Task name, when it cannot be inferred from the trial path.
 #                         Inferred from a harbor trial directory named <task>__<id>,
 #                         or from jobs/<task>/<agent>/<timestamp>/. Also --task=NAME.
@@ -34,8 +41,8 @@
 #                         root-squashed, so every write the verifier makes
 #                         (/logs/verifier, the /app/data mountpoint, the final
 #                         chown) is denied. Rootless podman maps container-root
-#                         to your own UID, which is how the cluster jobs write
-#                         there successfully.
+#                         to the invoking user's UID, which is how the cluster jobs
+#                         write there successfully.
 #
 # The task name is inferred from the trial path: jobs/<task>/<agent>/<timestamp>/
 #
@@ -59,12 +66,20 @@ USE_APIKEYS=false
 ENV_FILE=""
 VERIFIER_DIR_OVERRIDE=""
 DECODER_STATS=false
-N_REPLICATES=20
+# Empty unless --n-replicates is given, so the default lives in exactly one place:
+# compute_decoder_stats.py's DEFAULT_N_REPLICATES.
+N_REPLICATES=""
 TASK_OVERRIDE=""
 CONTAINER_CMD="docker"
 # docker and podman spell GPU passthrough differently: docker uses its own
 # --gpus flag, podman uses CDI device names from /etc/cdi/nvidia.yaml.
 GPU_FLAG="--gpus all"
+# --gpu-device: hand the container ONE card instead of all of them. decoder.py takes
+# torch.device('cuda') without an index, i.e. cuda:0, so on a host holding cards of
+# different sizes "all" trains on whichever the driver enumerates first, which may be
+# far too small. List them with
+#   nvidia-smi --query-gpu=index,name,memory.total --format=csv
+GPU_DEVICE=""
 while [[ "${1:-}" == --* ]]; do
     case "$1" in
         --claude-judge-only) RUN_CLAUDE_JUDGE=true; JUDGE_ONLY=true; shift ;;
@@ -78,6 +93,8 @@ while [[ "${1:-}" == --* ]]; do
         # One-word forms, for wrappers such as submit_rerun_verifier.sh that forward
         # options as single words.
         --task=*)            TASK_OVERRIDE="${1#*=}"; shift ;;
+        --gpu-device)        GPU_DEVICE="$2"; shift 2 ;;
+        --gpu-device=*)      GPU_DEVICE="${1#*=}"; shift ;;
         --podman)            CONTAINER_CMD="podman"; GPU_FLAG="--device nvidia.com/gpu=all"; shift ;;
         --no-gpu)            NO_GPU=true; shift ;;
         --apikeys)           USE_APIKEYS=true; shift ;;
@@ -85,6 +102,16 @@ while [[ "${1:-}" == --* ]]; do
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
+
+# Resolved after the option loop so --gpu-device and --podman can be given in any
+# order: the spelling of the device depends on which runtime was chosen.
+if [ -n "$GPU_DEVICE" ]; then
+    if [ "$CONTAINER_CMD" = "podman" ]; then
+        GPU_FLAG="--device nvidia.com/gpu=$GPU_DEVICE"
+    else
+        GPU_FLAG="--gpus device=$GPU_DEVICE"
+    fi
+fi
 
 # A judge-only rerun never touches the GPU: the decoder training that needs one
 # lives in test_outputs.py, which this mode skips. The judges only read files and
@@ -101,7 +128,7 @@ fi
 # dies with "unresolvable CDI devices nvidia.com/gpu=all" before the container
 # starts, even though nvidia-smi lists the cards. test_gpu_available will fail
 # without one (it asserts torch.cuda.is_available()), and the decoder training
-# falls back to CPU, so use this when the judge scores are what you are after.
+# falls back to CPU, so this suits a run whose purpose is the judge scores.
 if [ "${NO_GPU:-false}" = true ]; then
     GPU_FLAG=""
 fi
@@ -193,8 +220,23 @@ COMPOSE="$TASK_DIR/environment/docker-compose.yaml"
 # NOTE: duplicated verbatim in run_unsupervised_judges.sh, which parses the same
 # line the same way. Change both together.
 DATA_ROOT="${DATA_ROOT:-$REPO_DIR/data}"
-DATA_DIR=$(grep ':/app/data' "$COMPOSE" | head -1 \
-    | sed 's|^[[:space:]]*-[[:space:]]*||; s|:/app/data.*||; s|^"||; s|"$||')
+# Which container path this task mounts its dataset at. Most mount it straight at
+# /app/data; zhang2025 mounts it READ-ONLY at /mnt/dataset and its image entrypoint
+# assembles a writable ONE cache under /app/data from there, so the dataset itself is
+# never written. The mount has to be reproduced at the same path here, because this
+# script bypasses compose and builds its own -v.
+#
+# `|| true` because grep exits 1 when it matches nothing and this script runs under
+# `set -o pipefail`: without it a task whose compose matches neither path dies here
+# silently, and the explicit check below never runs.
+DATA_TARGET=$(grep -oE ':(/app/data|/mnt/dataset)\b' "$COMPOSE" 2>/dev/null \
+    | head -1 | tr -d ':' || true)
+if [ -z "$DATA_TARGET" ]; then
+    echo "Error: no /app/data or /mnt/dataset volume found in $COMPOSE"
+    exit 1
+fi
+DATA_DIR=$(grep ":$DATA_TARGET" "$COMPOSE" | head -1 \
+    | sed "s|^[[:space:]]*-[[:space:]]*||; s|:$DATA_TARGET.*||; s|^\"||; s|\"$||")
 # Expand a leading ${DATA_ROOT...} by replacing everything up to its closing brace.
 case "$DATA_DIR" in
     '${DATA_ROOT'*) DATA_DIR="$DATA_ROOT${DATA_DIR#*\}}" ;;
@@ -222,7 +264,19 @@ fi
 # Build Docker image if it doesn't exist
 if ! "$CONTAINER_CMD" image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "Building Docker image $IMAGE_NAME..."
-    "$CONTAINER_CMD" build -t "$IMAGE_NAME" "$TASK_DIR/environment"
+    # Checked explicitly: the build is the last command of this branch, so a non-zero
+    # exit would kill the script through `set -e` with nothing printed after the build
+    # log, leaving a job that looks complete and produced nothing.
+    if ! "$CONTAINER_CMD" build -t "$IMAGE_NAME" "$TASK_DIR/environment"; then
+        echo "Error: image build failed for $IMAGE_NAME (exit $?)" >&2
+        exit 1
+    fi
+    # Tagging can print "Successfully tagged" and still leave nothing usable behind,
+    # so confirm the image is really there before anything tries to run it.
+    if ! "$CONTAINER_CMD" image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+        echo "Error: $IMAGE_NAME is absent after a build that reported success" >&2
+        exit 1
+    fi
 else
     echo "Using existing Docker image $IMAGE_NAME"
 fi
@@ -239,7 +293,7 @@ fi
 # export itself succeeds, so the token became the empty string and the judges ran
 # UNAUTHENTICATED -- producing empty judge/ directories and
 # "[Errno 2] ... llm_judge_eval.json" in metrics.json, next to a reward that
-# looked fine. Both cluster reruns on 2026-07-29 failed that way.
+# looks fine.
 if [ "$DECODER_STATS" = true ]; then
     echo "Judge auth: not needed for --decoder-stats"
 elif [ "$USE_APIKEYS" = true ]; then
@@ -253,7 +307,7 @@ elif [ "$USE_APIKEYS" = true ]; then
     export ANTHROPIC_API_KEY OPENAI_API_KEY
     echo "Judge auth: API keys from $ENV_FILE"
 else
-    # Checked, not assumed: an unreadable credentials file used to yield an empty
+    # Checked, not assumed: an unreadable credentials file otherwise yields an empty
     # token and an unauthenticated judge run rather than an error.
     CRED="$HOME/.claude/.credentials.json"
     if [ -f "$CRED" ]; then
@@ -299,7 +353,7 @@ if [ "$DECODER_STATS" = true ]; then
     echo "Trial:    $TRIAL_DIR"
     echo "Task:     $TASK_NAME"
     echo "Output:   $STATS_OUT"
-    echo "Mode:     decoder statistics, $N_REPLICATES replicates"
+    echo "Mode:     decoder statistics, ${N_REPLICATES:-default} replicates"
     echo ""
 
     "$CONTAINER_CMD" run --rm \
@@ -314,7 +368,8 @@ if [ "$DECODER_STATS" = true ]; then
         bash -c "python3 /opt/compute_decoder_stats.py --decoder-dir /tests \
                    --stats-json /app/stats_full.json \
                    --out /logs/verifier/reference_stats_full.json \
-                   --n-replicates $N_REPLICATES $CPU_FLAG /app/converted_data.pkl \
+                   ${N_REPLICATES:+--n-replicates $N_REPLICATES} $CPU_FLAG \
+                   /app/converted_data.pkl \
                    2>&1 | tee /logs/verifier/decoder_stats_log.txt; \
                  chown -R \$(stat -c '%u:%g' /logs/verifier) /logs/verifier 2>/dev/null || true"
 
@@ -472,7 +527,7 @@ echo "=== Judge rerun complete ==="
         -e OPENAI_API_KEY \
         -v "$SNAPSHOT_DIR":/app \
         $NEARLINE_MOUNT \
-        -v "$DATA_DIR":/app/data:ro \
+        -v "$DATA_DIR":"$DATA_TARGET":ro \
         -v "$TESTS_TMPDIR":/tests:ro \
         -v "$VERIFIER_OUT":/logs/verifier \
         -v "$TRIAL_DIR/agent":/logs/agent \
@@ -513,7 +568,7 @@ else
         -e OPENAI_API_KEY \
         -v "$SNAPSHOT_DIR":/app \
         $NEARLINE_MOUNT \
-        -v "$DATA_DIR":/app/data:ro \
+        -v "$DATA_DIR":"$DATA_TARGET":ro \
         -v "$TESTS_TMPDIR":/tests:ro \
         -v "$VERIFIER_OUT":/logs/verifier \
         -v "$TRIAL_DIR/agent":/logs/agent \

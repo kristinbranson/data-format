@@ -18,9 +18,16 @@
 #   ./submit_rerun_verifier.sh [OPTIONS] <trial_dir> [<trial_dir> ...]
 #
 # Options:
-#   --queue NAME     LSF GPU queue (default: gpu_l4_large). Slots come from the
+#   --queue NAME     LSF GPU queue (default: gpu_l4_large). Slots default to the
 #                    queue's slots-per-GPU ratio; asking for more than the ratio
 #                    leaves the job PEND forever.
+#   --slots N        Override the slot count. Fewer than the ratio is allowed, and is
+#                    the right choice for --decoder-stats: that work is one GPU running
+#                    20 trainings in a loop, so a whole node's slots idle for hours.
+#                    Taking a share also lets several tasks run side by side rather
+#                    than each waiting for an entire free node. The job's podman image
+#                    store is per job (PODMAN_PRIVATE_STORAGE below), which is what
+#                    makes sharing a node with other jobs safe.
 #   --wall HH:MM     Wall clock (default: 8:00). A 348 GB load plus two LLM judges
 #                    is well under that, but a kill loses the run entirely.
 #   --dry-run, -n    Print the bsub commands, submit nothing.
@@ -56,6 +63,7 @@ WALL="8:00"
 DRY_RUN=false
 CONDA_ENV="eval-data-format-podman"
 LOG_DIR="/groups/branson/home/bransonk/cluster_logs/harbor"
+SLOTS_OVERRIDE=""
 PASSTHROUGH=()
 
 # Options and trial dirs may be interleaved, so scan everything rather than only
@@ -68,6 +76,7 @@ TRIALS=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --queue)      QUEUE="$2"; shift 2 ;;
+        --slots)      SLOTS_OVERRIDE="$2"; shift 2 ;;
         --wall)       WALL="$2"; shift 2 ;;
         --dry-run|-n) DRY_RUN=true; shift ;;
         -*)           PASSTHROUGH+=("$1"); shift ;;
@@ -81,6 +90,11 @@ SLOTS="${QUEUE_SLOTS[$QUEUE]:-}"
     echo "ERROR: unknown queue '$QUEUE'. Known: ${!QUEUE_SLOTS[*]}" >&2
     exit 1
 }
+# Fewer slots than the queue's ratio is allowed and is usually right here: the work is
+# compute_decoder_stats.py training the decoder 20 times in a plain loop on ONE GPU, so
+# a whole node's slots would sit idle for hours. Taking a share also lets several of
+# these run side by side instead of each waiting for an entire free node.
+SLOTS="${SLOTS_OVERRIDE:-$SLOTS}"
 
 mkdir -p "$LOG_DIR"
 echo "queue $QUEUE ($SLOTS slots, 1 GPU), wall $WALL"
@@ -102,15 +116,18 @@ for trial in "${TRIALS[@]}"; do
     # because it calls podman. The trap podman_env.sh installs reaps the catatonit
     # pause process -- without it LSF keeps the job RUN until the wall clock even
     # after the work is done, holding a whole node.
+    # PODMAN_PRIVATE_STORAGE, because --slots lets several of these land on one node:
+    # a shared image store is only safe for one job at a time, and podman_env.sh's
+    # repair path refuses to reset a shared one rather than break a sibling's run.
     # --apikeys, always: the OAuth route reads $HOME/.claude/.credentials.json, and
     # $HOME on a compute node is /groups/branson/home/<user>, not the workstation
-    # home where that file lives. It used to fail silently -- empty token, judges
-    # run unauthenticated, empty judge/ dirs and "[Errno 2] ... llm_judge_eval.json"
-    # sitting beside a reward that looked complete. --env is absolute so the node
-    # reads the same file regardless of cwd.
+    # home where that file lives. Without it the failure is silent -- empty token,
+    # judges run unauthenticated, empty judge/ dirs and "[Errno 2] ...
+    # llm_judge_eval.json" beside a reward that looks complete. --env is absolute so
+    # the node reads the same file regardless of cwd.
     inner="source \$HOME/miniforge3/etc/profile.d/conda.sh \
 && conda activate ${CONDA_ENV} \
-&& export USE_PODMAN=true \
+&& export USE_PODMAN=true PODMAN_PRIVATE_STORAGE=true \
 && source ${SCRIPT_DIR}/podman_env.sh \
 && bash ${SCRIPT_DIR}/rerun_verifier.sh --podman --env ${REPO_DIR}/.env ${PASSTHROUGH[*]+${PASSTHROUGH[*]} }${trial_abs}"
 

@@ -918,8 +918,29 @@ STATLIMITS = {
     'output_fraction_error': .1, # max error between output fractions
 }
 # Submitted accuracy must be at least mean - ACCURACY_NSTD*std of the reference's
-# validation accuracy across independent re-splits
-ACCURACY_NSTD = 3.5
+# validation accuracy across independent re-splits.
+#
+# The multiplier is set by how often an honest run may be rejected. std is ESTIMATED from
+# n re-splits rather than known -- n is compute_decoder_stats.py's DEFAULT_N_REPLICATES,
+# and every reference file records it as `n_replicates`. The reference distribution for a
+# new run is therefore Student's t with n - 1 degrees of freedom, widened by
+# sqrt(1 + 1/n) because that run carries its own variability on top of the uncertainty in
+# the mean:
+#
+#     multiplier = t(n - 1, alpha) * sqrt(1 + 1/n)
+#
+# A sweep grades one output variable per classifier per task, and any one failing fails
+# the sweep, so the rate that matters is (number of variables) * alpha. The 8 tasks have
+# 31 output variables between them and the 5 _datalimit tasks add 23 on their own data,
+# for 54; the _minimal twins grade the same conversion against the same reference file and
+# are not counted. At n = 20 and 54 variables the multiplier is 2.60 for 1% per variable,
+# 3.70 for 5% across the sweep, 4.43 for 1%, and 4.70 for 0.01% per variable. 4.5 gives
+# 1.6e-4 per variable, so 0.8% across the sweep.
+#
+# Recompute from the formula if DEFAULT_N_REPLICATES or the number of graded outputs
+# changes substantially. changes_since_preprint.md section 1.3 records why t is the right family
+# (the replicate distribution is Gaussian: pooled skew -0.18, excess kurtosis -0.17).
+ACCURACY_NSTD = 4.5
 
 
 def match_outputs(submitted_data_stats, reference_data_stats):

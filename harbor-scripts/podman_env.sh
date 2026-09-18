@@ -23,9 +23,20 @@ if [ "$USE_PODMAN" = true ]; then
   # goes stale when the node reboots ("current system boot ID differs from cached
   # boot ID"); graphroot is shared per node so a second job on the same host
   # reuses cached layers instead of repeating the ~7 min image build.
+  #
+  # PODMAN_PRIVATE_STORAGE=true gives the job its own graphroot as well. Set it when
+  # SEVERAL JOBS MAY SHARE A NODE. The shared store is only safe for one job at a
+  # time. Whole-node sweeps (submit_harbor_cluster.py, run_harbor.sh) cannot hit this 
+  # and should leave it unset, so they keep the warm store. The cost when set is one 
+  # image build per job instead of one per node, which is free when the jobs run in parallel 
+  # anyway.
   if [ -n "${LSB_JOBID:-}" ]; then
     PODMAN_JOB_DIR="/scratch/$USER/podman-$LSB_JOBID"
-    PODMAN_GRAPHROOT="/scratch/$USER/podman-storage"
+    if [ "${PODMAN_PRIVATE_STORAGE:-false}" = true ]; then
+      PODMAN_GRAPHROOT="$PODMAN_JOB_DIR/storage"
+    else
+      PODMAN_GRAPHROOT="/scratch/$USER/podman-storage"
+    fi
 
     # ---- NEW (1): do not let a failed mkdir become a podman error 13 s later ----
     if ! mkdir -p "$PODMAN_JOB_DIR/run" "$PODMAN_JOB_DIR/tmp" "$PODMAN_GRAPHROOT"; then
@@ -63,6 +74,20 @@ EOF
     # is catatonit, so a recycled pid can never be hit.
     cleanup_podman_job() {
       local pidfile pid
+      # Remove this job's containers FIRST, while storage.conf still exists. The rm -rf
+      # at the end of this function destroys the configuration podman needs to address
+      # them, so a container that outlives harbor's own teardown becomes unreachable:
+      #   Failed to obtain podman configuration: stat .../storage.conf: no such file
+      # while its conmon/sh/sleep keep running and LSF holds the job in RUN until the
+      # wall clock. 
+      #
+      # Scoped by this job's runroot -- container state lives there, and the runroot is
+      # per job -- so a sibling job on the same node is not touched.
+      #
+      # --time 10 because harbor runs the main service as `sleep infinity`, which
+      # ignores SIGTERM: podman waits the full timeout before sending SIGKILL.
+      podman rm -f --all --time 10 >/dev/null 2>&1 || true
+
       for pidfile in "$PODMAN_JOB_DIR/tmp/pause.pid" \
                      "$PODMAN_JOB_DIR/run/libpod/tmp/pause.pid"; do
         [ -f "$pidfile" ] || continue
@@ -72,9 +97,23 @@ EOF
           kill "$pid" 2>/dev/null || true
         fi
       done
-      rm -rf "$PODMAN_JOB_DIR"
+      # Plain rm, and nothing that runs podman, because this is AFTER the pause process
+      # was killed above. Any podman command here starts a replacement pause process to
+      # re-enter the user namespace, and that one has no pidfile left to find it by, so
+      # it survives and holds the job in RUN until the wall clock.
+      #
+      # A private graphroot's image layers under overlay/*/diff are owned by
+      # subuid-mapped UIDs, so this leaves some of them behind. That costs nothing:
+      # /scratch is node-local and cleared when the allocation ends.
+      rm -rf "$PODMAN_JOB_DIR" 2>/dev/null || true
     }
     trap cleanup_podman_job EXIT
+
+    # `podman system migrate` is podman's own fix for the stale boot-ID state that the 
+    # per-job runroot above also avoids, and it costs nothing when there is nothing to 
+    # migrate. The health check below only catches a store that is already broken at 
+    # startup; today's corruption happened mid-build, after that check had passed.
+    podman system migrate 2>/dev/null || true
 
     # ---- NEW (2): prove podman works, and repair it, before harbor starts ----
     # Once harbor is running, a broken podman becomes a per-trial exception and the
@@ -83,11 +122,12 @@ EOF
     # the repair a chance first.
     #
     # Escalate in the order that costs least:
-    #   a. podman system migrate      -- rebuilds the userns state; podman's own advice
-    #   b. kill leftover catatonit    -- a pause process from a job that died without
-    #                                    running its cleanup trap holds the old userns
-    #   c. reset the shared graphroot -- the only other state carried between jobs;
-    #                                    costs a ~7 min image rebuild
+    #   a. podman system migrate    -- rebuilds the userns state; podman's own advice
+    #   b. reset the graphroot      -- the only other state carried between jobs; costs
+    #                                  a ~7 min image rebuild, and ONLY when this job
+    #                                  owns the store (see the check below)
+    #   c. refuse the job           -- rather than guess at state that may belong to a
+    #                                  sibling job on the same host
     # Anything printed here is the diagnosis for the next occurrence: today's logs
     # contain only podman's misleading message, which is why three hosts' worth of
     # failures took an hour to attribute.
@@ -96,17 +136,30 @@ EOF
     if ! podman_healthy; then
       echo "WARNING: podman unhealthy on $(hostname) before any work -- attempting repair"
       podman info 2>&1 | tail -5
-      pgrep -u "$USER" -a catatonit 2>/dev/null | sed 's/^/  stale: /'
+      # pause processes on this host, for the diagnosis. Any of them may belong to
+      # a sibling job that is running normally, so this only looks.
+      pgrep -u "$USER" -a catatonit 2>/dev/null | sed 's/^/  pause process: /'
 
       podman system migrate >/dev/null 2>&1 || true
       if ! podman_healthy; then
-        pkill -u "$USER" -x catatonit 2>/dev/null || true
-        podman system migrate >/dev/null 2>&1 || true
-      fi
-      if ! podman_healthy; then
-        # The graphroot is the only state carried between jobs on a node, and on
-        # 2026-07-28 wiping it was the ONLY step that ever repaired a poisoned host
-        # -- migrate and killing catatonit both failed first. Confirmed on h06u10.
+        # Reset the store ONLY when this job owns it. A shared graphroot can be in use
+        # by another job on the same node, and wiping it pulls the image store out from
+        # under that job's running container: podman then has no record of the container,
+        # so `compose down` removes nothing and still exits 0, while the container's
+        # processes survive and hold the node until the wall clock.
+        #
+        # PODMAN_PRIVATE_STORAGE=true puts the graphroot inside PODMAN_JOB_DIR, after
+        # which this repair can only destroy the job's own store. Set it whenever
+        # several jobs may share a node.
+        if [ "${PODMAN_GRAPHROOT#$PODMAN_JOB_DIR}" = "$PODMAN_GRAPHROOT" ]; then
+          echo "ERROR: podman is unhealthy on $(hostname) and the image store"
+          echo "       $PODMAN_GRAPHROOT is shared with any sibling job on this node."
+          echo "       Refusing to reset it. Rerun with PODMAN_PRIVATE_STORAGE=true,"
+          echo "       or clear it by hand when no other job is running on this host."
+          exit 1
+        fi
+        # The graphroot is the only state carried between jobs on a node, so wiping it
+        # is the last repair available when `podman system migrate` does not help.
         #
         # Remove it from inside the user namespace. Image layers under overlay/*/diff
         # are owned by subuid-mapped UIDs, so a plain `rm -rf` as the invoking user

@@ -3,11 +3,10 @@
 
 The tasks' own tests already assert this (test_data_dir_accessible in
 tests/test_outputs.py), but they run in the verifier -- i.e. after the agent has
-already spent its whole timeout. The 2026-07-27 cluster sweep is the cautionary
-case: 47 trials ran to completion against an empty /app/data, because compose
-resolved the then-relative mount inside the harbor checkout and the container
-runtime silently CREATED the missing source. This is the same check, moved to
-the host and to before the run, where it costs seconds instead of a sweep.
+already spent its whole timeout. A missing bind source is CREATED by the container
+runtime rather than refused, so a whole sweep can otherwise run to completion against
+an empty /app/data. This is the same check, moved to the host and to before the run,
+where it costs seconds instead of a sweep.
 
 Reads the mount out of each task's docker-compose.yaml rather than hardcoding a
 task -> dataset mapping, so a new task is covered the moment its compose file is.
@@ -32,8 +31,16 @@ TASKS_DIR = REPO_ROOT / "harbor-tasks"
 #   - "${DATA_ROOT:?...}/sosa2024:/app/data:ro"
 # Group `source` is the host side, `target` the container side. Both the quotes
 # and the trailing :ro / :rw mode are optional in the compose format.
+#
+# Two container paths count as the dataset. Most tasks mount it straight at /app/data.
+# zhang2025 mounts it READ-ONLY at /mnt/dataset and its entrypoint assembles a writable
+# ONE cache under /app/data from it, so matching only /app/data would find no mounts for
+# that task and report it as fine -- the exact silent pass this script exists to prevent.
+DATA_TARGETS = ("/app/data", "/mnt/dataset")
+
 VOLUME_RE = re.compile(
-    r'^\s*-\s*"?(?P<source>[^":]*?(?:\$\{[^}]*\})?[^":]*?):(?P<target>/app/data[^":]*?)'
+    r'^\s*-\s*"?(?P<source>[^":]*?(?:\$\{[^}]*\})?[^":]*?):'
+    r"(?P<target>(?:" + "|".join(DATA_TARGETS) + r")[^\":]*?)"
     r'(?::(?P<mode>ro|rw))?"?\s*$'
 )
 
@@ -153,9 +160,19 @@ def check(task: str, env: dict[str, str]) -> list[str]:
         if not path.exists():
             problems.append(f"{task}: {path} does not exist")
             print(f"  FAIL  {task:<20} missing: {path}")
+        elif path.is_file():
+            # A single-file bind mount, not a dataset directory. allen2p_datalimit
+            # mounts DATALIMIT_SUBSET.csv this way because the file sits one level
+            # above the dataset directory it selects from. An empty file would still
+            # be wrong, so the size is what is checked here.
+            if path.stat().st_size == 0:
+                problems.append(f"{task}: {path} is empty")
+                print(f"  FAIL  {task:<20} EMPTY FILE: {path}")
+            else:
+                print(f"  ok    {task:<20} {path} ({path.stat().st_size} bytes)")
         elif not path.is_dir():
-            problems.append(f"{task}: {path} is not a directory")
-            print(f"  FAIL  {task:<20} not a directory: {path}")
+            problems.append(f"{task}: {path} is neither a file nor a directory")
+            print(f"  FAIL  {task:<20} not a file or directory: {path}")
         else:
             # An actual file, not just a directory entry: a nested mount like
             # allen2p's leaves an intermediate directory behind, so counting

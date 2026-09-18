@@ -5,7 +5,7 @@ oracle's stats_full.json.
 
 Why this exists
 ---------------
-train_decoder.py trains on ONE random 80/20 split, so the accuracy it records carries a
+train_decoder.py trains on ONE random train/validation split, so the accuracy it records carries a
 full draw of split noise. Grading a submission as a fixed fraction of that single number
 compares one noisy draw against another, and the noise is not small: measured across the
 eight neurodata-reuse tasks, a legitimate re-split moves balanced accuracy by 0.3% to 5.8%
@@ -33,7 +33,8 @@ Protocol
      which runs, in the container,
 
      python3 compute_decoder_stats.py --decoder-dir /tests --stats-json /app/stats_full.json \\
-         --out <trial>/decoder_stats_<time>/reference_stats_full.json [--n-replicates 20] \\
+         --out <trial>/decoder_stats_<time>/reference_stats_full.json \\
+             [--n-replicates N] \\
          /app/converted_data.pkl
 
   3. Copy the output to tests/reference_stats_full.json in <task> and <task>_minimal.
@@ -41,8 +42,9 @@ Protocol
 The input stats JSON is read, never modified; every key in it is carried through.
 
 It runs during no trial: not the agent, not the verifier, not the oracle. It is run by hand
-when a task's reference statistics are built, and 20 replicates of a large task take hours
-serially, so it is meant to be parallelised across tasks rather than run at trial time. It
+when a task's reference statistics are built, and DEFAULT_N_REPLICATES replicates of a
+large task take hours serially, so it is meant to be parallelised across tasks rather than
+run at trial time. It
 imports the task's own decoder.py via --decoder-dir, so the replicates come from exactly the
 code the verifier grades with.
 """
@@ -65,6 +67,13 @@ import torch
 REPLICATE_NUMPY_SEED_BASE = 700_000
 REPLICATE_TORCH_SEED_BASE = 800_000
 
+# How many independent re-splits a reference solution is trained on. This is the `n`
+# behind the verifier's accuracy tolerance: tests/test_outputs.py compares a submission
+# against mean - ACCURACY_NSTD * std of these, and ACCURACY_NSTD is derived from n as
+# t(n - 1, alpha) * sqrt(1 + 1/n). Changing it invalidates that multiplier, so recompute
+# ACCURACY_NSTD alongside it.
+DEFAULT_N_REPLICATES = 20
+
 # Must match train_decoder.py, or the replicates would not be drawn from the same process
 # as the single-split accuracy already in stats_full.json.
 TRAIN_PARAMS = {
@@ -77,7 +86,10 @@ TRAIN_PARAMS = {
 
 def replicate_accuracies(decoder, data, n_replicates, train_params):
     """
-    Train the decoder on n_replicates independent random 80/20 splits.
+    Train the decoder on n_replicates independent random train/validation splits.
+
+    The split fraction is decoder.py's DEFAULT_FRAC_TRAIN; this function does not override
+    it, so the replicates split the same way train_decoder.py does.
 
     Each replicate calls train_validate_decoder with a fresh random state and otherwise
     identical arguments, so the replicates are independent, identically distributed draws
@@ -133,8 +145,9 @@ def main():
     parser.add_argument('--out', type=str, required=True,
                         help='Where to write the reference stats: every key from '
                              '--stats-json, plus the replicate mean and std.')
-    parser.add_argument('--n-replicates', type=int, default=20,
-                        help='Number of independent 80/20 splits (default 20). Min 2.')
+    parser.add_argument('--n-replicates', type=int, default=DEFAULT_N_REPLICATES,
+                        help=f'Number of independent train/validation splits '
+                             f'(default {DEFAULT_N_REPLICATES}). Min 2.')
     parser.add_argument('--cpu', action='store_true', help='Force torch to use CPU only.')
     args = parser.parse_args()
 
