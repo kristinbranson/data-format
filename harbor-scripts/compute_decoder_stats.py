@@ -84,7 +84,60 @@ TRAIN_PARAMS = {
 }
 
 
-def replicate_accuracies(decoder, data, n_replicates, train_params):
+def load_checkpoint(path, expected):
+    """Replicate accuracies already computed for this exact run.
+
+    Inputs:
+        path: checkpoint file written by save_checkpoint; missing is not an error.
+        expected: dict of run properties that must match -- the data file, the
+            replicate count and the output names. Note that the decoder code is NOT
+            among them: whether a change to it matters is a judgement, so a run that
+            should not reuse earlier replicates is restarted by deleting this file.
+
+    Returns:
+        List of per-replicate accuracy lists, in replicate order, or [] when there is
+        no checkpoint or it describes a different run. Prints what it found, since a
+        silently ignored checkpoint looks the same as a slow start.
+    """
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            saved = json.load(f)
+    except (OSError, ValueError) as error:
+        print(f"ignoring unreadable checkpoint {path}: {error!r}")
+        return []
+
+    differing = [key for key, value in expected.items() if saved.get(key) != value]
+    if differing:
+        print(f"ignoring checkpoint {path}: {', '.join(differing)} differ(s) from this run")
+        return []
+
+    accuracies = saved.get('accuracies', [])
+    print(f"resuming from {path}: {len(accuracies)} of {expected['n_replicates']} "
+          f"replicates already done")
+    return accuracies
+
+
+def save_checkpoint(path, expected, accuracies):
+    """Record the replicates finished so far, so a killed run can resume.
+
+    Inputs:
+        path: file to write.
+        expected: the run properties load_checkpoint will match against.
+        accuracies: list of per-replicate accuracy lists, in replicate order.
+
+    Side effects: writes `path` by renaming a temporary file over it, so a run killed
+    mid-write leaves the previous checkpoint intact rather than a truncated one.
+    """
+    temporary = f"{path}.tmp"
+    with open(temporary, 'w') as f:
+        json.dump({**expected, 'accuracies': accuracies}, f)
+    os.replace(temporary, path)
+
+
+def replicate_accuracies(decoder, data, n_replicates, train_params,
+                         checkpoint_path=None, expected=None):
     """
     Train the decoder on n_replicates independent random train/validation splits.
 
@@ -103,16 +156,25 @@ def replicate_accuracies(decoder, data, n_replicates, train_params):
             deviation to be defined.
         train_params: dict of keyword arguments forwarded to train_validate_decoder,
             including 'device'.
+        checkpoint_path: file to resume from and rewrite after each replicate; None
+            runs without checkpointing, which repeats every replicate after a restart.
+        expected: run properties recorded in the checkpoint and required to match on
+            resume; required when checkpoint_path is given.
 
     Returns:
         accuracy: numpy array of shape (n_replicates, doutput), dtype float64, the
             validation balanced accuracy of each replicate for each output variable.
 
-    Side effects: prints per-replicate progress. Consumes the global numpy and torch RNGs,
-    which train_validate_decoder reseeds from the state it is given.
+    Side effects: prints per-replicate progress and rewrites checkpoint_path after each
+    replicate. Consumes the global numpy and torch RNGs, which train_validate_decoder
+    reseeds from the state it is given.
     """
-    accuracies = []  # list of (doutput,) arrays
-    for replicate in range(n_replicates):
+    # Replicate i always draws its split from seeds REPLICATE_*_SEED_BASE + i, so a
+    # replicate recomputed after a restart is the one that was interrupted, and resuming
+    # gives the same result as never having stopped.
+    accuracies = load_checkpoint(checkpoint_path, expected) if checkpoint_path else []
+
+    for replicate in range(len(accuracies), n_replicates):
         state = {'numpy': REPLICATE_NUMPY_SEED_BASE + replicate,
                  'torch': REPLICATE_TORCH_SEED_BASE + replicate}
         start = time.time()
@@ -126,10 +188,12 @@ def replicate_accuracies(decoder, data, n_replicates, train_params):
             decoder.get_trial_indices(predictions, test_indices),
             decoder.get_trial_indices(output, test_indices),
             balanced=True)
-        accuracies.append(accuracy)
+        accuracies.append([float(value) for value in accuracy])
         print(f"replicate {replicate + 1} done in {time.time() - start:.1f}s: "
               + "  ".join(f"{data['output_names'][i]}={accuracy[i]:.4f}"
                           for i in range(len(accuracy))), flush=True)
+        if checkpoint_path:
+            save_checkpoint(checkpoint_path, expected, accuracies)
     return np.array(accuracies)
 
 
@@ -155,6 +219,12 @@ def main():
         parser.error('--n-replicates must be at least 2; a standard deviation is '
                      'undefined for a single split.')
 
+    # Python block-buffers stdout at 8 KB when it is a pipe, which is what it is when the
+    # caller tees to a log. A replicate prints well under that, so progress would reach the
+    # log hours late and in bursts. Line buffering applies to everything sharing this
+    # stream, decoder.py's per-session and per-epoch lines included.
+    sys.stdout.reconfigure(line_buffering=True)
+
     sys.path.insert(0, args.decoder_dir)
     decoder = importlib.import_module('decoder')
     # The pass threshold is the verifier's, read from the task's own test_outputs.py so the
@@ -176,10 +246,20 @@ def main():
     if args.cpu:
         train_params['device'] = torch.device('cpu')
 
-    # (n_replicates, doutput)
-    accuracy = replicate_accuracies(decoder, data, args.n_replicates, train_params)
-
     output_names = data['output_names']
+    # Written beside --out after every replicate, so a run killed by a wall clock or a
+    # node failure resumes instead of repeating hours of training. The fields below must
+    # match for it to be reused; the decoder code is deliberately not one of them, since
+    # an edit that cannot change results should not discard finished replicates. Delete
+    # this file to force every replicate to be recomputed.
+    checkpoint_path = f"{args.out}.partial"
+    expected = {'data_file_path': os.path.abspath(args.data_file_path),
+                'n_replicates': args.n_replicates,
+                'output_names': list(output_names)}
+
+    # (n_replicates, doutput)
+    accuracy = replicate_accuracies(decoder, data, args.n_replicates, train_params,
+                                    checkpoint_path, expected)
     if accuracy.shape[1] != len(output_names):
         print(f"ERROR: decoder returned {accuracy.shape[1]} outputs but the data declares "
               f"{len(output_names)} output names", file=sys.stderr)

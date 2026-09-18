@@ -1,4 +1,7 @@
 # code for training decoders from mouse neural activity data
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
@@ -657,6 +660,18 @@ def _prepare_session_data(neural: list, input: list, output: list, device, doutp
     return SessionData(neural, input, output, dinput, doutput), dinput, doutput
 
 
+# Threads converting sessions ahead of the training loop. Each holds one converted
+# session, so this also caps the extra memory at that many sessions.
+#
+# Every task asks for at least 16 CPUs. Throughput peaks where the thread count
+# matches the CPUs the container is allowed and falls away on both sides: measured
+# against one thread, 8 threads gave 5.7x, 16 gave 9.0x, 24 gave 7.0x and 32 gave
+# 5.8x. Past the limit the threads exhaust the cgroup's CPU budget early in each
+# period and are stopped until the next one, resuming with cold caches, which this
+# strided copy is especially sensitive to.
+CONVERSION_WORKERS = 16
+
+
 class SessionData(torch.utils.data.Dataset):
     """Per-session tensors, converted on demand instead of all at once.
 
@@ -693,6 +708,45 @@ class SessionData(torch.utils.data.Dataset):
     def n_nonempty(self) -> int:
         """Sessions holding at least one trial, counted without converting any."""
         return sum(1 for session in self._neural if len(session) > 0)
+
+    def iter_sessions(self, workers: int | None = None):
+        """Yield (session, batch) for every session, converting several at a time.
+
+        Conversion transposes each trial into the destination, a strided copy that
+        leaves one core waiting on memory rather than saturating it, so several
+        sessions convert in less time than the sum of their parts. numpy releases
+        the GIL for the assignment, which is why threads suffice and no data has to
+        cross a process boundary.
+
+        At most `workers` conversions are in flight, so the extra memory is bounded
+        by that many sessions however long the dataset is.
+
+        Args:
+            workers: threads to convert on. None uses CONVERSION_WORKERS.
+
+        Yields:
+            (session, batch) in session order, batch as `__getitem__` returns it --
+            None for a session with no trials. Order and contents match a plain
+            loop over `self[session]`, so results do not depend on the thread count.
+        """
+        if workers is None:
+            workers = CONVERSION_WORKERS
+        nsessions = len(self)
+        if workers <= 1:
+            for session in range(nsessions):
+                yield session, self[session]
+            return
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            # Submitted in order and popped in order, so the queue both bounds how
+            # many conversions run ahead and preserves the session sequence.
+            pending = deque()
+            submitted = 0
+            for session in range(nsessions):
+                while submitted < nsessions and len(pending) < workers:
+                    pending.append(pool.submit(self.__getitem__, submitted))
+                    submitted += 1
+                yield session, pending.popleft().result()
 
     def __getitem__(self, session: int):
         """Build one session's tensors from its per-trial arrays.
@@ -948,8 +1002,10 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         epoch_loss = 0.
         optimizer.zero_grad()
 
-        for session in range(nsessions):
-            batch = session_data[session]
+        # iter_sessions rather than session_data[session]: every session is
+        # converted once per epoch, and converting the next few on other threads
+        # overlaps that with this session's forward and backward pass.
+        for session, batch in session_data.iter_sessions():
             if batch is None:
                 continue
             # Move this session's data to device
