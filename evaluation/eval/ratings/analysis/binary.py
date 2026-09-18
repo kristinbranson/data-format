@@ -97,3 +97,41 @@ HEADLINE = ["pred", "n",
             "accuracy", "balanced_acc", "d_prime",
             "recall", "precision", "f1",
             "n_mistakes", "TP", "FP", "FN", "TN"]
+
+
+BINARY_NAMES = ("correct", "incorrect")
+
+
+def confusion(df: pd.DataFrame, a: str, b: str) -> pd.DataFrame:
+    """2x2 counts of the collapsed decision: rows are `a`, columns are `b`.
+
+    The symmetric counterpart to `agreement.confusion`. `confusion_counts`
+    names its cells TP/FP/FN/TN, which only makes sense when one side is the
+    truth; for two raters of equal standing the plain matrix is what to read.
+    """
+    pair = df[[a, b]].dropna()
+    x, y = pair[a] <= -1, pair[b] <= -1
+    counts = [[int((~x & ~y).sum()), int((~x & y).sum())],
+              [int((x & ~y).sum()), int((x & y).sum())]]
+    return pd.DataFrame(counts, index=list(BINARY_NAMES),
+                        columns=list(BINARY_NAMES))
+
+
+def category_agreement(df: pd.DataFrame, a: str, b: str) -> dict:
+    """Of the rows `a` called correct / incorrect, the fraction `b` matched.
+
+    Conditioned on `a`, so it is not symmetric: with mistakes rare, the two
+    directions can differ a lot even though the matrix behind them is one
+    table. Also returns `overall`, the fraction of all shared rows the two
+    raters put on the same side.
+    """
+    cm = confusion(df, a, b)
+    out = {}
+    for level in BINARY_NAMES:
+        n = int(cm.loc[level].sum())
+        out[level] = cm.loc[level, level] / n if n else float("nan")
+        out[f"n_{level}"] = n
+    total = int(cm.to_numpy().sum())
+    out["overall"] = (cm.to_numpy().trace() / total) if total else float("nan")
+    out["n"] = total
+    return out

@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 
 from .. import raters as R
@@ -39,6 +41,63 @@ def available(dataset: str, mode: str = "supervised") -> bool:
     return d.is_dir() and any(d.glob("*.json"))
 
 
+@dataclass
+class JudgeFile:
+    """What one judge said about one trial, on our question numbering."""
+
+    ratings: dict = field(default_factory=dict)   # our_qid -> {"rating", "code"}
+    unmapped: list = field(default_factory=list)  # our qids nothing answered
+    extra: list = field(default_factory=list)     # judge qids nothing claimed
+    by_number: list = field(default_factory=list) # our qids paired by number
+
+
+@lru_cache(maxsize=None)
+def reference_stub(dataset: str) -> dict:
+    """`{qid: {"title": ...}}` for `build_qid_map`, cached per dataset.
+
+    The reference is a file on disk that does not change mid-process, and the
+    direct-from-experiments path maps a few hundred judge files against it.
+    """
+    return {q: {"title": t} for q, t in R.reference_titles(dataset).items()}
+
+
+def map_judge_file(path: Path, dataset: str, *, ref: dict | None = None) -> JudgeFile:
+    """One judge JSON -> its verdicts, keyed by *our* question numbers.
+
+    The judges answer their own question list and number it their own way, so
+    every qid is paired by content through `build_qid_map` rather than trusted
+    as-is. This is the only place that translation happens: both the mirrored
+    files under `eval/<dataset>/judge_<mode>/` and the experiment tree itself
+    are read through this function, so the two paths cannot disagree about
+    which answer belongs to which question.
+
+    `rating` is the judge's `decision_correctness` on the -2..2 scale; `code`
+    is its raw `code_correctness` verdict, carried through unused.
+    """
+    ref = reference_stub(dataset) if ref is None else ref
+    raw = json.loads(path.read_text())
+    llm = {qid: {"title": v.get("question", "")}
+           for qid, v in raw.items() if isinstance(v, dict)}
+
+    out = JudgeFile()
+    qmap = build_qid_map(ref, llm, dataset=dataset,
+                         on_number_fallback=lambda qid, *_: out.by_number.append(qid))
+
+    for our_qid, judge_qid in qmap.items():
+        if judge_qid is None:
+            out.unmapped.append(our_qid)
+            continue
+        v = raw[judge_qid]
+        decision = str(v.get("decision_correctness") or "").strip().lower()
+        out.ratings[our_qid] = {
+            "rating": RATING_SCALE.get(decision),
+            "code": (str(v.get("code_correctness") or "").strip().upper() or None),
+        }
+    claimed = {q for q in qmap.values() if q}
+    out.extra = sorted(set(llm) - claimed, key=_qid_key)
+    return out
+
+
 def load_judge_ratings(dataset: str, mode: str = "supervised") -> tuple[dict, dict]:
     """
     Returns (ratings, report).
@@ -51,8 +110,7 @@ def load_judge_ratings(dataset: str, mode: str = "supervised") -> tuple[dict, di
     `rating` is the judge's `decision_correctness` on the -2..2 scale;
     `code` is its raw `code_correctness` verdict, carried through unused.
     """
-    ref = R.reference_titles(dataset)
-    ref_stub = {q: {"title": t} for q, t in ref.items()}
+    ref_stub = reference_stub(dataset)
 
     out: dict = {}
     unmapped: set[str] = set()
@@ -65,26 +123,14 @@ def load_judge_ratings(dataset: str, mode: str = "supervised") -> tuple[dict, di
         if not m:
             continue
         agent, trial, judge = m["agent"], int(m["trial"]), m["judge"]
-        raw = json.loads(path.read_text())
         files += 1
         judges.add(judge)
 
-        llm = {qid: {"title": v.get("question", "")}
-               for qid, v in raw.items() if isinstance(v, dict)}
-        qmap = build_qid_map(ref_stub, llm, dataset=dataset)
-
-        for our_qid, judge_qid in qmap.items():
-            if judge_qid is None:
-                unmapped.add(our_qid)
-                continue
-            v = raw[judge_qid]
-            decision = str(v.get("decision_correctness") or "").strip().lower()
-            out[(our_qid, agent, trial, judge)] = {
-                "rating": RATING_SCALE.get(decision),
-                "code": (str(v.get("code_correctness") or "").strip().upper() or None),
-            }
-        claimed = {q for q in qmap.values() if q}
-        extra.setdefault(judge, set()).update(set(llm) - claimed)
+        parsed = map_judge_file(path, dataset, ref=ref_stub)
+        for our_qid, v in parsed.ratings.items():
+            out[(our_qid, agent, trial, judge)] = v
+        unmapped.update(parsed.unmapped)
+        extra.setdefault(judge, set()).update(parsed.extra)
 
     report = {
         "files": files,

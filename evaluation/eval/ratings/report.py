@@ -4,7 +4,11 @@ Generate a human-readable evaluation report (markdown) for one dataset.
 
 Sources (all already produced by other tools):
   - evaluation/eval/<dataset>/<CODE>/summary.md  (`rate` output, per evaluator: solution ratings + per-Q overall comment about the SOLUTION)
-  - evaluation/eval/<dataset>/eval_summary.md  (`compare` output: one column per evaluator + Claude-judge + Codex-judge ratings + per-Q overall comment about the JUDGES)
+  - evaluation/eval/<dataset>/eval_summary.md  (`compare` output: per-Q overall comment about the JUDGES; its judge rating columns are a stale snapshot, used only if a dataset has no judge folder)
+  - evaluation/eval/<dataset>/judge_supervised/  (the judge runs themselves, via `analysis.judges` — the same loader the analysis uses)
+
+The hand-written parts of a previous report.md survive a rebuild: see
+`extract_existing_comments` and `PRESERVED_COLUMNS`.
 
 Output:
   - evaluation/eval/<dataset>/report.md
@@ -18,7 +22,9 @@ import re
 import sys
 from pathlib import Path
 
+from .analysis import judges as J
 from .paths import EVAL_DIR
+from .questions import RATING_SCALE
 
 # Canonical 6-trial order: cc1, cc2, cc3, cx1, cx2, cx3
 TRIAL_KEYS = [("claude-code", n) for n in (1, 2, 3)] + [("codex", n) for n in (1, 2, 3)]
@@ -179,6 +185,34 @@ def parse_eval_summary(path: Path, rater: str = "") -> tuple[dict, dict, dict, d
     return h, c, x, comments, best
 
 
+# ---------- judge_<mode>/ (the live judge runs) ----------
+
+_LEVEL_BY_VALUE = {v: k for k, v in RATING_SCALE.items()}
+
+
+def judge_ratings(dataset: str, mode: str = "supervised") -> dict[str, dict]:
+    """{judge: {(qid, agent, n): rating}} straight from `<dataset>/judge_<mode>/`.
+
+    eval_summary.md carries judge ratings too, but only as a snapshot of the
+    run that existed when `compare` was last used: five of the eight datasets
+    are missing whole questions there, because the references gained questions
+    afterwards and the judges were re-run. The judge folders are the live
+    source, and `judges.load_judge_ratings` maps them onto our numbering by
+    question *content*, so a renumbered reference cannot shift a rating onto
+    the wrong row. Returns {} when a dataset has no judge folder, which leaves
+    the caller on the eval_summary.md values.
+    """
+    if not J.available(dataset, mode):
+        return {}
+    ratings, _report = J.load_judge_ratings(dataset, mode)
+    out: dict[str, dict] = {}
+    for (qid, agent, trial, judge), v in ratings.items():
+        if v["rating"] is None:
+            continue
+        out.setdefault(judge, {})[(qid, agent, trial)] = _LEVEL_BY_VALUE[v["rating"]]
+    return out
+
+
 def square(rating: str | None) -> str:
     """Return the colored marker for a rating."""
     if rating is None or rating in ("—", ""):
@@ -219,38 +253,46 @@ def extract_existing_comments(path: Path) -> str:
     return m.group(1).strip()
 
 
-def extract_difference_categories(path: Path) -> tuple[dict[str, str], dict[str, str]]:
-    """
-    Pull the hand-curated `Difference categories` cells out of a previous
-    report.md → ({qid: value}, {normalized question text: value}).
+# The columns of report.md that are written or polished by hand and therefore
+# have to survive a rebuild. `Difference categories` is never generated at all;
+# the two comment columns start life in the summary files but get edited in
+# place afterwards — a rebuild that regenerated them dropped one comment
+# outright and reverted another to its first draft.
+PRESERVED_COLUMNS = ("Solution comment", "LLM judge comment",
+                     "Difference categories")
 
-    That column is written by hand, never generated, so it has to survive a
-    regeneration. Questions are matched on their text first and their number
-    second, so the values follow a question even if it is renumbered.
+
+def extract_hand_edits(path: Path,
+                       columns=PRESERVED_COLUMNS) -> dict[str, dict[str, str]]:
+    """Pull the hand-edited cells out of a previous report.md.
+
+    Returns {column name: {normalized question text: value}}. Questions are
+    matched on their *text*, never their number: matching on the number looks
+    harmless until the questions are renumbered, at which point every curated
+    note lands on whichever question inherited its number — 8 of them did
+    exactly that in the 2026-08 rebuild.
     """
+    out: dict[str, dict[str, str]] = {c: {} for c in columns}
     if not path.exists():
-        return {}, {}
-    by_qid, by_title = {}, {}
-    col = None
+        return out
+    wanted = {c.lower(): c for c in columns}
+    cols: dict[int, str] = {}
     for line in path.read_text().splitlines():
         cells = _split_md_row(line)
         if not cells:
             continue
         if cells[0].strip().lower() == "q":
-            names = [c.strip().lower() for c in cells]
-            col = (names.index("difference categories")
-                   if "difference categories" in names else None)
+            cols = {i: wanted[c.strip().lower()] for i, c in enumerate(cells)
+                    if c.strip().lower() in wanted}
             continue
-        if col is None or col >= len(cells):
+        if not cols or not re.match(r"^\d+(-[a-z])?$", cells[0].strip()):
             continue
-        qid = cells[0].strip()
-        if not re.match(r"^\d+(-[a-z])?$", qid):
-            continue
-        value = cells[col].strip()
-        if value:
-            by_qid[qid] = value
-            by_title[_norm_question(cells[1])] = value
-    return by_qid, by_title
+        title = _norm_question(cells[1]) if len(cells) > 1 else ""
+        for i, name in cols.items():
+            value = cells[i].strip() if i < len(cells) else ""
+            if value and title:
+                out[name][title] = value
+    return out
 
 
 def _norm_question(text: str) -> str:
@@ -265,11 +307,18 @@ def build_report(dataset: str, rater: str | None = None) -> str:
     summary_path = R.summary_path(dataset, rater or R.primary_code())
     eval_path = ddir / "eval_summary.md"
     existing_comments = extract_existing_comments(ddir / "report.md")
-    diff_by_qid, diff_by_title = extract_difference_categories(ddir / "report.md")
+    kept = extract_hand_edits(ddir / "report.md")
 
     rs_h, rs_titles, rs_solution = parse_rate_summary(summary_path)
     es_h, es_c, es_x, es_judge, es_best = parse_eval_summary(
         eval_path, rater=rater or R.primary_code())
+
+    # Judge ratings come from the judge folders, not from eval_summary.md —
+    # the latter is a stale snapshot missing whole questions. Its judge
+    # *comments* are still used: those are written per question, not per trial.
+    live_judges = judge_ratings(dataset)
+    es_c = live_judges.get("claude", es_c)
+    es_x = live_judges.get("codex", es_x)
 
     # One ratings column per evaluator, this report's own first. Ratings come
     # from the dossiers — the same source eval_summary.md is built from.
@@ -312,7 +361,7 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         f"- Questions covered: {len(qids)}",
         f"- Trials per question: 6 (3 claude-code + 3 codex)",
         evaluator_line,
-        f"- Judges: Claude, Codex",
+        f"- Judges: Claude, Codex (supervised run, from `judge_supervised/`)",
         "",
         f"**Legend:**  {LEGEND_LINE}  ",
         f"Ratings are evaluator {who}'s, including the few questions where a judge "
@@ -343,16 +392,19 @@ def build_report(dataset: str, rater: str | None = None) -> str:
         sol = (rs_solution.get(qid) or "").strip()
         if sol in placeholder_comments:
             sol = ""
-        sol = sol.replace("|", "\\|").replace("\n", " ")
         judge = (es_judge.get(qid) or "").strip()
         if judge in placeholder_comments:
             judge = ""
+        # Whatever the last report said in these three columns wins: they are
+        # the hand-written part of the file (see PRESERVED_COLUMNS). The
+        # generated text only fills a cell the report left empty, so a comment
+        # edited here is never overwritten by the draft it came from.
+        key = _norm_question(titles.get(qid, ""))
+        sol = kept["Solution comment"].get(key) or sol
+        judge = kept["LLM judge comment"].get(key) or judge
+        diff = kept["Difference categories"].get(key, "")
+        sol = sol.replace("|", "\\|").replace("\n", " ")
         judge = judge.replace("|", "\\|").replace("\n", " ")
-        # Hand-curated column: matched on question text ONLY. Matching on the
-        # number as well looks harmless until the questions are renumbered, at
-        # which point every curated note lands on whichever question inherited
-        # its number — 8 of them did exactly that in the 2026-08 rebuild.
-        diff = diff_by_title.get(_norm_question(titles.get(qid, "")), "")
         lines.append(
             f"| {qid} | {title} | " + " | ".join(h_cells)
             + f" | {c_cell} | {x_cell} | {sol} | {judge} | {diff} |"

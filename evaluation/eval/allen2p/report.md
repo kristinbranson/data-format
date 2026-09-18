@@ -6,7 +6,7 @@
 - Questions covered: 30
 - Trials per question: 6 (3 claude-code + 3 codex)
 - Human evaluators: **LZ** (this report's comments and notes), KB
-- Judges: Claude, Codex
+- Judges: Claude, Codex (supervised run, from `judge_supervised/`)
 
 **Legend:**  🟣 better · 🟢 match · 🔵 ok · 🟡 concerning · 🔴 incorrect · ⚪ missing · ⚫ no rating  
 Ratings are evaluator LZ's, including the few questions where a judge was found more accurate and that judgement was adopted.
@@ -29,33 +29,33 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 
 | Q | Question | LZ | KB | Claude judge | Codex judge | Solution comment | LLM judge comment | Difference categories |
 |---|---|---|---|---|---|---|---|---|
-| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔵🔵🔵 🔵🔵🟡 | 🔴🔴🔴 🔴🔴🔴 | 🔵🔵🔵 🔵🔵🟡 | 🔴🔴🔴 🔴🔴🔴 | Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface. | The Claude judge caught a minor mistake that I overlooked: one of the solutions was not properly filtering the data based on `project_code`. | `FILTER=1` |
-| 1-b | How are the data split into subjects? | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | All agents used the correct information. |  |  |
-| 1-c | How are the data split into sessions? | 🔴🔴🔴 🔴🔴🔴 | 🔴🔴🔴 🔴🔴🔴 | 🟡🟡🟡 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 | The Allen dataset has an unusual setup where each session, identified by `ophys_session_id`, is split into multiple `ophys_experiment_id`s for different imaging planes in the same session. This seems to have thrown off all the agents — none of them recombined the data based on the session ID. This is explicitly shown in the tutorial code, which the agents had been instructed to read. |  | `VARNAME=6` |
-| 1-d | Are the data correctly split into trials? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🟢🟡🟢 🟢🟢🟡 | 🔴🔴🟢 🟢🔵🟢 |  |  | `MISC=1` |
-| 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🟡🔵🔵 | 🟢🟢🟢 🟡🟢🟡 | 🔴🔵🟡 🟡🟡🟡 | All agents followed the main instruction; some introduced additional filtering that is reasonable. |  |  |
-| 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🔵 🔵🔵🔵 | 🟢🟢🔵 🔵🔵🔵 | 🟢🟢🔴 🟡🔴🟡 | 🟢🟢🔴 🔴🔴🔴 | Agents seem to prefer the event data (which is technically ok), but the code and paper example use dF/F instead. | It is hard for the LLM judges to tell whether using event data instead of dF/F is reasonable here (additional context and domain knowledge required). |  |
-| 2-b | How is the `neural` data processed? | 🟢🔴🟢 🟡🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟢🔴🟡 🟡🔴🟡 | 🔴🔴🔴 🔴🔴🔴 | Only one agent produced the "really" correct solution — since the experiment timestamps are already aligned, there is no need to resample. Two agents made some very wrong choices on time bin size. |  | `RESAMP=1`, `TIMERES=1` |
-| 2-c | How is the `neural` data filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 | 🟢🟡🔴 🔵🔵🔴 | Some agents used an additional ROI filter based on the `valid_roi` flag. |  | `EXTRAFILTER` |
-| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🔵 🟢🔵🔵 | 🟢🟡🟢 🟢🟡🟡 | 🟢🔴🟢 🟢🟢🔴 |  |  |  |
-| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🔴🔵 🟡🔵🔵 | 🟢🔴🔵 🟡🔵🔵 | 🟡🔴🟡 🟡🔴🟡 | 🟢🔴🔴 🔴🔴🔴 | The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices (2-b). |  | `TIMERES=2` |
-| 3-a | What variables in the raw data is `output` *Image identity* derived from? | 🟢🟢🟢 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🔵 🟡🔵🟡 | 🔴🔵🔴 🔴🟡🔴 | Codex agents dig deep into the data structure to find the image ID info instead of using the data table. |  |  |
-| 3-b | What processing is involved in computing `output` *Image identity*? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟡🟢 🟡🔵🟡 | 🔴🟡🟡 🔴🟡🔴 |  |  |  |
-| 3-c | How is `output` *Image identity* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🔵🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔴 |  |  |  |
-| 4-a | What variables in the raw data is `output` *Image change* derived from? | 🔵🔵🟢 🔵🔵🔵 | 🟡🟡🔵 🟡🔵🔵 | 🔵🔵🔵 🔵🟡🟡 | 🔴🔵🟡 🔴🔴🟡 | Some solutions included the grey screen as an extra image category. |  | `SEMANTIC` |
-| 4-b | What processing is involved in computing `output` *Image change*? | 🟡🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🟡🔵🟢 🟡🟡🟡 | 🔴🔵🟡 🔴🔴🟡 |  |  |  |
-| 4-d | How is `output` *Image change* aligned with the neural data? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🔵 🔵🔵🟢 | 🟢🔵🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔴 |  |  |  |
+| 1-a | How are **all the data** for all subjects, sessions, and trials loaded in? | 🔵🔵🔵 🔵🔵🟡 | 🔴🔴🔴 🔴🔴🔴 | 🔵🟡🔵 🔵🔵🔵 | 🔴🟡🔴 🔴🔴🔴 | Every agent read the data directory directly, using h5py to read the NWB files. The agents had access to both the notebook example code and the data directory, but didn't follow the notebook to use the AllenSDK interface. | The Claude judge caught a minor mistake that I overlooked: one of the solutions was not properly filtering the data based on `project_code`. | `FILTER=1` |
+| 1-b | How are the data split into subjects? | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🟢🟢 | All agents used the correct information. |  |  |
+| 1-c | How are the data split into sessions? | 🔴🔴🔴 🔴🔴🔴 | 🔴🔴🔴 🔴🔴🔴 | 🟡🔴🟡 🟡🟡🔴 | 🔴🔴🔴 🔴🔴🔴 | The Allen dataset has an unusual setup where each session, identified by `ophys_session_id`, is split into multiple `ophys_experiment_id`s for different imaging planes in the same session. This seems to have thrown off all the agents — none of them recombined the data based on the session ID. This is explicitly shown in the tutorial code, which the agents had been instructed to read. |  | `VARNAME=6` |
+| 1-d | Are the data correctly split into trials? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🟢🟡🟢 🟢🟢🟢 | 🔴🔴🟢 🔴🔵🟢 |  |  | `MISC=1` |
+| 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🟡🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔴🔵🟡 🔴🟡🔵 | All agents followed the main instruction; some introduced additional filtering that is reasonable. |  |  |
+| 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🔵 🔵🔵🔵 | 🟢🟢🔵 🔵🔵🔵 | 🟢🟢🟡 🟡🟡🔴 | 🟢🟢🔴 🔴🔴🔴 | Agents seem to prefer the event data (which is technically ok), but the code and paper example use dF/F instead. | It is hard for the LLM judges to tell whether using event data instead of dF/F is reasonable here (additional context and domain knowledge required). |  |
+| 2-b | How is the `neural` data processed? | 🟢🔴🟢 🟡🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟡🔴🟡 🟡🟡🔴 | 🔴🔴🔴 🔴🔴🔴 | Only one agent produced the "really" correct solution — since the experiment timestamps are already aligned, there is no need to resample. Two agents made some very wrong choices on time bin size. |  | `RESAMP=1`, `TIMERES=1` |
+| 2-c | How is the `neural` data filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟢 🟢🟢🟢 | 🔴🟡🔵 🔵🔵🔴 | Some agents used an additional ROI filter based on the `valid_roi` flag. |  | `EXTRAFILTER` |
+| 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🔵 🟢🔵🔵 | 🟢🔴🟢 🟢🟢🟡 | 🟢🔴🟢 🔵🔴🔴 |  |  |  |
+| 2-e | How is the `neural` data temporally binned/resampled? | 🟢🔴🔵 🟡🔵🔵 | 🟢🔴🔵 🟡🔵🔵 | 🟢🔴🟡 🟡🟡🔴 | 🔴🔴🔴 🔴🔴🔴 | The data is ~11 Hz, so some agents resampling to a 30 ms time bin is ok, but in principle no resampling is needed. Two agents made some really bad choices (2-b). |  | `TIMERES=2` |
+| 3-a | What variables in the raw data is `output` *Image identity* derived from? | 🟢🟢🟢 🔵🔵🔵 | 🔵🔵🔵 🔵🔵🔵 | 🟡🔵🔵 🔵🔵🟡 | 🔴🔴🔵 🔴🔴🔴 | Codex agents dig deep into the data structure to find the image ID info instead of using the data table. |  |  |
+| 3-b | What processing is involved in computing `output` *Image identity*? | 🟢🟡🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🔵 🟡🔵🟡 | 🔴🟡🟡 🔴🔴🔴 |  |  |  |
+| 3-c | How is `output` *Image identity* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🔴🟢 🟢🟢🔵 | 🔴🔴🟢 🔴🔴🔴 |  |  |  |
+| 4-a | What variables in the raw data is `output` *Image change* derived from? | 🔵🔵🟢 🔵🔵🔵 | 🟡🟡🔵 🟡🔵🔵 | 🟡🔵🔵 🔵🟡🟡 | 🔴🔴🔵 🔴🟡🔴 | Some solutions included the grey screen as an extra image category. |  | `SEMANTIC` |
+| 4-b | What processing is involved in computing `output` *Image change*? | 🟡🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🔵🟢 | 🔴🟡🟢 🔵🟡🟡 | 🔴🔴🟢 🔴🟡🔴 |  |  |  |
+| 4-d | How is `output` *Image change* aligned with the neural data? | 🟢🔵🟢 🟢🟢🟢 | 🟢🔵🔵 🔵🔵🟢 | 🟢🔴🟢 🟢🟢🔵 | 🔴🔴🟢 🔴🔴🔴 |  |  |  |
 | 5-a | What variables in the raw data is `output` *Running speed* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 5-b | What processing is involved in computing `output` *Running speed*? | 🟡🔴🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟢🟢 | 🔴🔴🔴 🔴🔴🔴 |  |  | `TIMERES=1` |
-| 5-d | How is `output` *Running speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟢🔴🔴 🔴🔴🔴 |  |  |  |
-| 6-a | What variables in the raw data is `output` *Pupil diameter* derived from? | 🟡🟡🟡 🟡🔵🔵 | 🔵🔵🔵 🔵🟡🔵 | 🟡🟡🔴 🟡🟡🔴 | 🔴🟡🔴 🔴🔴🔴 | Agents really like to compute pupil size from area. |  | `MISC=4` |
-| 6-b | What processing is involved in computing `output` *Pupil diameter*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟡🟡🟡 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 |  |  |  |
-| 6-d | How is `output` *Pupil diameter* aligned with the neural data? | 🟢🔴🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟢🔴🔴 🔴🔴🔴 |  |  | `TIMERES=1` |
+| 5-b | What processing is involved in computing `output` *Running speed*? | 🟡🔴🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🔴🟢 🟢🟢🟢 | 🔴🔴🔴 🔴🟡🔴 |  |  | `TIMERES=1` |
+| 5-d | How is `output` *Running speed* aligned with the neural data? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟢 🟢🟢🟢 | 🟢🔴🟢 🔴🔴🔴 |  |  |  |
+| 6-a | What variables in the raw data is `output` *Pupil diameter* derived from? | 🟡🟡🟡 🟡🔵🔵 | 🔵🔵🔵 🔵🟡🔵 | 🟡🟡🔴 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 | Agents really like to compute pupil size from area. |  | `MISC=4` |
+| 6-b | What processing is involved in computing `output` *Pupil diameter*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 | 🟡🟡🔵 🟡🔵🟡 | 🔴🔴🔴 🔴🔴🔴 |  |  |  |
+| 6-d | How is `output` *Pupil diameter* aligned with the neural data? | 🟢🔴🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🔴🟢 🟢🟢🟢 | 🟢🔴🟢 🔴🔴🔴 |  |  | `TIMERES=1` |
 | 7-a | What variables in the raw data is `output` *Trial outcome* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
-| 7-b | What processing is involved in computing `output` *Trial outcome*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟡🟢 🟢🟢🟢 |  |  |  |
-| 8 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🔵🟢 🟡🟢🟡 | 🔴🟡🔵 🟡🟡🟡 | Some scripts are missing explicit error handling. |  |  |
-| 9-a | What are the most time-consuming steps of the code? | 🟡🟡🟡 🟡🟡🟡 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔵 🔵🔵🟡 |  |  |  |
-| 9-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🟡 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🔵 🔵🟢🔵 |  |  |  |
-| 9-c | What processing does the code repeat multiple times? | 🟡🟡🔴 🟡🟡🟡 | 🟡🟡🟡 🔵🟡🟡 | 🟢🟣🔴 🟢🟢🟡 | 🔴🔴🔴 🟡🔴🟡 | 5/6 did a two-pass approach which is inefficient; 1/6 did a three-pass approach which is just wrong. | The LLM judge seems to have completely misunderstood this question. |  |
-| 9-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟡🟢 🟢🟢🟢 | 🔵🟡🔵 🔵🔵🔵 | 🟢🟣🟢 🟢🟢🟢 | 🔴🔴🔴 🟡🟡🟡 |  |  |  |
+| 7-b | What processing is involved in computing `output` *Trial outcome*? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🟢🟢 | 🟢🟡🟢 🟢🟢🟢 | 🟢🔵🟢 🟢🟢🟢 |  |  |  |
+| 8 | How are minor mistakes in the data, e.g. missing data, handled? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🔵🟢 🔵🟢🔵 | 🟡🔵🔵 🔴🟡🟡 | Some scripts are missing explicit error handling. |  |  |
+| 9-a | What are the most time-consuming steps of the code? | 🟡🟡🟡 🟡🟡🟡 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🟢 🔵🔵🟢 |  |  |  |
+| 9-b | What loops in the code could have been vectorized to improve efficiency? | 🔵🔵🔵 🔵🔵🔵 | 🔵🔵🟡 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🔵🟢🔵 🟣🔵🟢 |  |  |  |
+| 9-c | What processing does the code repeat multiple times? | 🟡🟡🔴 🟡🟡🟡 | 🟡🟡🟡 🔵🟡🟡 | 🟢🟢🟡 🟢🟡🔴 | 🔴🟢🔴 🟡🟡🟡 | 5/6 did a two-pass approach which is inefficient; 1/6 did a three-pass approach which is just wrong. | The LLM judge seems to have completely misunderstood this question. |  |
+| 9-d | What unnecessary processing does the code do that is discarded in downstream analyses? | 🟢🟡🟢 🟢🟢🟢 | 🔵🟡🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🔵🔵 | 🔴🟢🔴 🟡🟡🟡 |  |  |  |
 | 9-e | How is memory usage optimized? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | ⚫⚫⚫ ⚫⚫⚫ | ⚫⚫⚫ ⚫⚫⚫ |  |  |  |
