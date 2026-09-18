@@ -68,7 +68,10 @@ TRIAL_RE = re.compile(r"_trial(\d+)$")
 MAX_TRIAL = 3
 
 MINIMAL_SUFFIX = "_minimal"
-PROMPTS = ("full", "minimal")
+# A <task>_datalimit run is the minimal prompt on the 50 GB subset of the dataset, so it
+# is a third variant rather than a ninth dataset. Same split as trial_metrics.py.
+DATALIMIT_SUFFIX = "_datalimit"
+PROMPTS = ("full", "minimal", "datalimit")
 
 JUDGE_FILE = "llm_judge_eval.json"
 
@@ -134,7 +137,9 @@ CONDITION_GROUPS = (
 
 def split_task(task: str) -> tuple[str, str]:
     """Task folder name -> (our dataset name, prompt variant)."""
-    if task.endswith(MINIMAL_SUFFIX):
+    if task.endswith(DATALIMIT_SUFFIX):
+        base, prompt = task[:-len(DATALIMIT_SUFFIX)], "datalimit"
+    elif task.endswith(MINIMAL_SUFFIX):
         base, prompt = task[:-len(MINIMAL_SUFFIX)], "minimal"
     else:
         base, prompt = task, "full"
