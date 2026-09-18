@@ -344,10 +344,7 @@ if [ -n "$LATEST_JOB" ]; then
     fi
 
     # Reward
-    reward="—"
-    if [ -f "$dest/verifier/reward.txt" ]; then
-      reward=$(cat "$dest/verifier/reward.txt")
-    fi
+    reward=$(python3 "$SCRIPT_DIR/show_reward.py" --value "$dest/verifier" 2>/dev/null) || reward="—"
 
     printf "%-15s %-8s %-8s %-14s %-14s %-7s\n" "$t_task" "$t_trial" "$agent_ok" "$claude_j" "$codex_j" "$reward"
   done

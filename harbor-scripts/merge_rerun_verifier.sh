@@ -147,29 +147,10 @@ fi
 echo ""
 echo "Done."
 if [ -f "$BASEDIR/metrics.json" ] && [ "$DRY_RUN" = false ]; then
-    # reward.json first, matching harbor's own precedence. reward.txt carries the outcome
-    # alone and is never updated after judging, so reading it reported 0 for a trial that
-    # scored 0.43 -- and after this merge it may not exist at all.
-    # The pass/fail key is 'outcome_all'; 'outcome' is its name in the earliest reward.json
-    # files. A missing 'process' means the judges were switched off or did not finish.
-    echo "Reward: $(python3 -c "
-import json, pathlib
-j = pathlib.Path('$BASEDIR/reward.json'); t = pathlib.Path('$BASEDIR/reward.txt')
-if j.is_file():
-    d = json.loads(j.read_text())
-    outcome = d.get('outcome_all', d.get('outcome'))
-    per_category = d.get('outcome_mean_per_category')
-    parts = [f'outcome_all={outcome:.1f}']
-    if per_category is not None:
-        parts.append(f'per_category={per_category:.4f}')
-    parts.append(f\"process={d['process']:.4f}\" if 'process' in d
-                 else 'no process score: judges off or did not finish')
-    print(f\"{d['reward']:.4f} ({'; '.join(parts)})\")
-elif t.is_file():
-    print(f'{float(t.read_text()):.4f}  (reward.txt: outcome only)')
-else:
-    print('N/A')
-" 2>/dev/null || echo 'N/A')"
+    # reward.json first, matching harbor's own precedence; after this merge reward.txt
+    # may not exist at all. show_reward.py holds that logic for every script that reports
+    # a reward.
+    echo "Reward: $(python3 "$(dirname "$0")/show_reward.py" "$BASEDIR" 2>/dev/null || echo 'N/A')"
     echo "Judge:  $(python3 -c "
 import json
 d = json.load(open('$BASEDIR/metrics.json'))

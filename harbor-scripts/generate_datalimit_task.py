@@ -1,49 +1,39 @@
 #!/usr/bin/env python3
-"""Generate the 50 GB-capped `<task>_datalimit` version of a harbor task.
+"""Generate a task's `<task>_datalimit` version: the minimal-prompt task on the capped data.
 
-Copies the task directory, repoints its data mount at `data/<task>_datalimit`,
-and documents the subsample in the prompt.
+`<task>_datalimit` is the minimal-prompt task, `<task>_minimal`, run on the
+datalimit data in `data/<task>_datalimit/`. Every file in it is derived, so the
+directory is never edited by hand. To change it, edit one of its inputs and rerun:
 
-This is **first-time scaffolding, not the whole story**. Two things about a
-`_datalimit` task are maintained by hand afterwards:
+    harbor-tasks/<task>_minimal/          every file, copied unchanged, except the two below
+    download/datalimit/<task>_prompt.md   the "Data subset" section and Consistency bullet
+                                          added to instruction.md and its judge copy
+    (this script)                         the data mount in environment/docker-compose.yaml
 
-  * `solution/convert_data.py` and its copy `tests/reference_convert_data.py`
-    (which must stay byte-identical -- the first is what the oracle runs, the
-    second is what the LLM judge reads as the human reference). For tasks whose
-    conversion enumerates data from an api index rather than from disk -- allen2p
-    via `get_ophys_experiment_table()`, zhang2025 via `one.search()` -- the
-    reference has to be edited to restrict itself to `DATALIMIT_SUBSET.csv`.
-    Without that it would enumerate the whole release and fetch, over the
-    network, every recording the subset deliberately leaves out.
-  * `tests/reference_DECISIONS.md`, so the decisions the judge compares against
-    describe the same subset the reference code actually loads.
-
-Re-running is therefore safe by default: existing files are **preserved**, and
-only files missing from the destination are copied in. `--force` restores the old
-behaviour of replacing the directory wholesale, and will discard those hand
-edits -- it lists what differs from the parent before doing so.
-
-Companion to `generate_minimal_task.py`, which produces the `<task>_minimal`
-prompt-ablation variants, and shares its copy scaffolding.
-
-The subsample itself is decided by `download/select_datalimit.py` and built by
-`download/make_datalimit.py`; this script only wires the result into harbor.
-
-Usage:
-    python generate_datalimit_task.py sosa2024             # create, or fill gaps
-    python generate_datalimit_task.py --all
-    python generate_datalimit_task.py sosa2024 --dry-run
-    python generate_datalimit_task.py sosa2024 --force     # replace, losing hand edits
-
-After generating, the reference statistics still describe the FULL dataset and
-must be regenerated against the capped data before the task can be scored:
+The one file that is not derived is `tests/reference_stats_full.json`: it has to describe the
+datalimit data, so it is kept when present and has to be generated when it is not:
 
     harbor-scripts/generate_reference_stats.sh <task>_datalimit
-    cp <oracle stats_full.json> harbor-tasks/<task>_datalimit/tests/reference_stats_full.json
+    harbor-scripts/rerun_verifier.sh --decoder-stats --task <task>_datalimit <oracle trial dir>
+
+Only tasks whose data was actually reduced get a `_datalimit` task. A task whose manifest
+(`download/datalimit/<task>.csv`) lists no entries was already under the size cap; its
+`_minimal` task serves as its datalimit version in the analysis.
+
+The subset itself is decided by `download/select_datalimit.py` and built by
+`download/make_datalimit.py` or fetched by `download/download.py --datalimit`; this script
+only wires the result into harbor.
+
+Usage:
+    python generate_datalimit_task.py sosa2024           # create, or bring up to date
+    python generate_datalimit_task.py --all              # every task with a reduced dataset
+    python generate_datalimit_task.py --all --check      # report files that are out of date
+    python generate_datalimit_task.py sosa2024 --dry-run # report what would be written
 """
 
 import argparse
 import filecmp
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -54,375 +44,266 @@ TASKS_DIR = REPO_ROOT / "harbor-tasks"
 sys.path.insert(0, str(REPO_ROOT / "harbor-scripts"))
 sys.path.insert(0, str(REPO_ROOT / "download"))
 
-from generate_minimal_task import (  # noqa: E402
-    _walk, check_data_mounts, human, make_ignore, tree_size,
-)
+from generate_minimal_task import _walk, make_ignore  # noqa: E402
 from select_datalimit import MANIFEST_DIR, read_manifest  # noqa: E402
 
 SUFFIX = "_datalimit"
+SOURCE_SUFFIX = "_minimal"
 
-# The agent's prompt, and the copy the LLM judge reads to learn what the agent
-# was asked to do. Both must describe the same dataset.
-INSTRUCTION_FILE = "instruction.md"
-JUDGE_REFERENCE_FILES = ["tests/instruction_reference.md", "tests/reference_instruction.md"]
+# The agent's prompt, and the copies the LLM judges read to learn what the agent was asked.
+PROMPT_FILES = ["instruction.md", "tests/instruction_reference.md", "tests/reference_instruction.md"]
+COMPOSE_FILE = "environment/docker-compose.yaml"
+# Describes the datalimit data, so never copied from the full-data source task.
+REFERENCE_STATS_FILE = "tests/reference_stats_full.json"
 
-# The subset note is inserted directly after this bullet in the "Reference
-# Information" section, which every task's prompt has (wording varies slightly:
-# "the paper" / "the papers" / "the data paper").
-DATA_BULLET_PREFIX = "- **Data**"
+# download/datalimit/<task>_prompt.md: the section, then this marker, then the bullet.
+PROMPT_TEXT_FILE = "{task}_prompt.md"
+BULLET_MARKER = "<!-- CONSISTENCY BULLET -->"
+# Where the pieces go in the minimal prompt.
+SECTION_BEFORE = "## Decoder Task"
+LAST_CONSISTENCY_ITEM_RE = re.compile(r"^- Curation of data:.*$", re.M)
 
-# task.toml settings that only made sense at full scale. mouseland is the sole
-# entry: it asks for 240 GB of RAM where every other task asks for 64, because the
-# full dataset loads 4.1M neurons' worth of trial arrays into memory at once.
-# Keeping that exception would make the capped variant need a 240 GB machine,
-# defeating much of the point of it.
-#
-# 128 GB is measured, not estimated: the capped oracle run peaked at 59.2 GiB, so
-# the conversion holds far more than the final arrays (per-session intermediates,
-# the float32->float16 conversion, pickling). 64 GB would fit but with only ~8%
-# headroom, and docker enforces the limit, so overshooting is an OOM kill.
-RESOURCE_OVERRIDES = {
-    "mouseland": {"memory_mb": 131072},
-}
+# Inside the container the subset list is always /app/data/DATALIMIT_SUBSET.csv. allen2p
+# mounts only its release subdirectory at /app/data/visual-behavior-ophys-1.1.0, so the list,
+# which download/make_datalimit.py writes at the dataset root, is mounted as a single file.
+SUBSET_LIST_NAME = "DATALIMIT_SUBSET.csv"
+MOUNTS_SUBSET_LIST_SEPARATELY = {"allen2p"}
 
 
-# Inserted verbatim into the prompt, with {rule} and {list_path} filled in. This
-# note is the ONLY thing keeping a run inside the 50 GB cap: the downloaded caches
-# are never edited, so AllenSDK's metadata tables and ONE's release index still
-# describe the full release, and every task.toml sets allow_internet = true. It
-# also heads off a false alarm -- the workflow asks the agent to record dataset
-# totals (Step 2) and reconcile them against the paper (Step 4), which would
-# otherwise read as a discrepancy to chase.
-SUBSET_NOTE = """- **Dataset subset — use only the data listed in `{list_path}`.** \
-This task uses a reduced version of the published dataset: {rule} No *type* of data was \
-removed — every variable, signal, and auxiliary array the full release contains is still \
-present — only samples were dropped. The files in `data` are an unmodified download, so \
-metadata tables and release indexes there still describe the **full** release and will refer \
-to recordings that are not present. Read `{list_path}` and process exactly the \
-sessions/experiments it lists. Do **not** download any data that is missing locally, even if \
-the metadata, reference code, or paper refers to it. Dataset totals you measure (subjects, \
-sessions, trials, neurons) will therefore be smaller than the numbers reported in the paper; \
-that difference is expected and is **not** a discrepancy to investigate or resolve."""
-
-# Where the subset list appears from inside the container, and what it is.
-# allen2p mounts only the release subdirectory, so its list lives there. allen2p
-# and zhang2025 publish the subset as a filtered copy of the canonical table their
-# own tooling already reads, which is far easier to consume than a list of ids.
-SUBSET_LIST_PATH = {
-    "allen2p": "data/visual-behavior-ophys-1.1.0/DATALIMIT_SUBSET.csv",
-}
-DEFAULT_SUBSET_LIST_PATH = "data/DATALIMIT_SUBSET.csv"
-
-# Appended to the subset note, naming the schema so the agent knows how to read it.
-SUBSET_LIST_FORMAT = {
-    "allen2p": (" It has the same columns as "
-                "`project_metadata/ophys_experiment_table.csv`, restricted to the "
-                "experiments present here; use its `ophys_experiment_id` values."),
-    "zhang2025": (" It has the same columns as the release freeze "
-                  "`code/code_zhang2025/data/bwm_release.csv` (one row per probe "
-                  "insertion), restricted to the sessions present here; use its "
-                  "`eid` values."),
-    "map": " Columns: `subject`, `nwb_path` (relative to `data`).",
-    "sosa2024": " Columns: `subject`, `nwb_path` (relative to `data`).",
-    "mouseland": (" Columns: `session`, `n_cells_total`, `n_cells_kept`. Every session "
-                  "is present; each one's cells were subsampled."),
-}
-
-
-def load_rule(task: str) -> str | None:
-    """Read the human-readable subsample rule for `task` from its manifest.
-
-    Args:
-        task: parent benchmark task name, e.g. 'sosa2024'.
+def reduced_tasks() -> list[str]:
+    """Parent tasks whose datalimit dataset differs from the full one.
 
     Returns:
-        The `rule` header string, or None when the dataset was not subsampled
-        (already under the cap) and so needs no note in the prompt.
+        Sorted task names with a non-empty manifest in download/datalimit/.
     """
-    manifest = MANIFEST_DIR / f"{task}.csv"
-    if not manifest.exists():
-        print(f"Error: no manifest at {manifest}\n"
-              f"       run: python download/select_datalimit.py {task}", file=sys.stderr)
-        sys.exit(1)
-    entries, header = read_manifest(manifest)
-    if entries.empty:
-        return None  # passthrough: identical to the full dataset
-    return header.get("rule")
+    tasks = []
+    for manifest in sorted(MANIFEST_DIR.glob("*.csv")):
+        entries, _ = read_manifest(manifest)
+        if not entries.empty:
+            tasks.append(manifest.stem)
+    return tasks
 
 
-def repoint_data_mount(dst: Path, task: str) -> None:
-    """Rewrite the compose file so the task mounts `data/<task>_datalimit`.
+def read_prompt_text(task: str) -> tuple[str, str]:
+    """Read the task's Data subset section and Consistency bullet.
 
     Args:
-        dst: the generated `harbor-tasks/<task>_datalimit/` directory.
         task: parent task name.
 
-    Side effects:
-        Rewrites `environment/docker-compose.yaml` in place.
+    Returns:
+        (section, bullet): the "## Data subset" section text without trailing blank lines,
+        and the single bullet line.
 
     Raises:
-        SystemExit: if the expected `${DATA_ROOT}/<task>` source is not found,
-            rather than silently leaving the variant pointed at the full data.
+        SystemExit: if the file is missing or not in the expected layout.
     """
-    compose = dst / "environment" / "docker-compose.yaml"
-    text = compose.read_text()
+    path = MANIFEST_DIR / PROMPT_TEXT_FILE.format(task=task)
+    if not path.is_file():
+        sys.exit(f"Error: no prompt text for {task} at {path}")
+    text = path.read_text()
+    if text.count(BULLET_MARKER) != 1:
+        sys.exit(f"Error: {path} must contain the marker {BULLET_MARKER} exactly once")
+    head, tail = text.split(BULLET_MARKER)
+    # The heading at the start of a line; the file's own header comment also names it.
+    heading = re.search(r"^## Data subset$", head, re.M)
+    if heading is None:
+        sys.exit(f"Error: {path} has no '## Data subset' section before the marker")
+    section = head[heading.start():].rstrip()
+    bullet = tail.strip()
+    if not bullet.startswith("- ") or "\n" in bullet:
+        sys.exit(f"Error: {path} must have exactly one bullet line after the marker")
+    return section, bullet
+
+
+def datalimit_prompt(minimal_prompt: str, section: str, bullet: str) -> str:
+    """Insert the subset section and Consistency bullet into a minimal prompt.
+
+    Args:
+        minimal_prompt: text of the <task>_minimal prompt.
+        section: the "## Data subset" section (no trailing newline).
+        bullet: the Consistency bullet line.
+
+    Returns:
+        str, the datalimit task's prompt.
+
+    Raises:
+        ValueError: if the insertion points are not found exactly once.
+    """
+    if minimal_prompt.count(SECTION_BEFORE) != 1:
+        raise ValueError(f"expected one '{SECTION_BEFORE}' heading")
+    text = minimal_prompt.replace(SECTION_BEFORE, f"{section}\n\n{SECTION_BEFORE}")
+    items = LAST_CONSISTENCY_ITEM_RE.findall(text)
+    if len(items) != 1:
+        raise ValueError(f"expected one '- Curation of data:' consistency item, found {len(items)}")
+    return LAST_CONSISTENCY_ITEM_RE.sub(lambda m: f"{m.group(0)}\n{bullet}", text)
+
+
+def datalimit_compose(compose: str, task: str) -> str:
+    """Point a minimal task's compose file at the datalimit data.
+
+    Args:
+        compose: text of the <task>_minimal docker-compose.yaml.
+        task: parent task name.
+
+    Returns:
+        str, the compose text with `${DATA_ROOT...}/<task>` sources replaced by
+        `${DATA_ROOT...}/<task>_datalimit`, plus, for allen2p, a read-only file mount of
+        the subset list at /app/data/DATALIMIT_SUBSET.csv.
+
+    Raises:
+        ValueError: if no `${DATA_ROOT...}/<task>` mount source is found.
+    """
     # Match the mount source only: "...}/allen2p/visual-behavior..." or "...}/map:".
     # Anchoring on the closing brace of ${DATA_ROOT...} avoids touching anything else.
-    needle_dir = f"}}/{task}/"
-    needle_end = f"}}/{task}:"
-    if needle_dir in text:
-        updated = text.replace(needle_dir, f"}}/{task}{SUFFIX}/")
-    elif needle_end in text:
-        updated = text.replace(needle_end, f"}}/{task}{SUFFIX}:")
-    else:
-        print(f"Error: no ${{DATA_ROOT}}/{task} mount found in {compose}", file=sys.stderr)
-        sys.exit(1)
-    compose.write_text(updated)
-    print(f"  data mount repointed to ${{DATA_ROOT}}/{task}{SUFFIX}")
+    pattern = re.compile(rf"(\$\{{DATA_ROOT[^}}]*\}})/{re.escape(task)}(?=[/:])")
+    if not pattern.search(compose):
+        raise ValueError(f"no ${{DATA_ROOT}}/{task} mount found")
+    text = pattern.sub(lambda m: f"{m.group(1)}/{task}{SUFFIX}", compose)
+    if task in MOUNTS_SUBSET_LIST_SEPARATELY:
+        mount = re.search(rf'^(\s*- ")(\$\{{DATA_ROOT[^}}]*\}})/{re.escape(task)}{SUFFIX}/[^"]*"\s*$',
+                          text, re.M)
+        if not mount:
+            raise ValueError("no quoted release-directory mount to add the subset list after")
+        line = (f'{mount.group(1)}{mount.group(2)}/{task}{SUFFIX}/{SUBSET_LIST_NAME}'
+                f':/app/data/{SUBSET_LIST_NAME}:ro"')
+        text = text[:mount.end()] + "\n" + line + text[mount.end():]
+    return text
 
 
-def apply_resource_overrides(dst: Path, task: str) -> None:
-    """Relax `task.toml` settings that were sized for the full dataset.
-
-    Args:
-        dst: the generated `harbor-tasks/<task>_datalimit/` directory.
-        task: parent task name; only tasks in RESOURCE_OVERRIDES change.
-
-    Side effects:
-        Rewrites `task.toml` in place.
-
-    Raises:
-        SystemExit: if an overridden key is not present in the file, rather than
-            silently leaving the full-scale value in place.
-    """
-    overrides = RESOURCE_OVERRIDES.get(task)
-    if not overrides:
-        return
-    toml_path = dst / "task.toml"
-    lines = toml_path.read_text().splitlines()
-    for key, value in overrides.items():
-        for index, line in enumerate(lines):
-            if line.strip().startswith(f"{key} ") or line.strip().startswith(f"{key}="):
-                old = line.split("=", 1)[1].strip()
-                lines[index] = f"{key} = {value}"
-                print(f"  task.toml {key}: {old} -> {value}")
-                break
-        else:
-            print(f"Error: no '{key}' setting in {toml_path}", file=sys.stderr)
-            sys.exit(1)
-    toml_path.write_text("\n".join(lines) + "\n")
-
-
-def copy_missing(src: Path, dst: Path, ignore) -> list[str]:
-    """Copy only the files that do not already exist under `dst`.
-
-    Lets the script be re-run safely over a task whose reference solution has been
-    hand-edited: anything already there is left exactly as it is, and only genuinely
-    new parent files are brought across.
+def planned_files(task: str) -> tuple[dict[str, str], dict[str, Path]]:
+    """Everything the <task>_datalimit directory should contain.
 
     Args:
-        src: parent task directory.
-        dst: destination task directory (may or may not exist).
-        ignore: the `copytree` ignore callback from `make_ignore`, so the same
-            caches and `solution/*.pkl` leftovers are skipped.
+        task: parent task name.
 
     Returns:
-        Relative paths (posix strings) of the files actually written.
-
-    Side effects:
-        Creates files and parent directories under `dst`.
+        (written, copied): written maps relative path -> text for the files this script
+        changes; copied maps relative path -> source Path for files copied unchanged from
+        <task>_minimal. Neither includes tests/reference_stats_full.json.
     """
-    created = []
+    src = TASKS_DIR / f"{task}{SOURCE_SUFFIX}"
+    if not (src / "tests").is_dir():
+        sys.exit(f"Error: {src} does not exist; generate the minimal task first")
+    section, bullet = read_prompt_text(task)
+    ignore, _ = make_ignore(src)
+
+    written, copied = {}, {}
     for directory, _, filenames in _walk(src, ignore):
         for name in filenames:
             source = directory / name
-            relative = source.relative_to(src)
-            target = dst / relative
-            if target.exists():
+            rel = source.relative_to(src).as_posix()
+            if rel == REFERENCE_STATS_FILE:
                 continue
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
-            created.append(relative.as_posix())
-    return created
+            if rel in PROMPT_FILES:
+                written[rel] = datalimit_prompt(source.read_text(), section, bullet)
+            elif rel == COMPOSE_FILE:
+                written[rel] = datalimit_compose(source.read_text(), task)
+            else:
+                copied[rel] = source
+    return written, copied
 
 
-def local_changes(src: Path, dst: Path, ignore) -> list[str]:
-    """Files in `dst` that differ from their `src` counterpart, or are new there.
-
-    Used to say what a `--force` regeneration is about to discard, since that is
-    where hand edits to the reference solution live.
-
-    Args:
-        src: parent task directory.
-        dst: existing destination task directory.
-        ignore: the `copytree` ignore callback from `make_ignore`.
+def stale_files(task: str) -> tuple[list[str], list[str], bool]:
+    """Compare an existing <task>_datalimit directory with a fresh generation.
 
     Returns:
-        Sorted relative paths (posix strings) that differ.
+        (stale, extra, has_reference_stats): stale lists planned files that are missing or
+        differ; extra lists files present that the generation would not produce (excluding
+        the reference stats and ignored caches); has_reference_stats says whether
+        tests/reference_stats_full.json exists.
     """
-    differing = []
-    for directory, _, filenames in _walk(src, ignore):
-        for name in filenames:
-            source = directory / name
-            relative = source.relative_to(src)
-            target = dst / relative
-            if target.exists() and not filecmp.cmp(source, target, shallow=False):
-                differing.append(relative.as_posix())
-    return sorted(differing)
+    dst = TASKS_DIR / f"{task}{SUFFIX}"
+    written, copied = planned_files(task)
+    stale = [rel for rel, text in written.items()
+             if not (dst / rel).is_file() or (dst / rel).read_text() != text]
+    stale += [rel for rel, source in copied.items()
+              if not (dst / rel).is_file() or not filecmp.cmp(source, dst / rel, shallow=False)]
+    extra = []
+    if dst.is_dir():
+        ignore, _ = make_ignore(dst)
+        planned = set(written) | set(copied) | {REFERENCE_STATS_FILE}
+        for directory, _, filenames in _walk(dst, ignore):
+            for name in filenames:
+                rel = (directory / name).relative_to(dst).as_posix()
+                if rel not in planned:
+                    extra.append(rel)
+    return sorted(stale), sorted(extra), (dst / REFERENCE_STATS_FILE).is_file()
 
 
-def insert_subset_note(dst: Path, task: str, rule: str,
-                       only: list[str] | None = None) -> None:
-    """Add the "Dataset subset" bullet to the agent prompt and the judge's copy.
+def generate(task: str, dry_run: bool = False) -> None:
+    """Create or update harbor-tasks/<task>_datalimit.
 
     Args:
-        dst: the generated `harbor-tasks/<task>_datalimit/` directory.
-        task: parent task name, used to resolve where the subset list appears
-            inside the container.
-        rule: one-sentence description of what was kept, from the manifest.
-        only: if given, restrict to files this run actually created. The note is
-            inserted after the `- **Data**` bullet, so re-applying it to a prompt
-            that already has one would add a second copy.
+        task: parent task name.
+        dry_run: report what would be written, write nothing.
 
     Side effects:
-        Rewrites `instruction.md` and any judge reference copy in place.
+        Writes the planned files that are missing or out of date. Never deletes files, and
+        never touches tests/reference_stats_full.json.
     """
-    note = SUBSET_NOTE.format(
-        rule=rule, list_path=SUBSET_LIST_PATH.get(task, DEFAULT_SUBSET_LIST_PATH))
-    note += SUBSET_LIST_FORMAT.get(task, "")
-    for relative in [INSTRUCTION_FILE] + JUDGE_REFERENCE_FILES:
-        path = dst / relative
-        if not path.exists():
-            continue
-        if only is not None and relative not in only:
-            print(f"  preserved {relative} (subset note already present)")
-            continue
-        lines = path.read_text().splitlines()
-        for index, line in enumerate(lines):
-            if line.startswith(DATA_BULLET_PREFIX):
-                lines.insert(index + 1, note)
-                break
-        else:
-            print(f"WARNING: no '{DATA_BULLET_PREFIX}' bullet in {relative}; "
-                  f"subset note NOT inserted", file=sys.stderr)
-            continue
-        path.write_text("\n".join(lines) + "\n")
-        print(f"  subset note added to {relative}")
-
-
-def generate_datalimit_task(task: str, force: bool = False,
-                            dry_run: bool = False) -> None:
-    """Create `harbor-tasks/<task>_datalimit/` from `harbor-tasks/<task>/`.
-
-    Args:
-        task: parent benchmark task name.
-        force: replace the destination wholesale, discarding hand edits. Without
-            it, existing files are preserved and only missing ones are copied.
-        dry_run: report the plan without writing anything.
-
-    Side effects:
-        Creates, fills gaps in, or (with `force`) replaces the `<task>_datalimit`
-        task directory.
-    """
-    src = TASKS_DIR / task
     dst = TASKS_DIR / f"{task}{SUFFIX}"
     prefix = "[dry run] " if dry_run else ""
-
-    if not (src / "tests").is_dir():
-        print(f"Error: no tests/ directory in {src}", file=sys.stderr)
-        sys.exit(1)
-
-    rule = load_rule(task)
-    print(f"\n=== {task} -> {task}{SUFFIX}")
-    print(f"  rule: {rule or 'not subsampled (already under the cap)'}")
-
-    ignore, skipped = make_ignore(src)
-
-    if dry_run:
-        # Walk the way copytree will, so the reported size excludes the ignored
-        # files -- lee2025 alone leaves 13.8 GB of solution/*.pkl behind.
-        n_files, nbytes, present = 0, 0, 0
-        for directory, _, filenames in _walk(src, ignore):
-            for name in filenames:
-                n_files += 1
-                nbytes += (directory / name).stat().st_size
-                if (dst / (directory / name).relative_to(src)).exists():
-                    present += 1
-        if dst.exists() and not force:
-            print(f"{prefix}update {dst.name}: copy {n_files - present} missing file(s), "
-                  f"preserve {present}")
+    written, copied = planned_files(task)
+    stale, extra, has_stats = stale_files(task)
+    print(f"\n=== {task}{SOURCE_SUFFIX} -> {dst.name}: {len(stale)} file(s) to write")
+    for rel in stale:
+        print(f"{prefix}  write {rel}")
+        if dry_run:
+            continue
+        target = dst / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if rel in written:
+            target.write_text(written[rel])
         else:
-            print(f"{prefix}copytree {src.name} -> {dst.name} "
-                  f"({n_files} files, {human(nbytes)}, {len(skipped)} skipped)")
-        return
-
-    if dst.exists() and force:
-        # Name what is being thrown away. The reference solution and DECISIONS are
-        # hand-edited after generation, so this is where real work would be lost.
-        changed = local_changes(src, dst, ignore)
-        if changed:
-            print(f"  discarding local changes to: {', '.join(changed)}")
-        shutil.rmtree(dst)
-
-    if dst.exists():
-        created = copy_missing(src, dst, ignore)
-        total = sum(len(files) for _, _, files in _walk(src, ignore))
-        print(f"  copied {len(created)} missing file(s), preserved {total - len(created)}")
-    else:
-        shutil.copytree(src, dst, ignore=ignore)
-        created = None  # fresh tree: every derived edit applies
-        n_files, nbytes = tree_size(dst)
-        print(f"  copied {n_files} files ({human(nbytes)}), skipped {len(skipped)}")
-
-    # Derived edits apply only to files this run wrote. Re-running over an
-    # existing task must not repoint an already-repointed mount or insert the
-    # subset note a second time.
-    if created is None or "environment/docker-compose.yaml" in created:
-        repoint_data_mount(dst, task)
-    if created is None or "task.toml" in created:
-        apply_resource_overrides(dst, task)
-    if rule:
-        insert_subset_note(dst, task, rule, only=created)
-    check_data_mounts(dst)
-
-    if rule:
-        print(f"  NOTE: tests/reference_stats_full.json still describes the FULL dataset.\n"
-              f"        Regenerate with: harbor-scripts/generate_reference_stats.sh "
-              f"{task}{SUFFIX}")
+            shutil.copy2(copied[rel], target)
+    for rel in extra:
+        print(f"  WARNING: {dst.name}/{rel} is not produced by the generation; left in place")
+    if not has_stats:
+        print(f"  NOTE: no {REFERENCE_STATS_FILE} yet. Generate it on the datalimit data:\n"
+              f"        harbor-scripts/generate_reference_stats.sh {dst.name}")
 
 
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("tasks", nargs="*",
-                        help="Parent task names. Default with --all: every task "
-                             "that has a datalimit manifest.")
+    parser.add_argument("tasks", nargs="*", help="Parent task names, e.g. sosa2024.")
     parser.add_argument("--all", action="store_true",
-                        help="Generate for every task with a manifest.")
-    parser.add_argument("--force", action="store_true",
-                        help="Regenerate over existing output directories.")
+                        help="Every task whose datalimit dataset is reduced.")
+    parser.add_argument("--check", action="store_true",
+                        help="Report out-of-date files; write nothing. Exits 1 if any.")
     parser.add_argument("--dry-run", action="store_true",
-                        help="Report the plan without writing anything.")
+                        help="Report what would be written without writing anything.")
     args = parser.parse_args()
 
     if args.all:
         if args.tasks:
             sys.exit("Pass either --all or explicit task names, not both.")
-        tasks = sorted(path.stem for path in MANIFEST_DIR.glob("*.csv"))
+        tasks = reduced_tasks()
     else:
         if not args.tasks:
             parser.error("Specify at least one task, or pass --all.")
         tasks = args.tasks
+        not_reduced = sorted(set(tasks) - set(reduced_tasks()))
+        if not_reduced:
+            sys.exit(f"Not reduced (already under the size cap; use the _minimal task): "
+                     f"{', '.join(not_reduced)}")
 
-    unknown = [task for task in tasks if not (TASKS_DIR / task).is_dir()]
-    if unknown:
-        sys.exit(f"No such harbor task(s): {', '.join(unknown)}")
+    if args.check:
+        n_problems = 0
+        for task in tasks:
+            stale, extra, has_stats = stale_files(task)
+            for rel in stale:
+                print(f"STALE: {task}{SUFFIX}/{rel}")
+            for rel in extra:
+                print(f"EXTRA: {task}{SUFFIX}/{rel}")
+            if not has_stats:
+                print(f"MISSING: {task}{SUFFIX}/{REFERENCE_STATS_FILE}")
+            n_problems += len(stale) + len(extra) + (not has_stats)
+        print(f"{n_problems} problem(s) in {len(tasks)} task(s)")
+        sys.exit(1 if n_problems else 0)
 
     for task in tasks:
-        generate_datalimit_task(task, force=args.force, dry_run=args.dry_run)
-
-    print(f"\nGenerated {len(tasks)} datalimit task(s). "
-          f"Regenerate reference stats before scoring any subsampled task.")
+        generate(task, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

@@ -130,27 +130,40 @@ NON_BENCHMARK_TASKS = {"debug"}
 # cheaper to run than the other.
 MINIMAL_SUFFIX = "_minimal"
 
+# Suffix marking the datalimit variant: the minimal-prompt task run on the
+# 50 GB-capped data. Only tasks whose data was actually reduced have one; for the rest,
+# the <task>_minimal trials serve as the datalimit arm, so they are not rerun.
+DATALIMIT_SUFFIX = "_datalimit"
+
 
 def discover_tasks(scope: str = "all") -> list[str]:
     """Return the benchmark task directory names for a scope.
 
     Args:
-        scope: which prompt variants to include --
-            "all"     both variants of every task (the default sweep),
-            "minimal" only the minimal-prompt <task>_minimal directories,
-            "maximal" only the full-prompt <task> directories.
+        scope: which variants to include --
+            "all"       maximal and minimal prompt of every task on full data (the
+                        default sweep),
+            "minimal"   only the minimal-prompt <task>_minimal directories,
+            "maximal"   only the full-prompt <task> directories,
+            "datalimit" only the datalimit <task>_datalimit directories.
 
     Returns:
-        Sorted task directory names, excluding NON_BENCHMARK_TASKS. Those can
-        still be run by naming them explicitly with --tasks.
+        Sorted task directory names, excluding NON_BENCHMARK_TASKS. A maximal task is one
+        with a <task>_minimal twin, so experimental directories such as sosa2024_api are
+        not swept by accident. Anything can still be run by naming it with --tasks.
     """
     names = sorted(p.name for p in (REPO_ROOT / "harbor-tasks").iterdir()
                    if p.is_dir() and p.name not in NON_BENCHMARK_TASKS)
+    minimal = [n for n in names if n.endswith(MINIMAL_SUFFIX)]
+    maximal = [n for n in names if n + MINIMAL_SUFFIX in names]
+    datalimit = [n for n in names if n.endswith(DATALIMIT_SUFFIX)]
     if scope == "minimal":
-        return [n for n in names if n.endswith(MINIMAL_SUFFIX)]
+        return minimal
     if scope == "maximal":
-        return [n for n in names if not n.endswith(MINIMAL_SUFFIX)]
-    return names
+        return maximal
+    if scope == "datalimit":
+        return datalimit
+    return sorted(maximal + minimal)
 
 
 def newest_versions_config() -> Path | None:
@@ -324,7 +337,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tasks", nargs="*",
-                        help="explicit task names; overrides --minimal/--maximal "
+                        help="explicit task names; overrides --minimal/--maximal/--datalimit "
                              "and may name a non-benchmark task such as debug "
                              "(default: every benchmark task, both variants)")
     # Mutually exclusive: a sweep is over one prompt variant or both, never a
@@ -336,6 +349,9 @@ def main():
     scope_group.add_argument("--maximal", dest="scope", action="store_const",
                              const="maximal",
                              help="only the full-prompt tasks (no *_minimal)")
+    scope_group.add_argument("--datalimit", dest="scope", action="store_const",
+                             const="datalimit",
+                             help="only the datalimit *_datalimit tasks")
     parser.set_defaults(scope="all")
     parser.add_argument("--queue", choices=sorted(QUEUE_SPECS), default=DEFAULT_QUEUE,
                         help=f"LSF GPU queue; sets the slot count from its "

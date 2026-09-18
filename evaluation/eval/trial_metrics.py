@@ -223,9 +223,11 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
         (dataset, agent, trial_num, timestamp, prompt), or None if the path
         doesn't parse.
 
-        `dataset` has any `_minimal` suffix stripped so the two prompt variants
-        of a task share a dataset key and can be compared directly, and `prompt`
-        records which variant this trial actually was ("minimal" or "full").
+        `dataset` has any `_minimal` or `_datalimit` suffix stripped so the
+        variants of a task share a dataset key and can be compared directly, and
+        `prompt` records which variant this trial actually was: "full" (maximal
+        prompt), "minimal", or "datalimit" (minimal prompt on the
+        datalimit data).
         `agent` is canonicalised through AGENT_ALIASES, and trials belonging to
         SKIP_AGENTS return None rather than entering the output at all.
         Keeping the variant is not cosmetic: <task> and <task>_minimal read the
@@ -244,9 +246,14 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
         return None
     agent = AGENT_ALIASES.get(agent, agent)
 
-    dataset = task.removesuffix("_minimal")
+    dataset = task.removesuffix("_minimal").removesuffix("_datalimit")
     dataset = DATASET_ALIASES.get(dataset, dataset)
-    prompt = "minimal" if task.endswith("_minimal") else "full"
+    if task.endswith("_datalimit"):
+        prompt = "datalimit"
+    elif task.endswith("_minimal"):
+        prompt = "minimal"
+    else:
+        prompt = "full"
     timestamp = trial_dir.split("_trial")[0]
 
     # Prefer the job directory's `_tN`; fall back to the `_trialN` suffix, which

@@ -10,15 +10,8 @@ Document the decisions of another agentic AI system, then evaluate them against 
 
 **Agentic AI Outputs** (the code/files the AI created are in `/app`):
   /app/
-  ├── CONVERSION_NOTES.md                    # Agent's documentation of conversion decisions,
-  │                                          # sanity checks, and validation results.
   ├── convert_data.py                        # Agent's conversion script.
   ├── converted_data.pkl                     # Full converted dataset in target format.
-  ├── README.md                              # User-facing documentation.
-  ├── conversion_full_out.txt                # stdout from full conversion run.
-  ├── verification_full_out.txt              # stdout from `train_decoder.py --verify-only`
-  │                                          # on full data.
-  ├── train_decoder_full_out.txt             # stdout from full decoder training.
 
 **Agent Trajectory** (recorded in `/logs/agent/trajectory.json`, ATIF format):
   ```json
@@ -73,7 +66,7 @@ Create the file `DECISIONS.md` using the template at the end of this document.
 For each question below:
   i. Summarize the relevant code or decisions the AI made.
   ii. Provide code snippets from the AI's `convert_data.py`.
-  iii. Summarize the AI's justification for its decisions (from CONVERSION_NOTES.md or trajectory).
+  iii. Summarize the AI's justification for its decisions (from the agent trajectory).
 
 ### Decision Questions 
 

@@ -72,8 +72,16 @@ SUPERVISED_DS   = ["allen2p", "chen2024", "hasnain2024", "lee2025", "majnik2025"
 UNSUPERVISED_DS = []
 
 # The task variant an arm ran. "maximal" mirrors submit_harbor_cluster.py's
-# --minimal/--maximal flags; the underlying metrics field says "full".
-PROMPT_LABEL = {"minimal": "minimal", "full": "maximal"}
+# --minimal/--maximal flags; the underlying metrics field says "full". "datalimit" is the
+# minimal prompt on the datalimit data (<task>_datalimit).
+PROMPT_LABEL = {"minimal": "minimal", "full": "maximal", "datalimit": "datalimit"}
+
+# Datasets already under the 50 GB size cap. They have no <task>_datalimit task: their
+# datalimit arm IS their minimal arm, run on identical data, so datalimit_trials()
+# returns the minimal trials for them. Those trials therefore belong to both arms -- a
+# full-vs-datalimit comparison is identical for these datasets by construction, and pooling
+# the minimal and datalimit arms must not count them twice.
+DATALIMIT_SAME_AS_MINIMAL = {"hasnain2024", "lee2025", "majnik2025"}
 
 # The harbor task directory is sometimes named differently from the dataset.
 # Canonicalising to the manual vocabulary here means the metrics key matches
@@ -89,6 +97,24 @@ DATASET_ALIASES = {"map": "chen2024", "mouseland": "zhong2025"}
 # ---------------------------------------------------------------------------
 
 
+def datalimit_trials(metrics: dict, dataset: str, agent: str) -> dict:
+    """One agent's trials in the datalimit arm of one dataset.
+
+    Args:
+        metrics: nested {dataset: {agent: {prompt: {trial: metrics}}}}, as loaded by
+            load_trial_metrics.
+        dataset: metrics-side dataset name, e.g. 'chen2024'.
+        agent: agent name, e.g. 'claude-code'.
+
+    Returns:
+        {trial_str: metrics}: the agent's "datalimit" trials, or for a dataset in
+        DATALIMIT_SAME_AS_MINIMAL its "minimal" trials (the same dicts, not copies).
+        Empty when there are none.
+    """
+    prompt = "minimal" if dataset in DATALIMIT_SAME_AS_MINIMAL else "datalimit"
+    return metrics.get(dataset, {}).get(agent, {}).get(prompt, {})
+
+
 def load_trial_metrics(eval_dir: Path = EVAL_DIR, filename: str = TRIAL_METRICS_JSON) -> dict:
     """Load `trial_metrics.json` -> {dataset: {agent: {trial_str: {...}}}}.
 
@@ -101,19 +127,26 @@ def load_trial_metrics(eval_dir: Path = EVAL_DIR, filename: str = TRIAL_METRICS_
         )
     return json.loads(path.read_text())
 
-def load_reference_stats(dataset,root=ROOT):
+def load_reference_stats(dataset,root=ROOT,full=False,variant=None):
     """Oracle summary statistics for one dataset, or None if it has none.
 
     Args:
         dataset: metrics-side dataset name, e.g. 'chen2024'. The harbor task
             directory may be named differently, e.g. 'map'.
+        full: return the whole reference_stats_full.json (including the decoder
+            accuracy statistics) rather than only its 'data_summary'.
+        variant: None for the full-data statistics (harbor-tasks/<task>/), or
+            'datalimit' for the datalimit task's
+            (harbor-tasks/<task>_datalimit/). For a dataset in
+            DATALIMIT_SAME_AS_MINIMAL there is no _datalimit task and the full-data
+            statistics are returned, since its data is identical.
 
     Returns:
         The 'data_summary' sub-dict of
         harbor-tasks/<task>/tests/reference_stats_full.json: 'input_range' and
         'output_range' as {variable_name: [lo, hi]} in the variable's own units,
-        plus the scalar scale fields. None for the unsupervised tasks, which
-        ship no reference stats.
+        plus the scalar scale fields. With full=True, the whole parsed file.
+        None for tasks that ship no reference stats.
     """
 
     try:
@@ -125,9 +158,13 @@ def load_reference_stats(dataset,root=ROOT):
     task_dir_name = {v: k for k, v in DATASET_ALIASES.items()}
     
     task = task_dir_name.get(dataset, dataset)
+    if variant is not None and dataset not in DATALIMIT_SAME_AS_MINIMAL:
+        task = f"{task}_{variant}"
     path = root / "harbor-tasks" / task / "tests" / "reference_stats_full.json"
     stats = tests.load_stats_full(path)
-    return None if stats is None else stats['data_summary']
+    if stats is None:
+        return None
+    return stats if full else stats['data_summary']
 
 # Different agent runs name the same conceptual decoder variable in slightly
 # different ways (e.g., chen2024's "tongue Y" target appears as

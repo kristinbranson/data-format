@@ -91,6 +91,13 @@ def render_versions_json(cfg: dict, source_name: str) -> str:
     if missing:
         sys.exit(f"{source_name}: tools is missing judge entr(ies) {sorted(missing)}")
 
+    # Whether tests/test.sh runs the LLM judges at all. On by default: the judges' process
+    # score is a third of the reward, so switching them off is a deliberate per-run choice
+    # (cheaper, no API keys), set as a top-level "run_llm_judge" in the source config.
+    run_llm_judge = cfg.get("run_llm_judge", True)
+    if not isinstance(run_llm_judge, bool):
+        sys.exit(f"{source_name}: run_llm_judge must be true or false, got {run_llm_judge!r}")
+
     out = {
         "_comment": [
             # Names the role rather than the path: this file ships to
@@ -103,7 +110,10 @@ def render_versions_json(cfg: dict, source_name: str) -> str:
             "Judge tools only: run arms defined in the source config are deliberately",
             "not shipped. One entry per tool -- agent and judge share a CLI by",
             "construction, since they share /root/.local/bin in the trial container.",
+            "run_llm_judge: false makes test.sh skip both judges; the reward is then the",
+            "mean of outcome_all and outcome_mean_per_category.",
         ],
+        "run_llm_judge": run_llm_judge,
         "tools": judges,
     }
     return json.dumps(out, indent=2) + "\n"

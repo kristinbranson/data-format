@@ -11,6 +11,7 @@
 #   ./check_status.sh sosa2024 claude  # one task, one agent
 
 JOBS_ROOT="/home/bransonk@hhmi.org/harbor-tasks/data-format/jobs"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 FILTER_TASK="${1:-}"
 FILTER_AGENT="${2:-}"
@@ -80,21 +81,20 @@ if steps: print(steps[-1].get('message', '')[:120])
         issues="${issues}no agent dir; "
       fi
 
-      # --- Verifier status ---
+      # --- Verifier status and reward ---
+      # reward.json (current tasks) or reward.txt (older trials); show_reward.py decides.
       verif_status="?"
-      if [ -f "$trial_dir/verifier/reward.txt" ]; then
+      reward="—"
+      if reward_value=$(python3 "$SCRIPT_DIR/show_reward.py" --value "$trial_dir/verifier" 2>/dev/null); then
         verif_status="ok"
+        reward="$reward_value"
       elif [ -d "$trial_dir/verifier" ]; then
         verif_status="PART"
-        issues="${issues}no reward.txt; "
+        issues="${issues}no reward file; "
       else
         verif_status="NONE"
         issues="${issues}no verifier dir; "
       fi
-
-      # --- Reward ---
-      reward="—"
-      [ -f "$trial_dir/verifier/reward.txt" ] && reward=$(cat "$trial_dir/verifier/reward.txt")
 
       # --- Files status (from metrics.json) ---
       files_status="—"

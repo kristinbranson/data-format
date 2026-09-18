@@ -19,6 +19,7 @@ Output variables (decoded from neural activity):
 import sys
 import time
 import argparse
+from pathlib import Path
 import pickle
 import warnings
 import numpy as np
@@ -189,6 +190,20 @@ def main():
 
     # Filter to VisualBehavior project only
     vb_experiments = experiment_table[experiment_table.project_code == PROJECT_CODE]
+
+    # The datalimit dataset holds a subset of the release, listed in
+    # DATALIMIT_SUBSET.csv. The AllenSDK metadata is unmodified and still lists every
+    # released experiment, so restrict to the ids named there BEFORE anything is loaded --
+    # otherwise get_behavior_ophys_experiment() would fetch the absent ones from S3. The
+    # full dataset has no such file.
+    subset_csv = f"{args.datadir}/DATALIMIT_SUBSET.csv"
+    if Path(subset_csv).is_file():
+        subset_ids = pd.read_csv(subset_csv).ophys_experiment_id
+        vb_experiments = vb_experiments[vb_experiments.index.isin(subset_ids)]
+        if vb_experiments.empty:
+            sys.exit(f"No experiments matched {subset_csv}; refusing to continue.")
+        print(f"Data limit: {len(vb_experiments)} experiments from {subset_csv}")
+
     all_mouse_ids = sorted(vb_experiments.mouse_id.unique())
     print(f"VisualBehavior project: {len(all_mouse_ids)} mice, "
           f"{vb_experiments.ophys_session_id.nunique()} sessions, "

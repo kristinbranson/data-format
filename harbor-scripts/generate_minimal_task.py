@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Generate a minimal-prompt version of a harbor task.
 
-Copies the task directory and swaps in the stripped-down prompt from
-minimal_prompts/, both as the agent's instruction.md and as the judge's
-tests/instruction_reference.md. Everything else (tests, solution, environment)
-is copied unchanged so the only difference from the parent task is the prompt.
+Copies the task directory, then writes the files that differ from the parent task
+because the prompt differs ("derived files"):
+
+    instruction.md                  the minimal prompt from minimal_prompts/
+    tests/instruction_reference.md  the same prompt, for the judges
+    tests/expected_files.json       the agent files the minimal prompt asks for
+    tests/judge_instructions*.md    the parent's judge instructions, describing only those files
+
+Everything else (tests, solution, environment) is copied unchanged.
 
 Usage:
     python generate_minimal_task.py sosa2024              # highest prompt version
@@ -12,9 +17,12 @@ Usage:
     python generate_minimal_task.py --all --version 1     # all tasks with a v1 prompt
     python generate_minimal_task.py sosa2024 --dry-run
     python generate_minimal_task.py sosa2024 --force      # regenerate in place
+    python generate_minimal_task.py --all --update        # rewrite derived files only
+    python generate_minimal_task.py --all --check         # report stale derived files
 """
 
 import argparse
+import json
 import re
 import shutil
 import sys
@@ -33,6 +41,33 @@ INSTRUCTION_FILE = "instruction.md"
 JUDGE_REFERENCE_FILE = "tests/instruction_reference.md"
 # zhang2025 uses the reversed name; keep it in sync if present.
 JUDGE_REFERENCE_ALIASES = ["tests/reference_instruction.md"]
+
+# The agent files the minimal prompt asks for, read by test_outputs.py (which files
+# fail the test) and by the judge instructions. The minimal prompt asks for no notes,
+# README, sample pickle or logs, so this is exactly CORE_FILES in
+# template-harbor-task/tests/test_outputs.py, which refuses a list missing any of them.
+EXPECTED_FILES_FILE = "tests/expected_files.json"
+MINIMAL_EXPECTED_FILES = {
+    "_comment": [
+        "Agent files test_outputs.py checks for this task, matching what its instruction.md asks for.",
+        "required: missing or empty fails the test. expected: only warned about.",
+        "Minimal-prompt list, written by harbor-scripts/generate_minimal_task.py.",
+    ],
+    "required": ["convert_data.py", "converted_data.pkl"],
+    "expected": [],
+}
+
+# The LLM judges' instructions. Written by hand for the maximal task, which describes the
+# agent's notes, README and logs; the minimal task's copies describe only the files its
+# prompt asks for (MINIMAL_EXPECTED_FILES). Everything else, including every question, is
+# copied unchanged.
+JUDGE_INSTRUCTION_FILES = ["tests/judge_instructions.md", "tests/judge_instructions_unsupervised.md"]
+# One entry of the "Agentic AI Outputs" file tree, plus the continuation lines of its comment.
+TREE_ENTRY_RE = re.compile(r"^  ├── (?P<name>\S+).*\n(?:^  │ .*\n)*", re.M)
+TREE_BLOCK_RE = re.compile(r"(?<=\*\*Agentic AI Outputs\*\* \(the code/files the AI created are in `/app`\):\n  /app/\n)"
+                           r"(?:^  [├│].*\n)+", re.M)
+JUSTIFICATION = ("Summarize the AI's justification for its decisions (from CONVERSION_NOTES.md or trajectory).",
+                 "Summarize the AI's justification for its decisions (from the agent trajectory).")
 
 # Directories never worth copying: editor/interpreter caches and virtualenvs.
 SKIP_DIRS = {
@@ -173,6 +208,95 @@ def check_data_mounts(dst: Path) -> None:
             print(f"WARNING: data mount does not exist: {host} -> {resolved}")
 
 
+def judge_instructions_for(text: str, agent_files: set[str]) -> str:
+    """Rewrite a maximal task's judge instructions for a task that asks for fewer files.
+
+    Args:
+        text: the maximal task's judge instructions.
+        agent_files: names of the agent files the task asks for (required and expected).
+
+    Returns:
+        str, the instructions with the "Agentic AI Outputs" tree limited to agent_files, and
+        the justification question pointed at the trajectory when there are no notes.
+
+    Raises:
+        ValueError: if the file tree or the justification question is not found exactly once,
+            so instructions whose layout has changed are not silently left describing files
+            the agent was never asked for.
+    """
+    blocks = TREE_BLOCK_RE.findall(text)
+    if len(blocks) != 1:
+        raise ValueError(f"expected one 'Agentic AI Outputs' file tree, found {len(blocks)}")
+    kept = "".join(entry.group(0) for entry in TREE_ENTRY_RE.finditer(blocks[0])
+                   if entry.group("name") in agent_files)
+    text = TREE_BLOCK_RE.sub(lambda _: kept, text)
+    if "CONVERSION_NOTES.md" not in agent_files:
+        if text.count(JUSTIFICATION[0]) != 1:
+            raise ValueError("expected one justification question naming CONVERSION_NOTES.md")
+        text = text.replace(*JUSTIFICATION)
+    return text
+
+
+def derived_files(src: Path, prompt: Path) -> dict[str, str]:
+    """Contents of every file a minimal task derives from its prompt.
+
+    Args:
+        src: the parent (maximal) task directory; decides whether the zhang2025-style
+            reference alias is also written.
+        prompt: the minimal prompt file.
+
+    Returns:
+        dict mapping path relative to the minimal task directory -> file text.
+    """
+    prompt_text = prompt.read_text()
+    files = {INSTRUCTION_FILE: prompt_text, JUDGE_REFERENCE_FILE: prompt_text}
+    for alias in JUDGE_REFERENCE_ALIASES:
+        if (src / alias).exists():
+            files[alias] = prompt_text
+    files[EXPECTED_FILES_FILE] = json.dumps(MINIMAL_EXPECTED_FILES, indent=2) + "\n"
+    agent_files = set(MINIMAL_EXPECTED_FILES["required"]) | set(MINIMAL_EXPECTED_FILES["expected"])
+    for rel in JUDGE_INSTRUCTION_FILES:
+        if (src / rel).exists():
+            files[rel] = judge_instructions_for((src / rel).read_text(), agent_files)
+    return files
+
+
+def write_derived_files(src: Path, dst: Path, prompt: Path, dry_run: bool = False) -> None:
+    """Write the prompt-derived files into an existing minimal task directory.
+
+    Args:
+        src: parent task directory.
+        dst: minimal task directory (must exist unless dry_run).
+        prompt: the minimal prompt file.
+        dry_run: print what would be written, write nothing.
+
+    Side effects: overwrites the files listed by derived_files() under dst.
+    """
+    prefix = "[dry run] " if dry_run else ""
+    for alias in JUDGE_REFERENCE_ALIASES:
+        if (src / alias).exists():
+            print(f"WARNING: {src.name} uses {alias} instead of {JUDGE_REFERENCE_FILE}; "
+                  f"writing both (judge_instructions.md reads {JUDGE_REFERENCE_FILE})")
+    for rel, text in derived_files(src, prompt).items():
+        print(f"{prefix}write {dst.name}/{rel}")
+        if not dry_run:
+            (dst / rel).write_text(text)
+
+
+def stale_derived_files(src: Path, dst: Path, prompt: Path) -> list[str]:
+    """Derived files in dst that are missing or differ from what would be generated.
+
+    Returns:
+        list of str paths relative to dst; empty when everything is current.
+    """
+    stale = []
+    for rel, text in derived_files(src, prompt).items():
+        path = dst / rel
+        if not path.is_file() or path.read_text() != text:
+            stale.append(rel)
+    return stale
+
+
 def generate_minimal_task(src: Path, dst: Path, prompt: Path,
                           force: bool = False, dry_run: bool = False) -> None:
     prefix = "[dry run] " if dry_run else ""
@@ -209,18 +333,7 @@ def generate_minimal_task(src: Path, dst: Path, prompt: Path,
         for rel in skipped:
             print(f"  skipped {rel}")
 
-    # Swap in the minimal prompt as both the agent instruction and the judge reference.
-    targets = [INSTRUCTION_FILE, JUDGE_REFERENCE_FILE]
-    for alias in JUDGE_REFERENCE_ALIASES:
-        if (src / alias).exists():
-            print(f"WARNING: {src.name} uses {alias} instead of {JUDGE_REFERENCE_FILE}; "
-                  f"writing both (judge_instructions.md reads {JUDGE_REFERENCE_FILE})")
-            targets.append(alias)
-
-    for rel in targets:
-        print(f"{prefix}write {rel} <- {prompt.name}")
-        if not dry_run:
-            shutil.copy2(prompt, dst / rel)
+    write_derived_files(src, dst, prompt, dry_run=dry_run)
 
     if dry_run:
         return
@@ -278,7 +391,19 @@ def main():
         "--dry-run", "-n", action="store_true",
         help="Print what would be done without copying anything",
     )
+    parser.add_argument(
+        "--update", action="store_true",
+        help="Rewrite only the derived files (prompt copies, expected_files.json) in an "
+             "existing minimal task, leaving everything else untouched",
+    )
+    parser.add_argument(
+        "--check", action="store_true",
+        help="Report derived files that are missing or out of date; write nothing. "
+             "Exits 1 if any are",
+    )
     args = parser.parse_args()
+    if args.update and args.check:
+        parser.error("--update and --check are mutually exclusive")
 
     version = None
     if args.version is not None:
@@ -308,6 +433,7 @@ def main():
         print("Error: --prompt/--output only make sense for a single task", file=sys.stderr)
         sys.exit(1)
 
+    n_stale = 0
     for task in tasks:
         # Accept a bare name, harbor-tasks/<name>, or an absolute path.
         candidate = Path(task)
@@ -333,7 +459,24 @@ def main():
         else:
             dst = src.parent / f"{src.name}_{args.suffix}"
 
+        if args.update or args.check:
+            if not dst.is_dir():
+                print(f"Error: {dst} does not exist; generate it first", file=sys.stderr)
+                sys.exit(1)
+            if args.check:
+                stale = stale_derived_files(src, dst, prompt)
+                n_stale += len(stale)
+                for rel in stale:
+                    print(f"STALE: {dst.name}/{rel} (from {prompt.name})")
+            else:
+                write_derived_files(src, dst, prompt, dry_run=args.dry_run)
+            continue
+
         generate_minimal_task(src, dst, prompt, force=args.force, dry_run=args.dry_run)
+
+    if args.check:
+        print(f"{n_stale} stale derived file(s)")
+        sys.exit(1 if n_stale else 0)
 
 
 if __name__ == "__main__":

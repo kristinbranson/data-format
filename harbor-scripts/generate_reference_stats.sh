@@ -4,6 +4,12 @@
 # Output goes to jobs/oracle/ and the snapshot will contain stats_full.json,
 # converted_data.pkl, etc.
 #
+# That is step 1 of 2. The reference also needs the decoder's accuracy over 20
+# independent train/validation splits, which the verifier's accuracy threshold uses:
+#   harbor-scripts/rerun_verifier.sh --decoder-stats --task <task> <oracle trial dir>
+# writes <trial>/decoder_stats_<time>/reference_stats_full.json; copy that into the
+# task's tests/ (and its _minimal twin).
+#
 # Usage:
 #   ./generate_reference_stats.sh [--podman] [task_name]
 #
@@ -28,7 +34,7 @@ TASK=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --podman) USE_PODMAN=true; shift ;;
-        --help|-h) sed -n '2,20p' "$0"; exit 0 ;;
+        --help|-h) sed -n '2,27p' "$0"; exit 0 ;;
         *)        TASK="$1"; shift ;;
     esac
 done
@@ -71,3 +77,7 @@ harbor run \
     -k 1 -n 1 \
     --disable-verification \
     $TASK_FLAG $PODMAN_FLAG
+
+echo ""
+echo "Next: harbor-scripts/rerun_verifier.sh --decoder-stats --task <task> <trial dir under $JOBS_DIR>"
+echo "(add --podman for trials on /groups or /nrs), then copy the reference_stats_full.json it writes."

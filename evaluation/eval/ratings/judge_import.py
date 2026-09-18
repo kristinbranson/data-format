@@ -91,7 +91,10 @@ def discover(dataset_filter: str | None = None) -> dict:
         task = task_dir.name
         # `.git` and friends are not tasks; without this their internals get
         # walked as if they were agent folders.
-        if task.startswith(".") or task in SKIP_DIRS or task.endswith("_minimal"):
+        # Only maximal-prompt tasks are imported; the minimal-prompt and
+        # datalimit variants are left out, as before.
+        if (task.startswith(".") or task in SKIP_DIRS or task.endswith("_minimal")
+                or task.endswith("_datalimit")):
             continue
         dataset = DATASET_ALIAS.get(task, task)
         if dataset_filter and dataset != dataset_filter:

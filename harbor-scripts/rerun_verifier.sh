@@ -19,6 +19,15 @@
 #   --no-gpu              Do not request a GPU. Use when the host's CDI spec does
 #                         not declare the device podman asks for; test_gpu_available
 #                         then fails and decoder training runs on CPU.
+#   --decoder-stats       Instead of grading, compute the 20-split decoder statistics
+#                         for a reference solution: runs compute_decoder_stats.py on the
+#                         trial's snapshot (converted_data.pkl + stats_full.json from an
+#                         oracle run) inside the task's image, and writes
+#                         <trial>/decoder_stats_<time>/reference_stats_full.json.
+#   --n-replicates N      Splits for --decoder-stats (default 20).
+#   --task NAME           Task name, when it cannot be inferred from the trial path.
+#                         Inferred from a harbor trial directory named <task>__<id>,
+#                         or from jobs/<task>/<agent>/<timestamp>/. Also --task=NAME.
 #   --podman              Use rootless podman instead of docker. REQUIRED for
 #                         trials stored on /groups or /nrs: docker runs the
 #                         container as real root, and those NFS mounts are
@@ -34,6 +43,7 @@
 #   ./rerun_verifier.sh /path/to/jobs/sosa2024/oracle/2026-03-10__00-06-35_trial1/
 #   ./rerun_verifier.sh --claude-judge-only /path/to/jobs/lee2025/claude/2026-03-10__11-18-23_trial3/
 #   ./rerun_verifier.sh --codex-judge-only /path/to/jobs/sosa2024/claude/2026-03-10__19-44-11_trial1/
+#   ./rerun_verifier.sh --decoder-stats ~/harbor-tasks/data-format/jobs/oracle/<time>/lee2025__<id>/
 #
 # Requirements:
 #   - The trial must have verifier/snapshot/ with converted_data.pkl
@@ -48,6 +58,9 @@ NO_GPU=false
 USE_APIKEYS=false
 ENV_FILE=""
 VERIFIER_DIR_OVERRIDE=""
+DECODER_STATS=false
+N_REPLICATES=20
+TASK_OVERRIDE=""
 CONTAINER_CMD="docker"
 # docker and podman spell GPU passthrough differently: docker uses its own
 # --gpus flag, podman uses CDI device names from /etc/cdi/nvidia.yaml.
@@ -58,6 +71,13 @@ while [[ "${1:-}" == --* ]]; do
         --codex-judge-only)  RUN_CODEX_JUDGE=true;  JUDGE_ONLY=true; shift ;;
         --judges-only)       RUN_CLAUDE_JUDGE=true; RUN_CODEX_JUDGE=true; JUDGE_ONLY=true; shift ;;
         --verifier-dir)      VERIFIER_DIR_OVERRIDE="$2"; shift 2 ;;
+        --decoder-stats)     DECODER_STATS=true; shift ;;
+        --n-replicates)      N_REPLICATES="$2"; shift 2 ;;
+        --n-replicates=*)    N_REPLICATES="${1#*=}"; shift ;;
+        --task)              TASK_OVERRIDE="$2"; shift 2 ;;
+        # One-word forms, for wrappers such as submit_rerun_verifier.sh that forward
+        # options as single words.
+        --task=*)            TASK_OVERRIDE="${1#*=}"; shift ;;
         --podman)            CONTAINER_CMD="podman"; GPU_FLAG="--device nvidia.com/gpu=all"; shift ;;
         --no-gpu)            NO_GPU=true; shift ;;
         --apikeys)           USE_APIKEYS=true; shift ;;
@@ -115,7 +135,19 @@ if [ -d "$NEARLINE_ROOT" ]; then
 fi
 
 # Infer task name from trial directory path: .../jobs/<task>/<agent>/<timestamp>/
-TASK_NAME="$(basename "$(dirname "$(dirname "$TRIAL_DIR")")")"
+# Task name: --task if given; else harbor's own trial directory name, <task>__<id> (what
+# generate_reference_stats.sh and raw harbor runs produce); else the reorganized layout
+# jobs/<task>/<agent>/<timestamp>/.
+TRIAL_BASENAME="$(basename "$TRIAL_DIR")"
+if [ -n "$TASK_OVERRIDE" ]; then
+    TASK_NAME="$TASK_OVERRIDE"
+elif [[ "$TRIAL_BASENAME" =~ ^([A-Za-z][A-Za-z0-9_-]*)__[A-Za-z0-9]+$ ]]; then
+    # A task name starts with a letter; the reorganized layout's <timestamp>_trialN
+    # directories also contain "__" but start with a digit.
+    TASK_NAME="${BASH_REMATCH[1]}"
+else
+    TASK_NAME="$(basename "$(dirname "$(dirname "$TRIAL_DIR")")")"
+fi
 TASK_DIR="$REPO_DIR/harbor-tasks/$TASK_NAME"
 IMAGE_NAME="hb__${TASK_NAME}-reverify"
 
@@ -208,7 +240,9 @@ fi
 # UNAUTHENTICATED -- producing empty judge/ directories and
 # "[Errno 2] ... llm_judge_eval.json" in metrics.json, next to a reward that
 # looked fine. Both cluster reruns on 2026-07-29 failed that way.
-if [ "$USE_APIKEYS" = true ]; then
+if [ "$DECODER_STATS" = true ]; then
+    echo "Judge auth: not needed for --decoder-stats"
+elif [ "$USE_APIKEYS" = true ]; then
     ENV_FILE="${ENV_FILE:-$REPO_DIR/.env}"
     [ -f "$ENV_FILE" ] || { echo "Error: env file not found: $ENV_FILE"; exit 1; }
     # shellcheck disable=SC1090
@@ -247,7 +281,48 @@ cp -r "$TASK_DIR/tests/." "$TESTS_TMPDIR/"
 chmod -R a+rX "$TESTS_TMPDIR"
 trap 'rm -rf "$TESTS_TMPDIR"' EXIT
 
-if [ "$JUDGE_ONLY" = true ]; then
+if [ "$DECODER_STATS" = true ]; then
+    # Replicate decoder statistics for a reference solution. Run in the task's image, not
+    # on the host, so torch and numpy are the versions the verifier grades with.
+    SNAPSHOT_DIR="$TRIAL_DIR/verifier/snapshot"
+    for f in converted_data.pkl stats_full.json; do
+        if [ ! -e "$SNAPSHOT_DIR/$f" ]; then
+            echo "Error: no $f in $SNAPSHOT_DIR (run the oracle first)"
+            exit 1
+        fi
+    done
+    STATS_OUT="$TRIAL_DIR/decoder_stats_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$STATS_OUT"
+    CPU_FLAG=""
+    [ -z "$GPU_FLAG" ] && CPU_FLAG="--cpu"
+
+    echo "Trial:    $TRIAL_DIR"
+    echo "Task:     $TASK_NAME"
+    echo "Output:   $STATS_OUT"
+    echo "Mode:     decoder statistics, $N_REPLICATES replicates"
+    echo ""
+
+    "$CONTAINER_CMD" run --rm \
+        $GPU_FLAG \
+        -v "$SNAPSHOT_DIR":/app:ro \
+        $NEARLINE_MOUNT \
+        -v "$TESTS_TMPDIR":/tests:ro \
+        -v "$SCRIPT_DIR/compute_decoder_stats.py":/opt/compute_decoder_stats.py:ro \
+        -v "$STATS_OUT":/logs/verifier \
+        -w /tmp \
+        "$IMAGE_NAME" \
+        bash -c "python3 /opt/compute_decoder_stats.py --decoder-dir /tests \
+                   --stats-json /app/stats_full.json \
+                   --out /logs/verifier/reference_stats_full.json \
+                   --n-replicates $N_REPLICATES $CPU_FLAG /app/converted_data.pkl \
+                   2>&1 | tee /logs/verifier/decoder_stats_log.txt; \
+                 chown -R \$(stat -c '%u:%g' /logs/verifier) /logs/verifier 2>/dev/null || true"
+
+    echo ""
+    echo "Wrote $STATS_OUT/reference_stats_full.json"
+    echo "Copy it to harbor-tasks/$TASK_NAME/tests/ (and the task's _minimal twin) once checked."
+    exit 0
+elif [ "$JUDGE_ONLY" = true ]; then
     if [ -n "$VERIFIER_DIR_OVERRIDE" ]; then
         VERIFIER_OUT="$VERIFIER_DIR_OVERRIDE"
     else
@@ -375,6 +450,14 @@ python3 /tests/compute_reward.py \
     fi
 
     JUDGE_SCRIPT+='
+# Rewrite reward.json so its process score reflects the judges just rerun. pytest is not
+# rerun here, so the pass/fail outcome is read back from the reward file already in place.
+# Tasks whose tests predate write_reward_file.py keep reward.txt as their only reward.
+if [ -f /tests/write_reward_file.py ]; then
+  python3 /tests/write_reward_file.py --reuse-outcome \
+    || echo "WARNING: reward.json not rewritten; judge scores are in metrics.json only"
+fi
+
 HOST_UID=$(stat -c "%u" /logs/verifier)
 HOST_GID=$(stat -c "%g" /logs/verifier)
 chown -R "$HOST_UID:$HOST_GID" /logs/verifier/ 2>/dev/null || true
@@ -441,7 +524,7 @@ fi
 
 echo ""
 echo "Verifier output: $VERIFIER_OUT"
-echo "Reward: $(cat "$VERIFIER_OUT/reward.txt" 2>/dev/null || echo 'N/A')"
+echo "Reward: $(python3 "$SCRIPT_DIR/show_reward.py" "$VERIFIER_OUT" 2>/dev/null || echo 'N/A')"
 if [ -f "$VERIFIER_OUT/metrics.json" ]; then
     echo "Judge:  $(python3 -c "
 import json

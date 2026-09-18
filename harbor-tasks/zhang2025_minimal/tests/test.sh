@@ -2,6 +2,9 @@
 
 # Use this file to install test dependencies and run the tests.
 # It will be copied to /tests/test.sh and run from the working directory.
+#
+# Grading runs in the agent's own container (harbor's "shared" verifier mode), so the
+# agent's files are read in place and snapshotted below as the trial's durable record.
 
 echo "=== [1/6] Installing test dependencies ==="
 pip install pytest==8.4.1 pytest-json-ctrf==0.3.5
@@ -22,19 +25,47 @@ cd /
 echo "=== [3/6] Running pytest ==="
 # CTRF produces a standard test report in JSON format which is useful for logging.
 pytest --ctrf /logs/verifier/ctrf.json /tests/test_outputs.py -rA
+PYTEST_RC=$?
 
-if [ $? -eq 0 ]; then
-  echo 1 > /logs/verifier/reward.txt
-else
-  echo 0 > /logs/verifier/reward.txt
-fi
+if [ $PYTEST_RC -eq 0 ]; then OUTCOME=1; else OUTCOME=0; fi
+
+# Provisional score, overwritten at the end of this script once the judges have run.
+# Writing it now means a run that dies during judging still reports the outcome rather
+# than leaving no reward file at all.
+#
+# reward.json only, no reward.txt. harbor reads reward.json in preference to reward.txt,
+# and writing both left two files disagreeing: reward.txt held the pass/fail outcome alone
+# and was never updated, so anyone reading it saw 0 for a submission that scored 0.43.
+#
+# The absent "process" key is what marks this write as provisional; the final write below
+# adds it when the judges ran.
+python3 /tests/write_reward_file.py --provisional "$OUTCOME"
 
 # --- LLM Judge Evaluation ---
 export PATH="$HOME/.local/bin:$PATH"
 JUDGE_DIR=/logs/verifier/judge
-mkdir -p "$JUDGE_DIR"
 
-echo "=== [4/6] Setting up judge ==="
+# Judge configuration ships in with the tests, because the container cannot read the host
+# config (harbor-scripts/config_*.json, rendered by apply_versions.py). Read before
+# anything judge-related happens, since it holds the on/off switch.
+JUDGE_VERSIONS=/tests/versions.json
+# run_llm_judge: only a real boolean is honoured; anything else -- key absent, null, a
+# string, an unparseable file -- runs the judges, because silently skipping grading is a
+# far worse failure than an unwanted judge run.
+#
+# NOT `.run_llm_judge // true`: jq's // falls back on `false` as well as `null`, so that
+# form returns true for `"run_llm_judge": false` and the switch never turns anything off.
+RUN_LLM_JUDGE=$(jq -r 'if (.run_llm_judge | type) == "boolean" then .run_llm_judge else true end' \
+                  "$JUDGE_VERSIONS" 2>/dev/null || echo true)
+
+if [ "$RUN_LLM_JUDGE" != "true" ]; then
+  echo "=== [4/6] LLM judges DISABLED (run_llm_judge=false in $JUDGE_VERSIONS) ==="
+  echo "Skipping both judges. 'process' is omitted from reward.json and the reward is"
+  echo "the mean of outcome_all and outcome_mean_per_category alone."
+else
+  mkdir -p "$JUDGE_DIR"
+  echo "=== [4/6] Setting up judge ==="
+fi
 
 # Marker for relocate_stray_judge_output below: only files created after this
 # point can be judge output, so a genuine agent file of the same name is safe.
@@ -70,13 +101,11 @@ relocate_stray_judge_output() {   # $1 = this judge's output directory
   done
 }
 
-# Judge models come from /tests/versions.json, shipped in with the tests so the
-# container has them (it cannot read the host config). Pinning the exact model
-# rather than an alias matters: `opus` is repointed as new models ship -- it
-# silently moved to claude-opus-5 -- which would change the grading basis with no
-# record of it. Fall back to the literals so a task whose tests predate
-# versions.json still runs, rather than judging with an empty --model.
-JUDGE_VERSIONS=/tests/versions.json
+# Judge models come from /tests/versions.json. Pinning the exact model rather than an
+# alias matters: `opus` is repointed as new models ship -- it silently moved to
+# claude-opus-5 -- which would change the grading basis with no record of it. Fall back
+# to the literals so a task whose tests predate versions.json still runs, rather than
+# judging with an empty --model.
 read_judge_model() {  # $1 = judge key (claude|codex), $2 = fallback model
   jq -r --arg k "$1" --arg fallback "$2" \
      '.tools[$k].model // $fallback' "$JUDGE_VERSIONS" 2>/dev/null || echo "$2"
@@ -85,69 +114,85 @@ CLAUDE_JUDGE_MODEL=$(read_judge_model claude claude-opus-4-6)
 CODEX_JUDGE_MODEL=$(read_judge_model codex gpt-5.4)
 echo "judge models: claude=$CLAUDE_JUDGE_MODEL codex=$CODEX_JUDGE_MODEL"
 
-echo "=== [5/6] Claude judge ==="
-CLAUDE_DIR="$JUDGE_DIR/claude"
-mkdir -p "$CLAUDE_DIR"
+if [ "$RUN_LLM_JUDGE" = "true" ]; then
+  echo "=== [5/6] Claude judge ==="
+  CLAUDE_DIR="$JUDGE_DIR/claude"
+  mkdir -p "$CLAUDE_DIR"
 
-cd "$CLAUDE_DIR"
-# IS_SANDBOX=1 allows claude to run --permission-mode bypassPermissions as root,
-# matching how Harbor runs the claude agent. This avoids creating a non-root user
-# that cannot access krb5-authenticated NFS mounts.
-CLAUDE_ENV="IS_SANDBOX=1"
-[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && CLAUDE_ENV="$CLAUDE_ENV CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN"
-[ -n "${ANTHROPIC_API_KEY:-}" ] && CLAUDE_ENV="$CLAUDE_ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
-env $CLAUDE_ENV \
-  claude -p "$(cat /tests/judge_instructions.md)" \
-    --model "$CLAUDE_JUDGE_MODEL" \
-    --permission-mode bypassPermissions \
-    --output-format stream-json \
-    --no-session-persistence \
-    --verbose \
-  2>&1 | tee judge_log.txt || true
+  cd "$CLAUDE_DIR"
+  # IS_SANDBOX=1 allows claude to run --permission-mode bypassPermissions as root,
+  # matching how Harbor runs the claude agent. This avoids creating a non-root user
+  # that cannot access krb5-authenticated NFS mounts.
+  CLAUDE_ENV="IS_SANDBOX=1"
+  [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && CLAUDE_ENV="$CLAUDE_ENV CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN"
+  [ -n "${ANTHROPIC_API_KEY:-}" ] && CLAUDE_ENV="$CLAUDE_ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+  env $CLAUDE_ENV \
+    claude -p "$(cat /tests/judge_instructions.md)" \
+      --model "$CLAUDE_JUDGE_MODEL" \
+      --permission-mode bypassPermissions \
+      --output-format stream-json \
+      --no-session-persistence \
+      --verbose \
+    2>&1 | tee judge_log.txt || true
 
-relocate_stray_judge_output "$CLAUDE_DIR"
-cd /
+  relocate_stray_judge_output "$CLAUDE_DIR"
+  cd /
 
-# --- Codex GPT 5.4 ---
-echo "=== [6/6] Codex judge ==="
-CODEX_DIR="$JUDGE_DIR/codex"
-mkdir -p "$CODEX_DIR"
+  echo "=== [6/6] Codex judge ==="
+  CODEX_DIR="$JUDGE_DIR/codex"
+  mkdir -p "$CODEX_DIR"
 
-# Codex auth: use OAuth auth.json if available, otherwise create auth.json from OPENAI_API_KEY
-mkdir -p /root/.codex
-if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
-  echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
-elif [ -n "${OPENAI_API_KEY:-}" ]; then
-  cat > /root/.codex/auth.json <<EOF
+  # Codex auth: use OAuth auth.json if available, otherwise create auth.json from OPENAI_API_KEY
+  mkdir -p /root/.codex
+  if [ -n "${CODEX_AUTH_JSON_B64:-}" ]; then
+    echo "$CODEX_AUTH_JSON_B64" | base64 -d > /root/.codex/auth.json
+  elif [ -n "${OPENAI_API_KEY:-}" ]; then
+    cat > /root/.codex/auth.json <<EOF
 {
   "OPENAI_API_KEY": "${OPENAI_API_KEY}"
 }
 EOF
+  fi
+
+  cd "$CODEX_DIR"
+  codex exec "$(cat /tests/judge_instructions.md)" \
+      -m "$CODEX_JUDGE_MODEL" \
+      --dangerously-bypass-approvals-and-sandbox \
+      --json \
+      --ephemeral \
+      --skip-git-repo-check \
+    2>&1 | tee judge_log.txt || true
+
+  relocate_stray_judge_output "$CODEX_DIR"
+  cd /
+
+  # --- Merge each judge's score into metrics.json ---
+  echo "=== Computing judge rewards ==="
+  python3 /tests/compute_reward.py \
+    --eval-json "$CLAUDE_DIR/llm_judge_eval.json" \
+    --model-name claude \
+    --metrics-json /logs/verifier/metrics.json 2>&1 || true
+
+  python3 /tests/compute_reward.py \
+    --eval-json "$CODEX_DIR/llm_judge_eval.json" \
+    --model-name codex \
+    --metrics-json /logs/verifier/metrics.json 2>&1 || true
 fi
 
-cd "$CODEX_DIR"
-codex exec "$(cat /tests/judge_instructions.md)" \
-    -m "$CODEX_JUDGE_MODEL" \
-    --dangerously-bypass-approvals-and-sandbox \
-    --json \
-    --ephemeral \
-    --skip-git-repo-check \
-  2>&1 | tee judge_log.txt || true
-
-relocate_stray_judge_output "$CODEX_DIR"
-cd /
-
-# --- Compute rewards and merge into metrics.json ---
-echo "=== Computing rewards ==="
-python3 /tests/compute_reward.py \
-  --eval-json "$CLAUDE_DIR/llm_judge_eval.json" \
-  --model-name claude \
-  --metrics-json /logs/verifier/metrics.json 2>&1 || true
-
-python3 /tests/compute_reward.py \
-  --eval-json "$CODEX_DIR/llm_judge_eval.json" \
-  --model-name codex \
-  --metrics-json /logs/verifier/metrics.json 2>&1 || true
+# --- Combine into the trial reward ---
+# Harbor treats the key "reward" as THE trial score; the others ride along and are
+# aggregated per-key at job level, so the composition stays visible:
+#
+#   outcome_all               pytest pass/fail: did EVERY check reproduce the reference?
+#   outcome_<category>        one partial-credit score per category, from test_outputs.py
+#   outcome_mean_per_category unweighted mean of the scored categories
+#   process                   mean of the LLM judges that produced a score, else omitted
+#   reward                    mean of outcome_all, outcome_mean_per_category, and
+#                             process when it was measured
+#
+# The assembly is in tests/write_reward_file.py, which also documents why an unmeasured
+# value is omitted rather than given a sentinel.
+python3 /tests/write_reward_file.py "$OUTCOME"
 
 # Fix ownership of all log files to match host user
 HOST_UID=$(stat -c '%u' /logs/verifier)

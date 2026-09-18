@@ -32,6 +32,20 @@ which rerun verifiers for supervised jobs only
 4. Check health                                 python check_trial_health.py
 ```
 
+### Changing a prompt, reference solution or other per-task file
+
+A task exists as `<task>`, `<task>_minimal` and (for five tasks) `<task>_datalimit`, and
+also as a terminal-bench-science task. After editing the maximal task:
+
+```
+1. Minimal prompt (if the prompt changed)       python generate_minimal_prompt.py <task> --version 2 --force
+2. Minimal task's derived files                 python generate_minimal_task.py <task> --version 2 --update
+   (copy other changed files, e.g. the reference solution, to <task>_minimal by hand)
+3. Datalimit task                     python generate_datalimit_task.py <task>
+4. Check the variants agree                     python check_task_variants.py <task>
+5. Compare with terminal-bench-science          python check_forks_match.py <task> [--worktree]
+```
+
 ### Creating a new task
 
 See `../setup_harbor_task.md`
@@ -51,7 +65,8 @@ Results go to `~/harbor-tasks/data-format/jobs/raw/` then get reorganized into
 
 Options: `--nconcurrent N`, `--gpuids LIST`, `--podman`, `--apikeys`, `--versions FILE`, `--jobs-dir DIR`.
 
-**submit_harbor_cluster.py** — Submit the `_minimal` tasks to the Janelia cluster,
+**submit_harbor_cluster.py** — Submit benchmark tasks to the Janelia cluster (by default the
+maximal and minimal tasks; `--maximal`, `--minimal` or `--datalimit` for one variant),
 one bsub job per (task, agent, trial). Each job takes a **whole `gpu_l4_large`
 node**: 64 slots + 1 GPU is an entire `l4_larges` host (64 physical cores,
 1006 GB, one L4). That is deliberate — podman here does not enforce
@@ -116,6 +131,10 @@ python apply_versions.py --versions harbor-scripts/config_20260728.json
 ```
 To bump a version: copy the config to `config_<newdate>.json`, edit the
 versions, run `apply_versions.py`.
+
+A top-level `"run_llm_judge": false` in the config makes every task's `tests/test.sh` skip
+both LLM judges (faster, no API keys); the trial's reward is then the mean of `outcome_all`
+and `outcome_mean_per_category`. It defaults to true.
 
 You do not normally invoke it: `run_harbor.sh` applies the config itself when
 run locally, and only *verifies* under LSF (the jobs of a sweep share one
@@ -186,6 +205,15 @@ Scans `harbor-jobs` and `harbor-jobs-new` by default; arms are derived from what
 found rather than hardcoded. Not `harbor-cluster-jobs`, whose raw layout is one
 level deeper — use `collect_cluster_results.py` for that tree.
 
+**show_reward.py** — Print a trial's reward from its verifier directory: `reward.json`
+(current tasks: `reward`, `outcome_all`, `outcome_mean_per_category`, `process`) or, for older
+trials, `reward.txt`. Used by `check_status.sh`, `run_harbor.sh`, `rerun_verifier.sh` and
+`merge_rerun_verifier.sh`.
+```
+python show_reward.py <trial>/verifier            # one-line summary
+python show_reward.py --value <trial>/verifier    # the reward number only
+```
+
 **check_status.sh** — Quick status overview of all trials.
 ```
 check_status.sh                  # all tasks
@@ -228,7 +256,17 @@ rerun_verifier.sh --codex-judge-only <trial_dir>     # rerun codex judge only
 rerun_verifier.sh --judges-only <trial_dir>          # rerun both judges
 rerun_verifier.sh --verifier-dir <dir> <trial_dir>   # target a specific verifier dir
 rerun_verifier.sh --podman <trial_dir>               # required for trials on /groups
+rerun_verifier.sh --decoder-stats --task <task> <oracle_trial_dir>   # 20-split decoder statistics
 ```
+`--decoder-stats` does not grade: it runs `compute_decoder_stats.py` on an oracle trial's
+snapshot (`converted_data.pkl`, `stats_full.json`) inside the task's image and writes
+`<trial>/decoder_stats_<time>/reference_stats_full.json`, which becomes the task's
+`tests/reference_stats_full.json`. `--n-replicates N` changes the number of splits (default 20);
+`--task` names the task when the trial path does not (oracle runs from
+`generate_reference_stats.sh`).
+
+Judge-only reruns also rewrite `reward.json` (`write_reward_file.py --reuse-outcome`), keeping the
+pytest outcome already recorded.
 In judge-only mode, automatically targets the newest unmerged `verifier_rerun_*/`
 directory if one exists, otherwise targets `verifier/`. **Judge-only mode writes
 into `verifier/` in place** — it does not stage a rerun directory, so the
@@ -255,7 +293,7 @@ merge_rerun_verifier.sh --jobdir <trial_dir>                    # merge newest r
 merge_rerun_verifier.sh --jobdir <trial_dir> --newdir <dir>     # merge specific rerun
 merge_rerun_verifier.sh --jobdir <trial_dir> --dry-run          # preview
 ```
-Replaces top-level files (ctrf.json, reward.txt, test-stdout.txt) and judge dirs
+Replaces top-level files (ctrf.json, reward.json or reward.txt, test-stdout.txt) and judge dirs
 that have `llm_judge_eval.json`. **Merges** `metrics.json` (preserves base keys
 not in rerun) so that judge-only reruns don't wipe out pytest-produced ratios /
 matches / decoder accuracy. Never touches `snapshot/`. Renames the merged rerun
@@ -395,14 +433,21 @@ python sync_template.py --diff              # show full diffs
 
 Syncs the following files:
   - `task.toml`
+  - `tests/versions.json`
   - `tests/compute_reward.py`
+  - `tests/write_reward_file.py`
   - `tests/decoder.py`
   - `tests/test_outputs.py`
   - `tests/test.sh`
   - `tests/train_decoder.py`
   - `environment/decoder.py`
   - `environment/train_decoder.py`
-  - `environment/Dockerfile`
+  - `environment/Dockerfile` (only `debug` and new tasks: each benchmark task pins its own packages)
+
+`tests/expected_files.json` is per task and is not synced: maximal tasks list the full set of
+agent files, and `generate_minimal_task.py` writes the minimal list. Both require the same two
+files (`convert_data.py`, `converted_data.pkl`); the rest of the maximal list is expected, so
+missing notes or logs are recorded and warned about rather than failing the test.
 
 After updating any of these files, use this to propagate changes. 
 
@@ -413,85 +458,104 @@ not in the tag — delete the stale images first
 Note `tests/versions.json` and the `Dockerfile` version lines are generated: edit the
 config and run `apply_versions.py`, do not hand-edit them.
 Note that some tasks have specialized files and will require manual melding after a change: 
-`Dockerfile`: `allen2p`
-`task.toml`: `mouseland`
+`Dockerfile`: all eight benchmark tasks (package versions match their terminal-bench-science versions)
+`task.toml`: `mouseland`, and every `_minimal` / `_datalimit` task
 `tests/test_outputs.py`: `debug`
 `tests/train_decoder.py`: `debug`
 `environment/train_decoder.py`: `debug`
 
 
-**generate_reference_stats.sh** — Run the oracle solution to generate `reference_stats_full.json`.
+**generate_reference_stats.sh** — Run the oracle solution to generate `reference_stats_full.json`
+(step 1 of 2; step 2 is `rerun_verifier.sh --decoder-stats` on the resulting trial).
 ```
 generate_reference_stats.sh              # all tasks
 generate_reference_stats.sh sosa2024     # one task
 ```
 
-**generate_minimal_prompt.py** — Generate `minimal_prompts/<task>_prompt_minimal_v1.md`
-from `prompt_v4/<task>_prompt_v4.md` by stripping the procedural scaffolding: the
+**compute_decoder_stats.py** — Add decoder accuracy over independent train/validation splits
+(mean, standard deviation and each split's value; 20 by default) to an oracle's
+`stats_full.json`. The verifier's accuracy threshold is mean − 3.5 × std. Normally run through
+`rerun_verifier.sh --decoder-stats`, so it uses the task image's torch and numpy.
+
+**generate_minimal_prompt.py** — Generate `minimal_prompts/<task>_prompt_minimal_v<N>.md`
+from the maximal prompt (v1 from `prompt_v4/`, v2 from `prompt_v5/`) by stripping the procedural scaffolding: the
 critical-constraints preamble, `## Python environment`, the 13-step `## Conversion
 Workflow`, the `## CONVERSION_NOTES.md Template`, and `## Key Considerations`, plus the
 "computational neuroscientist" persona and the `**Documentation**` link bullet. The task
 specification, target format, decoder reference and success criteria are kept verbatim
 (~870 lines in, ~200 out). `--check` verifies the transform still reproduces the
-hand-written sosa2024 minimal prompt byte-for-byte.
+hand-written sosa2024 minimal prompt byte-for-byte. v2 also drops the consistency paragraphs
+about sanity checks and verifying every step, the "Pipe the output" line, and the long Success
+Criteria list (replaced by a short list requiring only `convert_data.py` and `converted_data.pkl`).
 ```
-python generate_minimal_prompt.py --all           # every prompt in prompt_v4/
-python generate_minimal_prompt.py sosa2024        # one task
-python generate_minimal_prompt.py --all --check   # verify only, write nothing
-python generate_minimal_prompt.py --all --force   # overwrite existing outputs
+python generate_minimal_prompt.py --all                 # every prompt, minimal v1
+python generate_minimal_prompt.py --all --version 2     # every prompt, minimal v2
+python generate_minimal_prompt.py sosa2024              # one task
+python generate_minimal_prompt.py --all --check         # verify only, write nothing
+python generate_minimal_prompt.py --all --force         # overwrite existing outputs
 ```
 
 **generate_minimal_task.py** — Generate a minimal-prompt version of a task,
 `harbor-tasks/<task>_minimal`. Copies the task and swaps the prompt from
 `minimal_prompts/<task>_prompt_minimal_v<N>.md` into both `instruction.md` (what the
-agent sees) and `tests/instruction_reference.md` (what the judge reads); everything
-else — tests, judge instructions, reference solution, environment — is copied
-unchanged, so the prompt is the only difference from the parent task. Caches and
-`solution/*.pkl` leftovers are skipped. The generated directory is gitignored: it is
-reproducible from the parent task plus the prompt.
+agent sees) and `tests/instruction_reference.md` (what the judge reads), writes the minimal
+`tests/expected_files.json` (only `convert_data.py` and `converted_data.pkl`), and writes the
+judge instructions with the agent-file list limited to those files. Everything else — tests,
+reference solution, environment — is copied unchanged. Caches and `solution/*.pkl` leftovers
+are skipped. The generated directories are committed.
 ```
 python generate_minimal_task.py sosa2024              # highest prompt version
 python generate_minimal_task.py sosa2024 --version 2  # pin to a prompt version
-python generate_minimal_task.py --all --version 1     # every task with a v1 prompt
+python generate_minimal_task.py --all --version 2     # every task with a v2 prompt
 python generate_minimal_task.py sosa2024 --dry-run
 python generate_minimal_task.py sosa2024 --force      # regenerate in place
+python generate_minimal_task.py --all --version 2 --update   # rewrite only the derived files
+python generate_minimal_task.py --all --version 2 --check    # report out-of-date derived files
 ```
 
-**generate_datalimit_task.py** — Generate the 50 GB-capped version of a task,
-`harbor-tasks/<task>_datalimit`. Copies the task (sharing this file's copy
-scaffolding), repoints the `environment/docker-compose.yaml` data mount from
-`${DATA_ROOT}/<task>` to `${DATA_ROOT}/<task>_datalimit`, and inserts a **Dataset
-subset** bullet into both `instruction.md` and `tests/instruction_reference.md`
-describing what was kept.
+**generate_datalimit_task.py** — Generate the datalimit version of a task,
+`harbor-tasks/<task>_datalimit`: the minimal task run on `data/<task>_datalimit`. Every file is
+derived and rerunning brings the directory up to date, so it is never edited by hand:
+- copied unchanged from `<task>_minimal`, except
+- `instruction.md` and `tests/instruction_reference.md`: the minimal prompt plus the Data subset
+  section and Consistency bullet from `download/datalimit/<task>_prompt.md`;
+- `environment/docker-compose.yaml`: the data mount points at `${DATA_ROOT}/<task>_datalimit`
+  (allen2p also mounts `DATALIMIT_SUBSET.csv` at `/app/data/DATALIMIT_SUBSET.csv`).
 
-This is **first-time scaffolding only**. A `_datalimit` task's reference solution
-(`solution/convert_data.py` and its byte-identical copy
-`tests/reference_convert_data.py`) and `tests/reference_DECISIONS.md` are
-**hand-edited afterwards**: for tasks whose conversion enumerates data from an api
-index rather than from disk — `allen2p` via `get_ophys_experiment_table()`,
-`zhang2025` via `one.search()` — the reference must be restricted to
-`DATALIMIT_SUBSET.csv`, or the oracle enumerates the whole release and fetches
-every recording the subset deliberately left out.
-
-So re-running is **safe by default**: existing files are preserved and only
-missing ones are copied in, and the derived edits (mount repoint, subset note,
-resource override) are re-applied only to files that run actually wrote — a second
-subset bullet would otherwise be inserted. `--force` replaces the directory
-wholesale and discards hand edits, listing what differs from the parent first.
-
+`tests/reference_stats_full.json` is the one file not generated: it has to describe the reduced
+data, so it is kept when present. Only tasks whose data was actually reduced get a `_datalimit`
+task (allen2p, map, mouseland, sosa2024, zhang2025); the others use their `_minimal` task.
 The subset itself is decided by `download/select_datalimit.py` (frozen into
-`download/datalimit/<task>.csv`) and built by `download/make_datalimit.py`; this
-script only wires the result into harbor. **`tests/reference_stats_full.json` is
-copied from the parent and still describes the full dataset** — regenerate it
-against the capped data before scoring, or `test_data_stats` will fail.
+`download/datalimit/<task>.csv`).
 ```
 python generate_datalimit_task.py sosa2024
 python generate_datalimit_task.py --all
+python generate_datalimit_task.py --all --check        # report out-of-date files
 python generate_datalimit_task.py sosa2024 --dry-run
-python generate_datalimit_task.py sosa2024 --force     # regenerate in place
 
-# then, per subsampled task:
+# then, per task, generate its reference statistics on the reduced data:
 harbor-scripts/generate_reference_stats.sh sosa2024_datalimit
+harbor-scripts/rerun_verifier.sh --decoder-stats --task sosa2024_datalimit <oracle trial dir>
+```
+
+**check_task_variants.py** — Check that a task's variants agree: files that must be identical
+across `<task>`, `<task>_minimal` and `<task>_datalimit`; the prompt and judge copies; that each
+prompt names the files its `expected_files.json` requires; and that the generated minimal and
+datalimit files are up to date.
+```
+python check_task_variants.py            # every task
+python check_task_variants.py sosa2024
+```
+
+**check_forks_match.py** — Compare data-format with the terminal-bench-science versions of the
+tasks (branches `neurodata-reuse-<name>`): grading code, decoder scripts, reference solution,
+package versions, prompt and reference statistics, plus the files that must be identical across
+all the forks. Known, deliberate differences (canary lines, the judge-related prompt sentences,
+the data-reuse wording data-format did not take) are ignored and listed in the script.
+```
+python check_forks_match.py              # forks read from their committed branches
+python check_forks_match.py --worktree   # forks read from ~/tb-science-<name> working copies
+python check_forks_match.py sosa2024 --verbose
 ```
 
 **generate_unsupervised_task.py** — Generate an unsupervised version of a task

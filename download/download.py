@@ -347,7 +347,7 @@ def download_zhang2025_datalimit(out_dir, eids):
 
 # Capped datasets that --datalimit fetches as an already-reduced copy from Hugging
 # Face, rather than filtering the original source. The FULL tasks still download
-# from their original sources; only the dataset-size-capped variants come from here.
+# from their original sources; only the datalimit variants come from here.
 #
 #   mouseland  its subset lives *inside* the published files: a per-session cell
 #              subsample, and figshare serves whole .npy files, so nothing can be
@@ -360,7 +360,7 @@ def download_zhang2025_datalimit(out_dir, eids):
 #              were computed on, including the one_cache/.rest metadata that pins
 #              revisions offline. --from-ibl still rebuilds it from the source.
 #
-# Pinned to a revision, not a branch: the point of the dataset-size-capped variant is
+# Pinned to a revision, not a branch: the point of the datalimit variant is
 # that every run sees the same bytes, and a moving `main` would silently change the
 # dataset.
 #
@@ -407,7 +407,7 @@ def load_datalimit_manifest(task):
 
 
 def download_datalimit_from_hf(task, out_dir):
-    """Fetch a pre-reduced dataset-size-capped dataset from Hugging Face.
+    """Fetch a pre-reduced datalimit dataset from Hugging Face.
 
     For tasks whose subset cannot be expressed as a choice of files to download,
     the reduced copy is published rather than rebuilt by every user. See
@@ -438,7 +438,7 @@ def download_datalimit_from_hf(task, out_dir):
         raise RuntimeError(
             f"{task} --datalimit needs huggingface_hub:  pip install huggingface_hub")
 
-    print(f"{task}: fetching dataset-size-capped dataset from {src['repo_id']} "
+    print(f"{task}: fetching datalimit dataset from {src['repo_id']} "
           f"@ {src['revision'][:12]}")
     out_dir.mkdir(parents=True, exist_ok=True)
     snapshot_download(
@@ -509,7 +509,7 @@ def main():
                          "using the subset frozen in download/datalimit/<task>.csv. "
                          "mouseland and zhang2025 come from pinned Hugging Face copies.")
     ap.add_argument("--from-ibl", action="store_true",
-                    help="(zhang2025 --datalimit only) rebuild the dataset-size-capped "
+                    help="(zhang2025 --datalimit only) rebuild the datalimit "
                          "copy from IBL through the ONE api instead of the Hugging Face "
                          "copy. Not reproducible: returns different files once IBL "
                          "publishes new dataset revisions.")

@@ -9,7 +9,7 @@ Kristin Branson (kristinbranson@gmail.com)
 
 This project explores the use of coding agents (Claude Code and Codex) to reorganize and reformat diverse neuroscience datasets into a standardized format. The goal is to evaluate how effectively coding agents can handle heterogeneous and messy biological research data by converting them into a common structure suitable for downstream analysis.
 
- The benchmark bundles **8 published neuroscience datasets** (calcium imaging and electrophysiology, across mice doing visual, navigation, and decision tasks) together with a single standardized target format, a neural-decoder verifier that scores the converted data quantitatively, and a pair of LLM-as-judge agents that score the agent's *choices and code* qualitatively. Four datasets have hand-written human reference solutions (the *supervised* tasks); the other four have only the paper and code as ground truth (the *unsupervised* tasks). Tasks run in isolated docker containers via [Harbor](https://github.com/harbor-framework/harbor), so any new agent can be plugged in and scored end-to-end.
+The benchmark bundles **8 published neuroscience datasets** (calcium imaging and electrophysiology, across mice doing visual, navigation, and decision tasks) together with a single standardized target format, a neural-decoder verifier that scores the converted data quantitatively, and a pair of LLM-as-judge agents that score the agent's *choices and code* qualitatively. Every dataset has a hand-written human reference solution, which the converted data and the agent's decisions are compared against. Tasks run in isolated docker containers via [Harbor](https://github.com/harbor-framework/harbor), so any new agent can be plugged in and scored end-to-end.
 
 ## Datasets
 
@@ -31,7 +31,7 @@ We cover 8 neuroscience datasets spanning calcium imaging and electrophysiology 
 - **RAM**: Code requires loading entire dataset into RAM.
 - **Container runtime**: either Docker (default) with `nvidia-container-toolkit` for GPU passthrough, or Podman with `podman-compose` (the env yaml installs `podman-compose`; pass `--podman` to `run_harbor.sh`).
 - **Conda / mamba** for the Python environment (Miniforge / Miniconda / mambaforge all work).
-- **Disk space**: ≥ 50 GB free per task you download; ~1.4 TB free if downloading everything. Every task also has a 50 GB-capped `<task>_datalimit` variant — ~294 GB for all eight — see [Data-limited task variants](#data-limited-task-variants).
+- **Disk space**: ≥ 50 GB free per task you download; ~1.4 TB free if downloading everything. Every task also has a version limited to 50 GB — ~294 GB for all eight — see [Data-limited task variants](#data-limited-task-variants).
 - **API access** for running real LLM agents:
   - `ANTHROPIC_API_KEY` (or a Claude Code OAuth token in `~/.claude/.credentials.json`) for the Claude agent and Claude judge. 
   - `OPENAI_API_KEY` (or a Codex auth.json in `~/.codex/`) for the Codex agent and Codex judge.
@@ -68,7 +68,7 @@ Results land in `~/harbor-tasks/data-format/jobs/<task>/<agent>/<timestamp>_tria
 
 To run a real LLM agent instead of the oracle, swap --agent oracle for --agent claude or --agent codex (requires ANTHROPIC_API_KEY / OPENAI_API_KEY in env, or --apikeys pointing at a .env file). To sweep multiple tasks × agents, use harbor-scripts/submit_harbor_cluster.py, which submits one cluster job per (task, agent, trial). Harness and model versions are pinned in harbor-scripts/config_<YYYYMMDD>.json.
 
-The smallest tasks for first-run testing are lee2025 (15 GB) and hasnain2024 (16 GB); the largest is zhang2025 (566 GB). Full benchmark download is ~1.4 TB — see Data sources and downloading below. If 1.4 TB is impractical, run the `_datalimit` variants instead: the same eight tasks capped at 50 GB of data each (~294 GB total), described in [Data-limited task variants](#data-limited-task-variants).
+The smallest tasks for first-run testing are lee2025 (15 GB) and hasnain2024 (16 GB); the largest is zhang2025 (566 GB). Full benchmark download is ~1.4 TB — see Data sources and downloading below. If 1.4 TB is impractical, run the data-limited variants instead: the same eight tasks limited to 50 GB of data each (~294 GB total), described in [Data-limited task variants](#data-limited-task-variants).
 
 ## Organization
 
@@ -81,8 +81,9 @@ data-format/
 ├── harbor-tasks/                  # Tasks set up for harbor (one subdir per task):
 │   └── {task_name}/               # task_name = ['allen2p','hasnain2024','lee2025','majnik2025',
 |                                  #              'map', 'mouseland', 'sosa2024', 'zhang2025']
-|                                  # Each also has a {task_name}_minimal (stripped prompt) and a
-|                                  # {task_name}_datalimit (50 GB-capped data) variant
+|                                  # Each also has a {task_name}_minimal (minimal prompt) variant,
+|                                  # and allen2p, map, mouseland, sosa2024, zhang2025 also have a
+|                                  # {task_name}_datalimit (minimal prompt, <= 50GB dataset subset)
 |                                  # Reference code, paper, and data provided to agents
 │                                  # Code/paper sources documented below TODO
 │                                  # Dataset download setup documented below TODO
@@ -96,7 +97,9 @@ data-format/
 │       ├── DECISIONS.md           # Manual annotation of our decisions
 │       ├── MANUAL_NOTES.md        # Manual notes while coding
 │       └── *_out.txt              # stdout captures from code
-├── prompt_v4/                     # Final version of the prompt for each task
+├── prompt_v5/                     # Current maximal prompt for each task
+├── prompt_v4/                     # Maximal prompts used for the preprint
+├── minimal_prompts/               # Minimal prompts: v2 current
 └── prompts/                       # Older versions of prompts for each task
     └── harbor_instructions_v4.md  # Template for all v4 prompts
 ```
@@ -247,12 +250,13 @@ If you don't pass -o flag, data is downloaded to `data/<task>/` relative to the 
 
 ## Data-limited task variants
 
-Each of the eight datasets also has a **`<task>_datalimit`** variant capped at **50 GB**, for
-running the benchmark without 1.4 TB of disk. These are additional harbor tasks that sit
-alongside the full-size ones — the full tasks are unchanged, and the results in the preprint
-refer to those.
+Each dataset also has a version limited to **50 GB**, for running the benchmark without 1.4 TB
+of disk. Five datasets had to be reduced, and each of those has its own harbor task,
+**`<task>_datalimit`**: the minimal-prompt task run on the reduced data. hasnain2024, lee2025
+and majnik2025 were already under the limit, so their `_minimal` tasks are their data-limited
+versions. The full-size tasks are unchanged.
 
-The guiding rule is that a `_datalimit` dataset **never drops a *type* of data** — every
+The guiding rule in choosing a subset is that a `_datalimit` dataset **never drops a *type* of data** — every
 variable, trace variant, stimulus template and auxiliary array the full release contains is
 still present, because working out which fields to use is the benchmark task itself. Only
 *samples* are dropped: mice, subjects, sessions, or cells. Where mice had to go, they were
@@ -260,11 +264,11 @@ drawn to cover every design stratum (Cre line × imaging depth, recording lab) r
 minimise bytes, since taking the cheapest mice would systematically strip the sessions with the
 most cells. All draws use a fixed seed.
 
-| Task | Full | Capped | What was dropped |
+| Task | Full | Limited | What was dropped |
 |---|---:|---:|---|
-| `hasnain2024_datalimit` | 16 GB | 16 GB | nothing — already under the cap |
-| `lee2025_datalimit` | 15 GB | 15 GB | nothing — already under the cap |
-| `majnik2025_datalimit` | 16 GB | 16 GB | nothing — already under the cap |
+| `hasnain2024` (use `_minimal`) | 16 GB | 16 GB | nothing — already under the limit |
+| `lee2025` (use `_minimal`) | 15 GB | 15 GB | nothing — already under the limit |
+| `majnik2025` (use `_minimal`) | 16 GB | 16 GB | nothing — already under the limit |
 | `map_datalimit` | 54 GB | 50 GB | 6 of 174 sessions (the largest); all 28 subjects kept |
 | `sosa2024_datalimit` | 92 GB | 50 GB | 5 of 11 mice; every session and trial of the rest kept |
 | `allen2p_datalimit` | 254 GB | 48 GB | 28 of 37 mice; every experiment of the rest kept |
@@ -277,75 +281,45 @@ every other dataset sits at or below that threshold, so cells there are not redu
 `mouseland` is also the only variant whose files are rewritten — the other seven select whole
 published files, which stay byte-for-byte identical to the original release.
 
-The cap lowers the RAM ceiling as well as the disk one. `mouseland` is the only task whose
+The limited datasets also need less RAM. `mouseland` is the only task whose
 `task.toml` asks for more than 64 GB — it requests 240 GB, because the full dataset loads 4.1M
 neurons' worth of trial arrays (~112 GB) into memory at once. At 9.8% of cells that falls to
-~11 GB; the oracle run on the dataset-size-capped data peaked at 12.4 GiB, so `mouseland_datalimit` asks for
-the same 64 GB as every other task.
+~11 GB; the oracle run on the data-limited data peaked at 12.4 GiB. `mouseland_datalimit`
+uses the same `task.toml` as `mouseland_minimal`.
 
-### Building and running them
+### Getting the data and running them
 
+Download only the data-limited subset:
 ```bash
-# 1. Freeze the subset decisions into download/datalimit/<task>.csv (already committed)
-python download/select_datalimit.py
-
-# 2. Download only the dataset-size-capped subset. allen2p (by ophys_experiment_id, AllenSDK) and
-#    map/sosa2024 (by asset, DANDI) never transfer the data they leave out; the three
-#    under-cap tasks download in full; mouseland and zhang2025 come from reduced copies
-#    published on Hugging Face at a pinned revision.
-python download/download.py sosa2024 --datalimit
-
-# 2b. Only needed to rebuild the two published copies from their original sources.
-#     mouseland's subset is a per-session cell subsample inside the published .npy
-#     files, so fetch it whole once, then reduce locally. zhang2025's can be fetched
-#     by eid through ONE, but returns different files once IBL publishes new revisions.
-python download/download.py mouseland
-python download/make_datalimit.py mouseland
-python download/download.py zhang2025 --datalimit --from-ibl
-
-# 3. Generate the harbor tasks (copies each task, repoints its data mount, documents the subset)
-python harbor-scripts/generate_datalimit_task.py --all
-
-# 4. Regenerate the reference statistics against the capped data, then run as usual
-harbor-scripts/generate_reference_stats.sh sosa2024_datalimit
-harbor-scripts/run_harbor.sh --agent oracle --task sosa2024_datalimit
+python download/download.py <task> --datalimit
 ```
+Or, if you have already downloaded the full dataset, select the subset from it instead of
+downloading again:
+```bash
+python download/make_datalimit.py <task>
+```
+This does not need to be done for hasnain2024, lee2025 and majnik2025, the 3 datasets for which the original dataset fit within the limit.
 
-**The capped datasets are unmodified downloads.** AllenSDK's `project_metadata/*.csv` and
-ONE's release index are byte-identical to the originals, so each `data/<task>_datalimit/`
-tree is exactly what really downloading those files would produce — and those indexes
-still describe the *full* release, referring to recordings that are not present.
+Run the task like any other:
+```bash
+harbor-scripts/run_harbor.sh --agent oracle --task <task>_datalimit
+```
+For hasnain2024, lee2025 and majnik2025, use `--task <task>_minimal`.
 
-Staying inside the cap is therefore an instruction. Every capped dataset ships a **subset
-list** naming exactly what to use, written in the form that task's own api takes:
+Each `_datalimit` task is scored against reference statistics computed on its own reduced
+data, which are committed with the task. Decoder accuracies will not match the full-size
+task's, so the two are only comparable arm-to-arm, not trial-to-trial.
 
-It is always a CSV, `data/DATALIMIT_SUBSET.csv` (for allen2p,
-`data/visual-behavior-ophys-1.1.0/DATALIMIT_SUBSET.csv`, since that task mounts only
-the release subdirectory):
+### Difference from `minimal` tasks
 
-| Task | Columns | Identifier to use |
-|---|---|---|
-| `allen2p` | same as `ophys_experiment_table.csv` | `ophys_experiment_id` |
-| `zhang2025` | same as the release freeze `bwm_release.csv` | `eid` |
-| `map`, `sosa2024` | `subject`, `nwb_path` | `nwb_path` |
-| `mouseland` | `session`, `n_cells_total`, `n_cells_kept` | `session` |
+Every data-limited dataset ships a **subset list** naming exactly what to use, written in the form that task's own api takes.
+It is always a CSV, `/app/data/DATALIMIT_SUBSET.csv` inside the container.
 
-Each `_datalimit` prompt gains a **Dataset subset** bullet telling the agent to read that
-file, process exactly what it names, and not download anything missing — which matters
-because every `task.toml` sets `allow_internet = true`, and both clients' metadata still
-advertises the full release. The bullet is load-bearing for a second reason too: the
-conversion workflow asks the agent to record dataset totals (Step 2) and reconcile them
-against the paper (Step 4), so an undocumented subsample would read as a discrepancy to
-chase. For `zhang2025`, `bwm_release.csv` is also the universe the subset is drawn from,
-so the capped dataset is by construction a subset of the published release.
-
-**Reference statistics must be regenerated per variant.** `test_outputs.py` asserts `nsubjects`
-exactly and `nsessions` / `ntrials_total` / `nneurons_total` / `T_median` within 10%, so a
-`_datalimit` task scored against the full task's `reference_stats_full.json` will fail. The
-three under-cap variants are exempt: their data is identical, so their reference stats are too.
-Expect the capped variants' decoder accuracies to differ from the published ones — dropping
-sessions and mice tends to raise accuracy (fewer per-session projections for the shared decoder
-head to reconcile), while dropping cells lowers it.
+Each `_datalimit` prompt gains a **Data subset** section telling the agent to read that
+file, process exactly what it names, and not download anything missing. This is important
+because the paper, the reference code, and the downloaded metadata itself (the AllenSDK
+session tables, the ONE index) all still describe the whole release, so an agent that
+followed them would try to fetch the sessions that were deliberately left out.
 
 ## Task
 
@@ -419,7 +393,7 @@ python train_decoder.py /app/converted_data.pkl --cpu
 
 ## Prompts
 
-Final (v4) versions of the prompts are in `prompt_v4`. Earlier drafts are in `prompts`. All prompts follow the same structure:
+The current maximal prompts are in `prompt_v5`, and the minimal prompts generated from them in `minimal_prompts/*_v2.md` (`harbor-scripts/generate_minimal_prompt.py --version 2`). The preprint used `prompt_v4` and minimal v1; earlier drafts are in `prompts`. What changed between versions is in `harbor-tasks/changes_since_preprint.md`. All maximal prompts follow the same structure:
 1. **Task definition.** What `data['input']` and `data['output']` of the trained decoder should be for *this* task (per-task list of variables to derive from the raw data, e.g. *running speed*, *trial outcome*, *image change*, *reward zone position*).
 2. **Target format.** The exact `data` dict layout (`neural`, `input`, `output`, `metadata`) and dimension conventions.
 3. **Reference inputs** the agent is given:
@@ -456,10 +430,10 @@ Final (v4) versions of the prompts are in `prompt_v4`. Earlier drafts are in `pr
   - Verifier runs pytest test_outputs.py to validate:
     - The output format
     - Compute decoder accuracy
-    - Supervised-only:
-      - Whether the dataset properties match the manual solution's
-      - Whether the decoder accuracies match the manual solution's 
+    - Whether the dataset properties match the manual solution's
+    - Whether the decoder accuracies match the manual solution's
   - Run claude-code and codex agent judge with `judge_instructions.md`
+  - Combine the tests' per-category scores and the judges' scores into `reward.json`
 
 `harbor-tasks/debug` is a nothing task used to debug the harbor setup.
 
@@ -486,16 +460,19 @@ Final (v4) versions of the prompts are in `prompt_v4`. Earlier drafts are in `pr
 |                                          # not ground truth (see "Placeholder solutions")
 └── tests/                                 # The verifier (does not run during the agent phase).
     ├── test.sh                            # Verifier entry point: pytest + LLM judges + reward.
-    ├── test_outputs.py                    # Pytest: format validation + decoder accuracy
+    ├── test_outputs.py                    # Pytest: files, format, dataset statistics, decoder accuracy,
+    │                                      # per-category scores
+    ├── expected_files.json                # Agent files this task's prompt asks for (required / warned)
+    ├── write_reward_file.py               # Writes reward.json from the test outcome, categories, judges
     ├── decoder.py                         # Decoder library copied from template.
     ├── train_decoder.py                   # Decoder runner copied from template.
     ├── compute_reward.py                  # Maps an LLM judge's decision labels to a numeric reward.
-    ├── judge_instructions.md              # Prompt given to the claude-code/codex judges. 
-    |                                      # Supervised for supervised tasks, unsupervised for unsupervised tasks
-    ├── judge_instructions_unsupervised.md # Supervised only: Additional judge instructions for an unsupervised judge
-    ├── reference_convert_data.py          # Supervised only: Gold-standard solution written by human
-    ├── reference_DECISIONS.md             # Supervised only: Decisions by the human
-    ├── reference_stats_full.json          # Supervised only: Statistics of gold-standard reference dataset solution
+    ├── judge_instructions.md              # Prompt given to the claude-code/codex judges.
+    ├── judge_instructions_unsupervised.md # Judge instructions without access to the reference
+    ├── reference_convert_data.py          # Gold-standard solution written by human
+    ├── reference_DECISIONS.md             # Decisions by the human
+    ├── reference_stats_full.json          # Statistics of the gold-standard solution's output, including
+    │                                      # decoder accuracy over 20 train/validation splits
     └── instruction_reference.md           # The agent's instruction.md, copied here for the judge.
 ```
 
@@ -503,14 +480,13 @@ Final (v4) versions of the prompts are in `prompt_v4`. Earlier drafts are in `pr
 
 Task verification is run by `tests/test.sh` which:
 - Runs `pytest test_outputs.py` to quantitatively assess solutions
-- Runs LLM-agents as judges
+- Runs LLM-agents as judges (skipped when `run_llm_judge` is false in `tests/versions.json`)
+- Writes the trial's reward to `reward.json` (`tests/write_reward_file.py`)
 
-The eight tasks split into two scoring regimes:
-
-| Regime | Tasks | 
-|---|---|
-| **Supervised**: gold-standard reference solution exists | `allen2p`, `lee2025`, `majnik2025`, `sosa2024` |
-| **Unsupervised**: no reference solution | `hasnain2024`, `map`, `mouseland`, `zhang2025` | 
+**Reward.** `reward.json` holds the trial's `reward`, the mean of three parts:
+- `outcome_all` — 1 if every test in `test_outputs.py` passed, else 0;
+- `outcome_mean_per_category` — the mean of 11 per-category scores between 0 and 1 (core files exist, data format valid, number of neurons, subjects, sessions and trials, median trial length, input ranges, and — as the fraction of reference output variables passing — output class counts, class fractions and decoder accuracy), each also recorded as `outcome_<category>`;
+- `process` — the mean of the LLM judges' scores, left out when no judge produced one.
 
 #### Quantitative scoring
 
@@ -521,16 +497,12 @@ For all tasks, the verifier runs `pytest test_outputs.py`, which runs:
 For all tasks, `test_outputs.py` scores the following:
 | Test | What it asserts | 
 |---|---|
-| `test_required_files_exist` | These five files exist in `/app` and are non-empty: `CONVERSION_NOTES.md`, `convert_data.py`, `converted_data.pkl`, `sample_data.pkl`, `README.md`. |
-| `test_no_contamination` | None of the agent's `*.py` files contain any of the planted "canary strings". A hit means the agent likely copied/memorized a reference. |
-| `test_expected_files_exist` | These six log files exist and are non-empty: `conversion_{sample,full}_out.txt`, `verification_{sample,full}_out.txt`, `train_decoder_{sample,full}_out.txt`. | 
-| `test_verify_data_format` | Both `sample_data.pkl` and `converted_data.pkl` pass `decoder.verify_data_format` (correct dict shape, types, dimensions). |
-
-For supervised tasks only, the verifier also scores:
-| Test | What it asserts | 
-|---|---|
+| `test_required_files_exist` | The `required` files in `tests/expected_files.json` exist in `/app` and are non-empty. Every task requires the same two: `convert_data.py`, `converted_data.pkl`. |
+| `test_no_contamination` | None of the agent's text files contain any of the planted "canary strings". A hit means the agent likely copied/memorized a reference. |
+| `test_expected_files_exist` | Warns (never fails) about missing `expected` files in `tests/expected_files.json`: for maximal-prompt tasks, `CONVERSION_NOTES.md`, `README.md`, `sample_data.pkl` and the six logs `conversion_{sample,full}_out.txt`, `verification_{sample,full}_out.txt`, `train_decoder_{sample,full}_out.txt`. The LLM judges are what assess the notes and README. |
+| `test_verify_data_format` | `converted_data.pkl` passes `decoder.verify_data_format` (correct dict shape, types, dimensions). `sample_data.pkl` is checked the same way when the prompt asks for it, but only warns, since it is an expected file. Pickles are loaded with a restricted loader that only accepts numpy arrays and plain containers. |
 | `test_data_stats` | Dataset *summary statistics* match (see below) |
-| `test_decoder_accuracy` | Decoder accuracy >= 95% of reference accuracy for each output variable |
+| `test_decoder_accuracy` | For each output variable, decoder accuracy ≥ the reference solution's mean − 3.5 × standard deviation over 20 independent train/validation splits |
 
 Dataset *summary statistics* tested:
 The following statistics must match exactly:
@@ -552,9 +524,9 @@ The following statistics must match exactly:
 | Constant | Default | Meaning |
 |---|---|---|
 | `STATLIMITS['nsessions_ratio']` etc. | 0.1 | Allowed fractional deviation from reference (10%). `nsubjects_ratio: 0` = exact match. |
-| `STATLIMITS['input_match_cost']` | 1 | Max mean Hungarian-match cost for input variables. |
+| `STATLIMITS['input_match_cost']` | 0.5 | Max mean Hungarian-match cost for input variables. |
 | `STATLIMITS['output_match_cost']` | 1 | Max mean Hungarian-match cost for output variables. |
-| `MIN_ACCURACY_FRAC` | 0.95 | Required ratio of submitted to reference balanced accuracy per output dimension. |
+| `ACCURACY_NSTD` | 3.5 | Decoder accuracy must be at least the reference's mean minus this many standard deviations (over 20 splits), per output variable. The preprint used 0.95 × a single reference split. |
 
 #### LLM-agent as a judge
 
@@ -598,7 +570,7 @@ After judges run, `compute_reward.py` then maps each label to a scalar reward an
 | CORRECT | 1.0 |
 | INCORRECT | 0.0 |
 
-Each judge produces an independent reward, recorded as `llm_judge_claude_reward` and `llm_judge_codex_reward` in `metrics.json`.
+Each judge produces an independent reward, recorded as `llm_judge_claude_reward` and `llm_judge_codex_reward` in `metrics.json`; their mean is the `process` part of the trial's reward. A judge answer that does not cover exactly the questions in `judge_instructions.md` is recorded as an error rather than scored.
 
 For *supervised* tasks, the *unsupervised* judge is run post-hoc with `harbor-scripts/run_unsupervised_judges.sh`. This ensures that reference solutions are **not** provided to the unsupervised judge.
 
@@ -619,13 +591,11 @@ python harbor-scripts/sync_template.py --apply
 
 ## Manual (gold-standard) solutions
 
-For the four **supervised** tasks (`allen2p`, `lee2025`, `majnik2025`, `sosa2024`), Ling-Qi Zhang and Kristin Branson hand-wrote a complete reference conversion before any agent saw the task. These manual solutions are the ground truth that the supervised LLM judges compare each agent's output against, and they provide the reference statistics that `test_outputs.py`'s quantitative checks use.
+For every task, Ling-Qi Zhang and Kristin Branson hand-wrote a complete reference conversion (for `allen2p`, `lee2025`, `majnik2025` and `sosa2024`, before any agent saw the task). These manual solutions are the ground truth that the supervised LLM judges compare each agent's output against, and they provide the reference statistics that `test_outputs.py`'s quantitative checks use.
 
 ```
-manual/                                # Only the 4 supervised tasks live here
-├── allen2p/
-├── lee2025/
-├── majnik2025/
+manual/                                # One folder per dataset (chen2024 = map, zhong2025 = mouseland)
+├── allen2p/  chen2024/  hasnain2024/  lee2025/  majnik2025/  zhang2025/  zhong2025/
 └── sosa2024/
     ├── convert_data.py                # Hand-written reference conversion
     ├── DECISIONS.md                   # Q-by-Q answers to the same ~30–40
@@ -640,22 +610,9 @@ manual/                                # Only the 4 supervised tasks live here
     ├── verification_full_out.txt      # Captured stdout from
     │                                  # train_decoder.py --verify-only
     └── train_decoder_full_out.txt     # Captured stdout from train_decoder.py
-                                        # (per-output balanced accuracy = the
-                                        # numbers the verifier asserts agents
-                                        # must reach ≥95% of)
+                                        # (per-output balanced accuracy from one
+                                        # train/validation split)
 ```
-
-## Placeholder solutions (unsupervised tasks)
-
-The four **unsupervised** tasks (`hasnain2024`, `map`, `mouseland`, `zhang2025`) have no manual solution. Their `harbor-tasks/<task>/solution/convert_data.py` is an **auto-generated placeholder**: a first-pass conversion produced by an agent while the task was being set up, in a since-removed `auto/<task>/` staging directory that mirrored `manual/<task>/`. Each was written before its task was ever run, so it is not distilled from any trial result. It exists so that `solve.sh` and the oracle agent have something to execute — it is **not** a vetted reference and **not** ground truth.
-
-Consequences worth knowing:
-
-- A disagreement between `solution/convert_data.py` and `instruction.md` is not evidence that the prompt is wrong. The placeholder was never checked against the paper, and in places it is plainly unfinished — `mouseland`, for example, sets its `day_of_training` decoder input to a constant zero for every trial.
-- An oracle run on these tasks executes unvetted code. Reference statistics derived from such a run should not be treated as gold-standard values.
-- These tasks correspondingly have no `tests/reference_convert_data.py`, `tests/reference_DECISIONS.md`, or `tests/reference_stats_full.json`, so the quantitative comparisons against a reference in `test_outputs.py` are skipped for them.
-
-For the supervised tasks the opposite holds: `solution/convert_data.py` is a copy of the hand-written `manual/<task>/convert_data.py` described above, and is the ground truth the judges and quantitative checks compare against.
 
 ## Harbor scripts
 
@@ -730,6 +687,8 @@ This allows us to both measure the accuracy of the LLM-agent judges, and to revi
 If you use this benchmark, please cite:
 
 > Ling-Qi Zhang and Kristin Branson. *Neurodata Without Boredom: Benchmarking Agentic AI for Data Reuse.* arXiv preprint arXiv:2605.12808, 2026.
+
+The code and tasks as used for that preprint are tagged `v2` in this repository.
 
 ```bibtex
 @article{zhang2026neurodata,

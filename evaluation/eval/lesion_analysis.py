@@ -85,7 +85,10 @@ SCALE_FIELDS = [
 # Thresholds come from the verifier itself so a limit is never restated here and
 # the analysis cannot drift from what test_outputs.py actually asserts.
 STATLIMITS = tests.STATLIMITS                # {'<field>_ratio': tolerance, ...}
-MIN_ACCURACY_FRAC = tests.MIN_ACCURACY_FRAC  # 0.95
+# Decoder accuracy for an output passes when it is at least
+# mean - ACCURACY_NSTD * std of the reference solution's accuracy over independent
+# train/validation splits (3.5). The preprint (v2 tag) used 0.95 x a single reference split.
+ACCURACY_NSTD = tests.ACCURACY_NSTD
 
 # The two files without which the conversion is worthless, and the rest.
 CORE_FILES = ['converted_data.pkl', 'convert_data.py']
@@ -125,7 +128,42 @@ for k,v in data[datasets[0]][agents[0]][prompts[0]][trials[0]].items():
 # no longer needs it: test_data_stats now records the endpoint error already
 # divided by the reference span, so metrics.json carries a directly comparable
 # number where it used to carry an absolute error in the variable's own units.
-reference_stats = {dataset: load_reference_stats(dataset,root=ROOT) for dataset in datasets}
+
+# The decoder accuracy category (9) and its threshold sweep also need the reference's
+# replicate accuracy statistics, which live beside data_summary in the same file. They are
+# merged into each dataset's dict under the file's own key names; the other categories read
+# only input_range and output_range.
+REPLICATE_ACCURACY_KEYS = ('validation_balanced_accuracy_mean', 'validation_balanced_accuracy_std')
+
+
+def with_replicate_accuracy(dataset, variant=None):
+    """A dataset's reference data_summary with its replicate accuracy statistics merged in.
+
+    Args:
+        dataset: metrics-side dataset name.
+        variant: None for the full-data task, 'datalimit' for the datalimit one.
+
+    Returns:
+        dict, or None when the task ships no reference stats.
+    """
+    summary = load_reference_stats(dataset, root=ROOT, variant=variant)
+    if summary is None:
+        return None
+    full_stats = load_reference_stats(dataset, root=ROOT, full=True, variant=variant)
+    summary.update({key: full_stats.get(key) for key in REPLICATE_ACCURACY_KEYS})
+    return summary
+
+
+reference_stats = {dataset: with_replicate_accuracy(dataset) for dataset in datasets}
+# Datalimit trials (prompt "datalimit") are graded against their own task's
+# reference, which describes the reduced data.
+reference_stats_datalimit = {dataset: with_replicate_accuracy(dataset, 'datalimit')
+                             for dataset in datasets}
+missing_replicates = sorted(d for d, s in reference_stats.items()
+                            if s is not None and not s['validation_balanced_accuracy_std'])
+if missing_replicates:
+    print(f'  ! no replicate accuracy statistics for {missing_replicates}: '
+          f'decoder accuracy (category 9) will be nan for them')
 
 
 
@@ -323,37 +361,75 @@ def output_fraction_matches(jobdata, refstats):
     return n_match / len(names)
 
 
+def accuracy_std_below_mean(jobdata, refstats):
+    """How far below the reference's mean accuracy each output is, in reference standard deviations.
+
+    test_decoder_accuracy passes an output when its accuracy is at least
+    mean - ACCURACY_NSTD * std of the reference's replicate accuracies, i.e. when this
+    number is at most ACCURACY_NSTD. The agent's accuracy is recovered from the two things
+    every supervised trial records: validation_balanced_accuracy_ratio (agent accuracy /
+    reference single-split accuracy) and validation_balanced_accuracy_reference, both
+    keyed by reference variable name. So the same computation serves trials graded before
+    and after the switch to the replicate rule.
+
+    Args:
+        jobdata: one trial's curated metrics dict.
+        refstats: the dataset's reference stats dict (data_summary plus the replicate
+            accuracy keys merged in above), or None.
+
+    Returns:
+        None when there is nothing to compare: no reference, no replicate statistics, or
+            the verifier never recorded the ratio (the decoder produced no accuracy).
+        Otherwise dict {reference output name: float}, (mean - agent accuracy) / std;
+            negative means above the mean. Outputs the verifier could not pair with an
+            agent output are absent, and an empty dict means none could be paired.
+    """
+    if refstats is None:
+        return None
+    means = refstats.get('validation_balanced_accuracy_mean')
+    stds = refstats.get('validation_balanced_accuracy_std')
+    ratios = jobdata.get('validation_balanced_accuracy_ratio')
+    single_split = jobdata.get('validation_balanced_accuracy_reference') or {}
+    if not means or not stds or ratios is None:
+        return None
+    below = {}
+    for name, ratio in ratios.items():
+        if ratio is None or name not in means or not single_split.get(name):
+            continue
+        agent_accuracy = ratio * single_split[name]
+        if stds[name] > 0:
+            below[name] = (means[name] - agent_accuracy) / stds[name]
+        else:   # no spread across splits: at or above the mean passes, anything below fails
+            below[name] = 0.0 if agent_accuracy >= means[name] else np.inf
+    return below
+
+
 def decoder_accuracy_matches(jobdata, refstats):
     """Fraction of output variables whose decoder accuracy clears the bar.
 
-    test_decoder_accuracy asserts sub_acc >= MIN_ACCURACY_FRAC * ref_acc for each
-    output and records the per-output quotient in
-    validation_balanced_accuracy_ratio, keyed by reference variable name. The
-    same >= is used here.
+    The bar is test_decoder_accuracy's: accuracy >= mean - ACCURACY_NSTD * std of the
+    reference's replicate accuracies (see accuracy_std_below_mean).
 
-    Absent or None means the verifier never got far enough to record anything --
-    the decoder itself produced no accuracy -- so the result is unknown, nan.
+    Unknown (nan) when the verifier never recorded an accuracy ratio, or when the task's
+    reference stats have no replicate statistics yet.
 
-    An empty dict is different, and is scored 0.0: the verifier ran, but the
-    output matcher produced no usable pairs because the agent's outputs did not
+    A recorded but empty ratio dict is different, and is scored 0.0: the verifier ran, but
+    the output matcher produced no usable pairs because the agent's outputs did not
     correspond to the reference's, so nothing could clear the bar.
     majnik2025/codex/full/2 is the case -- it split the reference's single
     motion_energy into five quantile bins. Categories 8 and 9 score that trial 0
     for the same reason, and this keeps the three consistent.
 
-    Individual variables may also be missing from a populated dict, where the
-    verifier skipped an entry whose reference accuracy was zero; those count as
-    misses.
+    Reference variables with no comparable agent accuracy count as misses.
     """
     names = _reference_output_names(refstats)
     if names is None:
         return np.nan
-    ratios = jobdata.get('validation_balanced_accuracy_ratio')
-    if ratios is None:
+    below = accuracy_std_below_mean(jobdata, refstats)
+    if below is None:
         return np.nan
     n_match = sum(1 for name in names
-                  if ratios.get(name) is not None
-                  and ratios[name] >= MIN_ACCURACY_FRAC)
+                  if below.get(name) is not None and below[name] <= ACCURACY_NSTD)
     return n_match / len(names)
 
 
@@ -510,11 +586,12 @@ def score_trials(data, datasets=SUPERVISED_DS, *, propagate=True):
         if dataset not in data:
             print(f'  ! {dataset} not in trial metrics, skipping')
             continue
-        refstats = reference_stats[dataset]
-        if refstats is None:
+        if reference_stats[dataset] is None:
             print(f'  ! no reference stats for {dataset}, categories 5-10 will be nan')
         for agent, by_prompt in data[dataset].items():
             for prompt, by_trial in by_prompt.items():
+                refstats = (reference_stats_datalimit if prompt == 'datalimit'
+                            else reference_stats)[dataset]
                 for trial, jobdata in by_trial.items():
                     jobres = compute_job_categories(jobdata, refstats)
                     if propagate:
@@ -1652,7 +1729,8 @@ ratio_limits_try = np.linspace(0, .5, 101)
 # kind selects the predicate:
 #   'ratio'     pass when 1-t <= ratio <= 1+t     (raising t passes more)
 #   'cost'      pass when cost < t                (raising t passes more)
-#   'accuracy'  pass when every output ratio >= t (raising t passes FEWER)
+#   'accuracy'  pass when every output is at most t reference standard deviations
+#               below the reference's mean accuracy (raising t passes more)
 #
 # input cost is computed as:
 # cost_semantic = 1 − cos_sim(MiniLM embedding of the two names)
@@ -1678,8 +1756,8 @@ THRESHOLD_SWEEPS = [
      np.arange(5), STATLIMITS['output_range_error']),
     ('output_fraction_error_',    'Output distributions', 'per_output',
      np.linspace(0, .2, 101), STATLIMITS['output_fraction_error']),
-    ('validation_balanced_accuracy_ratio', 'Decoder accuracy', 'accuracy',
-     np.linspace(.5, 1.0, 101), MIN_ACCURACY_FRAC),
+    ('decoder_accuracy_std_below_mean', 'Decoder accuracy (std below mean)', 'accuracy',
+     np.linspace(0, 8, 161), ACCURACY_NSTD),
 ]
 
 
@@ -1695,10 +1773,16 @@ def sweep_trials(data, datasets=SUPERVISED_DS):
         list of the per-trial curated metrics dicts. Arms are pooled -- the
         question is what a threshold does to the benchmark, not to one agent.
     """
-    return [jobdata
+    # Each trial's decoder accuracy, in reference standard deviations below the reference
+    # mean, is attached under 'decoder_accuracy_std_below_mean'. It needs the trial's
+    # dataset, which the pooled list no longer carries.
+    return [{**jobdata,
+             'decoder_accuracy_std_below_mean': accuracy_std_below_mean(
+                 jobdata, (reference_stats_datalimit if prompt == 'datalimit'
+                           else reference_stats).get(dataset))}
             for dataset in datasets
             for by_prompt in data.get(dataset, {}).values()
-            for by_trial in by_prompt.values()
+            for prompt, by_trial in by_prompt.items()
             for trial, jobdata in by_trial.items()
             if int(trial) <= TRIALS_PER_ARM]
 
@@ -1767,18 +1851,20 @@ def pass_fraction(trials, key, kind, threshold):
             output_fracs.append(np.mean([v <= threshold for v in values]))
 
         else:   # accuracy: test_decoder_accuracy asserts the bar per output
-            # Let τ be the threshold, T the eligible trials, and for trial i let V_i be its comparable output variables with values v_ij.
+            # Let τ be the threshold, T the eligible trials, and for trial i let V_i be its
+            # comparable output variables, with v_ij the number of reference standard
+            # deviations output j's accuracy is below the reference mean.
             # All outputs (the first return value, solid curve / leading number):
             # A(tau)=(1/|T|)sum_(trial i) prod_(output j) 1(v_ij <= tau)
-            ratios = jobdata.get(key)
-            if not ratios:
+            below = jobdata.get(key)
+            if not below:
                 continue
-            values = [v for v in ratios.values() if v is not None]
+            values = [v for v in below.values() if v is not None]
             if not values:
                 continue
             eligible += 1
-            passed += all(v >= threshold for v in values)
-            output_fracs.append(np.mean([v >= threshold for v in values]))
+            passed += all(v <= threshold for v in values)
+            output_fracs.append(np.mean([v <= threshold for v in values]))
 
     if eligible == 0:
         return np.nan, 0, np.nan
@@ -1862,8 +1948,7 @@ plt.show()
 # %%
 delta = 1.5
 ratio_limits_print = {k: [v/delta, v, v*delta] for k, v in STATLIMITS.items() if k.endswith('_ratio')}
-x = 1-MIN_ACCURACY_FRAC
-accuracy_limits_print = [1-x*delta,1-x,1-x/delta]
+accuracy_limits_print = [ACCURACY_NSTD/delta, ACCURACY_NSTD, ACCURACY_NSTD*delta]
 
 THRESHOLDS_PRINT = [
     ('nsessions',      'N sessions', 'ratio', ratio_limits_print['nsessions_ratio'], STATLIMITS['nsessions_ratio']),
@@ -1877,7 +1962,7 @@ THRESHOLDS_PRINT = [
     # one spec per test means the two lists cannot drift apart.
     ('output_range_error_',       'Output range error', 'per_output', [.5,1.5], STATLIMITS['output_range_error']),
     ('output_fraction_error_',    'Output distributions', 'per_output', [STATLIMITS['output_fraction_error']/delta, STATLIMITS['output_fraction_error'], STATLIMITS['output_fraction_error']*delta], STATLIMITS['output_fraction_error']),
-    ('validation_balanced_accuracy_ratio', 'Decoder accuracy', 'accuracy', accuracy_limits_print, MIN_ACCURACY_FRAC),
+    ('decoder_accuracy_std_below_mean', 'Decoder accuracy (std below mean)', 'accuracy', accuracy_limits_print, ACCURACY_NSTD),
 ]
 
 def print_threshold_change_effects(data, sweeps=THRESHOLDS_PRINT,filename=None):

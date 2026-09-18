@@ -38,7 +38,7 @@ task fails the rest still run, and the failures are listed at the end.
 
 ## Data-limited
 
-Dataset-size-capped versions of the data, limited to 50 GB each. Data will be downloaded to the directory `data/<dataset>_datalimit`. 
+Datalimit versions of the data, limited to 50 GB each. Data will be downloaded to the directory `data/<dataset>_datalimit`. 
 Each directory will have a file `DATALIMIT_SUBSET.csv`
 
 ### Selecting data subsets

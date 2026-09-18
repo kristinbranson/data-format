@@ -21,8 +21,17 @@ EOF
 # check if convert_data.py exists in script directory
 if [ -f "$SCRIPT_DIR/convert_data.py" ]; then
 
-    # Copy convert_data.py to /app so tests can find it
-    cp "$SCRIPT_DIR/convert_data.py" "$OUTDIR/convert_data.py"
+    # Copy convert_data.py to /app so tests can find it. The copy's canary value is
+    # redacted: the reference carries the canary string test_no_contamination looks for,
+    # so an unredacted copy would make the oracle fail its own contamination check. Only
+    # the copy -- the conversion below runs from $SCRIPT_DIR.
+    sed "s/\\(_allen2p_seed[[:space:]]*=[[:space:]]*\\)'[^']*'/\\1'redacted'/" \
+        "$SCRIPT_DIR/convert_data.py" > "$OUTDIR/convert_data.py"
+    grep -q "_allen2p_seed[[:space:]]*=[[:space:]]*'redacted'" "$OUTDIR/convert_data.py" || {
+        rm -f "$OUTDIR/convert_data.py"
+        echo "solve.sh: could not redact the canary; refusing to copy" >&2
+        exit 1
+    }
 
     # convert sample
     python3 "$SCRIPT_DIR/convert_data.py" --sample --datadir /app/data "$OUTDIR/sample_data.pkl" > "$OUTDIR/conversion_sample_out.txt" 2>&1

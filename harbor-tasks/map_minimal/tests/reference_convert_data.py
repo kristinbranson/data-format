@@ -15,6 +15,9 @@ import time
 import numpy as np
 from pynwb import NWBHDF5IO
 
+_chen2024_seed = 'x5cidj2hy87s'
+np.random.seed(sum(ord(c) for c in _chen2024_seed) % 2**31)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Default only, for running this by hand from manual/chen2024/. The oracle arm runs
 # the script from /solution while the dataset is mounted read-only at /app/data, so
@@ -113,21 +116,22 @@ def process_session(path):
         go = np.asarray(bev['go_start_times'].timestamps)
         assert len(go) == len(trials), f'{len(go)} go cues vs {len(trials)} trials'
 
-        # ---- trials: keep only those with spike data ------------------------
+        # ---- trials filtering ----
+        # spike data
         # obs_intervals gives one [start, stop] per observed trial, which in some
-        # sessions is fewer than the behavioural trials
-
-        # filter behavioral trials with no spike data
-        oi_off = np.asarray(units['obs_intervals'].data)
-        oi_start = np.concatenate([[0], oi_off[:-1]])
-        obs = np.asarray(units['obs_intervals'].target.data)[oi_start[good[0]]:oi_off[good[0]]]
-        keep = np.isin(np.round(trials['start_time'].values, 4), np.round(obs[:, 0], 4))
+        # sessions is fewer than the behavioural trials. 
+        # a behavioural trial is observed if its start time is one of the interval starts
+        obs = np.asarray(units['obs_intervals'][good[0]])        
+        keep = np.isin(trials['start_time'].values, obs[:, 0])
         assert keep.sum() == len(obs), f'{keep.sum()} matched vs {len(obs)} observed'
 
         # filter no water trials
         keep &= trials['free_water'].values == 0
+        
+        # a sessioon has to have at least 2 trials according to the instruction
         if keep.sum() < 2:
             return None
+        
         trials = trials[keep]
         go = go[keep]
         n_trials = len(go)

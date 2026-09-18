@@ -34,6 +34,7 @@ SHARED_FILES = [
     # harbor-scripts/; regenerate there, then sync.
     "tests/versions.json",
     "tests/compute_reward.py",
+    "tests/write_reward_file.py",
     "tests/decoder.py",
     "tests/test_outputs.py",
     "tests/test.sh",
@@ -45,6 +46,11 @@ SHARED_FILES = [
 
 # Files that intentionally differ from the template for specific tasks.
 # Maps task name -> set of relative paths to skip.
+#
+# environment/Dockerfile is per task for all eight benchmark tasks: each pins the package
+# versions its terminal-bench-science version pins, and those differ (zhang2025 needs
+# numpy<2.4 for ONE-api, allen2p needs pynwb 2.8.3 for AllenSDK, some need suite2p). The
+# template's Dockerfile, the common package set, is what debug and new tasks start from.
 TASK_EXCLUDED = {
     "debug": {
         "tests/test_outputs.py",
@@ -54,9 +60,16 @@ TASK_EXCLUDED = {
     "allen2p": {
         "environment/Dockerfile",
     },
+    "hasnain2024": {"environment/Dockerfile"},
+    "lee2025": {"environment/Dockerfile"},
+    "majnik2025": {"environment/Dockerfile"},
+    "map": {"environment/Dockerfile"},
     "mouseland": {
         "task.toml",
+        "environment/Dockerfile",
     },
+    "sosa2024": {"environment/Dockerfile"},
+    "zhang2025": {"environment/Dockerfile"},
 }
 
 
@@ -94,9 +107,10 @@ def main():
                 continue
 
             # Skip files that intentionally differ for specific tasks. A variant
-            # (e.g. sosa2024_minimal) inherits its parent's exclusions, and also
-            # keeps its own task.toml, which is tuned to the cluster node it runs on.
-            base_name = dest_dir.name.removesuffix("_minimal")
+            # (e.g. sosa2024_minimal, sosa2024_datalimit) inherits its parent's
+            # exclusions, and also keeps its own task.toml, which is tuned to the
+            # cluster node it runs on.
+            base_name = dest_dir.name.removesuffix("_minimal").removesuffix("_datalimit")
             excluded = (TASK_EXCLUDED.get(dest_dir.name, set())
                         | TASK_EXCLUDED.get(base_name, set()))
             if dest_dir.name != base_name:

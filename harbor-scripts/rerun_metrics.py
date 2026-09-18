@@ -119,6 +119,10 @@ def _import_task_tests(task: str, workdir: Path):
         spec = importlib.util.spec_from_file_location("test_outputs", tests_dir / "test_outputs.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
+        # test_outputs.py imports decoder inside the functions that use it, which run
+        # after the path entry below is removed. Importing it now, while the task's tests/
+        # is on the path, leaves this task's decoder in sys.modules for those imports.
+        importlib.import_module("decoder")
     finally:
         sys.path.pop(0)
     return mod
@@ -392,28 +396,46 @@ def rerun_trial(trial_dir: Path, task: str, *,
         return p if p.exists() else None
 
     # Decide which pickles we need (load lazily, once each).
-    need_sample = run_checks                  # test_verify_data_format
+    # The sample pickle only matters for tasks whose REQUIRED_FILES include it (the
+    # maximal prompt); test_verify_data_format checks it only then.
+    need_sample = run_checks and "sample_data.pkl" in getattr(test_mod, "REQUIRED_FILES", [])
     # derive_decoder_refs needs submitted_data_stats for the output matching, which
     # comes from the full pickle -- the same load test_data_stats already pays for.
     need_full   = run_checks or run_data_stats or run_decoder or derive_decoder_refs
 
+    # Load the way the verifier does. The task's own safe_pickle_load refuses anything but
+    # numpy arrays and plain containers; tasks whose tests predate it fall back to pickle.
+    load_pickle = getattr(test_mod, "safe_pickle_load", None)
+    if load_pickle is None:
+        def load_pickle(path):
+            with open(path, "rb") as f:
+                return pickle.load(f)
+
+    # Verdicts for a pickle that exists but cannot be loaded, recorded the way the
+    # verifier's fixtures record them, so score_categories treats it as a failed format
+    # rather than an unmeasured one.
+    load_failures: dict = {}
+
     submitted_sample = submitted_full = None
-    if need_sample:
-        p = _find("sample_data.pkl")
-        if p is not None:
-            t0 = time.time()
-            with open(p, "rb") as f:
-                submitted_sample = pickle.load(f)
-            if time.time() - t0 > 2:
-                report["events"].append(f"loaded sample_data.pkl ({time.time()-t0:.1f}s)")
-    if need_full:
-        p = _find("converted_data.pkl")
-        if p is not None:
-            t0 = time.time()
-            with open(p, "rb") as f:
-                submitted_full = pickle.load(f)
-            if time.time() - t0 > 2:
-                report["events"].append(f"loaded converted_data.pkl ({time.time()-t0:.1f}s)")
+    for name, needed in [("sample_data.pkl", need_sample), ("converted_data.pkl", need_full)]:
+        p = _find(name) if needed else None
+        if p is None:
+            continue
+        t0 = time.time()
+        try:
+            loaded = load_pickle(p)
+        except Exception as error:
+            prefix = "sample" if name == "sample_data.pkl" else "full"
+            load_failures[f"{prefix}_data_format_valid"] = False
+            load_failures[f"{prefix}_data_format_errors"] = [f"could not load {name}: {error!r}"]
+            report["events"].append(f"could not load {name}: {error!r}")
+            continue
+        if name == "sample_data.pkl":
+            submitted_sample = loaded
+        else:
+            submitted_full = loaded
+        if time.time() - t0 > 2:
+            report["events"].append(f"loaded {name} ({time.time()-t0:.1f}s)")
 
     # Compute data-stats lazily (only if needed AND we have the pkl). Delegated to
     # the task's own get_data_stats rather than rebuilt here: it derives
@@ -429,7 +451,7 @@ def rerun_trial(trial_dir: Path, task: str, *,
             submitted_data_stats = test_mod.get_data_stats(submitted_full)
     reference_data_stats = _reference_data_stats(task, test_mod) if need_stats else None
 
-    new_metrics: dict = {}
+    new_metrics: dict = dict(load_failures) if run_checks else {}
 
     # ---- cheap checks ----
     if run_checks:
@@ -440,13 +462,15 @@ def rerun_trial(trial_dir: Path, task: str, *,
         ]:
             _, msg = _invoke(fn, *args, label=label)
             report["events"].append(f"{label}: {msg}")
-        if submitted_sample is not None and submitted_full is not None:
+        # submitted_sample may be None: the task does not require it, or it is missing,
+        # and test_verify_data_format records a missing required sample as invalid.
+        if submitted_full is not None:
             _, msg = _invoke(test_mod.test_verify_data_format,
                              new_metrics, submitted_sample, submitted_full,
                              label="test_verify_data_format")
             report["events"].append(f"test_verify_data_format: {msg}")
         else:
-            report["events"].append("test_verify_data_format: skipped (missing pickle)")
+            report["events"].append("test_verify_data_format: skipped (no loadable converted_data.pkl)")
 
     # ---- data stats (supervised: full check; unsupervised: pytest.skip — fine) ----
     if run_data_stats and submitted_data_stats is not None:
@@ -484,13 +508,24 @@ def rerun_trial(trial_dir: Path, task: str, *,
     #   keys_added:       [(key, new_value)]
     #   keys_overwritten: [(key, old_value, new_value)]
     keys_added, keys_overwritten = [], []
-    for k, v in new_metrics.items():
-        if k not in existing:
-            keys_added.append((k, v))
-            existing[k] = v
-        elif force and existing[k] != v:
-            keys_overwritten.append((k, existing[k], v))
-            existing[k] = v
+
+    def merge(values):
+        """Merge values into `existing`, recording what was added or overwritten."""
+        for k, v in values.items():
+            if k not in existing:
+                keys_added.append((k, v))
+                existing[k] = v
+            elif force and existing[k] != v:
+                keys_overwritten.append((k, existing[k], v))
+                existing[k] = v
+
+    merge(new_metrics)
+    # Per-category outcome scores, which a real run computes in the metrics fixture's
+    # teardown from every recorded verdict. Scored from the merged metrics, since a rerun
+    # of one test leaves the other tests' verdicts in place. Tasks whose tests predate
+    # score_categories have none.
+    if hasattr(test_mod, "score_categories") and new_metrics:
+        merge(test_mod.score_categories(existing))
     report["keys_added"] = sorted(keys_added, key=lambda t: t[0])
     report["keys_overwritten"] = sorted(keys_overwritten, key=lambda t: t[0])
     report["ok"] = True
