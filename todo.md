@@ -7,100 +7,26 @@ committed and pushed, through `583fe2a`. The preprint's version is tagged `v2`.
 all 54 graded output variables carry a 20-replicate mean and standard deviation. What is left
 is rerunning agents, not computing references.
 
----
+**A 48-job sweep on the newest agents is running** -- every task's maximal prompt on
+claude-code 2.1.278 with `claude-opus-5` and codex 0.155.1 with `gpt-5.6-sol`. See section 2
+step 1 for what was submitted and what it does not record.
 
-## 1. Mouseland's reference statistics -- DONE 2026-09-19
-
-The oracle and all 20 replicates finished on the cluster and the merged file is installed in
-`harbor-tasks/mouseland/tests/` and `harbor-tasks/mouseland_minimal/tests/`, byte-identical;
-`check_task_variants.py` passes for all 8 tasks.
-
-Sources, kept in case the numbers need re-deriving:
+Uncommitted while that runs, and none of it should be committed piecemeal:
 
 | what | where |
 |---|---|
-| oracle trial | `/groups/branson/home/bransonk/harbor-cluster-jobs/refstats/mouseland/2026-09-18__19-18-13/mouseland__LopUGuA` |
-| the 20 replicates and the merged file | `/nrs/branson/bransonk/mouseland-refstats/decoder_replicates/` |
-| the conversion the replicates trained on | `/nrs/branson/bransonk/mouseland-refstats/converted_data.pkl` |
+| the version bump | `harbor-scripts/config_20260919.json` and the 46 files `apply_versions.py` generates |
+| judge pins recorded per trial | `tests/compute_reward.py` and `tests/test.sh`, template plus 23 task copies |
+| the config in the collected path | `harbor-scripts/collect_cluster_results.py`, `evaluation/eval/trial_metrics.py` |
+| display names for the new arms | `evaluation/eval/utils.py` |
+| this file | |
 
-The oracle's own `converted_data.pkl` and that copy are the same size to the byte and their
-`data_summary` blocks are identical, so the merged file's statistics and accuracies describe
-one conversion. 19 subjects, 89 sessions, 37,728 trials, 11-238 frames per trial.
+Unpushed commits: `01ba5d7` here, and `fd10a3a` in `codepacks/harbor-kai` (the reward
+aggregation fix, without which every job of this sweep would exit 1).
 
-Twelve of the twenty replicates fell back to the CPU when the L4 ran out of memory. Each
-replicate records which device trained it, and the spread within each device matches the
-spread overall, so the fallback is not what makes mouseland's variability large -- see
-`changes_since_preprint.md` section 1.
+---
 
-`check_output_classes.py` passes for all three mouseland variants. `visual_stimulus` reports
-UNKNOWN rather than ok in every one: the prompt says "e.g. circle, leaf, etc." and names no
-count, so the parser has nothing to compare. That is the intended wording, not a defect.
-
-**When mouseland's trials are re-scored, reuse the recorded accuracy with
-`rerun_verifier.sh --reuse-accuracy`, as for every other task.** Reuse does put the two sides
-of the `mean - ACCURACY_NSTD * sd` comparison on different decoder versions -- mouseland's
-reference statistics come from the current decoder, its agents' accuracies from March and
-July -- but that mismatch is not specific to mouseland. The other seven tasks' references come
-from `ffb68a5`, which is likewise not the decoder that measured their agents.
-
-The size of the gap has been measured, on
-`majnik2025_minimal/codex/2026-07-28__22-20-13_trial1`: 0.39974 as recorded in July against
-0.39704 retrained in the current tree, which carries both the threading change and the
-short-session fix. That is 0.68%, about 13% of the 4.5 sd band, and it did not move the
-verdict. Retraining mouseland's eighteen conversions, which run from 156 MB to 383 GB and
-would need a GPU queue and a day or more each, buys a shift of that order.
-
-More to the point, the decoder was not changed in a way that measures ordinary data
-differently. `583fe2a` adds a guard for degenerate sessions -- one with no trials is skipped,
-and one with fewer than two is held out of both splits, because in the training set it would
-be scored on a trial the decoder had seen and in the test set by a projection that was never
-trained -- and `e16347c` prepares session batches on several threads. Neither alters what a
-session with enough trials contributes.
-
-So the 0.68% is run-to-run variation rather than a version bias, most plausibly the threading
-changing the order batches are prepared in. That is the real argument against retraining: a
-retrain cannot remove a discrepancy that is noise, since it only draws another sample from the
-same distribution, and rerunning the reference would move by a comparable amount.
-
-For scale, the closest any trial comes to its bar is 0.4 sd
-(`mouseland/terminus-opus/2026-07-29__01-09-15_trial1`, passing) and 0.6 sd
-(`mouseland/claude-code/2026-03-23__15-22-50_trial1`, failing), against a shift worth about
-0.1 sd on a `visual_stimulus` replicate sd of 0.0421.
-
-Retraining mouseland alone would also make it the only task whose agents were measured by a
-different decoder from the other seven, which is a worse position than every agent's accuracy
-coming from its own run.
-
-Worth recording separately: `visual_stimulus` is the binding variable in all fifteen trials
-that have a recorded accuracy -- the smallest margin every time, and the only one 7 of them
-fail, while `licking`, `position` and `running_speed` clear by +1.7 to +34 sd. Its replicate
-sd of 0.0421 is the largest of the four, giving a 0.19-wide band on a 0.69 mean, so
-mouseland's decoder verdicts are effectively decided by one high-variance variable.
-
-What the rerun is actually for: no mouseland trial has been re-scored at all, so all eighteen
-carry only the old pass/fail metrics. None has a single `outcome_*` category key or an `*_ok`
-boolean.
-
-Three of the eighteen cannot take `--reuse-accuracy`, for three different reasons.
-
-`mouseland/terminus-gpt/2026-07-29__08-07-13_trial3` has no `converted_data.pkl`, so the
-fixture is None, the patch stands aside, and the decoder test fails on its own. It goes in the
-reuse batch unchanged; failing is its intended score under `changes_since_preprint.md`
-section 1.6.
-
-`mouseland_minimal/claude-code/2026-07-28__23-07-54_trial2` (22 GB) recorded no accuracy
-because its suite failed early -- `required_files_missing` is `['CONVERSION_NOTES.md']`, an
-agent failure. The run is otherwise complete, with ctrf.json, both judges and a 918 KB
-test-stdout.txt. It needs a run *without* `--reuse-accuracy`, because the flag raises on a
-missing recorded accuracy rather than passing quietly.
-
-`mouseland_minimal/claude-code/2026-07-28__23-07-57_trial3` (383 GB) has no verdict at all: no
-ctrf.json, no reward.txt, and a 2,791-byte test-stdout.txt where a complete one is about
-900 KB, although its conversion is valid and nothing is missing. That is an infrastructure
-failure rather than an agent one, so it is the single trial warranting a full run with
-training, on a host with room for a 383 GB conversion -- roughly 800 GB.
-
-## 2. Rerun the agents on four tasks
+## 1. Rerun the agents on four tasks
 
 `map`, `hasnain2024`, `majnik2025` and `sosa2024`, **every variant** -- maximal, `_minimal`
 and, where one exists, `_datalimit`. Their existing trials were run against a prompt that
@@ -131,7 +57,21 @@ new task rather than a correction to the old.
 
 Sections 4.4 and 3 of `changes_since_preprint.md` have the wording before and after.
 
-## 3. Run the maximal prompt on the newest agents
+**Partly covered by the sweep launched 2026-09-19.** That sweep runs the maximal prompt of
+all eight tasks, so the maximal variant of these four is already in flight and nothing here
+needs resubmitting for it. What remains is their `_minimal` variants, and `_datalimit` for
+`map` and `sosa2024`:
+
+    --tasks map_minimal map_datalimit hasnain2024_minimal majnik2025_minimal \
+            sosa2024_minimal sosa2024_datalimit
+
+**But decide first what they are compared against.** Those reruns would use the 2026-09-19
+pins, so a trial differing from its predecessor differs in two ways at once -- the prompt
+and the agent -- and neither can be credited. Reading a prompt fix as a prompt fix needs the
+old pins, which `VERSIONS_FILE=harbor-scripts/config_20260728.json` still provides. Running
+both is the only way to have it both ways, at twice the cost.
+
+## 2. Run the maximal prompt on the newest agents
 
 Every task's maximal prompt, on the newest harnesses and models. The pinned versions date
 from 2026-07-28 and are two model generations behind. Two steps, because the CLI arms and
@@ -150,12 +90,132 @@ trials. Sol is the deepest-reasoning tier of the GPT-5.6 family, itself two rele
 the pinned `gpt-5.4`. The `-codex` model variants stop at `gpt-5.3-codex`, so the codex arm
 runs a general model either way, as it already does.
 
-To set the versions: copy `harbor-scripts/config_20260728.json` to `config_<newdate>.json`,
-edit it, then `python harbor-scripts/apply_versions.py`, which rewrites each task's
-`tests/versions.json` and `environment/Dockerfile`. Do not edit those by hand.
+**Done 2026-09-19:** `harbor-scripts/config_20260919.json` holds these pins and
+`apply_versions.py` has written all 48 generated files -- each task's
+`environment/Dockerfile` and `tests/versions.json`. Do not edit those by hand; edit the
+config and rerun the generator.
 
-Nothing blocks this step: both are installed CLIs, pinned per task, and the harbor that
+Two trials of `majnik2025_minimal`, one per CLI arm, ran on `gpu_l4_large` on 2026-09-19 to
+prove the new versions build and judge before the rest follow. **The versions work.** Both
+images built with the new CLIs, both agents ran on the new models, both judges graded, and
+`result.json` records `exception_info: None` for each.
+
+| arm | reward | outcome_all | process | note |
+|---|---|---|---|---|
+| codex 0.155.1 / `gpt-5.6-sol` | 0.989 | 1.0 | 0.968 | every outcome category 1.0 |
+| claude-code 2.1.278 / `claude-opus-5` | 0.609 | 0.0 | 0.916 | 10 of 11 categories 1.0; failed `outcome_decoder_accuracy_matches` |
+
+The claude arm's failure is an agent result, not an infrastructure one, so it stands as
+measured.
+
+**The sweep is running, submitted 2026-09-19.** 48 jobs, 8 tasks x 2 CLI arms x 3 trials,
+maximal prompt only, `gpu_l4_large` at 64 slots and one L4 each with a 24h wall:
+
+    python harbor-scripts/submit_harbor_cluster.py --maximal --agents claude codex
+
+`--agents claude codex` is not optional. `submit_harbor_cluster.py` takes its default arms
+from the newest config's `tools` keys, and that file names four: the two terminus arms would
+be submitted as well and cannot run until step 2's rebase. Better still, give the config a
+way to mark an arm as not yet runnable, so the default is right rather than remembered.
+
+Nothing is skipped on a resubmit. The submitter has no check for work already done --
+`--start N` counts positions and `--jobs <names>` takes explicit names, and the only
+`.exists()` test in it is about data mounts. Re-running the whole command after a partial
+failure would rerun every job and leave a second `<timestamp>_trial1` beside the first, so a
+partial rerun has to name its jobs. The failure report prints them in exactly the form
+`--jobs` accepts.
+
+Expect an uneven drain. `majnik2025_minimal` finished in 21 minutes; the archive's median is
+about 1.25h of agent plus verifier with mouseland at 6h, and the two judges add roughly an
+hour on top. Each job rebuilds its image from scratch, because `PODMAN_PRIVATE_STORAGE`
+gives it an empty store, so a few minutes of every job is the build.
+
+**Effort is an unrecorded variable.** Claude Code runs at whatever its default is: the
+invocation is `claude --verbose --output-format=stream-json --permission-mode=bypassPermissions
+--print`, with no effort flag, and its own init event reports `model` and `fast_mode_state`
+but nothing about effort or a thinking budget. Nothing sets one -- harbor's claude-code agent
+takes `max_thinking_tokens` but this repository never passes it, `MAX_THINKING_TOKENS` is
+unset, and `config_*.json` has no effort field. So no trial records what effort produced it,
+which is the gap the judge model had until the pins were recorded in `metrics.json`.
+Plumbing it through `config_*.json` is the obvious fix, and it belongs to a NEW dated config
+rather than this one: changing effort partway makes trials incomparable, and these 48 are
+already running.
+
+#### The cluster's harbor could not aggregate our reward file -- FIXED 2026-09-19
+
+Kept here because it is why `codepacks/harbor-kai` carries an unpushed commit, and because
+the same shape returns whenever that harbor is replaced.
+
+Both smoke-test jobs exited 1 after doing all their work. Harbor's cross-trial aggregation
+raised
+
+    ValueError: Expected exactly one key in reward dictionary, got 15
+
+`tests/write_reward_file.py` writes `reward` plus the three components and the eleven
+outcome categories -- fifteen keys, which is the point of it. The cluster's harbor is 0.1.45
+(`eval-data-format-podman`, editable from `codepacks/harbor-kai`), whose
+`src/harbor/metrics/{mean,max,min,sum}.py` each raised unless the dict had exactly one key.
+Nothing about the version bump caused it; any cluster sweep would have hit it, and the
+reason none had is that no full harbor sweep had run since `01da698` made the reward file
+multi-key. `rerun_verifier.sh` runs its container directly and never reaches that code,
+which is why the 145 re-verifications did not see it.
+
+**The trial output is intact.** The crash happens after the work: `result.json`,
+`verifier/reward.json`, `metrics.json`, `ctrf.json`, `verifier/judge/{claude,codex}` and the
+snapshot are all written. Only harbor's summary across trials is lost, and the analysis
+computes its own.
+
+Harbor 0.21.0 fixed this: `metrics/base.py` gained `aggregate_reward_dicts`, which
+aggregates each key separately and falls back to the old behaviour when there is one key or
+none. The three metric classes are four lines each on top of it.
+
+**Fixed 2026-09-19 by backporting `aggregate_reward_dicts`** into
+`codepacks/harbor-kai/src/harbor/metrics/` -- the checkout the cluster imports, confirmed
+through the env's `harbor.pth`. `base.py` gains the function and two type aliases and is
+otherwise untouched; `mean.py`, `max.py`, `min.py` and `sum.py` each become a single call to
+it. Five files, +70/-68. The env is an editable install, so no reinstall was needed.
+
+`min.py` carried the same restriction and never appeared in the traceback, which named only
+`mean`, `max` and `sum`. Fixing the three would have left it.
+
+The function is kept byte-identical to upstream, docstring-less like upstream, so a rebase
+onto a newer harbor finds nothing to merge there; the explanation sits in a comment above it.
+
+Verified against the two finished trials, through harbor's own models rather than in
+isolation: `update_trial` on both real `TrialResult`s gives `n_trials=2, n_errors=0`;
+`reward_stats` already tracked all fifteen reward names, so that half was never broken;
+`metric.compute` -- the line that raised -- returns four metrics of fifteen keys with the
+right values; and `JobResult.model_dump_json` round-trips. Single-key rewards return exactly
+what they did before, for all four metrics, which is why no existing single-reward task
+changes.
+
+Confirmed on a live job the same day: `154373750` re-ran `majnik2025_minimal` on codex and
+exited 0, with no ValueError after its own start line in the shared log, and
+`raw/<stamp>/result.json` written for the first time -- one eval key carrying all fifteen,
+mean reward 0.995. The 48-job sweep depends on this; without it every job would exit 1.
+
+The alternative, had the fix been larger, was to accept exit 1 and use the per-trial data,
+which is complete either way -- at the cost of every job looking failed in `bjobs`, and of
+checking `collect_cluster_results.py` and `check_trial_health.py` against a non-zero exit.
+
+This also raises the stakes on step 2a: the harbor version gap is not only terminus's
+problem, it breaks harbor's own reward handling for every arm.
+
+**A bare sweep now launches terminus by accident.** `submit_harbor_cluster.py` takes its
+default arms from the newest config's `tools` keys, and that file names four:
+`claude`, `codex`, `terminus-gpt`, `terminus-opus`. The terminus arms cannot run until the
+podman rebase in step 2, so every step 1 submission has to pass `--agents claude codex`
+explicitly. Better still, give the config a way to mark an arm as not yet runnable, so the
+default is right rather than remembered.
+
+Nothing else blocks this step: both are installed CLIs, pinned per task, and the harbor that
 runs them does not have to change.
+
+**Watch for:** a bumped CLI that renamed or dropped a flag `tests/test.sh` passes to a
+judge. A judge that fails to start records a missing process score rather than an error, so
+it shows up as an absent number rather than a crash. The forks verified
+`claude-opus-5` and `gpt-5.6-sol` against these flag sets at claude-code 2.1.226 and codex
+0.147.0 (fork commit `fadfa9d`); this config is newer than both.
 
 ### Step 2: terminus
 
@@ -173,12 +233,47 @@ Between 0.1.44 and 0.21.0 `terminus_2.py` grows from 1831 to 1959 lines with 328
 differing, and gains `tmux_session.py` and `asciinema_handler.py`. So "newest terminus" is a
 real change, and it arrives only with a newer harbor.
 
-**Step 2a: find out how hard the rebase is.** The cluster's podman support lives in
-`harbor-kai`: 42 commits against merge-base `6f280307f`, 19 files, +1489/-115, concentrated
-in `src/harbor/environments/docker/docker.py` and `docker-compose-base.yaml`, with smaller
+**Step 2a: how hard is the rebase? -- partly answered 2026-09-19.**
+
+The cluster's podman support lives in `harbor-kai`: 42 commits against merge-base
+`6f280307f`, 19 files, +1489/-115, concentrated in
+`src/harbor/environments/docker/docker.py` and `docker-compose-base.yaml`, with smaller
 changes to `agents/installed/{claude_code,codex}.py`, `cli/`, `models/task/config.py` and
-`trial/reverify.py`. The first thing to establish is whether upstream has since added podman
-support of its own, which would make the fork unnecessary rather than something to rebase.
+`trial/reverify.py`.
+
+First, "upstream" means two different repositories in these checkouts, which is worth
+stating before anything else:
+
+| checkout | repository | branch | version |
+|---|---|---|---|
+| `codepacks/harbor` | `harbor-framework/harbor` -- the real project | `main` | 0.21.0 |
+| `codepacks/harbor-kai` | `kristinbranson/harbor`, `upstream` = `kaihorstmann/harbor` | `kristin-podman` | 0.1.45 |
+| `codepacks/harbor-merge` | same as harbor-kai | `merge-upstream` | 0.3.0 |
+
+So the fork's own `upstream` is Kai Horstmann's fork, not harbor-framework. A rebase "onto
+upstream" has to say which.
+
+**The real upstream has not added podman**, so the fork is still needed rather than
+retirable: across `harbor-framework/harbor` at 0.21.0, only `environments/base.py` and
+`environments/openshift.py` mention podman at all, neither as container support.
+
+**Kai's fork has a `podman` branch** -- 51 commits ahead of his main, last commit
+2026-06-10 -- touching `environments/docker/docker.py`, `agents/installed/codex.py`,
+`trial/reverify.py`, `cli/` and `environments/base.py`: the same files as ours. Worth
+reading before redoing any of it.
+
+**A merge has already been done once.** `harbor-merge` holds `91d4fcf` (2026-07-28),
+merging Kai's main into `kristin-podman`, and its message records each conflict and how it
+was resolved -- `docker.py` (podman-compose, podman cp, the `--rmi` guard, GPU pool, device
+override, shm_size kept on top of upstream's sanitized project names and mounts_json),
+`claude_code.py`, `codex.py`, `CLAUDE.md`. That is a map of where the friction is, and it is
+the best starting point.
+
+But that merge landed at 0.3.0, against an upstream `main` dated 2026-04-12. The real
+upstream is now 0.21.0 locally and 0.23.0 published, so the remaining jump is far larger
+than the one already done, and every ref in these checkouts was last fetched around
+2026-07-28. **Fetch before trusting any of the above**, and re-check whether Kai's podman
+branch has moved.
 
 Until 2a is answered, the options are: rebase the podman work onto upstream; run the sweep
 locally on docker with the `tb-science` env and skip the cluster; or keep terminus on 0.1.45
@@ -198,15 +293,31 @@ wanted -- the judges should be the current models too -- and it follows that `pr
 scores on these trials are not comparable to the existing ones, which were judged by the
 older pair.
 
-Nothing further is needed to make it happen; `apply_versions.py` rewrites all 36 generated
-files. Worth confirming after the first trial that `metrics.json` records the judge versions
-actually used, rather than assuming the container installed what the config asked for.
+Nothing further is needed to make it happen; `apply_versions.py` rewrites all 48 generated
+files.
 
-**What a rerun measures.** Harness, model, judges and -- for the four tasks in section 2 --
+**Which judge graded a trial is now recorded, as of 2026-09-19.** `tests/test.sh` reads
+`harness_version` from `/tests/versions.json` the way it already read `model`, and passes
+both to `compute_reward.py`, which writes `llm_judge_<name>_model` and
+`llm_judge_<name>_harness_version` into `metrics.json`. They are written before the
+early return on an unreadable eval, so a judge that failed still records what was meant to
+run, and they are `null` on a trial graded by a `test.sh` predating the flags.
+
+It had to happen before this sweep, because a trial that did not record its judge cannot be
+fixed afterwards: nothing else in a trial carries it. The Claude CLI happens to name its
+model in its own transcript; the Codex CLI does not, so for half the judges it was
+unrecoverable.
+
+What is recorded is the pinned version rather than a runtime `--version` probe. The
+Dockerfile installs exactly that pin -- `apply_versions.py` writes both files from one
+config -- so the pin describes what graded the trial, and a probe would add failure modes to
+the grading path for no extra truth.
+
+**What a rerun measures.** Harness, model, judges and -- for the four tasks in section 1 --
 the prompt all move at once, so it answers "how do current agents do on the current
 benchmark" rather than isolating any one change.
 
-## 4. Podman image builds on the cluster
+## 3. Podman image builds on the cluster
 
 Every cluster job currently rebuilds the task image, a few minutes to twenty. Two
 separate reasons, each with its own fix.
@@ -237,7 +348,7 @@ graphroot on top. Build each task's image once into a shared location, and jobs 
 present, never write to it, and cannot corrupt each other: no per-job build, no
 corruption risk, and nothing for a timeout to interrupt.
 
-## 5. Python embedded in shell scripts
+## 4. Python embedded in shell scripts
 
 `harbor-scripts/` holds 33 standalone Python helpers and one shell script that embeds
 Python in a heredoc instead: `merge_rerun_verifier.sh` (14 lines). It would read better as
@@ -258,7 +369,7 @@ What the heredoc form costs:
 - `bash -n` passes a file whose embedded Python is broken, since it only checks the
   shell around it.
 
-## 6. Decisions waiting
+## 5. Decisions waiting
 
 - **Push the fork commits?** Each `~/tb-science-*` clone now has three unpushed commits on
   `neurodata-reuse-<name>`, and those branches have open pull requests. The third carries the
@@ -268,17 +379,43 @@ What the heredoc form costs:
 - **Untracked files** deliberately left out of the commits: `harbor-tasks/sosa2024_api/`,
   `harbor-scripts/data_roots.sh`, `evaluation/decoder_variability/`, `figures/*` (regenerated
   from the statistics anyway), `evaluation/eval/lesion_analysis.ipynb`.
+- **Does a re-collected July trial keep its bare name?** `collect_cluster_results.py` now
+  appends the config it was given, so collecting with `--versions config_20260728.json` files
+  trials under `claude-code-config_20260728`. The trials already in `harbor-jobs/` are bare
+  `claude-code`, which is what `utils.AGENT_KEYS` maps to the 4.6/5.4 display names, and they
+  parse unchanged -- all 146 of them. The two spellings only diverge if July trials are ever
+  re-collected out of `harbor-cluster-jobs/`. Either add the four `-config_20260728` keys
+  pointing at the same display names, or decide that already-collected trials are never
+  collected again.
+- **What the section 1 reruns are compared against**, recorded there: running them on the new
+  pins moves the prompt and the agent at once.
+- **Untracked and unclaimed.** `harbor-tasks/sosa2024_api/` and `harbor-scripts/data_roots.sh`
+  are in neither session's work and predate both; `data_roots.sh` is referenced by nothing.
+  Left out of every commit so far.
 - **A loud failure for zhang2025's index loading.** If the session index is not found, the
   search returns nothing without raising. The index is present in both datasets, so it should
   not fire, but a check would fail at the point of the mistake. It would have to go into the
   terminal-bench-science copy too, to keep that one file shared.
 
-## 7. Known gaps, not yet scheduled
+## 6. Known gaps, not yet scheduled
 
 - **The forks are behind on grading code.** `check_forks_match.py --worktree` reports
   `tests/test_outputs.py`, `write_reward_file.py` and `train_decoder.py` as differing: the
   forks do not have the per-task `expected_files.json` or the required-files change, and some
   of it cannot be shared anyway, because the forks have no LLM judges.
+- **Version pins are patched into each Dockerfile rather than read from a file.**
+  `apply_versions.py` rewrites two `RUN` lines in all 24 `environment/Dockerfile` copies by
+  regular expression. The forks solved this properly in `fadfa9d`: `tests/Dockerfile` does
+  `COPY versions.json` and reads it at build time with `jq -er`, so one file decides what
+  grades a run and a malformed pin fails the build rather than installing `null`. It does not
+  transfer as written, because that needs the verifier in its own container: data-format
+  grades in the agent's container -- there is no `tests/Dockerfile` at all -- and a Dockerfile
+  cannot COPY from outside its own build context, which is `environment/`. Doing it here means
+  generating `environment/versions.json` too, and the Dockerfile ends `WORKDIR /app` with
+  `COPY . .`, so that file would land in `/app` and tell the agent which models judge it.
+  Copying it to `/opt` early and deleting `/app/versions.json` as the last line works, and
+  `jq` is already installed. Worth doing; not worth doing mid-sweep, and the delete step is
+  the kind of thing that stops working quietly.
 - **The same knowledge lives in two places.** `evaluation/eval/ratings/experiments.py` and
   `evaluation/eval/{utils.py,trial_metrics.py}` each hold the dataset aliases and parse task
   folder names into a dataset and a prompt variant. They agree today only because `3d91595`

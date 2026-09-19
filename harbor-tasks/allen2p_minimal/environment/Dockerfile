@@ -43,10 +43,10 @@ RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
 # Unpinned installers gave the archived runs 5 Claude Code versions and 3 Codex
 # versions across trials that get pooled in one analysis, and a drifted harness
 # emits session events harbor cannot convert.
-RUN curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.81
+RUN curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.278
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
-    && npm i -g @openai/codex@0.116.0
+    && npm i -g @openai/codex@0.155.1
 ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app

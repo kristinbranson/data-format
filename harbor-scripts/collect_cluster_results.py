@@ -64,7 +64,14 @@ def arm_to_agent_dir(versions_path: Path | None) -> dict[str, str]:
     fall back to the arm name only when it does not. That leaves claude ->
     claude-code and codex -> codex untouched, which matters because
     evaluation/eval/report.py and raters.py match those names literally, while
-    splitting terminus-2 into terminus-opus and terminus-gpt.
+    splitting terminus-2 into terminus-opus and terminus-gpt. 
+
+    The config filename is then appended to whichever was chosen, so 
+    claude -> claude-code-config_20260919
+
+    trial_metrics.py splits that suffix back off before applying AGENT_ALIASES and
+    SKIP_AGENTS, so those keep matching the bare harbor name; the suffixed form is the
+    arm identity, and what evaluation/eval/utils.py AGENT_KEYS is keyed by.
 
     Args:
         versions_path: dated config defining the arms, or None to use the newest
@@ -90,8 +97,12 @@ def arm_to_agent_dir(versions_path: Path | None) -> dict[str, str]:
         if harbor_agent:
             arms_per_agent[harbor_agent].append(arm)
 
+    # The config's own filename is appended, so the directory records which agent and
+    # model versions produced the trials in it. A directory with no suffix is one 
+    # collected before this existed, i.e. config_20260728.
+    config_suffix = f"-{versions_path.stem}"
     return {
-        arm: (harbor_agent if len(arms) == 1 else arm)
+        arm: (harbor_agent if len(arms) == 1 else arm) + config_suffix
         for harbor_agent, arms in arms_per_agent.items()
         for arm in arms
     }

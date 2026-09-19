@@ -1,0 +1,77 @@
+{
+    "_comment": [
+        "Pinned harness (CLI) and model versions for runs from 2026-09-19.",
+        "Dated rather than mutable: the config that produced a set of results stays",
+        "readable alongside them. Start a new config_<YYYYMMDD>.json when bumping.",
+        "",
+        "Bumped from config_20260728.json, which pinned claude-code 2.1.81 with",
+        "claude-opus-4-6 and codex 0.116.0 with gpt-5.4. Those were the most-used",
+        "versions in harbor-jobs at the time, chosen to stay comparable to the published",
+        "results. This config is the opposite choice: the newest of each, to measure",
+        "current agents on the current benchmark.",
+        "",
+        "gpt-5.6-sol rather than gpt-6-astra. Astra is newer (2026-08-27) and more",
+        "capable, but costs $10/$50 per 1M tokens against Sol's $5/$30, over long agentic",
+        "sessions across many trials. Sol is the deepest-reasoning tier of the GPT-5.6",
+        "family, itself two releases past gpt-5.4. The -codex model variants stop at",
+        "gpt-5.3-codex, so the codex arm runs a general model either way, as it already did.",
+        "",
+        "Entries are RUN ARMS, not tools: an agent plus the model it runs. claude and codex",
+        "keep those key names because they do double duty as the judge pins -- the judges are",
+        "always those two CLIs whichever agent ran the trial. So this bump changes the judging",
+        "as well, which is intended: the judges should be current models too. It follows that",
+        "process scores from this config are not comparable to those from config_20260728.json.",
+        "",
+        "ONE entry per CLI tool, deliberately: the agent and the judge share /root/.local/bin",
+        "inside the trial container, so whichever installs last wins. Separate agent and",
+        "judge versions could therefore never be honoured reliably -- and a single field",
+        "makes 'agent and judge run the same CLI' true by construction rather than by",
+        "remembering to keep two numbers equal.",
+        "",
+        "terminus arms carry NO harness_version, deliberately. terminus-2 is native harbor",
+        "code (a tmux loop calling models through LiteLLM), not an installed CLI, so there is",
+        "nothing to pin -- its version is the harbor commit. The cluster runs harbor 0.1.45",
+        "from the kristin-podman fork while upstream is at 0.23.0, so the terminus arms here",
+        "get new MODELS but the same harbor; see todo.md section 3 step 2.",
+        "Consumers must treat the field as optional rather than defaulting it to empty, which",
+        "would silently unpin a CLI arm. Terminus reaches models via LiteLLM, so it needs",
+        "ANTHROPIC_API_KEY / OPENAI_API_KEY in the environment (run_harbor.sh --apikeys); the",
+        "CLI credential files do not apply.",
+        "",
+        "Consumed at runtime by run_harbor.sh (model via -m, harness via --ak version=)",
+        "and by the judge paths (test.sh, rerun_verifier.sh, run_unsupervised_judges.sh)",
+        "via tests/versions.json, which is generated from this file.",
+        "",
+        "Two places cannot read it and carry the values literally: each task's",
+        "environment/Dockerfile (installs the judge CLIs at image build time) and each",
+        "task's tests/versions.json. Do NOT edit those by hand -- edit this file, then:",
+        "",
+        "    python harbor-scripts/apply_versions.py           # rewrite all 36",
+        "    python harbor-scripts/apply_versions.py --check   # report drift, exit 1",
+        "",
+        "NOTE: apply_versions.py and the rerun scripts select the NEWEST config_*.json by",
+        "lexical sort, so this file becomes the default as soon as it exists -- before",
+        "apply_versions.py has been run. Runs started between the two see a config and",
+        "generated files that disagree."
+    ],
+    "tools": {
+        "claude": {
+            "harbor_agent": "claude-code",
+            "harness_version": "2.1.278",
+            "model": "claude-opus-5"
+        },
+        "codex": {
+            "harbor_agent": "codex",
+            "harness_version": "0.155.1",
+            "model": "gpt-5.6-sol"
+        },
+        "terminus-opus": {
+            "harbor_agent": "terminus-2",
+            "model": "claude-opus-5"
+        },
+        "terminus-gpt": {
+            "harbor_agent": "terminus-2",
+            "model": "gpt-5.6-sol"
+        }
+    }
+}

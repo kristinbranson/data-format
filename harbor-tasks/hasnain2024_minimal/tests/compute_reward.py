@@ -52,6 +52,12 @@ def main():
     parser.add_argument("--eval-json", required=True, help="Path to llm_judge_eval.json")
     parser.add_argument("--metrics-json", required=True, help="Path to metrics.json (read+write)")
     parser.add_argument("--model-name", required=True, help="Model name prefix (e.g., 'claude', 'codex')")
+    parser.add_argument("--judge-model", default=None,
+                        help="Model this judge ran, as pinned in tests/versions.json. Recorded "
+                             "in metrics.json; omitted means it was not supplied.")
+    parser.add_argument("--judge-harness", default=None,
+                        help="Judge CLI version, as pinned in tests/versions.json. Recorded "
+                             "in metrics.json; omitted means it was not supplied.")
     args = parser.parse_args()
 
     # Load existing metrics.json (written by pytest)
@@ -64,6 +70,18 @@ def main():
 
     # Clear any stale error from a prior run
     metrics[f"llm_judge_{args.model_name}_error"] = ""
+
+    # Which judge produced the scores below. Nothing else in a trial records this: the Claude
+    # CLI happens to name its model in its own transcript, the Codex CLI does not, so without
+    # these keys a finished trial cannot say what graded it -- and the judges change whenever
+    # the pinned config does, which moves every process score.
+    #
+    # Written here rather than beside the scores so that they land even when the eval cannot be
+    # read and this returns early: a judge that failed should still record what was meant to
+    # run. None means the caller did not pass them, which is how a trial graded by a test.sh
+    # predating these flags reads.
+    metrics[f"llm_judge_{args.model_name}_model"] = args.judge_model
+    metrics[f"llm_judge_{args.model_name}_harness_version"] = args.judge_harness
 
     # Read LLM judge evaluation
     try:

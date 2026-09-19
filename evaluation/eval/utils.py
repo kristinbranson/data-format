@@ -49,23 +49,38 @@ TASK_DISPLAY_NAME = {"allen2p": "Allen2P", "zhang2025": "Zhang2025 (IBL)"}
 # together via AGENT_ALIASES, so only claude-code appears here. `oracle` is absent
 # deliberately -- it runs the reference solution, so its ratios are ~1.0 by
 # construction and it is dropped at collection by SKIP_AGENTS.
-ARM_AGENT = {
-    ("claude-code",   "minimal"): "Claude Code",
-    ("claude-code",   "full"):    "Claude Code",
-    ("codex",         "minimal"): "Codex",
-    ("codex",         "full"):    "Codex",
-    ("terminus-opus", "full"):    "Terminus/Opus",
-    ("terminus-gpt",  "full"):    "Terminus/GPT",
+
+AGENT_KEYS = {
+    "claude-code": "Claude Code Opus 4.6",
+    "codex": "Codex GPT 5.4",
+    "terminus-opus": "Terminus/Opus 4.6",
+    "terminus-gpt": "Terminus/GPT 5.4",
+    "claude-code-config_20260919": "Claude Code Opus 5",
+    "codex-config_20260919": "Codex GPT 5.6",
+    "terminus-opus-config_20260919": "Terminus/Opus 5",
+    "terminus-gpt-config_20260919": "Terminus/GPT 5.6",
 }
 
-ARM_COLUMNS = list(ARM_AGENT.keys())
+ARM_COLUMNS = [
+    ("claude-code",   "minimal"),
+    ("claude-code",   "full"),
+    ("codex",         "minimal"),
+    ("codex",         "full"),
+    ("terminus-opus", "full"),
+    ("terminus-gpt",  "full"),
+]
 
+ARM_AGENT = {k: AGENT_KEYS[k[0]] for k in ARM_COLUMNS}
 
 AGENT_SHORT = {
-    "Claude Code": "Claude",
-    "Codex": "Codex",
-    "Terminus/Opus": "Terminus-Opus",
-    "Terminus/GPT": "Terminus-GPT",
+    "Claude Code Opus 4.6": "Claude 4.6",
+    "Codex GPT 5.4": "Codex 5.4",
+    "Terminus/Opus 4.6": "Terminus-Opus 4.6",
+    "Terminus/GPT 5.4": "Terminus-GPT 5.4",
+    "Claude Code Opus 5": "Claude 5",
+    "Codex GPT 5.6": "Codex 5.6",
+    "Terminus/Opus 5": "Terminus-Opus 5",
+    "Terminus/GPT 5.6": "Terminus-GPT 5.6",
 }
 
 SUPERVISED_DS   = ["allen2p", "chen2024", "hasnain2024", "lee2025", "majnik2025", "sosa2024", "zhang2025", "zhong2025"]

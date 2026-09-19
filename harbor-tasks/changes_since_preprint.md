@@ -119,6 +119,16 @@ devices' means differ by less than either spread. Twelve and eight replicates es
 standard deviation only roughly, so this rules out the fallback as the explanation without
 establishing that the two devices agree exactly.
 
+Where mouseland's statistics came from, in case they need re-deriving: the oracle trial is
+`/groups/branson/home/bransonk/harbor-cluster-jobs/refstats/mouseland/2026-09-18__19-18-13/mouseland__LopUGuA`,
+and the twenty replicates and the merged file are in
+`/nrs/branson/bransonk/mouseland-refstats/decoder_replicates/`. The replicates trained on
+`/nrs/branson/bransonk/mouseland-refstats/converted_data.pkl`, a copy of an earlier conversion,
+rather than on the oracle's own output so that they could start before it finished; the two are
+the same size to the byte and their `data_summary` blocks are identical, so the merged file's
+statistics and accuracies describe one conversion. It has 19 subjects, 89 sessions, 37,728
+trials and 11-238 frames per trial.
+
 #### How the multiplier is chosen
 
 The multiplier sets how often an honest run is rejected, so it is chosen from that failure

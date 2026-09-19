@@ -228,7 +228,9 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
         `prompt` records which variant this trial actually was: "full" (maximal
         prompt), "minimal", or "datalimit" (minimal prompt on the
         datalimit data).
-        `agent` is canonicalised through AGENT_ALIASES, and trials belonging to
+        `agent` is canonicalised through AGENT_ALIASES and keeps any
+        `-config_<date>` suffix naming the versions config the trial ran under, so
+        the same agent on different pins stays two arms; trials belonging to
         SKIP_AGENTS return None rather than entering the output at all.
         Keeping the variant is not cosmetic: <task> and <task>_minimal read the
         SAME data and differ only in how much the instruction says, so without
@@ -242,9 +244,24 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
     if len(parts) < 4:
         return None
     trial_dir, agent, task = parts[-2], parts[-3], parts[-4]
+
+    # The agent directory carries the versions config it ran under as a suffix, e.g.
+    # `claude-code-config_20260919` (collect_cluster_results.py appends it). Split it off
+    # so SKIP_AGENTS and AGENT_ALIASES go on matching the bare harbor name, then put it
+    # back: the suffixed form is the arm identity, and what utils.AGENT_KEYS is keyed by.
+    #
+    # Keeping it in `agent` rather than returning it separately is what stops two sweeps
+    # colliding, because `agent` is already part of the key below. Without it an arm is
+    # (agent, prompt) and a rerun on new pins silently replaces the older trial.
+    #
+    # No suffix means a directory collected before this existed, which is config_20260728.
+    # No harbor agent or arm name contains "-config", so the split cannot misfire.
+    agent, _, config_stem = agent.partition("-config")
     if agent in SKIP_AGENTS:
         return None
     agent = AGENT_ALIASES.get(agent, agent)
+    if config_stem:
+        agent = f"{agent}-config{config_stem}"
 
     dataset = task.removesuffix("_minimal").removesuffix("_datalimit")
     dataset = DATASET_ALIASES.get(dataset, dataset)
