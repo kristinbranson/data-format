@@ -24,6 +24,28 @@ CODE_SCORES = {
     "INCORRECT": 0.0,
 }
 
+# The rubric offers only CORRECT and INCORRECT for code_correctness, but a judge sometimes
+# answers that axis with a rating from the decision ladder. Across 104 evals the Claude judge
+# did it 10 times, always CONCERNING; Codex never did. Dropping those silently shrank the code
+# denominator below the decision one -- 31 code scores against 32 decisions -- and because the
+# dropped rating sat below the CORRECTs around it, the mean it left behind flattered the trial.
+#
+# So an off-axis rating is folded onto the nearest value the rubric does offer, rather than
+# discarded or invented. The decision ladder splits at the OK/CONCERNING boundary, which is
+# where its own meaning changes: MATCH, BETTER and OK all say the work is acceptable, while
+# CONCERNING and INCORRECT say it is not. The code question -- does the code implement the
+# decision the AI said it made -- takes the same cut.
+CODE_ALIASES = {
+    "MATCH": "CORRECT",
+    "BETTER": "CORRECT",
+    "OK": "CORRECT",
+    "CONCERNING": "INCORRECT",
+}
+
+# How many questions a judge may leave unanswered and still be scored. Beyond this the eval
+# is too thin to stand behind; at or below it, the means are taken over what was answered.
+MAX_MISSING_QUESTIONS = 2
+
 
 def main():
     parser = argparse.ArgumentParser(description="Compute reward from LLM judge evaluation.")
@@ -55,35 +77,56 @@ def main():
             json.dump(metrics, f, indent=2)
         return
 
-    # The judge must have answered every question it was asked, and no others.
+    # The judge must have answered all but at most MAX_MISSING_QUESTIONS of the questions it
+    # was asked, and no others.
     #
-    # Without this, a short eval still produces a confident number: the means are taken over
-    # whatever was scored, so a judge that answered one question perfectly reports 1.000, and
-    # an empty eval reports 0.000 -- indistinguishable from a judge that rated everything
-    # INCORRECT. Across 201 evals in the job archive no judge has ever answered a partial
-    # rubric, so this should never fire; it is here to make a new failure visible rather than
-    # plausible, in a script whose output is a score nobody re-derives.
+    # Some limit is needed because a short eval otherwise produces a confident number: the
+    # means are taken over whatever was scored, so a judge that answered one question
+    # perfectly reports 1.000, and an empty eval reports 0.000 -- indistinguishable from a
+    # judge that rated everything INCORRECT.
+    #
+    # A small tolerance rather than none, because discarding 31 of 32 answers over one
+    # absence throws away far more than it protects: each missing answer moves the mean by
+    # about 1/n. Across 201 evals in the job archive no judge had ever answered a partial
+    # rubric; the first observed case was one question short of 32.
+    #
+    # The absences are NOT imputed. OK is the middle rung of the decision ladder but 0.75 of
+    # its range, and the code axis has no middle rung at all, so filling a gap means choosing
+    # generous or harsh -- and a judge most plausibly skips what it found hard or ambiguous,
+    # so neither is neutral in expectation. Averaging over what was answered invents nothing,
+    # and llm_judge_<model>_n_missing_questions records how many were absent so a partial
+    # score is visible downstream rather than indistinguishable from a complete one.
+    #
+    # An unexpected id stays fatal however few are missing: answering a question that was not
+    # asked is evidence the judge misread the rubric, not that it ran short.
     #
     # judge_instructions.md is the source rather than reference_DECISIONS.md because it is
     # literally the prompt the judge answered. The two currently disagree -- the instructions
     # ask 9-c and 10-c, which DECISIONS does not answer, and DECISIONS answers 12-e, which the
     # instructions do not ask -- so checking against DECISIONS would fail every run.
     instructions = pathlib.Path(__file__).parent / "judge_instructions.md"
+    n_missing = None
     if instructions.is_file():
         expected = set(QUESTION_ID.findall(instructions.read_text()))
         answered = {k for k, v in eval_data.items() if isinstance(v, dict)}
-        if expected and answered != expected:
+        if expected:
             missing = sorted(expected - answered)
             unexpected = sorted(answered - expected)
-            detail = (f"judge answered {len(answered)} of {len(expected)} questions"
-                      + (f"; missing {missing}" if missing else "")
-                      + (f"; unexpected {unexpected}" if unexpected else ""))
-            print(f"Error: {detail}", file=sys.stderr)
-            metrics[f"llm_judge_{args.model_name}_reward"] = None
-            metrics[f"llm_judge_{args.model_name}_error"] = detail
-            with open(args.metrics_json, "w") as f:
-                json.dump(metrics, f, indent=2)
-            return
+            n_missing = len(missing)
+            if unexpected or n_missing > MAX_MISSING_QUESTIONS:
+                detail = (f"judge answered {len(answered)} of {len(expected)} questions"
+                          + (f"; missing {missing}" if missing else "")
+                          + (f"; unexpected {unexpected}" if unexpected else ""))
+                print(f"Error: {detail}", file=sys.stderr)
+                metrics[f"llm_judge_{args.model_name}_reward"] = None
+                metrics[f"llm_judge_{args.model_name}_error"] = detail
+                metrics[f"llm_judge_{args.model_name}_n_missing_questions"] = n_missing
+                with open(args.metrics_json, "w") as f:
+                    json.dump(metrics, f, indent=2)
+                return
+            if missing:
+                print(f"Warning: judge left {missing} unanswered; scoring over the "
+                      f"{len(answered)} it did answer", file=sys.stderr)
     else:
         print(f"Warning: {instructions} not found; not checking question coverage",
               file=sys.stderr)
@@ -92,6 +135,10 @@ def main():
     decision_scores = []
     code_scores = []
     details = {}
+    # Counted rather than left to a stderr warning: a score computed over fewer items than it
+    # appears to be is the failure this file has had twice, once for skipped questions and once
+    # for off-axis ratings.
+    n_code_normalised = 0
 
     for key, entry in eval_data.items():
         # A judge may add top level keys of its own alongside the scored decisions. Claude
@@ -106,6 +153,12 @@ def main():
 
         d_cat = entry.get("decision_correctness", "").upper()
         c_cat = entry.get("code_correctness", "").upper()
+
+        # Recorded under the rubric's own vocabulary, so details/ shows what was scored rather
+        # than what the judge happened to type.
+        if c_cat in CODE_ALIASES:
+            c_cat = CODE_ALIASES[c_cat]
+            n_code_normalised += 1
 
         d_score = DECISION_SCORES.get(d_cat)
         c_score = CODE_SCORES.get(c_cat)
@@ -138,6 +191,12 @@ def main():
     metrics[f"llm_judge_{model}_mean_code_score"] = mean_code
     metrics[f"llm_judge_{model}_n_decision_scores"] = len(decision_scores)
     metrics[f"llm_judge_{model}_n_code_scores"] = len(code_scores)
+    # None when judge_instructions.md was not found, i.e. coverage was never checked --
+    # distinct from 0, which means it was checked and nothing was missing.
+    metrics[f"llm_judge_{model}_n_missing_questions"] = n_missing
+    # Answers whose code rating came from the decision ladder and was folded onto the rubric's
+    # two values. Nonzero means the judge did not answer in the vocabulary it was given.
+    metrics[f"llm_judge_{model}_n_code_normalised"] = n_code_normalised
     metrics[f"llm_judge_{model}_details"] = details
 
     with open(args.metrics_json, "w") as f:

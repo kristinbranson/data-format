@@ -64,7 +64,7 @@ reward_zone_dict = {'A': [80, 130],
 # =================================================================================================
 
 # Experiment days on which the laser was NOT blanked between trials, so the dF/F baseline window is
-# allowed to span the teleport. Animals missing from this table (m3 and m7) were
+# allowed to span the teleport. Animals missing from this table (m3, m4 and m7) were
 # blanked on every day, so their baselines are always restricted to the lap.
 # ** copied from src/reward_relative/teleport_metadata.py::teleport_sessions **
 

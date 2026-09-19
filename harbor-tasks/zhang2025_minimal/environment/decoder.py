@@ -932,6 +932,12 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
         # Bound once: session_data converts on every subscript, so the four reads
         # below would otherwise rebuild this session's tensors four times.
         batch = session_data[session]
+        if batch is None:
+            # A session with no trials has no neuron count to size a layer with. Held as
+            # None so that projection_layers stays indexed by session; every read of it is
+            # guarded by the same emptiness check that skips the session's data.
+            projection_layers.append(None)
+            continue
         nneurons = batch['nneurons']
         proj = nn.Linear(nneurons, npcs, bias=False).to(device)
 
@@ -985,6 +991,8 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
     # Collect all parameters
     all_params = []
     for proj in projection_layers:
+        if proj is None:          # session with no trials, nothing to train
+            continue
         all_params.extend(proj.parameters())
     for decoder in decoders:
         all_params.extend(decoder.parameters())
@@ -1048,9 +1056,12 @@ def train_decoder(neural: list, input: list, output: list, metadata: dict = {}, 
             train_loss_normalized = epoch_loss / (nsessions * doutput)
             print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {train_loss_normalized:.6f}')
 
-    # Store trained parameters
+    # Store trained parameters. A session with no trials contributes None, keeping
+    # model['projection'] indexed by session for predict(), which reads it only for
+    # sessions that have trials.
     for session in range(nsessions):
-        model['projection'].append(projection_layers[session].weight.data.clone())
+        proj = projection_layers[session]
+        model['projection'].append(None if proj is None else proj.weight.data.clone())
     model['decoder'] = decoders
 
     return model
@@ -1123,6 +1134,14 @@ def predict(neural: list, input: list, model: dict, sessionid: list | None = Non
             session_confidences = []
             session_pcs = []
             projection = model['projection'][session]
+            if projection is None:
+                # No projection was trained for this session: the training split held
+                # none of its trials, which happens when it has too few to divide. Its
+                # predictions stay None, the same as a trial the decoder never saw.
+                predictions.append([None] * ntrials)
+                pcs.append([None] * ntrials)
+                confidences.append([None] * ntrials)
+                continue
 
             for trial in range(ntrials):
                 # Get trial data
@@ -1442,6 +1461,16 @@ def train_validate_decoder(neural: list, input: list, output: list, metadata: st
         ntrials = len(neural[session])
         trial_indices = np.random.permutation(ntrials)
 
+        # A session needs two trials to put one on each side of the split. With fewer,
+        # it goes to neither: kept in the training set it would be scored on a trial the
+        # decoder had seen, and kept in the test set it would be scored by a projection
+        # that was never trained. Its trials are left unpredicted, as for any trial the
+        # decoder does not see.
+        if ntrials < 2:
+            train_indices.append(trial_indices[:0])
+            test_indices.append(trial_indices[:0])
+            continue
+
         # Split into train and test
         n_train = max(1, int(ntrials * frac_train))
         n_train = min(n_train, ntrials - 1)  # At least 1 test trial
@@ -1521,6 +1550,9 @@ def train_validate_decoder(neural: list, input: list, output: list, metadata: st
             output_test = batch['output'].to(device)
 
             projection = model['projection'][session]
+            if projection is None:
+                # Trained on none of this session's trials, so it contributes no loss.
+                continue
             projected = torch.matmul(neural_test, projection.T)
             combined = torch.cat([projected, input_test], dim=1)
 

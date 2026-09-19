@@ -184,8 +184,35 @@ The judge instructions describe the same list of files.
   has pointed to different model files over time, so it is now pinned to one revision.
 - **Judge scoring errors are caught.** A judge answer containing an unexpected entry used to
   crash scoring and silently drop that judge; a judge that answered only some questions still
-  produced a score. Now unexpected entries are skipped, and an answer that does not cover
-  exactly the questions asked is recorded as an error instead of a score.
+  produced a score, and a short answer produced a confident one — a judge that rated a single
+  question perfectly reported 1.000, and an empty answer reported 0.000, indistinguishable from
+  a judge that rated everything INCORRECT. Now non-entry keys are skipped, and the answer's
+  coverage of the rubric is checked:
+
+  | Questions left unanswered | Result |
+  |---|---|
+  | up to 2 | scored over the questions that were answered |
+  | 3 or more | recorded as an error rather than a score, so the judge is left out of `process` |
+
+  A question id the rubric never asked is an error however few are missing, since answering
+  something that was not asked is evidence the judge misread the rubric rather than ran short.
+
+  Unanswered questions are **not** imputed. `OK` is the middle rung of the decision ladder but
+  0.75 of its range, the code axis has no middle rung at all (`CORRECT` 1.0, `INCORRECT` 0.0),
+  and a judge most plausibly skips what it found hard or ambiguous — so no filled-in value is
+  neutral in expectation. Averaging over what was answered invents nothing, and each missing
+  answer moves the mean by about 1/n.
+
+  `metrics.json` records `llm_judge_<model>_n_missing_questions` so an incomplete score is
+  visible downstream instead of indistinguishable from a complete one: 0 means the coverage was
+  checked and nothing was missing, and null means `judge_instructions.md` was not found so it
+  was never checked.
+
+  The tolerance is not hypothetical. Across 201 evals in the preprint's job archive no judge had
+  ever answered a partial rubric; the first observed case was one question short of 32
+  (`zhang2025_minimal`, claude-code trial 3, missing `3-c`). Under the previous all-or-nothing
+  rule its 31 answers were discarded and that trial's `process` rested on Codex alone, 0.660;
+  scoring the 31 gives the Claude judge 0.836 and `process` 0.748.
 
 ### 1.6 Bug fixed while making these changes
 

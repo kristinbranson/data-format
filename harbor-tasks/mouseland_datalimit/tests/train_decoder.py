@@ -114,11 +114,26 @@ if verify_only:
     print("Data verification complete.")
     sys.exit(0)
 
-# train decoder on .7 of the data, test on .3
-scores, predictions, pcs, confidences, train_idx, test_idx, model, output, rng_state = train_validate_decoder(
-    data['neural'], data['input'], data['output'], 
-    **train_params
-)
+# Train on DEFAULT_FRAC_TRAIN of each session's trials and validate on the rest.
+#
+# A dataset whose activations do not fit the card raises torch.OutOfMemoryError partway
+# through the first epoch, after the conversion has already been paid for. The retry
+# repeats the whole call on the CPU, which is slower but bounded by memory that a node
+# has far more of. tests/test_outputs.py grades a submission the same way, so a dataset
+# too large for the GPU is scored rather than failed.
+try:
+    scores, predictions, pcs, confidences, train_idx, test_idx, model, output, rng_state = train_validate_decoder(
+        data['neural'], data['input'], data['output'],
+        **train_params
+    )
+except torch.OutOfMemoryError:
+    print(f"CUDA out of memory on {train_params.get('device', 'cuda')}; retrying on CPU.",
+          flush=True)
+    train_params['device'] = torch.device('cpu')
+    scores, predictions, pcs, confidences, train_idx, test_idx, model, output, rng_state = train_validate_decoder(
+        data['neural'], data['input'], data['output'],
+        **train_params
+    )
 # Compute chance performance for each output dimension using training data class fractions
 num_classes = [len(data['output_values'][i]) for i in range(len(data['output_values']))]
 chance_uniform = [1.0 / nc for nc in num_classes]  # Random uniform guessing
@@ -179,6 +194,9 @@ stats['chance_majority'] = {
     for i in range(len(chance_majority))
 }
 stats['rng_state'] = rng_state
+# Which device actually trained, so a run that fell back to the CPU says so rather than
+# looking identical to one that had the GPU all along.
+stats['device'] = str(train_params.get('device', 'cuda'))
 
 if args.stats_json:
     with open(args.stats_json, 'w') as f:

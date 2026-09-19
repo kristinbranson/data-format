@@ -32,6 +32,17 @@
 #   --n-replicates N      Splits for --decoder-stats. Unset, compute_decoder_stats.py
 #                         uses its own DEFAULT_N_REPLICATES, which is the n the
 #                         verifier's ACCURACY_NSTD is derived from.
+#   --reuse-accuracy      Run every test, but take the decoder's per-output accuracy from
+#                         the trial's existing metrics.json instead of training a decoder
+#                         again. Training is the only expensive part of grading -- minutes
+#                         to hours per trial -- and every line of test_decoder_accuracy
+#                         after it is arithmetic on that accuracy, which is a property of
+#                         the agent's own converted data. Reusing it also keeps this run on
+#                         the same decoder version as the reference statistics it grades
+#                         against, which a fresh training run would not. Implemented as a
+#                         conftest.py generated into the throwaway copy of tests/ that this
+#                         script mounts, so no task file changes and a normal harbor run
+#                         can never pick it up. Drops the GPU request, as nothing trains.
 #   --task NAME           Task name, when it cannot be inferred from the trial path.
 #                         Inferred from a harbor trial directory named <task>__<id>,
 #                         or from jobs/<task>/<agent>/<timestamp>/. Also --task=NAME.
@@ -66,6 +77,7 @@ USE_APIKEYS=false
 ENV_FILE=""
 VERIFIER_DIR_OVERRIDE=""
 DECODER_STATS=false
+REUSE_ACCURACY=false
 # Empty unless --n-replicates is given, so the default lives in exactly one place:
 # compute_decoder_stats.py's DEFAULT_N_REPLICATES.
 N_REPLICATES=""
@@ -87,6 +99,7 @@ while [[ "${1:-}" == --* ]]; do
         --judges-only)       RUN_CLAUDE_JUDGE=true; RUN_CODEX_JUDGE=true; JUDGE_ONLY=true; shift ;;
         --verifier-dir)      VERIFIER_DIR_OVERRIDE="$2"; shift 2 ;;
         --decoder-stats)     DECODER_STATS=true; shift ;;
+        --reuse-accuracy)    REUSE_ACCURACY=true; shift ;;
         --n-replicates)      N_REPLICATES="$2"; shift 2 ;;
         --n-replicates=*)    N_REPLICATES="${1#*=}"; shift ;;
         --task)              TASK_OVERRIDE="$2"; shift 2 ;;
@@ -133,6 +146,23 @@ if [ "${NO_GPU:-false}" = true ]; then
     GPU_FLAG=""
 fi
 
+# --reuse-accuracy: nothing trains, so don't need GPU
+if [ "$REUSE_ACCURACY" = true ]; then
+    GPU_FLAG=""
+    # Both other modes skip the pytest run this flag modifies, so combining them asks for
+    # something that cannot happen; saying so beats silently ignoring the flag.
+    if [ "$JUDGE_ONLY" = true ]; then
+        echo "Error: --reuse-accuracy has no effect with a judge-only rerun: the judges do" >&2
+        echo "       not run test_decoder_accuracy. Drop one of the two flags." >&2
+        exit 1
+    fi
+    if [ "$DECODER_STATS" = true ]; then
+        echo "Error: --reuse-accuracy and --decoder-stats are contradictory: one reuses a" >&2
+        echo "       trained accuracy, the other exists to train the reference's." >&2
+        exit 1
+    fi
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -144,6 +174,15 @@ TRIAL_DIR="${1:?Usage: $0 [--claude-judge-only|--codex-judge-only|--judges-only]
 # is that hazard for the trial path, and it also keeps the task-name inference
 # (basename of the grandparent) working from any cwd.
 TRIAL_DIR="$(cd "$TRIAL_DIR" && pwd)"
+
+# Check that base metrics exist. Checked here so we fail early before image is built
+BASE_METRICS="$TRIAL_DIR/verifier/metrics.json"
+if [ "$REUSE_ACCURACY" = true ] && [ ! -f "$BASE_METRICS" ]; then
+    echo "Error: --reuse-accuracy needs $BASE_METRICS, which does not exist." >&2
+    echo "       This trial has no recorded accuracy to reuse; rerun it without the flag" >&2
+    echo "       to train the decoder instead." >&2
+    exit 1
+fi
 
 # The snapshot's large files (converted_data.pkl, sample_data.pkl) are symlinks
 # to /nearline: the job tree keeps only the small files on /groups so it can be
@@ -332,6 +371,27 @@ fi
 # Replicate Harbor's behavior by copying tests to a local tmpdir before mounting.
 TESTS_TMPDIR=$(mktemp -d)
 cp -r "$TASK_DIR/tests/." "$TESTS_TMPDIR/"
+
+# --reuse-accuracy: hand the tests a previous run's decoder accuracy and a conftest.py that
+# swaps out the training. Both go in the temp copy of tests/, which this script created and
+# deletes, so the task's own tests/ is untouched and a normal harbor run cannot see either
+# file. base_metrics.json rather than a mount of verifier/: /logs/verifier is the new, empty
+# rerun directory, and anything written there would be copied into verifier/ by
+# merge_rerun_verifier.sh.
+REUSE_ACCURACY_ENV=""
+if [ "$REUSE_ACCURACY" = true ]; then
+    cp "$BASE_METRICS" "$TESTS_TMPDIR/base_metrics.json"
+    # Stated rather than hidden. Harmless -- the chain back to a real training run is
+    # unbroken, since a reused run copies the accuracy forward unchanged -- but anyone
+    # reading the log should be able to see how far from a training run this trial is.
+    if python3 -c "import json,sys; sys.exit(0 if json.load(open('$BASE_METRICS')).get('validation_balanced_accuracy_reused') else 1)" 2>/dev/null; then
+        echo "          (that file was itself produced by a --reuse-accuracy run)"
+    fi
+    cp "$SCRIPT_DIR/reuse_accuracy_conftest.py" "$TESTS_TMPDIR/conftest.py"
+    REUSE_ACCURACY_ENV="-e REUSE_VALIDATION_ACCURACY=/tests/base_metrics.json"
+    echo "Accuracy: reused from $BASE_METRICS (no decoder training)"
+fi
+
 chmod -R a+rX "$TESTS_TMPDIR"
 trap 'rm -rf "$TESTS_TMPDIR"' EXIT
 
@@ -572,9 +632,50 @@ else
         -v "$TESTS_TMPDIR":/tests:ro \
         -v "$VERIFIER_OUT":/logs/verifier \
         -v "$TRIAL_DIR/agent":/logs/agent \
+        $REUSE_ACCURACY_ENV \
         -w /app \
         "$IMAGE_NAME" \
         bash /tests/test.sh
+
+    # The flag's contract, checked from outside the container as well as inside it: a run
+    # that trained instead of reusing would otherwise be visible only to someone reading
+    # test-stdout.txt, and the number it produced would rest on a different decoder version
+    # than the reference statistics it was compared against.
+    if [ "$REUSE_ACCURACY" = true ]; then
+        python3 - "$BASE_METRICS" "$VERIFIER_OUT/metrics.json" <<'VERIFY' || exit 1
+import json, sys
+
+base_path, new_path = sys.argv[1], sys.argv[2]
+try:
+    base = json.load(open(base_path))
+    new = json.load(open(new_path))
+except (OSError, ValueError) as error:
+    sys.exit(f"--reuse-accuracy: cannot verify the run: {error!r}")
+
+new_accuracy = new.get("validation_balanced_accuracy")
+if not new_accuracy:
+    # Legitimate: the test can fail before the accuracy step, which is the right score for
+    # a conversion that could not be loaded. Nothing to verify, and nothing wrong.
+    print("reuse check: no accuracy recorded, so the test failed before that step; nothing "
+          "to verify")
+    sys.exit(0)
+
+if not new.get("validation_balanced_accuracy_reused"):
+    sys.exit("reuse check FAILED: the new metrics.json has no "
+             "validation_balanced_accuracy_reused, so this run trained a decoder instead of "
+             "reusing the recorded accuracy. Its numbers rest on a different decoder version "
+             "than the reference statistics; do not merge this rerun.")
+
+base_accuracy = base.get("validation_balanced_accuracy") or {}
+disagree = {name: (base_accuracy.get(name), value)
+            for name, value in new_accuracy.items() if base_accuracy.get(name) != value}
+if disagree:
+    sys.exit(f"reuse check FAILED: the accuracy recorded differs from the accuracy supplied, "
+             f"(base, new) per variable: {disagree}. Do not merge this rerun.")
+
+print(f"reuse check: passed -- {len(new_accuracy)} output variable(s) carried over unchanged")
+VERIFY
+    fi
 fi
 
 echo ""

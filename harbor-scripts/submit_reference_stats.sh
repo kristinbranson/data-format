@@ -267,9 +267,12 @@ for task in "${TASKS[@]}"; do
     # command carries nothing but the output directory. JOBS_DIR is per task because
     # harbor writes a timestamped run directory underneath it and eleven jobs sharing
     # one root would interleave their output.
-    # PODMAN_PRIVATE_STORAGE: these jobs take one GPU's share rather than a whole node,
-    # so several of them land on the same host and would otherwise build images into one
-    # shared podman store at the same time. See podman_env.sh for what that corrupted.
+    # PODMAN_PRIVATE_STORAGE: each job builds the image into a store of its own. The
+    # node's shared store is faster, since a later job finds the image already built, but
+    # it survives the job that filled it: one killed partway through leaves it in a state
+    # the next job cannot use, and podman_env.sh refuses to reset a shared store rather
+    # than break a sibling. A per-job build costs minutes; a poisoned store costs every
+    # job that lands on that host until someone clears it by hand.
     inner="JOBS_DIR=${jobs_dir} PODMAN_PRIVATE_STORAGE=true \
 bash ${SCRIPT_DIR}/generate_reference_stats.sh --podman ${task}"
 

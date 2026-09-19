@@ -115,17 +115,29 @@ COMPOSE="$TASK_DIR/environment/docker-compose.yaml"
 # podman-compose resolves it correctly (see run_harbor.sh). This script bypasses
 # compose and builds its own -v, so it must expand DATA_ROOT itself.
 #
-# The old parse was `sed 's|.*- ||'`, which is GREEDY: it matched the last "- " in
-# the line, and the :? message contains one ("must be set - run via ..."), so the
-# path came out as ".../environment/run via harbor-scripts/run_harbor.sh}/<task>".
-# Anchor the strip to the start of the line instead, and drop the surrounding
-# quotes the compose entry now carries.
+# The leading strip is anchored to the start of the line: the :? message itself
+# contains "- " ("must be set - run via ..."), so an unanchored match would take the
+# last one and leave part of the message in the path. The sed also drops the quotes
+# the compose entry carries.
+#
+# Two container paths count as the dataset. Most tasks mount it at /app/data;
+# zhang2025 mounts it read-only at /mnt/dataset and its entrypoint assembles a writable
+# ONE cache under /app/data from it, so matching only /app/data would find nothing there.
+#
+# `|| true` because this runs under `set -o pipefail`, where a grep that matches nothing
+# exits non-zero and takes the script with it, before the message below can say why.
 #
 # NOTE: duplicated verbatim in rerun_verifier.sh, which parses the same line the
 # same way. Change both together.
 DATA_ROOT="${DATA_ROOT:-$REPO_DIR/data}"
-DATA_DIR=$(grep ':/app/data' "$COMPOSE" | head -1 \
-    | sed 's|^[[:space:]]*-[[:space:]]*||; s|:/app/data.*||; s|^"||; s|"$||')
+DATA_TARGET=$(grep -oE ':(/app/data|/mnt/dataset)\b' "$COMPOSE" 2>/dev/null \
+    | head -1 | tr -d ':' || true)
+if [ -z "$DATA_TARGET" ]; then
+    echo "Error: no /app/data or /mnt/dataset volume found in $COMPOSE"
+    exit 1
+fi
+DATA_DIR=$(grep ":$DATA_TARGET" "$COMPOSE" | head -1 \
+    | sed "s|^[[:space:]]*-[[:space:]]*||; s|:$DATA_TARGET.*||; s|^\"||; s|\"$||")
 # Expand a leading ${DATA_ROOT...} by replacing everything up to its closing brace.
 case "$DATA_DIR" in
     '${DATA_ROOT'*) DATA_DIR="$DATA_ROOT${DATA_DIR#*\}}" ;;
@@ -169,7 +181,7 @@ if [ "$DRY_RUN" = true ]; then
 
     echo "[dry run] docker run $IMAGE_NAME with:"
     echo "  -v $SNAPSHOT_DIR:/app"
-    echo "  -v $DATA_DIR:/app/data:ro"
+    echo "  -v $DATA_DIR:$DATA_TARGET:ro"
     echo "  -v <tmpdir>:/tests:ro"
     echo "  -v $VERIFIER_OUT:/logs/verifier"
     echo "  -v $TRIAL_DIR/agent:/logs/agent"
@@ -343,7 +355,7 @@ echo "=== Unsupervised judge rerun complete ==="
     -e ANTHROPIC_API_KEY \
     -e OPENAI_API_KEY \
     -v "$SNAPSHOT_DIR":/app \
-    -v "$DATA_DIR":/app/data:ro \
+    -v "$DATA_DIR":"$DATA_TARGET":ro \
     -v "$TESTS_TMPDIR":/tests:ro \
     -v "$VERIFIER_OUT":/logs/verifier \
     -v "$TRIAL_DIR/agent":/logs/agent \
