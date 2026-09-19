@@ -115,7 +115,7 @@ maximal prompt only, `gpu_l4_large` at 64 slots and one L4 each with a 24h wall:
 
 `--agents claude codex` is not optional. `submit_harbor_cluster.py` takes its default arms
 from the newest config's `tools` keys, and that file names four: the two terminus arms would
-be submitted as well and cannot run until step 2's rebase. Better still, give the config a
+be submitted as well and cannot run until step 2's re-port. Better still, give the config a
 way to mark an arm as not yet runnable, so the default is right rather than remembered.
 
 Nothing is skipped on a resubmit. The submitter has no check for work already done --
@@ -198,13 +198,14 @@ The alternative, had the fix been larger, was to accept exit 1 and use the per-t
 which is complete either way -- at the cost of every job looking failed in `bjobs`, and of
 checking `collect_cluster_results.py` and `check_trial_health.py` against a non-zero exit.
 
-This also raises the stakes on step 2a: the harbor version gap is not only terminus's
-problem, it breaks harbor's own reward handling for every arm.
+This also bears on step 2: the harbor version gap is not only terminus's problem, it broke
+harbor's own reward handling for every arm. Upstream v0.23.0 carries
+`aggregate_reward_dicts` itself, so this backport retires when the re-port lands.
 
 **A bare sweep now launches terminus by accident.** `submit_harbor_cluster.py` takes its
 default arms from the newest config's `tools` keys, and that file names four:
 `claude`, `codex`, `terminus-gpt`, `terminus-opus`. The terminus arms cannot run until the
-podman rebase in step 2, so every step 1 submission has to pass `--agents claude codex`
+podman re-port in step 2, so every step 1 submission has to pass `--agents claude codex`
 explicitly. Better still, give the config a way to mark an arm as not yet runnable, so the
 default is right rather than remembered.
 
@@ -219,65 +220,138 @@ it shows up as an absent number rather than a crash. The forks verified
 
 ### Step 2: terminus
 
-There is no terminus-3. `terminus-2` is harbor's own code rather than an installed CLI, so
-its version is the harbor version, and the cluster runs a fork:
+**The premise this step rested on is gone, as of 2026-09-19.** It read: upstream has not added
+podman, so the fork is still needed rather than retirable. That was measured against harbor
+0.21.0. Upstream **v0.23.0 has podman natively**, and implements it better than the fork does, so
+this is no longer a rebase of the fork's 43 commits -- it is a re-port of a much smaller
+remainder onto upstream.
 
-| | harbor | source |
-|---|---|---|
-| cluster (`eval-data-format-podman`) | **0.1.45** | editable, `codepacks/harbor-kai` on `kristin-podman` |
-| local docker (`eval-data-format`) | 0.1.44 | site-packages |
-| `tb-science` env | 0.21.0 | editable, `codepacks/harbor` on `main` |
-| published | 0.23.0 | |
+**The versions, verified rather than remembered.** A fork branch's `pyproject.toml` version is
+upstream's version at its base, not a version of the podman work, so "the cluster runs 0.1.45"
+means "the cluster runs podman work sitting on a March upstream".
 
-Between 0.1.44 and 0.21.0 `terminus_2.py` grows from 1831 to 1959 lines with 328 lines
-differing, and gains `tmux_session.py` and `asciinema_handler.py`. So "newest terminus" is a
-real change, and it arrives only with a newer harbor.
-
-**Step 2a: how hard is the rebase? -- partly answered 2026-09-19.**
-
-The cluster's podman support lives in `harbor-kai`: 42 commits against merge-base
-`6f280307f`, 19 files, +1489/-115, concentrated in
-`src/harbor/environments/docker/docker.py` and `docker-compose-base.yaml`, with smaller
-changes to `agents/installed/{claude_code,codex}.py`, `cli/`, `models/task/config.py` and
-`trial/reverify.py`.
-
-First, "upstream" means two different repositories in these checkouts, which is worth
-stating before anything else:
-
-| checkout | repository | branch | version |
+| | harbor | source | base |
 |---|---|---|---|
-| `codepacks/harbor` | `harbor-framework/harbor` -- the real project | `main` | 0.21.0 |
-| `codepacks/harbor-kai` | `kristinbranson/harbor`, `upstream` = `kaihorstmann/harbor` | `kristin-podman` | 0.1.45 |
-| `codepacks/harbor-merge` | same as harbor-kai | `merge-upstream` | 0.3.0 |
+| cluster (`eval-data-format-podman`) | 0.1.45 | editable, `codepacks/harbor-kai` on `kristin-podman` @ `fd10a3a` | `6f280307`, 2026-03-05 |
+| local docker (`eval-data-format`) | 0.1.44 | site-packages, no repo | |
+| `tb-science` | 0.21.0 | editable, `codepacks/harbor` on `main` @ `a27e9c2a` | |
+| **re-port target** | **0.23.0** | **tag `v0.23.0` = `1e5c5c6d`, 2026-09-11** | |
+| upstream `main` | 0.23.0 | `71c77fdd` | |
 
-So the fork's own `upstream` is Kai Horstmann's fork, not harbor-framework. A rebase "onto
-upstream" has to say which.
+Both the tag and `main` report 0.23.0, so the version string cannot tell them apart. **Pin the
+tag.** `main` is 80 commits and 8 days past it, touching exactly the files a re-port has to
+resolve -- `docker.py` +70, `claude_code.py` +72/-14, `codex.py` +57/-12, `cli/trials.py` +162/-2
+-- and moving about ten commits a day. Conflicts are 36 hunks against the tag against 37 for
+`main`, and `terminus_2.py` differs between them by one line, so pinning costs nothing this step
+is for.
 
-**The real upstream has not added podman**, so the fork is still needed rather than
-retirable: across `harbor-framework/harbor` at 0.21.0, only `environments/base.py` and
-`environments/openshift.py` mention podman at all, neither as container support.
+Both conda envs -- the workstation's, and the cluster's own install under
+`/groups/branson/home/bransonk/miniforge3` -- point `harbor.pth` at the one shared tree
+`codepacks/harbor-kai/src`. A single edit there changes what every compute node runs, with no
+reinstall in between. **Do the work in `/groups/branson/home/bransonk/codepacks/harbor-rebase`**, a
+clone made for it, with `framework` (harbor-framework/harbor), `kai` and `origin` as remotes.
 
-**Kai's fork has a `podman` branch** -- 51 commits ahead of his main, last commit
-2026-06-10 -- touching `environments/docker/docker.py`, `agents/installed/codex.py`,
-`trial/reverify.py`, `cli/` and `environments/base.py`: the same files as ours. Worth
-reading before redoing any of it.
+#### What upstream v0.23.0 provides
 
-**A merge has already been done once.** `harbor-merge` holds `91d4fcf` (2026-07-28),
-merging Kai's main into `kristin-podman`, and its message records each conflict and how it
-was resolved -- `docker.py` (podman-compose, podman cp, the `--rmi` guard, GPU pool, device
-override, shm_size kept on top of upstream's sanitized project names and mounts_json),
-`claude_code.py`, `codex.py`, `CLAUDE.md`. That is a map of where the friction is, and it is
-the best starting point.
+`-e podman` selects `PodmanEnvironment(DockerEnvironment)` in `src/harbor/environments/podman.py`,
+registered in `environments/factory.py` under `EnvironmentType.PODMAN`. The dialect differences
+live on a `ContainerRuntime` dataclass in `environments/docker/runtime.py`, whose module docstring
+is explicit: `-e docker` and `-e podman` only swap engine argv, compose argv and a few capability
+flags, and `start()`/`stop()` are not to be forked. Every workaround the fork threads through
+`docker.py` as `if self._use_podman:` has a counterpart:
 
-But that merge landed at 0.3.0, against an upstream `main` dated 2026-04-12. The real
-upstream is now 0.21.0 locally and 0.23.0 published, so the remaining jump is far larger
-than the one already done, and every ref in these checkouts was last fetched around
-2026-07-28. **Fetch before trusting any of the above**, and re-check whether Kai's podman
-branch has moved.
+| fork's workaround | upstream mechanism |
+|---|---|
+| `up -d` in place of `up --detach --wait` | `supports_compose_wait=False`, read by `runtime.up_args` |
+| `_run_podman_cp_command`, podman-compose having no `cp` | `supports_compose_cp` |
+| drop `--project-directory` for podman-compose | `supports_compose_project_directory` |
+| skip `--rmi all`, which killed concurrent trials | `stop()` uses `--rmi local` |
+| hardcoded `podman-compose` | `resolve_podman_runtime()` picks `podman compose`, else `podman-compose --in-pod=false` |
+| absent | SELinux `:z` relabel, on Harbor's own log binds only |
+| absent | rootless detection via `{{.Host.Security.Rootless}}` |
+| absent | egress-control sidecar image built through the podman engine |
+| absent | preflight probes `podman compose ls`, since `podman info` passes without the API socket |
 
-Until 2a is answered, the options are: rebase the podman work onto upstream; run the sweep
-locally on docker with the `tb-science` env and skip the cluster; or keep terminus on 0.1.45
-and accept it lagging the CLI arms.
+So `docker.py` -- 16 of the 36 conflict hunks, and the reason this looked hard -- is mostly not
+ported but deleted. The fork's 568-line `docker.py` becomes upstream's 1403-line one plus
+`-e podman`.
+
+#### What is genuinely fork-only and has to be carried
+
+1. **GPU pooling.** A class-level `asyncio.Queue` of `gpu_ids`, one GPU handed to each trial and
+   returned on stop. The one substantial piece; upstream has no equivalent.
+2. **The device compose override** -- `nvidia.com/gpu=<n>` written to a temporary compose file and
+   appended to `_docker_compose_paths`. Paired with (1).
+3. **`shm_mb`** in `[environment]` of `task.toml`, reaching the container as `shm_size`. Upstream
+   now writes resources through `_write_resources_compose_file`, which is where this belongs.
+4. **Codex `--profile` and `--oss` flags, and `CODEX_CONFIGS`**, which uploads named config files
+   into `$CODEX_HOME=/logs/agent` at run time because that path is a runtime bind mount. Kai's
+   `3446caa0`.
+5. **Agent output file permissions, and taking the codex API key from the environment** --
+   `44e7d7fc`; and the `trajectory.json` fix `83da9e87`, which needs re-checking first, upstream
+   having just added `trial/sync_trajectory.py`.
+6. **`hpc/`** -- `harbor-lsf-wrapper.sh`, `check-progress.sh` and their README. Standalone scripts,
+   nothing to conflict with.
+
+**The seam for (1) and (2) is clean.** Upstream's `start()` opens with `_write_mounts_compose_file`,
+`_write_resources_compose_file` and `_write_env_compose_file`, and `stop()` closes with the
+matching `_cleanup_*` calls inside a `finally:`. A device override is a fourth pair in those two
+lists, and the GPU is acquired beside the first and released beside the last -- rather than patched
+into the middle of `start()` and `stop()` as the fork does now.
+
+#### What drops entirely
+
+- All the `use_podman` threading through `docker.py`, replaced by `-e podman`.
+- `metrics/{base,max,mean,min,sum}.py`. Upstream has `aggregate_reward_dicts`, which is what the
+  backport recorded above took from 0.21.0, so that backport retires when this lands.
+- `trial/reverify.py`, its `--interactive`, and Kai's `--keep-eval`. Upstream has
+  `harbor trials regrade`, which takes `-e podman` and never modifies the source trial. **And
+  nothing in this repo calls harbor's reverify** -- the only `reverify` in `harbor-scripts/` is the
+  image name `hb__<task>-reverify`, and `rerun_verifier.sh` runs its container directly.
+- Kai's podman-aware `preflight()` (`407d5a11`) and his `_run_full_command` env threading
+  (`22b8f4ee`), both superseded upstream.
+
+#### Branch topology, so the same ground is not covered twice
+
+`podman_colm` (`7b6b088f`, identical in both forks) is the shared foundation, and **COLM is the
+conference** -- the branch is that deadline's snapshot, not a person's. Three authors:
+HairlessVillager wrote the original podman port, Goran Ceric wrote `hpc/`, Kai Horstmann wrote the
+podman hardening. `kristin-podman` forked from it at `d7ac3b21` (2026-03-10), so it lacks
+`podman_colm`'s last three commits and adds five of its own. `kai/podman` is `podman_colm` rebased
+onto v0.3.0 plus six commits, and `kristinbranson/podman` is a strict ancestor of `kai/podman`, so
+that branch can be ignored. Neither fork has moved since 2026-06-10.
+
+#### This repo's migration surface: two lines
+
+The fork never added a `--podman` CLI flag; it passes harbor's generic environment kwargs. So
+`-e podman` replaces exactly:
+
+| file | now | becomes |
+|---|---|---|
+| `harbor-scripts/run_harbor.sh:92` | `PODMAN_FLAG="--ek use_podman=true"` | `PODMAN_FLAG="-e podman"` |
+| `harbor-scripts/generate_reference_stats.sh:65` | the same line | the same change |
+
+`run_harbor.sh:97`'s `--ek gpu_ids=$GPUIDS` is unchanged, provided (1) is ported. Every other
+`--podman` in `harbor-scripts/` -- `rerun_verifier.sh`, `rerun_judges.sh`,
+`run_unsupervised_judges.sh`, the `submit_*.sh` -- drives `podman` directly without harbor and is
+unaffected.
+
+#### What the upgrade buys
+
+terminus-2 is harbor's own code, so its version is the harbor version. Cluster 0.1.45 to v0.23.0 is
+**+633/-287** across four files: `terminus_2.py` 1939 to 2101 lines, `tmux_session.py` 697 to 876,
+and small changes to the two parsers. (An earlier note here said 0.1.44 to 0.21.0 grew
+`terminus_2.py` from 1831 to 1959 lines and *gained* `tmux_session.py` and `asciinema_handler.py`,
+citing `agents/installed/terminus_2.py`. That path does not exist -- the package is
+`agents/terminus_2/` -- and both files are already present in 0.1.44.)
+
+#### Order of work
+
+1. Build `podman-v0.23.0` in `codepacks/harbor-rebase` from the `v0.23.0` tag, adding the six items
+   above. Nothing lands in `codepacks/harbor-kai` while cluster jobs are queued.
+2. Check whether `83da9e87`'s `trajectory.json` failure still happens on v0.23.0 before porting it.
+3. Switch the two script lines to `-e podman`, then run one `majnik2025_minimal` terminus trial.
+4. Only then a sweep, and only then point a conda env at the new tree.
 
 ### The judges move with the agents, deliberately
 
@@ -319,18 +393,33 @@ benchmark" rather than isolating any one change.
 
 ## 3. Podman image builds on the cluster
 
-Every cluster job currently rebuilds the task image, a few minutes to twenty. Two
-separate reasons, each with its own fix.
+Every cluster job rebuilds the task image, five to seven minutes on these tasks. That is
+now deliberate; what follows replaces the argument this section used to make.
 
-**The private store is set where it is not needed.** `podman_env.sh` puts the graphroot
-at `/scratch/$USER/podman-storage`, shared by whatever runs on that node, unless
-`PODMAN_PRIVATE_STORAGE=true` moves it under the job's own directory. The private store
-exists for queues where several jobs land on one host, since a shared store is only safe
-for one job at a time. On `gpu_l4_large` there is one GPU per node and jobs take a GPU
-exclusively, so no two can share a host -- measured: eighteen replicates went to eighteen
-distinct nodes. There the flag only discards a store that would otherwise be warm for the
-next job on that node. `submit_decoder_replicates.sh` hardcodes it true and should not:
-set it from the queue, or take a flag, defaulting off where jobs cannot share a host.
+**The private store is the right default, and this section previously said the opposite.**
+`podman_env.sh` puts the graphroot at `/scratch/$USER/podman-storage`, shared by whatever
+runs on that node, unless `PODMAN_PRIVATE_STORAGE=true` moves it under the job's own
+directory. This section used to argue the flag was waste on `gpu_l4_large`: one GPU per
+node, jobs hold a GPU exclusively, so no two can share a host -- measured, eighteen
+replicates went to eighteen distinct nodes -- and the flag therefore only discards a store
+that would be warm for the next job.
+
+That reasoning considered only CONCURRENT sharing. Jobs share a node SERIALLY, and that is
+enough. On 2026-09-19 three hosts' shared stores went bad; `podman_env.sh` detected it
+before any work, attempted repair, and refused to reset the store, correctly, because it
+cannot prove no sibling is using a shared one. Each poisoned node then failed every job it
+was given in under a second, freed itself immediately, and was handed the next pending job.
+Three bad hosts destroyed 63 of the two sweeps' jobs that way -- a failure that accelerates,
+because the faster a node fails the sooner it takes another job.
+
+`submit_harbor_cluster.py` now sets `PODMAN_PRIVATE_STORAGE=true` on every job, and
+`submit_decoder_replicates.sh` was right to hardcode it. A few minutes of image build per
+job is cheap against losing a sweep.
+
+Recovering a poisoned host: `podman unshare rm -rf /scratch/$USER/podman-storage` on that
+node while nothing of yours is running there. A plain `rm -rf` fails -- rootless podman's
+overlay directories are owned by subuid-mapped UIDs -- which `podman_env.sh` already
+documents at its own reset path.
 
 **A build that overruns is not cleaned up.** `harbor`'s environment start has a
 `build_timeout_sec`, and `compose up -d` builds the image when the store is cold, so the

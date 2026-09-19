@@ -203,7 +203,17 @@ def build_job(task: str, agent: str, trial: int,
     jobs_dir = CLUSTER_JOBS_DIR / job_name
 
     versions_flag = f" --versions {shlex.quote(str(versions))}" if versions else ""
+    # Every job gets its own podman graphroot. The shared store at
+    # /scratch/$USER/podman-storage is warm, which is why it was the default, but it is
+    # shared SERIALLY: one GPU per node means no two jobs hold a host at once, yet job after
+    # job reuses the same store. A job that exits badly leaves it broken, and podman_env.sh
+    # rightly refuses to reset a shared store because it cannot prove no sibling is using
+    # it -- so the node stays poisoned, fails each new job in under a second, frees itself,
+    # and is handed the next one. Three such hosts destroyed 60+ jobs of the 2026-09-19
+    # sweeps that way. A private store costs a few minutes of image build per job, which is
+    # cheap against losing a whole sweep.
     inner = (
+        f"PODMAN_PRIVATE_STORAGE=true "
         f"bash {shlex.quote(str(RUN_HARBOR))} "
         f"--task {shlex.quote(task)} --agent {shlex.quote(agent)} "
         f"--ntrials 1 --nconcurrent 1 --podman --apikeys "
