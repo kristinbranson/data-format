@@ -82,8 +82,9 @@ declare -A QUEUE_SLOTS=(
 )
 # CPU queues: no GPU to request, so no slots-per-GPU ratio applies either. `short` caps at
 # one hour, which a cold image build plus two judge sessions can approach, so it is not the
-# default. Runtime limits are LSF's, not ours: local 14 days, short 1 hour.
-CPU_QUEUE_MAX_WALL=" short 1:00 "
+# default. Runtime limits are LSF's, not ours: local 14 days, short 1 hour. Only queues whose
+# cap these jobs could plausibly hit are listed; `local`'s 14 days is not one of them.
+declare -A CPU_QUEUE_MAX_WALL=( [short]="1:00" )
 declare -A CPU_QUEUE_DEFAULT_SLOTS=( [local]=16 [short]=16 )
 QUEUE="gpu_l4_large"
 WALL="8:00"
@@ -114,6 +115,16 @@ while [ $# -gt 0 ]; do
 done
 [ ${#TRIALS[@]} -gt 0 ] || { echo "ERROR: no trial directories given." >&2; exit 1; }
 
+# LSF takes a wall clock as either minutes or H:MM, so a queue's cap can only be compared
+# against --wall once both are in the same unit. 10# forces base 10, or a zero-padded "08"
+# would be read as octal and "09" would be an error.
+wall_minutes() {   # $1 = wall clock, "H:MM" or a plain minute count
+    case "$1" in
+        *:*) echo $(( 10#${1%%:*} * 60 + 10#${1##*:} )) ;;
+        *)   echo $(( 10#$1 )) ;;
+    esac
+}
+
 GPU_BSUB='-gpu "num=1"'
 if [ -n "${CPU_QUEUE_DEFAULT_SLOTS[$QUEUE]:-}" ]; then
     # CPU queue: no GPU request at all, and slots are a free choice rather than a ratio.
@@ -129,8 +140,11 @@ if [ -n "${CPU_QUEUE_DEFAULT_SLOTS[$QUEUE]:-}" ]; then
             echo "       flag, or --no-gpu; or submit to a GPU queue." >&2
             exit 1 ;;
     esac
-    if [ "$QUEUE" = short ] && [ "$WALL" != "${WALL%%:*}:00" -o "${WALL%%:*}" -gt 1 ] 2>/dev/null; then
-        echo "WARNING: the short queue caps runtime at 1:00 and --wall is $WALL; LSF will reject it." >&2
+    QUEUE_MAX_WALL="${CPU_QUEUE_MAX_WALL[$QUEUE]:-}"
+    if [ -n "$QUEUE_MAX_WALL" ] \
+       && [ "$(wall_minutes "$WALL")" -gt "$(wall_minutes "$QUEUE_MAX_WALL")" ]; then
+        echo "WARNING: queue '$QUEUE' caps runtime at $QUEUE_MAX_WALL and --wall is $WALL;" >&2
+        echo "         LSF will reject it." >&2
     fi
 else
     SLOTS="${QUEUE_SLOTS[$QUEUE]:-}"

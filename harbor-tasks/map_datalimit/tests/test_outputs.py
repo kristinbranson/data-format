@@ -907,11 +907,26 @@ STATLIMITS = {
     'nsubjects_ratio': 0, # must match reference
     'nneurons_total_ratio': .1, # must be within 10% of reference
     # Mean matching cost must be below this. Cost is .95*(1-cos_sim(names)) +
-    # .05*range_cost, so with ranges that agree this is a bound on naming:
-    # .5 requires cos_sim >= ~.47, i.e. names that are at least loosely related.
-    # It was 1, which nothing could fail -- unrelated names with matching ranges
-    # score ~.95, so only an inf (dimension mismatch) ever tripped it.
-    'input_match_cost': .5,
+    # .05*range_cost, so with ranges that agree it is essentially a bound on naming.
+    #
+    # Both are 1, which only an inf can fail -- an input or output the matcher could not
+    # pair at all, i.e. a dimension mismatch. That is the question these two assertions
+    # were written to ask ("could we match them?"), and it is deliberately NOT a question
+    # about whether the agent guessed the reference's vocabulary.
+    #
+    # input_match_cost was .5 for a while, requiring cos_sim >= ~.47. Measured over 100
+    # re-scored trials that failed 21, of which 17 had input ranges matching the reference
+    # EXACTLY (mean_input_range_error == 0) -- so it was scoring vocabulary, not conversion
+    # quality, and almost entirely on one task: lee2025's inputs are nine anonymous spatial
+    # bins named blocked_0..blocked_8, so env_partition_00, geometry_x0_y0 and partition_0
+    # are all reasonable and all score .74-.89. The same threshold on outputs would fire on
+    # almost nothing, because output names carry meaning and agents converge on them
+    # (position~spatial_bin costs .33).
+    #
+    # Wrong data is caught by input_range_error and output_fraction_error below, which are
+    # the scored categories; a low cost does not imply correct data either -- one trial
+    # matched at .203 with the wrong number of classes.
+    'input_match_cost': 1,
     'output_match_cost': 1, # output match mean cost must be below this
     'input_range_error': .2, # max error between input range limits
     'output_range_error': .9, # max error between output nclasses, < 1 means they match exactly

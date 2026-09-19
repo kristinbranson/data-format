@@ -50,19 +50,55 @@ short-session fix. That is 0.68%, about 13% of the 4.5 sd band, and it did not m
 verdict. Retraining mouseland's eighteen conversions, which run from 156 MB to 383 GB and
 would need a GPU queue and a day or more each, buys a shift of that order.
 
-What could make mouseland the exception is the short-session fix specifically: it holds
-sessions with fewer than two trials out of both splits, so it only bites on data that has
-them. Verify rather than assume, by listing each trial's
-`(reference mean - recorded accuracy) / sd` per output variable. A trial clearing its bar by
-much more than 1 sd cannot be flipped by a sub-1% shift; retrain only one that does not.
+More to the point, the decoder was not changed in a way that measures ordinary data
+differently. `583fe2a` adds a guard for degenerate sessions -- one with no trials is skipped,
+and one with fewer than two is held out of both splits, because in the training set it would
+be scored on a trial the decoder had seen and in the test set by a projection that was never
+trained -- and `e16347c` prepares session batches on several threads. Neither alters what a
+session with enough trials contributes.
 
-Three trials need deciding separately, having nothing to reuse.
-`mouseland_minimal/claude-code` trial2 (22 GB) and trial3 (383 GB) hold a conversion but no
-recorded accuracy -- their original runs never produced one -- and `--reuse-accuracy` raises
-on a missing accuracy rather than passing quietly, so each needs either a retrain or an
-explicit decision to let the decoder test fail. `mouseland/terminus-gpt` trial3 has no
-`converted_data.pkl` at all and fails on its own, which is the intended score under
-`changes_since_preprint.md` section 1.6.
+So the 0.68% is run-to-run variation rather than a version bias, most plausibly the threading
+changing the order batches are prepared in. That is the real argument against retraining: a
+retrain cannot remove a discrepancy that is noise, since it only draws another sample from the
+same distribution, and rerunning the reference would move by a comparable amount.
+
+For scale, the closest any trial comes to its bar is 0.4 sd
+(`mouseland/terminus-opus/2026-07-29__01-09-15_trial1`, passing) and 0.6 sd
+(`mouseland/claude-code/2026-03-23__15-22-50_trial1`, failing), against a shift worth about
+0.1 sd on a `visual_stimulus` replicate sd of 0.0421.
+
+Retraining mouseland alone would also make it the only task whose agents were measured by a
+different decoder from the other seven, which is a worse position than every agent's accuracy
+coming from its own run.
+
+Worth recording separately: `visual_stimulus` is the binding variable in all fifteen trials
+that have a recorded accuracy -- the smallest margin every time, and the only one 7 of them
+fail, while `licking`, `position` and `running_speed` clear by +1.7 to +34 sd. Its replicate
+sd of 0.0421 is the largest of the four, giving a 0.19-wide band on a 0.69 mean, so
+mouseland's decoder verdicts are effectively decided by one high-variance variable.
+
+What the rerun is actually for: no mouseland trial has been re-scored at all, so all eighteen
+carry only the old pass/fail metrics. None has a single `outcome_*` category key or an `*_ok`
+boolean.
+
+Three of the eighteen cannot take `--reuse-accuracy`, for three different reasons.
+
+`mouseland/terminus-gpt/2026-07-29__08-07-13_trial3` has no `converted_data.pkl`, so the
+fixture is None, the patch stands aside, and the decoder test fails on its own. It goes in the
+reuse batch unchanged; failing is its intended score under `changes_since_preprint.md`
+section 1.6.
+
+`mouseland_minimal/claude-code/2026-07-28__23-07-54_trial2` (22 GB) recorded no accuracy
+because its suite failed early -- `required_files_missing` is `['CONVERSION_NOTES.md']`, an
+agent failure. The run is otherwise complete, with ctrf.json, both judges and a 918 KB
+test-stdout.txt. It needs a run *without* `--reuse-accuracy`, because the flag raises on a
+missing recorded accuracy rather than passing quietly.
+
+`mouseland_minimal/claude-code/2026-07-28__23-07-57_trial3` (383 GB) has no verdict at all: no
+ctrf.json, no reward.txt, and a 2,791-byte test-stdout.txt where a complete one is about
+900 KB, although its conversion is valid and nothing is missing. That is an infrastructure
+failure rather than an agent one, so it is the single trial warranting a full run with
+training, on a host with room for a 383 GB conversion -- roughly 800 GB.
 
 ## 2. Rerun the agents on four tasks
 

@@ -642,39 +642,8 @@ else
     # test-stdout.txt, and the number it produced would rest on a different decoder version
     # than the reference statistics it was compared against.
     if [ "$REUSE_ACCURACY" = true ]; then
-        python3 - "$BASE_METRICS" "$VERIFIER_OUT/metrics.json" <<'VERIFY' || exit 1
-import json, sys
-
-base_path, new_path = sys.argv[1], sys.argv[2]
-try:
-    base = json.load(open(base_path))
-    new = json.load(open(new_path))
-except (OSError, ValueError) as error:
-    sys.exit(f"--reuse-accuracy: cannot verify the run: {error!r}")
-
-new_accuracy = new.get("validation_balanced_accuracy")
-if not new_accuracy:
-    # Legitimate: the test can fail before the accuracy step, which is the right score for
-    # a conversion that could not be loaded. Nothing to verify, and nothing wrong.
-    print("reuse check: no accuracy recorded, so the test failed before that step; nothing "
-          "to verify")
-    sys.exit(0)
-
-if not new.get("validation_balanced_accuracy_reused"):
-    sys.exit("reuse check FAILED: the new metrics.json has no "
-             "validation_balanced_accuracy_reused, so this run trained a decoder instead of "
-             "reusing the recorded accuracy. Its numbers rest on a different decoder version "
-             "than the reference statistics; do not merge this rerun.")
-
-base_accuracy = base.get("validation_balanced_accuracy") or {}
-disagree = {name: (base_accuracy.get(name), value)
-            for name, value in new_accuracy.items() if base_accuracy.get(name) != value}
-if disagree:
-    sys.exit(f"reuse check FAILED: the accuracy recorded differs from the accuracy supplied, "
-             f"(base, new) per variable: {disagree}. Do not merge this rerun.")
-
-print(f"reuse check: passed -- {len(new_accuracy)} output variable(s) carried over unchanged")
-VERIFY
+        python3 "$SCRIPT_DIR/check_reuse_accuracy.py" \
+            "$BASE_METRICS" "$VERIFIER_OUT/metrics.json" || exit 1
     fi
 fi
 
