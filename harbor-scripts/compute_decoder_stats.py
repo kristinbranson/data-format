@@ -25,28 +25,42 @@ Protocol
   1. Run the oracle: harbor-scripts/generate_reference_stats.sh <task>. Its solve.sh writes
      converted_data.pkl and stats_full.json (one split, and the rng_state the verifier
      reuses) into the trial's verifier/snapshot/.
-  2. Run this script on that pair, inside the task's own image so torch and numpy are the
-     versions the verifier grades with:
 
-     harbor-scripts/rerun_verifier.sh --decoder-stats --task <task> <oracle trial dir>
+  2. Train the replicates on that conversion, inside the task's own image so torch and numpy
+     are the versions the verifier grades with. Two routes, which produce the same numbers:
+
+     SERIAL -- every replicate in one process. The default, and what the reruns use:
+
+       harbor-scripts/rerun_verifier.sh --decoder-stats --task <task> <oracle trial dir>
 
      which runs, in the container,
 
-     python3 compute_decoder_stats.py --decoder-dir /tests --stats-json /app/stats_full.json \\
-         --out <trial>/decoder_stats_<time>/reference_stats_full.json \\
-             [--n-replicates N] \\
-         /app/converted_data.pkl
+       python3 compute_decoder_stats.py --decoder-dir /tests --stats-json /app/stats_full.json \\
+           --out <trial>/decoder_stats_<time>/reference_stats_full.json \\
+               [--n-replicates N] \\
+           /app/converted_data.pkl
+
+     A run killed partway resumes from the checkpoint written beside --out after each
+     replicate, so a wall clock or a node failure costs one replicate rather than all of them.
+
+     ONE JOB PER REPLICATE -- for a task where serial would take days:
+
+       harbor-scripts/submit_decoder_replicates.sh --task <task> --data <pkl> --stats <json>
+       harbor-scripts/submit_decoder_replicates.sh --merge --task <task> --stats <json> \\
+           --out-dir <dir>
+
+     Each job runs `--replicate N` and writes replicate_N.json; `--merge` assembles them and
+     refuses an incomplete set. Replicate N draws its split from a seed fixed by N, so this
+     gives what the serial route would, in one replicate's wall clock rather than all of them.
 
   3. Copy the output to tests/reference_stats_full.json in <task> and <task>_minimal.
+     check_task_variants.py requires those two to be identical.
 
 The input stats JSON is read, never modified; every key in it is carried through.
 
 It runs during no trial: not the agent, not the verifier, not the oracle. It is run by hand
-when a task's reference statistics are built, and DEFAULT_N_REPLICATES replicates of a
-large task take hours serially, so it is meant to be parallelised across tasks rather than
-run at trial time. It
-imports the task's own decoder.py via --decoder-dir, so the replicates come from exactly the
-code the verifier grades with.
+when a task's reference statistics are built. It imports the task's own decoder.py via
+--decoder-dir, so the replicates come from exactly the code the verifier grades with.
 """
 
 import argparse

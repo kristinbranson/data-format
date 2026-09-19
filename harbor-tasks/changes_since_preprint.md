@@ -93,10 +93,31 @@ mean − 4.5 × standard deviation   (of those n reference accuracies)
 ```
 
 So the tolerance for each variable reflects how much that variable's accuracy actually
-varies from split to split. In the terminal-bench-science versions of the tasks (computed on
-the datalimit data), this threshold was 95–99% of the reference mean for most
-variables, i.e. somewhat stricter than before, and looser for a few noisier variables in
-sosa2024 and mouseland. The full-data numbers will be added here once they are computed.
+varies from split to split, rather than being one fraction applied to every variable.
+
+Across the 54 graded output variables, the threshold sits at a median of 96.8% of the
+reference mean, so for most variables it is a little stricter than the old flat 95%. The
+spread is wide, which is the point of tying the tolerance to the measured variability:
+
+| threshold as % of the reference mean | variables | where |
+|---|---|---|
+| 95% and above | 33 | allen2p, hasnain2024, lee2025, map, zhang2025, and 3 of sosa2024's 12 |
+| 90–95% | 7 | one apiece from allen2p, hasnain2024, majnik2025, sosa2024 and mouseland |
+| 80–90% | 9 | most of sosa2024, 2 of mouseland_datalimit |
+| below 80% | 5 | mouseland's running_speed (60.4%), position (71.2%) and visual_stimulus (72.5%); mouseland_datalimit's licking (74.0%) and running_speed (76.0%) |
+
+The loose end is mouseland, whose accuracy varies far more from split to split than any other
+task: running_speed's standard deviation is 0.032 on a mean of 0.368, against 0.0036 on 0.320
+for allen2p's noisiest variable. 89 sessions of very different lengths, and which of them land
+in the test half moves the score.
+
+Twelve of mouseland's twenty replicates fell back to the CPU when the L4 ran out of memory, so
+the obvious worry is that the spread is the fallback rather than the data. It is not: the
+replicates run on each device are as spread out as the set as a whole (visual_stimulus, sd
+0.044 on the 12 CPU runs and 0.033 on the 8 GPU runs, against 0.042 over all 20), and the two
+devices' means differ by less than either spread. Twelve and eight replicates estimate a
+standard deviation only roughly, so this rules out the fallback as the explanation without
+establishing that the two devices agree exactly.
 
 #### How the multiplier is chosen
 
@@ -314,9 +335,11 @@ Prompt text changed with it: the position bins are listed explicitly (< 90, 90�
 **Before.** Every trial was cut or padded to 32 imaging frames (about 10 s). Outputs had an
 extra "none" class marking the padded frames.
 
-**Now.** Each trial keeps its own length (a median of 23 frames at 315 ms each). There is no
-padding and no "none" class, so licking has 2 classes (lick / no lick), position 4 and speed
-4. Trials longer than the 99th percentile of all trials in the dataset are dropped.
+**Now.** Each trial keeps its own length: 11 to 238 frames of 315 ms, and a typical session
+averages 31 frames a trial. There is no padding and no "none" class, so licking has 2 classes
+(lick / no lick), position 4 and speed 4. Trials longer than the 99th percentile of all trials
+in the dataset are dropped -- on the full data that cut is 239 frames and it drops 382 of
+38,110 trials, leaving 37,728.
 
 ```python
 trials = [trial for trial in range(beh['ntrials'])
