@@ -369,7 +369,7 @@ You will be assessed on whether the decisions you make on how to load, filter, p
   - `--sample`: Process only 2 sessions for testing
   - `--show-processing`: Plot visualizations of EVERY processing step for up to 2 sessions. Save plots as `processing_<session_id>.png`.
 - Reuse code from reference code bases where appropriate
-- Use `pynwb` to interface with the data. Do not directly load and parse the `hdf5` files. 
+- Use `pynwb` to interface with the data. Do not directly load and parse the `hdf5` files with `h5py`.
 - Write efficient code:
   - Vectorize loops
   - Avoid unnecessary file I/O
