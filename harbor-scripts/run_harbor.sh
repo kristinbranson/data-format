@@ -275,6 +275,12 @@ case "$AGENT" in
     HARNESS=$(read_pin "$AGENT" harness_version)
     AK=""
     [ -n "$HARNESS" ] && AK="--ak version=$HARNESS"
+    # A terminus arm's episode cap, from the config so a trial records the ceiling it ran
+    # under. terminus-2 defaults to 1000000, which lets a looping run burn the whole 24h
+    # agent timeout; the config comment has the measurement behind the number. Absent for
+    # the CLI arms, whose harness enforces its own limits.
+    MAX_TURNS=$(read_pin "$AGENT" max_turns)
+    [ -n "$MAX_TURNS" ] && AK="$AK --ak max_turns=$MAX_TURNS"
 
     # An arm with no harness is a native agent reaching the provider API directly
     # through LiteLLM, which reads env vars and knows nothing about the CLI
@@ -288,7 +294,7 @@ case "$AGENT" in
       fi
     fi
 
-    echo "arm: $AGENT  agent=$HARBOR_AGENT  model=$MODEL  harness=${HARNESS:-n/a}"
+    echo "arm: $AGENT  agent=$HARBOR_AGENT  model=$MODEL  harness=${HARNESS:-n/a}  max_turns=${MAX_TURNS:-unset}"
     harbor run $YES_FLAG -p "$HARBOR_TASKS" -a "$HARBOR_AGENT" -m "$MODEL" $AK -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG
     ;;
 esac

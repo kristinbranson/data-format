@@ -60,7 +60,16 @@
         "pin and this field is the only thing that says what ran it. run_harbor.sh reads it to",
         "choose the conda env and the command-line flags, which differ between the two harbors.",
         "0.1.45 cannot run the terminus arms on these models at all -- its terminus sends a",
-        "temperature parameter that claude-opus-5 rejects, and every LLM call fails."
+        "temperature parameter that claude-opus-5 rejects, and every LLM call fails.",
+        "",
+        "max_turns caps a terminus arm's episodes, which terminus-2 otherwise leaves at 1000000.",
+        "Measured over the 48 existing terminus trials: the median is 166 steps and terminus-opus",
+        "never exceeds 295, but terminus-gpt has a tail at 2006, 2188, 2333, 3196 and 3686 -- runs",
+        "that loop rather than work, at 12 to 22 times the median. 800 stops those while leaving",
+        "the ambiguous 500-776 band alone. A trial that hits the ceiling is a measurement, not an",
+        "infrastructure failure: the agent did not finish, and the cap is recorded here so that is",
+        "readable afterwards rather than mysterious. It does not catch a STUCK agent, which makes",
+        "no turns at all -- --agent-timeout-multiplier is the backstop for that."
     ],
     "tools": {
         "claude": {
@@ -75,11 +84,13 @@
         },
         "terminus-opus": {
             "harbor_agent": "terminus-2",
-            "model": "claude-opus-5"
+            "model": "claude-opus-5",
+            "max_turns": 800
         },
         "terminus-gpt": {
             "harbor_agent": "terminus-2",
-            "model": "gpt-5.6-sol"
+            "model": "gpt-5.6-sol",
+            "max_turns": 800
         }
     }
 }
