@@ -12,12 +12,20 @@ JOBS_ROOT=""
 # Which conda env supplies harbor. Overridable so an alternate harbor checkout can
 # be tested without touching the default -- the cluster has its own conda root and
 # only has this env, so changing the default here breaks every LSF job.
-CONDA_ENV="eval-data-format-podman"
+# Which harbor to run. The two are not interchangeable at the command line, so this
+# choice decides several flags below rather than just an environment name: 0.1.45 has
+# neither --yes nor --include-task-name and no podman environment type, and 0.23.0
+# discards an unrecognised --ek without complaint, so a flag meant for the other one
+# fails silently rather than loudly. terminus-2 is harbor's own code, so this also
+# chooses the terminus the terminus arms run.
+HARBOR_VERSION="0.23.0"
+# Set by the version gate below unless --conda-env overrides it.
+CONDA_ENV=""
 # Pinned harness/model versions. Dated configs; newest wins unless --versions
 # says otherwise, and the choice is echoed below so the run log records it.
 VERSIONS_FILE=""
 
-USAGE="Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--versions FILE] [--conda-env NAME] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
+USAGE="Usage: $0 [--agent claude|oracle|codex] [--ntrials N] [--nconcurrent N] [--task name] [--versions FILE] [--harbor 0.23.0|0.1.45] [--conda-env NAME] [--gpuids LIST] [--jobs-dir DIR] [--podman] [--apikeys] [--env FILE]"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -27,6 +35,7 @@ while [[ $# -gt 0 ]]; do
     --task)     TASK="$2"; shift 2 ;;
     --versions) VERSIONS_FILE="$2"; shift 2 ;;
     --conda-env) CONDA_ENV="$2"; shift 2 ;;
+    --harbor)   HARBOR_VERSION="$2"; shift 2 ;;
     --gpuids)   GPUIDS="$2"; shift 2 ;;
     --jobs-dir) JOBS_ROOT="$2"; shift 2 ;;
     --podman)   USE_PODMAN=true; shift ;;
@@ -51,9 +60,30 @@ JOBS_ROOT="${JOBS_ROOT:-$HOME/harbor-tasks/data-format/jobs}"
 JOBS_DIR="$JOBS_ROOT/raw"
 REORG_BASE="$JOBS_ROOT"
 
+# One place decides everything that differs between the two harbors.
+case "$HARBOR_VERSION" in
+  0.23.0)
+    : "${CONDA_ENV:=eval-data-format-podman-023}"
+    TASK_OPT="-i"          # -t now names a task in the remote registry
+    YES_FLAG="-y"          # 0.23.0 prompts before reading host env; batch jobs see EOF
+    PODMAN_OPT="-e podman" # podman is an environment type, not a kwarg
+    ;;
+  0.1.45)
+    : "${CONDA_ENV:=eval-data-format-podman}"
+    TASK_OPT="-t"
+    YES_FLAG=""
+    PODMAN_OPT="--ek use_podman=true"
+    ;;
+  *)
+    echo "ERROR: --harbor must be 0.23.0 or 0.1.45, got '$HARBOR_VERSION'"
+    exit 1
+    ;;
+esac
+echo "harbor: $HARBOR_VERSION"
+
 TASK_FLAG=""
 if [ -n "$TASK" ]; then
-  TASK_FLAG="-t $TASK"
+  TASK_FLAG="$TASK_OPT $TASK"
 fi
 
 source $HOME/miniforge3/etc/profile.d/conda.sh
@@ -84,21 +114,50 @@ if [ "$USE_APIKEYS" = true ]; then
 else
   # Use OAuth tokens from CLI credentials
   export CLAUDE_CODE_OAUTH_TOKEN=$(jq -r '.claudeAiOauth.accessToken' "$HOME/.claude/.credentials.json")
+  # Two consumers, so both are set and neither harbor needs a special case. 0.23.0's
+  # codex AGENT uploads ~/.codex/auth.json itself, which CODEX_FORCE_AUTH_JSON opts
+  # into; 0.1.45's reads the base64 copy. The codex JUDGE runs inside the verifier
+  # container either way and takes CODEX_AUTH_JSON_B64 through [verifier.env].
+  export CODEX_FORCE_AUTH_JSON=1
   export CODEX_AUTH_JSON_B64=$(base64 -w0 $HOME/.codex/auth.json 2>/dev/null || true)
 fi
 
 PODMAN_FLAG=""
 if [ "$USE_PODMAN" = true ]; then
-  PODMAN_FLAG="--ek use_podman=true"
-fi
-
-GPU_FLAG=""
-if [ -n "$GPUIDS" ]; then
-  GPU_FLAG="--ek gpu_ids=$GPUIDS"
+  PODMAN_FLAG="$PODMAN_OPT"
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HARBOR_TASKS="$(cd "$SCRIPT_DIR/../harbor-tasks" && pwd)"
+
+# Name the GPU the job was actually given, for both harbors.
+#
+# Each task's environment/docker-compose.yaml reserves its card as
+# `device_ids: ["${HARBOR_GPU_ID:-0}"]`, and podman-compose interpolates that, so this
+# works the same whichever harbor runs. It has to be expressed in the task file rather
+# than as a compose override, because podman-compose appends reservation device lists
+# instead of replacing them; harbor-scripts/gpu_ids.py explains the rest.
+#
+# Without it a multi-GPU node hands the container physical index 0, a card this job does
+# not own, and the decoder falls back to CPU while holding an idle card. Unset resolves
+# to 0, which is right wherever the job has the node's only GPU.
+if [ -z "$GPUIDS" ] && command -v nvidia-smi >/dev/null 2>&1; then
+  NREL=$(nvidia-smi --query-gpu=index --format=csv,noheader 2>/dev/null | wc -l)
+  if [ "${NREL:-0}" -gt 0 ]; then
+    # shellcheck disable=SC2046
+    GPUIDS=$(python3 "$SCRIPT_DIR/gpu_ids.py" $(seq 0 $((NREL - 1))) 2>/dev/null)
+    [ -z "$GPUIDS" ] && {
+      echo "WARNING: could not map visible GPU indices to physical ones."
+      echo "         The container may be given a card this job cannot use, and the"
+      echo "         decoder will fall back to CPU without reporting an error."
+    }
+  fi
+fi
+if [ -n "$GPUIDS" ]; then
+  HARBOR_GPU_ID=$(echo "$GPUIDS" | tr -d '[] ' | cut -d, -f1)
+  export HARBOR_GPU_ID
+  echo "gpus: physical ids $GPUIDS, HARBOR_GPU_ID=$HARBOR_GPU_ID"
+fi
 
 # Root of the datasets bind-mounted to /app/data. Every task's docker-compose.yaml
 # builds its mount as "${DATA_ROOT:?...}/<task>", so this must be exported for
@@ -184,7 +243,7 @@ read_pin() {  # $1 = arm key, $2 = field
 case "$AGENT" in
   oracle)
     # The oracle runs the reference solution, not an LLM: no model, no harness.
-    harbor run -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+    harbor run $YES_FLAG -p "$HARBOR_TASKS" -a "oracle" -o "$JOBS_DIR" -k 1 -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG
     ;;
   *)
     # Every other agent is an arm defined in the versions config, so adding one
@@ -217,7 +276,7 @@ case "$AGENT" in
     fi
 
     echo "arm: $AGENT  agent=$HARBOR_AGENT  model=$MODEL  harness=${HARNESS:-n/a}"
-    harbor run -p "$HARBOR_TASKS" -a "$HARBOR_AGENT" -m "$MODEL" $AK -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG $GPU_FLAG
+    harbor run $YES_FLAG -p "$HARBOR_TASKS" -a "$HARBOR_AGENT" -m "$MODEL" $AK -o "$JOBS_DIR" -k "$NTRIALS" -n "$NCONCURRENT" $TASK_FLAG $PODMAN_FLAG
     ;;
 esac
 HARBOR_RC=$?

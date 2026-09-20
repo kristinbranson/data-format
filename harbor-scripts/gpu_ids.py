@@ -1,5 +1,27 @@
 #!/usr/bin/env python3
-"""Map cgroup-relative GPU indices to physical (node-wide) indices using PCI bus IDs."""
+"""Map cgroup-relative GPU indices to physical (node-wide) indices using PCI bus IDs.
+
+Why this translation is needed, and why it cannot be arithmetic:
+
+LSF grants a job one card and renumbers it from the job's own point of view, so
+`nvidia-smi` inside the job calls it index 0 whichever card it is; the physical index is
+left in CUDA_VISIBLE_DEVICES_ORIG. CDI, which is how podman addresses a GPU, names devices
+by physical index. Asking for index 0 from a job allocated another card therefore hands the
+container a device it has no permission to use: under the default exclusive-process mode
+torch reports no GPU and trains on the CPU, holding an idle card for the length of the run.
+
+The indices cannot be computed from each other, because device minors are not in PCI order.
+On one l4 node PCI b5:00.0 is /dev/nvidia6 while ca:00.0 is /dev/nvidia5. Matching by PCI
+address, as below, is the only reliable route.
+
+Each task's environment/docker-compose.yaml names its card with
+`device_ids: ["${HARBOR_GPU_ID:-0}"]`, which run_harbor.sh fills from this script. It has to
+be expressed there rather than in a compose override, because podman-compose APPENDS
+reservation device lists across -f files rather than replacing them: a task's own
+`count: 1` cannot be retracted, and the container would end up holding both the card it
+owns and the one it does not. Unset, the variable resolves to 0, which is correct wherever
+the job has the node's only GPU -- the case every gpu_l4_large sweep runs in.
+"""
 
 import subprocess
 import sys

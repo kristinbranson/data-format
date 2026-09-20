@@ -6,6 +6,10 @@ services:
       resources:
         reservations:
           devices:
+            # Name the GPU id rather than asking for "a GPU". podman-compose satisfies
+            # `count: 1` with physical index 0, which on a multi-GPU node may not be
+            # assigned to this job. HARBOR_GPU_ID is the physical index, which harbor-scripts/gpu_ids.py
+            # resolves from the card's PCI address
             - driver: nvidia
-              count: 1
+              device_ids: ["${HARBOR_GPU_ID:-0}"]
               capabilities: [gpu]

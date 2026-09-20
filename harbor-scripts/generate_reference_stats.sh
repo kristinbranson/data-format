@@ -31,9 +31,13 @@
 
 USE_PODMAN=false
 TASK=""
+# Which harbor to run, matching run_harbor.sh's --harbor. The two differ at the command
+# line, so this picks several flags below rather than only an environment.
+HARBOR_VERSION="0.23.0"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --podman) USE_PODMAN=true; shift ;;
+        --harbor) HARBOR_VERSION="$2"; shift 2 ;;
         --help|-h) sed -n '2,27p' "$0"; exit 0 ;;
         *)        TASK="$1"; shift ;;
     esac
@@ -41,15 +45,38 @@ done
 
 JOBS_DIR="${JOBS_DIR:-$HOME/harbor-tasks/data-format/jobs/oracle}"
 
+# Kept in step with run_harbor.sh's gate; the comments there say why each flag differs.
+case "$HARBOR_VERSION" in
+    0.23.0)
+        PODMAN_ENV="eval-data-format-podman-023"
+        TASK_OPT="-i"
+        YES_FLAG="-y"
+        PODMAN_OPT="-e podman"
+        ;;
+    0.1.45)
+        PODMAN_ENV="eval-data-format-podman"
+        TASK_OPT="-t"
+        YES_FLAG=""
+        PODMAN_OPT="--ek use_podman=true"
+        ;;
+    *)
+        echo "ERROR: --harbor must be 0.23.0 or 0.1.45, got '$HARBOR_VERSION'"
+        exit 1
+        ;;
+esac
+echo "harbor: $HARBOR_VERSION"
+
 TASK_FLAG=""
 if [ -n "$TASK" ]; then
-    TASK_FLAG="-t $TASK"
+    TASK_FLAG="$TASK_OPT $TASK"
 fi
 
 source "$HOME/miniforge3/etc/profile.d/conda.sh"
-# Same split as run_harbor.sh: the podman-capable harbor lives in its own env.
+# Same split as run_harbor.sh: the podman-capable harbor lives in its own env. The docker
+# env is not versioned: it carries a non-editable harbor and has no podman support, so it
+# is only ever the local-docker path.
 if [ "$USE_PODMAN" = true ]; then
-    conda activate eval-data-format-podman
+    conda activate "$PODMAN_ENV"
 else
     conda activate eval-data-format
 fi
@@ -62,7 +89,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/podman_env.sh"
 
 PODMAN_FLAG=""
 if [ "$USE_PODMAN" = true ]; then
-    PODMAN_FLAG="--ek use_podman=true"
+    PODMAN_FLAG="$PODMAN_OPT"
 fi
 
 # Every task compose builds its /app/data mount as "${DATA_ROOT:?...}/<task>", so
@@ -70,7 +97,7 @@ fi
 # mount is absolute rather than relative.
 export DATA_ROOT="${DATA_ROOT:-$(cd "$(dirname "$0")/.." && pwd)/data}"
 
-harbor run \
+harbor run $YES_FLAG \
     -p /groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-tasks \
     -a "oracle" \
     -o "$JOBS_DIR" \
