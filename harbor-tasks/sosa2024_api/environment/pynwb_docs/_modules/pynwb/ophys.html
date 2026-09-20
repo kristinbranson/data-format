@@ -1,0 +1,721 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pynwb.ophys &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../pynwb.html">pynwb</a></li>
+      <li class="breadcrumb-item active">pynwb.ophys</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pynwb.ophys</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicTable</span><span class="p">,</span> <span class="n">DynamicTableRegion</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">docval</span><span class="p">,</span> <span class="n">popargs</span><span class="p">,</span> <span class="n">get_docval</span><span class="p">,</span> <span class="n">get_data_shape</span><span class="p">,</span> <span class="n">popargs_to_dict</span><span class="p">,</span> <span class="n">AllowPositional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_class</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBContainer</span><span class="p">,</span> <span class="n">MultiContainerInterface</span><span class="p">,</span> <span class="n">NWBDataInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;OpticalChannel&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ImagingPlane&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;OnePhotonSeries&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;TwoPhotonSeries&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;CorrectedImageStack&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;MotionCorrection&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;PlaneSegmentation&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ImageSegmentation&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;RoiResponseSeries&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DfOverF&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Fluorescence&#39;</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="OpticalChannel">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.OpticalChannel">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;OpticalChannel&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OpticalChannel</span><span class="p">(</span><span class="n">NWBContainer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An optical channel used to record from an imaging plane.&quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;emission_lambda&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the name of this electrode&#39;</span><span class="p">},</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Any notes or comments about the channel.&#39;</span><span class="p">},</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;emission_lambda&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Emission wavelength for channel, in nm.&#39;</span><span class="p">},</span> <span class="c1"># required</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>  
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">description</span><span class="p">,</span> <span class="n">emission_lambda</span> <span class="o">=</span> <span class="n">popargs</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;emission_lambda&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emission_lambda</span> <span class="o">=</span> <span class="n">emission_lambda</span></div>
+
+
+
+<div class="viewcode-block" id="ImagingPlane">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.ImagingPlane">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;ImagingPlane&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ImagingPlane</span><span class="p">(</span><span class="n">NWBContainer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An imaging plane and its metadata.&quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;optical_channel&#39;</span><span class="p">,</span> <span class="s1">&#39;child&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+                     <span class="s1">&#39;description&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;device&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;excitation_lambda&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;imaging_rate&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;indicator&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;location&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;manifold&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;conversion&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;unit&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;reference_frame&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;grid_spacing&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;grid_spacing_unit&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;origin_coords&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;origin_coords_unit&#39;</span>
+                     <span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span><span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">NWBContainer</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">),</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;optical_channel&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">OpticalChannel</span><span class="p">),</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;One of possibly many groups storing channel-specific data.&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Description of this ImagingPlane.&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;device&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">Device</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the device that was used to record&#39;</span><span class="p">,</span> 
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;excitation_lambda&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Excitation wavelength in nm.&#39;</span><span class="p">,</span> 
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;indicator&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Calcium indicator&#39;</span><span class="p">,</span>  <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Location of image plane.&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;imaging_rate&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Rate images are acquired, in Hz. If the corresponding TimeSeries is present, the rate should be &#39;</span>
+                    <span class="s1">&#39;stored there instead.&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;manifold&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;array_data&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;DEPRECATED - Physical position of each pixel. size=(&quot;height&quot;, &quot;width&quot;, &quot;xyz&quot;). &#39;</span>
+                     <span class="s1">&#39;Deprecated in favor of origin_coords and grid_spacing.&#39;</span><span class="p">),</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;conversion&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;DEPRECATED - Multiplier to get from stored values to specified unit (e.g., 1e-3 for millimeters) &#39;</span>
+                     <span class="s1">&#39;Deprecated in favor of origin_coords and grid_spacing.&#39;</span><span class="p">),</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;DEPRECATED - Base unit that coordinates are stored in (e.g., Meters). &#39;</span>
+                    <span class="s1">&#39;Deprecated in favor of origin_coords_unit and grid_spacing_unit.&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;meters&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;reference_frame&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Describes position and reference frame of manifold based on position of first element &#39;</span>
+                    <span class="s1">&#39;in manifold.&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;origin_coords&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;array_data&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Physical location of the first element of the imaging plane (0, 0) for 2-D data or (0, 0, 0) for &#39;</span>
+                    <span class="s1">&#39;3-D data. See also reference_frame for what the physical location is relative to (e.g., bregma).&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;origin_coords_unit&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s2">&quot;Measurement units for origin_coords. The default value is &#39;meters&#39;.&quot;</span><span class="p">,</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;meters&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;grid_spacing&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;array_data&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s2">&quot;Space between pixels in (x, y) or voxels in (x, y, z) directions, in the specified unit. Assumes &quot;</span>
+                    <span class="s2">&quot;imaging plane is a regular grid. See also reference_frame to interpret the grid.&quot;</span><span class="p">,</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;grid_spacing_unit&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s2">&quot;Measurement units for grid_spacing. The default value is &#39;meters&#39;.&quot;</span><span class="p">,</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;meters&#39;</span><span class="p">},</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">keys_to_set</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;optical_channel&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;description&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;device&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;excitation_lambda&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;imaging_rate&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;indicator&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;location&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;manifold&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;conversion&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;unit&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;reference_frame&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;origin_coords&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;origin_coords_unit&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;grid_spacing&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;grid_spacing_unit&#39;</span><span class="p">)</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">(</span><span class="n">keys_to_set</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;optical_channel&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;optical_channel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;optical_channel&#39;</span><span class="p">]]</span>
+
+        <span class="c1"># Note: device, excitation_lambda, indicator, and location are required arguments.</span>
+        <span class="c1"># Description was made to be optional in PyNWB 3.1.0, however to avoid breaking API changes the order of</span>
+        <span class="c1"># the arguments needs to be maintained even though the optional arguments came before the required ones.</span>
+        <span class="c1"># So in docval these required arguments are displayed as optional when really they are required. </span>
+        <span class="c1"># This section can be removed when positional arguments are no longer allowed.</span>
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;device&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;device&#39; argument is required for ImagingPlane.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;excitation_lambda&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;excitation_lambda&#39; argument is required for ImagingPlane.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;indicator&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;indicator&#39; argument is required for ImagingPlane.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The &#39;location&#39; argument is required for ImagingPlane.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;manifold&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="s2">&quot;The &#39;manifold&#39; argument is deprecated in favor of &#39;origin_coords&#39; and &#39;grid_spacing&#39;.&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_error_on_new_pass_on_construct</span><span class="p">(</span><span class="n">error_msg</span><span class="o">=</span><span class="n">error_msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;conversion&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="s2">&quot;The &#39;conversion&#39; argument is deprecated in favor of &#39;origin_coords&#39; and &#39;grid_spacing&#39;.&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_error_on_new_pass_on_construct</span><span class="p">(</span><span class="n">error_msg</span><span class="o">=</span><span class="n">error_msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;meters&#39;</span><span class="p">:</span>
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="s2">&quot;The &#39;unit&#39; argument is deprecated in favor of &#39;origin_coords_unit&#39; and &#39;grid_spacing_unit&#39;.&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_error_on_new_pass_on_construct</span><span class="p">(</span><span class="n">error_msg</span><span class="o">=</span><span class="n">error_msg</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="OnePhotonSeries">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.OnePhotonSeries">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s2">&quot;OnePhotonSeries&quot;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OnePhotonSeries</span><span class="p">(</span><span class="n">ImageSeries</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Image stack recorded over time from 1-photon microscope.&quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;imaging_plane&quot;</span><span class="p">,</span> <span class="s2">&quot;pmt_gain&quot;</span><span class="p">,</span> <span class="s2">&quot;scan_line_rate&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure_time&quot;</span><span class="p">,</span> <span class="s2">&quot;binning&quot;</span><span class="p">,</span> <span class="s2">&quot;power&quot;</span><span class="p">,</span> <span class="s2">&quot;intensity&quot;</span>
+    <span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ImageSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">),</span>  <span class="c1"># required</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;imaging_plane&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">ImagingPlane</span><span class="p">,</span> <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;Imaging plane class/pointer.&quot;</span><span class="p">},</span>  <span class="c1"># required</span>
+        <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ImageSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;unit&quot;</span><span class="p">,</span> <span class="s2">&quot;format&quot;</span><span class="p">),</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;pmt_gain&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;Photomultiplier gain.&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;scan_line_rate&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;Lines imaged per second. This is also stored in /general/optophysiology but is kept &quot;</span>
+                <span class="s2">&quot;here as it is useful information for analysis, and so good to be stored w/ the actual data.&quot;</span>
+             <span class="p">),</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;exposure_time&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;Exposure time of the sample; often the inverse of the frequency.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;binning&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;uint&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;Amount of pixels combined into &#39;bins&#39;; could be 1, 2, 4, 8, etc.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;power&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;Power of the excitation in mW, if known.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;intensity&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;Intensity of the excitation in mW/mm^2, if known.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span>
+            <span class="n">ImageSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span>
+            <span class="s2">&quot;external_file&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;starting_frame&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bits_per_pixel&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;dimension&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;resolution&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;conversion&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;timestamps&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;starting_time&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rate&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;comments&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;control&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;control_description&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;device&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">keys_to_set</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;imaging_plane&quot;</span><span class="p">,</span> <span class="s2">&quot;pmt_gain&quot;</span><span class="p">,</span> <span class="s2">&quot;scan_line_rate&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure_time&quot;</span><span class="p">,</span> <span class="s2">&quot;binning&quot;</span><span class="p">,</span> <span class="s2">&quot;power&quot;</span><span class="p">,</span> <span class="s2">&quot;intensity&quot;</span>
+        <span class="p">)</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">(</span><span class="n">keys_to_set</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s2">&quot;binning&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s2">&quot;binning&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Binning value must be &gt;= 0: </span><span class="si">{</span><span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;binning&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args_to_set</span><span class="p">[</span><span class="s2">&quot;binning&quot;</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">args_to_set</span><span class="p">[</span><span class="s2">&quot;binning&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint</span><span class="p">(</span><span class="n">args_to_set</span><span class="p">[</span><span class="s2">&quot;binning&quot;</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TwoPhotonSeries">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.TwoPhotonSeries">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;TwoPhotonSeries&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TwoPhotonSeries</span><span class="p">(</span><span class="n">ImageSeries</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Image stack recorded over time from 2-photon microscope.&quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;field_of_view&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;imaging_plane&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;pmt_gain&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;scan_line_rate&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span><span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ImageSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">),</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;imaging_plane&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ImagingPlane</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Imaging plane class/pointer.&#39;</span><span class="p">},</span>  <span class="c1"># required</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ImageSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="s1">&#39;format&#39;</span><span class="p">),</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;field_of_view&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">Iterable</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="p">)),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Width, height and depth of image, or imaged area (meters).&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;pmt_gain&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Photomultiplier gain.&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;scan_line_rate&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Lines imaged per second. This is also stored in /general/optophysiology but is kept &#39;</span>
+                    <span class="s1">&#39;here as it is useful information for analysis, and so good to be stored w/ the actual data.&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ImageSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;external_file&#39;</span><span class="p">,</span> <span class="s1">&#39;starting_frame&#39;</span><span class="p">,</span> <span class="s1">&#39;bits_per_pixel&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;dimension&#39;</span><span class="p">,</span> <span class="s1">&#39;resolution&#39;</span><span class="p">,</span> <span class="s1">&#39;conversion&#39;</span><span class="p">,</span> <span class="s1">&#39;timestamps&#39;</span><span class="p">,</span> <span class="s1">&#39;starting_time&#39;</span><span class="p">,</span> <span class="s1">&#39;rate&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;comments&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;control&#39;</span><span class="p">,</span> <span class="s1">&#39;control_description&#39;</span><span class="p">,</span> <span class="s1">&#39;device&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">),</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">keys_to_set</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;field_of_view&quot;</span><span class="p">,</span>
+                       <span class="s2">&quot;imaging_plane&quot;</span><span class="p">,</span>
+                       <span class="s2">&quot;pmt_gain&quot;</span><span class="p">,</span>
+                       <span class="s2">&quot;scan_line_rate&quot;</span><span class="p">)</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">(</span><span class="n">keys_to_set</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="CorrectedImageStack">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.CorrectedImageStack">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;CorrectedImageStack&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CorrectedImageStack</span><span class="p">(</span><span class="n">NWBDataInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An image stack where all frames are shifted (registered) to a common coordinate system, to</span>
+<span class="sd">    account for movement and drift between frames. Note: each frame at each point in time is</span>
+<span class="sd">    assumed to be 2-D (has only x &amp; y dimensions).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;corrected&#39;</span><span class="p">,</span> <span class="s1">&#39;child&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;required_name&#39;</span><span class="p">:</span> <span class="s1">&#39;corrected&#39;</span><span class="p">},</span>
+                     <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;xy_translation&#39;</span><span class="p">,</span> <span class="s1">&#39;child&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;required_name&#39;</span><span class="p">:</span> <span class="s1">&#39;xy_translation&#39;</span><span class="p">},</span>
+                     <span class="s1">&#39;original&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;The name of this CorrectedImageStack container&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;CorrectedImageStack&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;corrected&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ImageSeries</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Image stack with frames shifted to the common coordinates. This must have the name &quot;corrected&quot;.&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;original&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ImageSeries</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Link to image series that is being registered.&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;xy_translation&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Stores the x,y delta necessary to align each frame to the common coordinates, &#39;</span>
+                    <span class="s1">&#39;for example, to align each frame to a reference image. This must have the name &quot;xy_translation&quot;.&#39;</span><span class="p">},</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">corrected</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">xy_translation</span> <span class="o">=</span> <span class="n">popargs</span><span class="p">(</span><span class="s1">&#39;corrected&#39;</span><span class="p">,</span> <span class="s1">&#39;original&#39;</span><span class="p">,</span> <span class="s1">&#39;xy_translation&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">corrected</span> <span class="o">=</span> <span class="n">corrected</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">original</span> <span class="o">=</span> <span class="n">original</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xy_translation</span> <span class="o">=</span> <span class="n">xy_translation</span></div>
+
+
+
+<div class="viewcode-block" id="MotionCorrection">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.MotionCorrection">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;MotionCorrection&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MotionCorrection</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A collection of corrected images stacks.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;add&#39;</span><span class="p">:</span> <span class="s1">&#39;add_corrected_image_stack&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="s1">&#39;get_corrected_image_stack&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;create&#39;</span><span class="p">:</span> <span class="s1">&#39;create_corrected_image_stack&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">CorrectedImageStack</span><span class="p">,</span>
+        <span class="s1">&#39;attr&#39;</span><span class="p">:</span> <span class="s1">&#39;corrected_image_stacks&#39;</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="PlaneSegmentation">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;PlaneSegmentation&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PlaneSegmentation</span><span class="p">(</span><span class="n">DynamicTable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores pixels in an image that represent different regions of interest (ROIs)</span>
+<span class="sd">    or masks. All segmentation for a given imaging plane is stored together, with</span>
+<span class="sd">    storage for multiple imaging planes (masks) supported. Each ROI is stored in its</span>
+<span class="sd">    own subgroup, with the ROI group containing both a 2D mask and a list of pixels</span>
+<span class="sd">    that make up this mask. Segments can also be used for masking neuropil. If segmentation</span>
+<span class="sd">    is allowed to change with time, a new imaging plane (or module) is required and</span>
+<span class="sd">    ROI names should remain consistent between them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__fields__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;imaging_plane&#39;</span><span class="p">,</span>
+                  <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;reference_images&#39;</span><span class="p">,</span> <span class="s1">&#39;child&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+
+    <span class="n">__columns__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;image_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Image masks for each ROI&#39;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;pixel_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Pixel masks for each ROI&#39;</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;voxel_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Voxel masks for each ROI&#39;</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Description of image plane, recording wavelength, depth, etc.&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;imaging_plane&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ImagingPlane</span><span class="p">,</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the ImagingPlane this ROI applies to&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;name of PlaneSegmentation.&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;reference_images&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">ImageSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">),</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;One or more image stacks that the masks apply to (can be oneelement stack).&#39;</span><span class="p">},</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">DynamicTable</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;columns&#39;</span><span class="p">,</span> <span class="s1">&#39;colnames&#39;</span><span class="p">,</span> <span class="s1">&#39;target_tables&#39;</span><span class="p">,</span> <span class="s1">&#39;meanings_tables&#39;</span><span class="p">),</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">imaging_plane</span><span class="p">,</span> <span class="n">reference_images</span> <span class="o">=</span> <span class="n">popargs</span><span class="p">(</span><span class="s1">&#39;imaging_plane&#39;</span><span class="p">,</span> <span class="s1">&#39;reference_images&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">imaging_plane</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]:</span>
+            <span class="c1"># check for required ROI columns if table is initialized with non-empty columns </span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]):</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;image_mask&quot;</span><span class="p">,</span> <span class="s2">&quot;pixel_mask&quot;</span><span class="p">,</span> <span class="s2">&quot;voxel_mask&quot;</span><span class="p">):</span>
+                        <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must provide at least one of &#39;image_mask&#39;, &#39;pixel_mask&#39;, or &#39;voxel_mask&#39; columns&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]:</span>  <span class="c1"># there are also no columns</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must provide at least one of &#39;image_mask&#39;, &#39;pixel_mask&#39;, or &#39;voxel_mask&#39; columns&quot;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">imaging_plane</span> <span class="o">=</span> <span class="n">imaging_plane</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reference_images</span><span class="p">,</span> <span class="n">ImageSeries</span><span class="p">):</span>
+            <span class="n">reference_images</span> <span class="o">=</span> <span class="p">(</span><span class="n">reference_images</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference_images</span> <span class="o">=</span> <span class="n">reference_images</span>
+        
+<div class="viewcode-block" id="PlaneSegmentation.add_roi">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation.add_roi">[docs]</a>
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;pixel_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;pixel mask for 2D ROIs: [(x1, y1, weight1), (x2, y2, weight2), ...]&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;voxel_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;voxel mask for 3D ROIs: [(x1, y1, z1, weight1), (x2, y2, z2, weight2), ...]&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">4</span><span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;image_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;image with the same size of image where positive values mark this ROI&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="mi">3</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the ID for the ROI&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="n">allow_extra</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_roi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a Region Of Interest (ROI) data to this&quot;&quot;&quot;</span>
+        <span class="n">pixel_mask</span><span class="p">,</span> <span class="n">voxel_mask</span><span class="p">,</span> <span class="n">image_mask</span> <span class="o">=</span> <span class="n">popargs</span><span class="p">(</span><span class="s1">&#39;pixel_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;voxel_mask&#39;</span><span class="p">,</span> <span class="s1">&#39;image_mask&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">image_mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pixel_mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">voxel_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must provide at least one of &#39;image_mask&#39;, &#39;pixel_mask&#39;, or &#39;voxel_mask&#39;&quot;</span><span class="p">)</span>
+        <span class="n">rkwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">image_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rkwargs</span><span class="p">[</span><span class="s1">&#39;image_mask&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">image_mask</span>
+        <span class="k">if</span> <span class="n">pixel_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rkwargs</span><span class="p">[</span><span class="s1">&#39;pixel_mask&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pixel_mask</span>
+        <span class="k">if</span> <span class="n">voxel_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rkwargs</span><span class="p">[</span><span class="s1">&#39;voxel_mask&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">voxel_mask</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span><span class="o">**</span><span class="n">rkwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PlaneSegmentation.pixel_to_image">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation.pixel_to_image">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pixel_to_image</span><span class="p">(</span><span class="n">pixel_mask</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a 2D pixel_mask of a ROI into an image_mask.&quot;&quot;&quot;</span>
+        <span class="n">image_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixel_mask</span><span class="p">))</span>
+        <span class="n">npmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pixel_mask</span><span class="p">)</span>
+        <span class="n">x_coords</span> <span class="o">=</span> <span class="n">npmask</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">y_coords</span> <span class="o">=</span> <span class="n">npmask</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">npmask</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">image_matrix</span><span class="p">[</span><span class="n">y_coords</span><span class="p">,</span> <span class="n">x_coords</span><span class="p">]</span> <span class="o">=</span> <span class="n">weights</span>
+        <span class="k">return</span> <span class="n">image_matrix</span></div>
+
+
+<div class="viewcode-block" id="PlaneSegmentation.image_to_pixel">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation.image_to_pixel">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">image_to_pixel</span><span class="p">(</span><span class="n">image_mask</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts an image_mask of a ROI into a pixel_mask&quot;&quot;&quot;</span>
+        <span class="n">pixel_mask</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nditer</span><span class="p">(</span><span class="n">image_mask</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;multi_index&#39;</span><span class="p">])</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">it</span><span class="o">.</span><span class="n">finished</span><span class="p">:</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="n">it</span><span class="p">[</span><span class="mi">0</span><span class="p">][()]</span>
+            <span class="k">if</span> <span class="n">weight</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">multi_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">multi_index</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">pixel_mask</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">weight</span><span class="p">])</span>
+            <span class="n">it</span><span class="o">.</span><span class="n">iternext</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">pixel_mask</span></div>
+
+
+<div class="viewcode-block" id="PlaneSegmentation.create_roi_table_region">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation.create_roi_table_region">[docs]</a>
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;a brief description of what the region is&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;region&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="nb">slice</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">),</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the indices of the table&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the name of the ROITableRegion&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;rois&#39;</span><span class="p">})</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_roi_table_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_region</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ImageSegmentation">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.ImageSegmentation">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;ImageSegmentation&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ImageSegmentation</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores pixels in an image that represent different regions of interest (ROIs) or masks. All</span>
+<span class="sd">    segmentation for a given imaging plane is stored together, with storage for multiple imaging</span>
+<span class="sd">    planes (masks) supported. Each ROI is stored in its own subgroup, with the ROI group</span>
+<span class="sd">    containing both a 2D mask and a list of pixels that make up this mask. Segments can also be</span>
+<span class="sd">    used for masking neuropil. If segmentation is allowed to change with time, a new imaging plane</span>
+<span class="sd">    (or module) is required and ROI names should remain consistent between them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;attr&#39;</span><span class="p">:</span> <span class="s1">&#39;plane_segmentations&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">PlaneSegmentation</span><span class="p">,</span>
+        <span class="s1">&#39;add&#39;</span><span class="p">:</span> <span class="s1">&#39;add_plane_segmentation&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="s1">&#39;get_plane_segmentation&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;create&#39;</span><span class="p">:</span> <span class="s1">&#39;create_plane_segmentation&#39;</span>
+    <span class="p">}</span>
+
+<div class="viewcode-block" id="ImageSegmentation.add_segmentation">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.ImageSegmentation.add_segmentation">[docs]</a>
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;imaging_plane&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ImagingPlane</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the ImagingPlane this ROI applies to&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Description of image plane, recording wavelength, depth, etc.&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;name of PlaneSegmentation.&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_segmentation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;imaging_plane&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_plane_segmentation</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RoiResponseSeries">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;RoiResponseSeries&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RoiResponseSeries</span><span class="p">(</span><span class="n">TimeSeries</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    ROI responses over an imaging plane. Each column in data should correspond to</span>
+<span class="sd">    the signal from one ROI.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;rois&#39;</span><span class="p">,</span> <span class="s1">&#39;child&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span><span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">),</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">((</span><span class="kc">None</span><span class="p">,</span> <span class="p">),</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;The data values. May be 1D or 2D. The first dimension must be time. The optional second &#39;</span>
+                     <span class="s1">&#39;dimension represents ROIs&#39;</span><span class="p">)},</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;unit&#39;</span><span class="p">),</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;rois&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">DynamicTableRegion</span><span class="p">,</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;a table region corresponding to the ROIs that were used to generate this data&#39;</span><span class="p">},</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;resolution&#39;</span><span class="p">,</span> <span class="s1">&#39;conversion&#39;</span><span class="p">,</span> <span class="s1">&#39;timestamps&#39;</span><span class="p">,</span> <span class="s1">&#39;starting_time&#39;</span><span class="p">,</span> <span class="s1">&#39;rate&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;comments&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;control&#39;</span><span class="p">,</span> <span class="s1">&#39;control_description&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">),</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">rois</span> <span class="o">=</span> <span class="n">popargs</span><span class="p">(</span><span class="s1">&#39;rois&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">data_shape</span> <span class="o">=</span> <span class="n">get_data_shape</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="n">strict_no_data_load</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">rois_shape</span> <span class="o">=</span> <span class="n">get_data_shape</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">rois</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">strict_no_data_load</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">data_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rois_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+            <span class="c1"># check that data is 2d and rois is 1d</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">rois_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+            <span class="c1"># check that key dimensions are known</span>
+            <span class="ow">and</span> <span class="n">data_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rois_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+            <span class="ow">and</span> <span class="n">data_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">rois_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">data_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">rois_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &#39;</span><span class="si">%s</span><span class="s2">&#39;: The second dimension of data does not match the length of rois, &quot;</span>
+                              <span class="s2">&quot;but instead the first does. Data is oriented incorrectly and should be transposed.&quot;</span>
+                              <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &#39;</span><span class="si">%s</span><span class="s2">&#39;: The second dimension of data does not match the length of rois. &quot;</span>
+                              <span class="s2">&quot;Your data may be transposed.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]))</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rois</span> <span class="o">=</span> <span class="n">rois</span></div>
+
+
+
+<div class="viewcode-block" id="DfOverF">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.DfOverF">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;DfOverF&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DfOverF</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    dF/F information about a region of interest (ROI). Storage hierarchy of dF/F should be the same</span>
+<span class="sd">    as for segmentation (ie, same names for ROIs and for image planes).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;attr&#39;</span><span class="p">:</span> <span class="s1">&#39;roi_response_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">RoiResponseSeries</span><span class="p">,</span>
+        <span class="s1">&#39;add&#39;</span><span class="p">:</span> <span class="s1">&#39;add_roi_response_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="s1">&#39;get_roi_response_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;create&#39;</span><span class="p">:</span> <span class="s1">&#39;create_roi_response_series&#39;</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="Fluorescence">
+<a class="viewcode-back" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;Fluorescence&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Fluorescence</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fluorescence information about a region of interest (ROI). Storage hierarchy of fluorescence</span>
+<span class="sd">    should be the same as for segmentation (ie, same names for ROIs and for image planes).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;attr&#39;</span><span class="p">:</span> <span class="s1">&#39;roi_response_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">RoiResponseSeries</span><span class="p">,</span>
+        <span class="s1">&#39;add&#39;</span><span class="p">:</span> <span class="s1">&#39;add_roi_response_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="s1">&#39;get_roi_response_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;create&#39;</span><span class="p">:</span> <span class="s1">&#39;create_roi_response_series&#39;</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

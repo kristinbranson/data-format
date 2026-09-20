@@ -130,6 +130,31 @@ about 1.25h of agent plus verifier with mouseland at 6h, and the two judges add 
 hour on top. Each job rebuilds its image from scratch, because `PODMAN_PRIVATE_STORAGE`
 gives it an empty store, so a few minutes of every job is the build.
 
+**Finish the `_api` variant on the analysis side.** Two of the three places are done:
+`submit_harbor_cluster.py` has an `--api` scope, and `trial_metrics.py` strips the suffix so
+`sosa2024_api` reads as dataset `sosa2024`, condition `api`, rather than as a ninth dataset.
+Verified on the existing archive: all 146 trials still identify unchanged.
+
+What is left is `evaluation/eval/utils.py`:
+
+- `PROMPT_LABEL` is `{"minimal", "full", "datalimit"}` and has no `api` entry.
+  `lesion_analysis.py` indexes it directly at lines 718 and 1235, so an api arm reaching
+  either raises `KeyError` rather than being skipped. Nothing reaches them yet, because both
+  iterate `ARM_COLUMNS` and no api arm is listed, but that is the only thing preventing it.
+- `ARM_COLUMNS` and `AGENT_KEYS` need api arms once there is something to plot, and the
+  display name has to say what the condition IS -- "api" means the agent was required to
+  read the files through the format's own library rather than parsing them, which no reader
+  will infer from the word.
+- `DATALIMIT_SAME_AS_MINIMAL` has no api counterpart and probably needs none: an `_api` task
+  is a real separate run, not an alias for another arm's trials.
+
+Deliberately deferred rather than guessed: the arms cannot be named before there are results
+to name. Six `sosa2024_api` trials were submitted on 2026-09-19 at 21:58, so there will be.
+
+A naming wart to decide at the same time: the field is called `prompt` but now carries
+`datalimit` and `api`, neither of which is a property of the prompt. It reads as the
+condition. Renaming it touches every consumer, so it is recorded rather than done.
+
 **Rerun the codex judge where the provider refused.** On `hb_map_codex_t1` the codex judge
 read the task, both implementations and the reference decisions, then the turn failed with
 

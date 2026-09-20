@@ -1,0 +1,941 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iterative Data Write &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Modular Data Storage using External Files" href="plot_linking_data.html" />
+    <link rel="prev" title="Editing NWB files" href="plot_editing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="h5dataio.html">Defining HDF5 Dataset I/O Settings (chunking, compression, etc.)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_editing.html">Editing NWB files</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Iterative Data Write</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-write-data-from-generators-and-streams">Example: Write Data from Generators and Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-optimizing-sparse-data-array-i-o-and-storage">Example: Optimizing Sparse Data Array I/O and Storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-convert-large-binary-data-arrays">Example: Convert large binary data arrays</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-convert-arrays-stored-in-multiple-files">Example: Convert arrays stored in multiple files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#alternative-approach-user-defined-dataset-write">Alternative Approach: User-defined dataset write</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_linking_data.html">Modular Data Storage using External Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallelio.html">Parallel I/O using MPI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="streaming.html">Streaming NWB files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_zarr_io.html">Zarr IO</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Iterative Data Write</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/advanced_io/plot_iterative_write.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-advanced-io-plot-iterative-write-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="iterative-data-write">
+<span id="iterative-write"></span><span id="sphx-glr-tutorials-advanced-io-plot-iterative-write-py"></span><h1>Iterative Data Write<a class="headerlink" href="#iterative-data-write" title="Link to this heading"></a></h1>
+<p>This example demonstrate how to iteratively write data arrays with applications to
+writing large arrays without loading all data into memory and streaming data write.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<section id="what-is-iterative-data-write">
+<h3>What is Iterative Data Write?<a class="headerlink" href="#what-is-iterative-data-write" title="Link to this heading"></a></h3>
+<p>In the typical write process, datasets are created and written as a whole. In contrast,
+iterative data write refers to the writing of the contents of a dataset in an incremental,
+iterative fashion.</p>
+</section>
+<section id="why-iterative-data-write">
+<h3>Why Iterative Data Write?<a class="headerlink" href="#why-iterative-data-write" title="Link to this heading"></a></h3>
+<p>The possible applications for iterative data write are broad. Here we list a few typical applications
+for iterative data write in practice.</p>
+<ul class="simple">
+<li><p><strong>Large data arrays</strong> A central challenge when dealing with large data arrays is that it is often
+not feasible to load all of the data into memory. Using an iterative data write process allows us
+to avoid this problem by writing the data one-subblock-at-a-time, so that we only need to hold
+a small subset of the array in memory at any given time.</p></li>
+<li><p><strong>Data streaming</strong> In the context of streaming data we are faced with several issues:
+<strong>1)</strong> data is not available in-memory but arrives in subblocks as the stream progresses
+<strong>2)</strong> caching the data of a stream in-memory is often prohibitively expensive and volatile
+<strong>3)</strong> the total size of the data is often unknown ahead of time.
+Iterative data write allows us to address issues 1) and 2) by enabling us to save data to a
+file incrementally as it arrives from the data stream. Issue 3) is addressed in the HDF5
+storage backend via support for chunking, enabling the creation of resizable arrays.</p>
+<ul>
+<li><p><strong>Data generators</strong> Data generators are in many ways similar to data streams only that the
+data is typically being generated locally and programmatically rather than from an external
+data source.</p></li>
+</ul>
+</li>
+<li><p><strong>Sparse data arrays</strong> In order to reduce storage size of sparse arrays a challenge is that while
+the data array (e.g., a matrix) may be large, only a few values are set. To avoid storage overhead
+for storing the full array we can employ (in HDF5) a combination of chunking, compression, and
+and iterative data write to significantly reduce storage cost for sparse data.</p></li>
+</ul>
+</section>
+<section id="iterating-over-data-arrays">
+<h3>Iterating Over Data Arrays<a class="headerlink" href="#iterating-over-data-arrays" title="Link to this heading"></a></h3>
+<p>In PyNWB the process of iterating over large data arrays is implemented via the concept of
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunk</span></code></a> and <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunk</span></code></a> is a simple data structure used to describe
+a subset of a larger data array (i.e., a data chunk), consisting of:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">DataChunk.data</span></code> : the array with the data value(s) of the chunk and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DataChunk.selection</span></code> : the NumPy index tuple describing the location of the chunk in the whole array.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> then defines a class for iterating over large
+data arrays one-<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunk</span></code></a>-at-a-time.</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a> is a specific implementation of an
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> that accepts any iterable and assumes
+that we iterate over the first dimension of the data array. <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a>
+also supports buffered read, i.e., multiple values from the input iterator can be combined to a single chunk.
+This is useful for buffered I/O operations, e.g., to improve performance by accumulating data in memory and
+writing larger blocks at once.</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.GenericDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericDataChunkIterator</span></code></a> is a semi-abstract version of a
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> that automatically handles the selection of
+buffer regions and resolves communication of compatible chunk regions. Users specify chunk
+and buffer shapes or sizes and the iterator will manage how to break the data up for write.
+For further details, see the
+<a class="extlink-hdmf-docs reference external" href="https://hdmf.readthedocs.io/en/stable/tutorials/plot_generic_data_chunk_tutorial.html">GenericDataChunkIterator tutorial</a>.</p></li>
+</ul>
+</section>
+<section id="iterative-data-write-api">
+<h3>Iterative Data Write: API<a class="headerlink" href="#iterative-data-write-api" title="Link to this heading"></a></h3>
+<p>On the front end, all a user needs to do is to create or wrap their data in a
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>. The I/O backend (e.g.,
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDF5IO</span></code></a> or <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>) then
+implements the iterative processing of the data chunk iterators. PyNWB also provides with
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a> a specific implementation of a data chunk iterator
+which we can use to wrap common iterable types (e.g., generators, lists, or numpy arrays).
+For more advanced use cases we then need to implement our own derived class of
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Currently the HDF5 I/O backend of PyNWB (<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDF5IO</span></code></a>,
+<a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>) processes iterative data writes one-dataset-at-a-time. This means, that
+while you may have an arbitrary number of iterative data writes, the write is performed in order.
+In the future we may use a queuing process to enable the simultaneous processing of multiple iterative writes at
+the same time.</p>
+</div>
+</section>
+<section id="preparations">
+<h3>Preparations:<a class="headerlink" href="#preparations" title="Link to this heading"></a></h3>
+<p>The data write in our examples really does not change. We, therefore, here create a
+simple helper function first to write a simple NWBFile containing a single timeseries to
+avoid repetition of the same code and to allow us to focus on the important parts of this tutorial.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">write_test_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">close_io</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Simple helper function to write an NWBFile with a single timeseries containing data</span>
+<span class="sd">    :param filename: String with the name of the output file</span>
+<span class="sd">    :param data: The data of the timeseries</span>
+<span class="sd">    :param close_io: Close and destroy the NWBHDF5IO object used for writing (default=True)</span>
+
+<span class="sd">    :returns: None if close_io==True otherwise return NWBHDF5IO object used for write</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Create a test NWBfile</span>
+    <span class="n">start_time</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">())</span>
+    <span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+        <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate iterative write&quot;</span><span class="p">,</span>
+        <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+        <span class="n">session_start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Create our time series</span>
+    <span class="n">test_ts</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;synthetic_timeseries&quot;</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;n/a&quot;</span><span class="p">,</span>
+        <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+
+    <span class="c1"># Write the data to file</span>
+    <span class="n">io</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">close_io</span><span class="p">:</span>
+        <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+        <span class="k">del</span> <span class="n">io</span>
+        <span class="n">io</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">io</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="example-write-data-from-generators-and-streams">
+<h2>Example: Write Data from Generators and Streams<a class="headerlink" href="#example-write-data-from-generators-and-streams" title="Link to this heading"></a></h2>
+<p>Here we use a simple data generator but PyNWB does not make any assumptions about what happens
+inside the generator. Instead of creating data programmatically, you may hence, e.g., receive
+data from an acquisition system (or other source). We can use the same approach to write streaming data.</p>
+<section id="step-1-define-the-data-generator">
+<h3>Step 1: Define the data generator<a class="headerlink" href="#step-1-define-the-data-generator" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">pi</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/math.html#math.sin" title="math.sin" class="sphx-glr-backref-module-math sphx-glr-backref-type-py-function"><span class="n">sin</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/random.html#random.random" title="random.random" class="sphx-glr-backref-module-random sphx-glr-backref-type-py-function"><span class="n">random</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">iter_sin</span><span class="p">(</span><span class="n">chunk_length</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">max_chunks</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generator creating a random number of chunks (but at most max_chunks) of length chunk_length containing</span>
+<span class="sd">    random samples of sin([0, 2pi]).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+    <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="ow">and</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a> <span class="o">&lt;</span> <span class="n">max_chunks</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.asarray.html#numpy.asarray" title="numpy.asarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">asarray</span></a><span class="p">([</span><a href="https://docs.python.org/3.11/library/math.html#math.sin" title="math.sin" class="sphx-glr-backref-module-math sphx-glr-backref-type-py-function"><span class="n">sin</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/random.html#random.random" title="random.random" class="sphx-glr-backref-module-random sphx-glr-backref-type-py-function"><span class="n">random</span></a><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">pi</span></a><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">chunk_length</span><span class="p">)])</span>
+        <span class="n">x</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/random.html#random.random" title="random.random" class="sphx-glr-backref-module-random sphx-glr-backref-type-py-function"><span class="n">random</span></a><span class="p">()</span>
+        <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">yield</span> <span class="n">val</span>
+    <span class="k">return</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-wrap-the-generator-in-a-datachunkiterator">
+<h3>Step 2: Wrap the generator in a DataChunkIterator<a class="headerlink" href="#step-2-wrap-the-generator-in-a-datachunkiterator" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.data_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="hdmf.data_utils.DataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunkIterator</span></a>
+
+<span class="n">data</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="hdmf.data_utils.DataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunkIterator</span></a><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">iter_sin</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="step-3-write-the-data-as-usual">
+<h3>Step 3: Write the data as usual<a class="headerlink" href="#step-3-write-the-data-as-usual" title="Link to this heading"></a></h3>
+<p>Here we use our wrapped generator to create the data for a synthetic time series.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">write_test_file</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_iterwrite_example.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="discussion">
+<h3>Discussion<a class="headerlink" href="#discussion" title="Link to this heading"></a></h3>
+<p>Note, here we don’t actually know how long our timeseries will be.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;maxshape=</span><span class="si">%s</span><span class="s2">, recommended_data_shape=</span><span class="si">%s</span><span class="s2">, dtype=</span><span class="si">%s</span><span class="s2">&quot;</span>
+    <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator.maxshape" title="hdmf.data_utils.AbstractDataChunkIterator.maxshape" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-property"><span class="n">data</span><span class="o">.</span><span class="n">maxshape</span></a><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator.recommended_data_shape" title="hdmf.data_utils.AbstractDataChunkIterator.recommended_data_shape" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-method"><span class="n">data</span><span class="o">.</span><span class="n">recommended_data_shape</span></a><span class="p">()),</span> <span class="nb">str</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator.dtype" title="hdmf.data_utils.AbstractDataChunkIterator.dtype" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-property"><span class="n">data</span><span class="o">.</span><span class="n">dtype</span></a><span class="p">))</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>maxshape=(None, 10), recommended_data_shape=(1, 10), dtype=float64
+</pre></div>
+</div>
+<p>As we can see <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a> automatically recommends
+in its <code class="docutils literal notranslate"><span class="pre">maxshape</span></code> that the first dimensions of our array should be unlimited (<code class="docutils literal notranslate"><span class="pre">None</span></code>) and the second
+dimension should be <code class="docutils literal notranslate"><span class="pre">10</span></code> (i.e., the length of our chunk. Since <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a>
+has no way of knowing the minimum size of the array it automatically recommends the size of the first
+chunk as the minimum size (i.e, <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">10)</span></code>) and also infers the data type automatically from the first chunk.
+To further customize this behavior we may also define the <code class="docutils literal notranslate"><span class="pre">maxshape</span></code>, <code class="docutils literal notranslate"><span class="pre">dtype</span></code>, and <code class="docutils literal notranslate"><span class="pre">buffer_size</span></code> when
+we create the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>We here used <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a> to conveniently wrap our data stream.
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a> assumes that our generator yields in <strong>consecutive order</strong>
+a <strong>single</strong> complete element along the <strong>first dimension</strong> of our array (i.e., iterate over the first
+axis and yield one-element-at-a-time). This behavior is useful in many practical cases. However, if
+this strategy does not match our needs, then using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.GenericDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericDataChunkIterator</span></code></a>
+or implementing your own derived <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> may be more
+appropriate. We show an example of how to implement your own <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>
+next. See the <a class="extlink-hdmf-docs reference external" href="https://hdmf.readthedocs.io/en/stable/tutorials/plot_generic_data_chunk_tutorial.html">GenericDataChunkIterator tutorial</a> as
+part of the HDMF documentation for details on how to use <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.GenericDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericDataChunkIterator</span></code></a>.</p>
+</div>
+</section>
+</section>
+<section id="example-optimizing-sparse-data-array-i-o-and-storage">
+<h2>Example: Optimizing Sparse Data Array I/O and Storage<a class="headerlink" href="#example-optimizing-sparse-data-array-i-o-and-storage" title="Link to this heading"></a></h2>
+<section id="step-1-create-a-data-chunk-iterator-for-our-sparse-matrix">
+<h3>Step 1: Create a data chunk iterator for our sparse matrix<a class="headerlink" href="#step-1-create-a-data-chunk-iterator-for-our-sparse-matrix" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.data_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">AbstractDataChunkIterator</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="hdmf.data_utils.DataChunk" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunk</span></a>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SparseMatrixIterator</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">AbstractDataChunkIterator</span></a><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param shape: 2D tuple with the shape of the matrix</span>
+<span class="sd">        :param num_chunks: Number of data chunks to be created</span>
+<span class="sd">        :param chunk_shape: The shape of each chunk to be created</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a> <span class="o">=</span> <span class="n">shape</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__chunks_created</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return in each iteration a fully occupied data chunk of self.chunk_shape values at a random</span>
+<span class="sd">        location within the matrix. Chunks are non-overlapping. REMEMBER: h5py does not support all</span>
+<span class="sd">        the fancy indexing that numpy does so we need to make sure our selection can be</span>
+<span class="sd">        handled by the backend.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__chunks_created</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html#numpy.random.rand" title="numpy.random.rand" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.prod.html#numpy.prod" title="numpy.prod" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">prod</span></a><span class="p">(</span><span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">)</span>
+            <span class="n">xmin</span> <span class="o">=</span> <span class="p">(</span>
+                <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">xmax</span> <span class="o">=</span> <span class="n">xmin</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">ymin</span> <span class="o">=</span> <span class="p">(</span>
+                <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">ymax</span> <span class="o">=</span> <span class="n">ymin</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__chunks_created</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="hdmf.data_utils.DataChunk" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunk</span></a><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">selection</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.s_.html#numpy.s_" title="numpy.s_" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-data"><span class="n">np</span><span class="o">.</span><span class="n">s_</span></a><span class="p">[</span><span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+    <span class="nb">next</span> <span class="o">=</span> <span class="fm">__next__</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">recommended_chunk_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Here we can optionally recommend what a good chunking could be.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">recommended_data_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># We know the full size of the array. In cases where we don&#39;t know the full size</span>
+        <span class="c1"># this should be the minimum size.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># The data type of our array</span>
+        <span class="k">return</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="numpy.dtype" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class"><span class="n">np</span><span class="o">.</span><span class="n">dtype</span></a><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">maxshape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># We know the full shape of the array. If we don&#39;t know the size of a dimension</span>
+        <span class="c1"># beforehand we can set the dimension to None instead</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-instantiate-our-sparse-matrix">
+<h3>Step 2: Instantiate our sparse matrix<a class="headerlink" href="#step-2-instantiate-our-sparse-matrix" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Setting for our random sparse matrix</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">xsize</span></a> <span class="o">=</span> <span class="mi">1000000</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ysize</span></a> <span class="o">=</span> <span class="mi">1000000</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a> <span class="o">=</span> <span class="mi">1000</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.int64" title="numpy.int64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">num_values</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a> <span class="o">*</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.prod.html#numpy.prod" title="numpy.prod" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">prod</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="p">)</span>
+
+<span class="c1"># Create our sparse matrix data.</span>
+<span class="n">data</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">SparseMatrixIterator</span></a><span class="p">(</span>
+    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">xsize</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ysize</span></a><span class="p">),</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>In order to also enable compression and other advanced HDF5 dataset I/O features we can then also
+wrap our data via <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.hdf5.h5_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a>
+
+<span class="n">matrix2</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">SparseMatrixIterator</span></a><span class="p">(</span>
+    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">xsize</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ysize</span></a><span class="p">),</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a>
+<span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data2</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">matrix2</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can now also customize the chunking, fill value, and other settings</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.hdf5.h5_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a>
+
+<span class="c1"># Increase the chunk size and add compression</span>
+<span class="n">matrix3</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">SparseMatrixIterator</span></a><span class="p">(</span>
+    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">xsize</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ysize</span></a><span class="p">),</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a>
+<span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data3</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">matrix3</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">fillvalue</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">nan</span></a><span class="p">)</span>
+
+<span class="c1"># Increase the chunk size and add compression</span>
+<span class="n">matrix4</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">SparseMatrixIterator</span></a><span class="p">(</span>
+    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">xsize</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ysize</span></a><span class="p">),</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_chunks</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_shape</span></a>
+<span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data4</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">matrix4</span><span class="p">,</span>
+    <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">,</span>
+    <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="n">fillvalue</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">nan</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Step 3: Write the data as usual<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Here we simply use our <code class="docutils literal notranslate"><span class="pre">SparseMatrixIterator</span></code> as input for our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">write_test_file</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_sparse_iterwrite_example.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+<span class="n">write_test_file</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_sparse_iterwrite_compressed_example.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data2</span></a><span class="p">)</span>
+<span class="n">write_test_file</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_sparse_iterwrite_largechunks_example.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data3</span></a><span class="p">)</span>
+<span class="n">write_test_file</span><span class="p">(</span>
+    <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_sparse_iterwrite_largechunks_compressed_example.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data4</span></a>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="check-the-results">
+<h3>Check the results<a class="headerlink" href="#check-the-results" title="Link to this heading"></a></h3>
+<p>Now lets check out the size of our data file and compare it against the expected full size of our matrix</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">expected_size</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">xsize</span></a> <span class="o">*</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ysize</span></a> <span class="o">*</span> <span class="mi">8</span>  <span class="c1"># This is the full size of our matrix in bytes</span>
+<a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.int64" title="numpy.int64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">occupied_size</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.int64" title="numpy.int64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">num_values</span></a> <span class="o">*</span> <span class="mi">8</span>  <span class="c1"># Number of non-zero values in out matrix</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.html#os.stat" title="os.stat" class="sphx-glr-backref-module-os sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">stat</span></a><span class="p">(</span>
+    <span class="s2">&quot;basic_sparse_iterwrite_example.nwb&quot;</span>
+<span class="p">)</span><span class="o">.</span><span class="n">st_size</span>  <span class="c1"># Real size of the file</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_compressed</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.html#os.stat" title="os.stat" class="sphx-glr-backref-module-os sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">stat</span></a><span class="p">(</span><span class="s2">&quot;basic_sparse_iterwrite_compressed_example.nwb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_largechunks</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.html#os.stat" title="os.stat" class="sphx-glr-backref-module-os sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">stat</span></a><span class="p">(</span>
+    <span class="s2">&quot;basic_sparse_iterwrite_largechunks_example.nwb&quot;</span>
+<span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_largechunks_compressed</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.html#os.stat" title="os.stat" class="sphx-glr-backref-module-os sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">stat</span></a><span class="p">(</span>
+    <span class="s2">&quot;basic_sparse_iterwrite_largechunks_compressed_example.nwb&quot;</span>
+<span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
+<a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mbfactor</span></a> <span class="o">=</span> <span class="mf">1000.0</span> <span class="o">*</span> <span class="mi">1000</span>  <span class="c1"># Factor used to convert to MegaBytes</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;1) Sparse Matrix Size:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Expected Size :  </span><span class="si">%.2f</span><span class="s2"> MB&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">expected_size</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mbfactor</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Occupied Size :  </span><span class="si">%.5f</span><span class="s2"> MB&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.int64" title="numpy.int64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">occupied_size</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mbfactor</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;2) NWB HDF5 file (no compression):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   File Size     :  </span><span class="si">%.2f</span><span class="s2"> MB&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mbfactor</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Reduction     :  </span><span class="si">%.2f</span><span class="s2"> x&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">expected_size</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;3) NWB HDF5 file (with GZIP compression):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   File Size     :  </span><span class="si">%.5f</span><span class="s2"> MB&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_compressed</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mbfactor</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Reduction     :  </span><span class="si">%.2f</span><span class="s2"> x&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">expected_size</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_compressed</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4) NWB HDF5 file (large chunks):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   File Size     :  </span><span class="si">%.5f</span><span class="s2"> MB&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_largechunks</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mbfactor</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Reduction     :  </span><span class="si">%.2f</span><span class="s2"> x&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">expected_size</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_largechunks</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;5) NWB HDF5 file (large chunks with compression):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   File Size     :  </span><span class="si">%.5f</span><span class="s2"> MB&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_largechunks_compressed</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mbfactor</span></a><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   Reduction     :  </span><span class="si">%.2f</span><span class="s2"> x&quot;</span> <span class="o">%</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">expected_size</span></a> <span class="o">/</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">file_size_largechunks_compressed</span></a><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>1) Sparse Matrix Size:
+   Expected Size :  8000000.00 MB
+   Occupied Size :  0.80000 MB
+2) NWB HDF5 file (no compression):
+   File Size     :  1.03 MB
+   Reduction     :  7789193.27 x
+3) NWB HDF5 file (with GZIP compression):
+   File Size     :  1.04122 MB
+   Reduction     :  7683265.08 x
+4) NWB HDF5 file (large chunks):
+   File Size     :  80.22607 MB
+   Reduction     :  99718.21 x
+5) NWB HDF5 file (large chunks with compression):
+   File Size     :  1.29527 MB
+   Reduction     :  6176294.61 x
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>Discussion<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>1) vs 2):</strong> While the full matrix would have a size of <code class="docutils literal notranslate"><span class="pre">8TB</span></code> the HDF5 file is only <code class="docutils literal notranslate"><span class="pre">0.88MB</span></code>. This is roughly
+the same as the real occupied size of <code class="docutils literal notranslate"><span class="pre">0.8MB</span></code>. When using chunking, HDF5 does not allocate the full dataset but
+only allocates chunks that actually contain data. In (2) the size of our chunks align perfectly with the
+occupied chunks of our sparse matrix, hence, only the minimal amount of storage needs to be allocated.
+A slight overhead (here 0.08MB) is expected because our file contains also the additional objects from
+the NWBFile, plus some overhead for managing all the HDF5 metadata for all objects.</p></li>
+<li><p><strong>3) vs 2):</strong>  Adding compression does not yield any improvement here. This is expected, because, again we
+selected the chunking here in a way that we already allocated the minimum amount of storage to represent our data
+and lossless compression of random data is not efficient.</p></li>
+<li><p><strong>4) vs 2):</strong> When we increase our chunk size to <code class="docutils literal notranslate"><span class="pre">(100,100)</span></code> (i.e., <code class="docutils literal notranslate"><span class="pre">100x</span></code> larger than the chunks produced by
+our matrix generator) we observe an accordingly roughly <code class="docutils literal notranslate"><span class="pre">100x</span></code> increase in file size. This is expected
+since our chunks now do not align perfectly with the occupied data and each occupied chunk is allocated fully.</p></li>
+<li><p><strong>5) vs 4):</strong> When using compression for the larger chunks we see a significant reduction
+in file size (<code class="docutils literal notranslate"><span class="pre">1.14MB</span></code> vs. <code class="docutils literal notranslate"><span class="pre">80MB</span></code>). This is because the allocated chunks now contain in addition to the random
+values large areas of constant fill values, which compress easily.</p></li>
+</ul>
+<p><strong>Advantages:</strong></p>
+<ul class="simple">
+<li><p>We only need to hold one <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunk</span></code></a> in memory at any given time</p></li>
+<li><p>Only the data chunks in the HDF5 file that contain non-default values are ever being allocated</p></li>
+<li><p>The overall size of our file is reduced significantly</p></li>
+<li><p>Reduced I/O load</p></li>
+<li><p>On read, users can use the array as usual</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>With great power comes great responsibility <strong>!</strong> I/O and storage cost will depend, among other factors,
+on the chunk size, compression options, and the write pattern, i.e., the number and structure of the
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunk</span></code></a> objects written. For example, using <code class="docutils literal notranslate"><span class="pre">(1,1)</span></code> chunks and writing them
+one value at a time would result in poor I/O performance in most practical cases, because of the large number of
+chunks and large number of small I/O operations required.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<blockquote>
+<div><p>A word of caution, while this approach helps optimize storage, the in-memory representation on read is
+still a dense numpy array. This behavior is convenient for many user interactions with the data but
+can be problematic with regard to performance/memory when accessing large data subsets.</p>
+</div></blockquote>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">io</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s1">&#39;basic_sparse_iterwrite_example.nwb&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s1">&#39;synthetic_timeseries&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>  <span class="c1"># &lt;-- PyNWB does lazy load; no problem</span>
+<span class="n">subset</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">10</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">:</span><span class="mi">100</span><span class="p">]</span>                                <span class="c1"># &lt;-- Loading a subset is fine too</span>
+<span class="n">alldata</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:]</span>            <span class="c1"># &lt;-- !!!! This would load the complete (1000000 x 1000000) array !!!!</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>As we have seen here, our data chunk iterator may produce chunks in arbitrary order and locations within the
+array. In the case of the HDF5 I/O backend we need to take care that the selection we yield can be understood
+by h5py.</p>
+</div>
+</section>
+</section>
+<section id="example-convert-large-binary-data-arrays">
+<h2>Example: Convert large binary data arrays<a class="headerlink" href="#example-convert-large-binary-data-arrays" title="Link to this heading"></a></h2>
+<p>When converting large data files, a typical problem is that it is often too expensive to load all the data
+into memory. This example is very similar to the data generator example only that instead of generating
+data on-the-fly in-memory we are loading data from a file one-chunk-at-a-time in our generator.</p>
+<section id="create-example-data">
+<h3>Create example data<a class="headerlink" href="#create-example-data" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Create the test data</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datashape</span></a> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># This is not really large, but we just want to show how it works</span>
+<a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.int64" title="numpy.int64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">num_values</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.prod.html#numpy.prod" title="numpy.prod" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">prod</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datashape</span></a><span class="p">)</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">arrdata</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.int64" title="numpy.int64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">num_values</span></a><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datashape</span></a><span class="p">)</span>
+<span class="c1"># Write the test data to disk</span>
+<span class="n">temp</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.memmap.html#numpy.memmap" title="numpy.memmap" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class"><span class="n">np</span><span class="o">.</span><span class="n">memmap</span></a><span class="p">(</span>
+    <span class="s2">&quot;basic_sparse_iterwrite_testdata.npy&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datashape</span></a>
+<span class="p">)</span>
+<span class="n">temp</span><span class="p">[:]</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">arrdata</span></a>
+<span class="k">del</span> <span class="n">temp</span>  <span class="c1"># Flush to disk</span>
+</pre></div>
+</div>
+</section>
+<section id="step-1-create-a-generator-for-our-array">
+<h3>Step 1: Create a generator for our array<a class="headerlink" href="#step-1-create-a-generator-for-our-array" title="Link to this heading"></a></h3>
+<p>Note, we here use a generator for simplicity but we could equally well also implement our own
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or use <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.GenericDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericDataChunkIterator</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">iter_largearray</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generator reading [chunk_size, :] elements from our array in each iteration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="c1"># Open the file and read the next chunk</span>
+        <span class="n">newfp</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.memmap.html#numpy.memmap" title="numpy.memmap" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class"><span class="n">np</span><span class="o">.</span><span class="n">memmap</span></a><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">curr_data</span> <span class="o">=</span> <span class="n">newfp</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="o">...</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">del</span> <span class="n">newfp</span>  <span class="c1"># Reopen the file in each iterator to prevent accumulation of data in memory</span>
+        <span class="k">yield</span> <span class="n">curr_data</span>
+    <span class="k">return</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3>Step 2: Wrap the generator in a DataChunkIterator<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.data_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="hdmf.data_utils.DataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunkIterator</span></a>
+
+<span class="n">data</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="hdmf.data_utils.DataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunkIterator</span></a><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">iter_largearray</span><span class="p">(</span>
+        <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_sparse_iterwrite_testdata.npy&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datashape</span></a>
+    <span class="p">),</span>
+    <span class="n">maxshape</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datashape</span></a><span class="p">,</span>
+    <span class="n">buffer_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>  <span class="c1"># Buffer 10 elements into a chunk, i.e., create chunks of shape (10,10)</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3>Step 3: Write the data as usual<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">write_test_file</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_sparse_iterwrite_largearray.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Again, if we want to explicitly control how our data will be chunked (compressed etc.)
+in the HDF5 file then we need to wrap our <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a>
+using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a></p>
+</div>
+</section>
+<section id="id5">
+<h3>Discussion<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<p>Let’s verify that our data was written correctly</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read the NWB file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a>  <span class="c1"># noqa: F811</span>
+
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basic_sparse_iterwrite_largearray.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s2">&quot;synthetic_timeseries&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+    <span class="c1"># Compare all the data values of our two arrays</span>
+    <a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="numpy.bool" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_match</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">arrdata</span></a> <span class="o">==</span> <span class="n">data</span><span class="p">[:])</span>  <span class="c1"># Don&#39;t do this for very large arrays!</span>
+    <span class="c1"># Print result message</span>
+    <span class="k">if</span> <a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.bool" title="numpy.bool" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_match</span></a><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Success: All data values match&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ERROR: Mismatch between data&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Success: All data values match
+</pre></div>
+</div>
+</section>
+</section>
+<section id="example-convert-arrays-stored-in-multiple-files">
+<h2>Example: Convert arrays stored in multiple files<a class="headerlink" href="#example-convert-arrays-stored-in-multiple-files" title="Link to this heading"></a></h2>
+<p>In practice, data from recording devices may be distributed across many files, e.g., one file per time range
+or one file per recording channel. Using iterative data write provides an elegant solution to this problem
+as it allows us to process large arrays one-subarray-at-a-time. To make things more interesting we’ll show
+this for the case where each recording channel (i.e., the second dimension of our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) is broken up
+across files.</p>
+<section id="id6">
+<h3>Create example data<a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Create the test data</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_channels</span></a> <span class="o">=</span> <span class="mi">10</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a> <span class="o">=</span> <span class="mi">100</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;basic_sparse_iterwrite_testdata_channel_</span><span class="si">%i</span><span class="s2">.npy&quot;</span> <span class="o">%</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_channels</span></a><span class="p">)</span>
+<span class="p">]</span>
+<span class="k">for</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a> <span class="ow">in</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a><span class="p">:</span>
+    <span class="n">temp</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.memmap.html#numpy.memmap" title="numpy.memmap" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class"><span class="n">np</span><span class="o">.</span><span class="n">memmap</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a><span class="p">,))</span>
+    <span class="n">temp</span><span class="p">[:]</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">temp</span>  <span class="c1"># Flush to disk</span>
+</pre></div>
+</div>
+</section>
+<section id="step-1-create-a-data-chunk-iterator-for-our-multifile-array">
+<h3>Step 1: Create a data chunk iterator for our multifile array<a class="headerlink" href="#step-1-create-a-data-chunk-iterator-for-our-multifile-array" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.data_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">AbstractDataChunkIterator</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="hdmf.data_utils.DataChunk" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunk</span></a>  <span class="c1"># noqa: F811</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiFileArrayIterator</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">AbstractDataChunkIterator</span></a><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param channel_files: List of files with the channels</span>
+<span class="sd">        :param num_steps: Number of timesteps per channel</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a>
+        <span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__curr_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return in each iteration the data from a single file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__curr_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a><span class="p">):</span>
+            <span class="n">newfp</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.memmap.html#numpy.memmap" title="numpy.memmap" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class"><span class="n">np</span><span class="o">.</span><span class="n">memmap</span></a><span class="p">(</span>
+                <a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__curr_index</span><span class="p">],</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a><span class="p">,),</span>
+            <span class="p">)</span>
+            <span class="n">curr_data</span> <span class="o">=</span> <span class="n">newfp</span><span class="p">[:]</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__curr_index</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__curr_index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">del</span> <span class="n">newfp</span>
+            <span class="k">return</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="hdmf.data_utils.DataChunk" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">DataChunk</span></a><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">curr_data</span><span class="p">,</span> <span class="n">selection</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.s_.html#numpy.s_" title="numpy.s_" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-data"><span class="n">np</span><span class="o">.</span><span class="n">s_</span></a><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+    <span class="nb">next</span> <span class="o">=</span> <span class="fm">__next__</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">recommended_chunk_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># Use autochunking</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">recommended_data_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="numpy.dtype" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class"><span class="n">np</span><span class="o">.</span><span class="n">dtype</span></a><span class="p">(</span><span class="s2">&quot;float64&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">maxshape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-instantiate-our-multi-file-iterator">
+<h3>Step 2: Instantiate our multi file iterator<a class="headerlink" href="#step-2-instantiate-our-multi-file-iterator" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="hdmf.data_utils.AbstractDataChunkIterator" class="sphx-glr-backref-module-hdmf-data_utils sphx-glr-backref-type-py-class"><span class="n">MultiFileArrayIterator</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">channel_files</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">num_steps</span></a><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h3>Step 3: Write the data as usual<a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">write_test_file</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_sparse_iterwrite_multifile.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h3>Discussion<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<p>That’s it ;-)</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Common mistakes that will result in errors on write:</p>
+<ul class="simple">
+<li><p>The size of a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunk</span></code></a> does not match the selection.</p></li>
+<li><p>The selection for the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunk" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunk</span></code></a> is not supported by h5py
+(e.g., unordered lists etc.)</p></li>
+</ul>
+<p>Other common mistakes:</p>
+<ul class="simple">
+<li><p>Choosing inappropriate chunk sizes. This typically means bad performance with regard to I/O and/or storage cost.</p></li>
+<li><p>Using auto chunking without supplying a good recommended_data_shape. h5py auto chunking can only make a good
+guess of what the chunking should be if it (at least roughly) knows what the shape of the array will be.</p></li>
+<li><p>Trying to wrap a data generator using the default <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataChunkIterator</span></code></a>
+when the generator does not comply with the assumptions of the default implementation (i.e., yield
+individual, complete elements along the first dimension of the array one-at-a-time). Depending on the generator,
+this may or may not result in an error on write, but the array you are generating will probably end up
+at least not having the intended shape.</p></li>
+<li><p>The shape of the chunks returned by the <code class="docutils literal notranslate"><span class="pre">DataChunkIterator</span></code> do not match the shape of the chunks of the
+target HDF5 dataset. This can result in slow I/O performance, for example, when each chunk of an HDF5 dataset
+needs to be updated multiple times on write. For example, when using compression this would mean that HDF5
+may have to read, decompress, update, compress, and write a particular chunk each time it is being updated.</p></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="alternative-approach-user-defined-dataset-write">
+<h2>Alternative Approach: User-defined dataset write<a class="headerlink" href="#alternative-approach-user-defined-dataset-write" title="Link to this heading"></a></h2>
+<p>In the above cases we used the built-in capabilities of PyNWB to perform iterative data write. To
+gain more fine-grained control of the write process we can alternatively use PyNWB to setup the full
+structure of our NWB file and then update select datasets afterwards. This approach is useful, e.g.,
+in context of parallel write and any time we need to optimize write patterns.</p>
+<section id="step-1-initially-allocate-the-data-as-empty">
+<h3>Step 1: Initially allocate the data as empty<a class="headerlink" href="#step-1-initially-allocate-the-data-as-empty" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.hdf5.h5_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a>
+
+<span class="c1"># Use H5DataIO to specify how to setup the dataset in the file</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataio</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a><span class="p">(</span>
+    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>  <span class="c1"># Initial shape. If the shape is known then set to full shape</span>
+    <span class="n">dtype</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="numpy.dtype" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class"><span class="n">np</span><span class="o">.</span><span class="n">dtype</span></a><span class="p">(</span><span class="s2">&quot;float&quot;</span><span class="p">),</span>  <span class="c1"># dtype of the dataset</span>
+    <span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>  <span class="c1"># Make the time dimension resizable</span>
+    <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">131072</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>  <span class="c1"># Use 2MB chunks</span>
+    <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">,</span>  <span class="c1"># Enable GZip compression</span>
+    <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># GZip aggression</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enable shuffle filter</span>
+    <span class="n">fillvalue</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">nan</span></a><span class="p">,</span>  <span class="c1"># Use NAN as fillvalue</span>
+<span class="p">)</span>
+
+<span class="c1"># Write a test NWB file with our dataset and keep the NWB file (i.e., the NWBHDF5IO object) open</span>
+<span class="n">io</span> <span class="o">=</span> <span class="n">write_test_file</span><span class="p">(</span>
+    <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_alternative_custom_write.nwb&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataio</span></a><span class="p">,</span> <span class="n">close_io</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-get-the-dataset-s-to-be-updated">
+<h3>Step 2: Get the dataset(s) to be updated<a class="headerlink" href="#step-2-get-the-dataset-s-to-be-updated" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Let&#39;s check what the data looks like before we write</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;Before write: Shape= </span><span class="si">%s</span><span class="s2">, Chunks= </span><span class="si">%s</span><span class="s2">, Maxshape=</span><span class="si">%s</span><span class="s2">&quot;</span>
+    <span class="o">%</span> <span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">dataio</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span></a><span class="p">),</span>
+        <span class="nb">str</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">dataio</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">chunks</span></a><span class="p">),</span>
+        <span class="nb">str</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">dataio</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">maxshape</span></a><span class="p">),</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Allocate space. Only needed if we didn&#39;t set the initial shape large enough</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">dataio</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">resize</span></a><span class="p">((</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+<span class="c1"># Write 1s in timesteps 0-2</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">dataio</span><span class="o">.</span><span class="n">dataset</span></a><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># Write 2s in timesteps 3-5</span>
+<span class="c1"># NOTE: timesteps 6 and 7 are not being initialized</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">dataio</span><span class="o">.</span><span class="n">dataset</span></a><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="c1"># Close the file</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Before write: Shape= (0, 10), Chunks= (131072, 2), Maxshape=(None, 10)
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h3>Check the results<a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a>  <span class="c1"># noqa</span>
+
+<span class="n">io</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basic_alternative_custom_write.nwb&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+<a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="h5py.Dataset" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s2">&quot;synthetic_timeseries&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;After write: Shape= </span><span class="si">%s</span><span class="s2">, Chunks= </span><span class="si">%s</span><span class="s2">, Maxshape=</span><span class="si">%s</span><span class="s2">&quot;</span>
+    <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset.shape" title="h5py.Dataset.shape" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-attribute"><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span></a><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset.chunks" title="h5py.Dataset.chunks" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-attribute"><span class="n">dataset</span><span class="o">.</span><span class="n">chunks</span></a><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset.maxshape" title="h5py.Dataset.maxshape" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-attribute"><span class="n">dataset</span><span class="o">.</span><span class="n">maxshape</span></a><span class="p">))</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="h5py.Dataset" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset</span></a><span class="p">[:])</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>After write: Shape= (8, 10), Chunks= (131072, 2), Maxshape=(None, 10)
+[[ 1.  1.  1.  1.  1.  1.  1.  1.  1.  1.]
+ [ 1.  1.  1.  1.  1.  1.  1.  1.  1.  1.]
+ [ 1.  1.  1.  1.  1.  1.  1.  1.  1.  1.]
+ [ 2.  2.  2.  2.  2.  2.  2.  2.  2.  2.]
+ [ 2.  2.  2.  2.  2.  2.  2.  2.  2.  2.]
+ [ 2.  2.  2.  2.  2.  2.  2.  2.  2.  2.]
+ [nan nan nan nan nan nan nan nan nan nan]
+ [nan nan nan nan nan nan nan nan nan nan]]
+</pre></div>
+</div>
+<p>We allocated our data to be <code class="docutils literal notranslate"><span class="pre">shape=(8,</span> <span class="pre">10)</span></code> but we only wrote data to the first 6 rows of the
+array. As expected, we therefore, see our <code class="docutils literal notranslate"><span class="pre">fillvalue</span></code> of <code class="docutils literal notranslate"><span class="pre">nan</span></code> in the last two rows of the data.</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-advanced-io-plot-iterative-write-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/0ed871e9582a6d2649d06dbc921be56e/plot_iterative_write.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_iterative_write.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/e549459b86e8deb9e181ed05e4b0071f/plot_iterative_write.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_iterative_write.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/d1a2b4d98aaaa33f6c0da5d9dfb4a32a/plot_iterative_write.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_iterative_write.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_editing.html" class="btn btn-neutral float-left" title="Editing NWB files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_linking_data.html" class="btn btn-neutral float-right" title="Modular Data Storage using External Files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

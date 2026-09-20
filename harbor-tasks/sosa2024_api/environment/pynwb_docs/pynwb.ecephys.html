@@ -1,0 +1,1009 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pynwb.ecephys module &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon_96.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pynwb.icephys module" href="pynwb.icephys.html" />
+    <link rel="prev" title="pynwb.file module" href="pynwb.file.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyNWB
+              <img src="_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="export.html">Exporting NWB files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_docs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pynwb.file.html">NWBFile</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Extracellular Electrophysiology</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.ElectrodeGroup"><code class="docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodeGroup.description"><code class="docutils literal notranslate"><span class="pre">ElectrodeGroup.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodeGroup.device"><code class="docutils literal notranslate"><span class="pre">ElectrodeGroup.device</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodeGroup.location"><code class="docutils literal notranslate"><span class="pre">ElectrodeGroup.location</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodeGroup.namespace"><code class="docutils literal notranslate"><span class="pre">ElectrodeGroup.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodeGroup.neurodata_type"><code class="docutils literal notranslate"><span class="pre">ElectrodeGroup.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodeGroup.position"><code class="docutils literal notranslate"><span class="pre">ElectrodeGroup.position</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.ElectrodesTable"><code class="docutils literal notranslate"><span class="pre">ElectrodesTable</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodesTable.copy"><code class="docutils literal notranslate"><span class="pre">ElectrodesTable.copy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodesTable.namespace"><code class="docutils literal notranslate"><span class="pre">ElectrodesTable.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectrodesTable.neurodata_type"><code class="docutils literal notranslate"><span class="pre">ElectrodesTable.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries"><code class="docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries.channel_conversion"><code class="docutils literal notranslate"><span class="pre">ElectricalSeries.channel_conversion</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries.electrodes"><code class="docutils literal notranslate"><span class="pre">ElectricalSeries.electrodes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries.filtering"><code class="docutils literal notranslate"><span class="pre">ElectricalSeries.filtering</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries.namespace"><code class="docutils literal notranslate"><span class="pre">ElectricalSeries.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries.neurodata_type"><code class="docutils literal notranslate"><span class="pre">ElectricalSeries.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.SpikeEventSeries"><code class="docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.SpikeEventSeries.namespace"><code class="docutils literal notranslate"><span class="pre">SpikeEventSeries.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.SpikeEventSeries.neurodata_type"><code class="docutils literal notranslate"><span class="pre">SpikeEventSeries.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.EventDetection"><code class="docutils literal notranslate"><span class="pre">EventDetection</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventDetection.detection_method"><code class="docutils literal notranslate"><span class="pre">EventDetection.detection_method</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventDetection.namespace"><code class="docutils literal notranslate"><span class="pre">EventDetection.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventDetection.neurodata_type"><code class="docutils literal notranslate"><span class="pre">EventDetection.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventDetection.source_electricalseries"><code class="docutils literal notranslate"><span class="pre">EventDetection.source_electricalseries</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventDetection.source_idx"><code class="docutils literal notranslate"><span class="pre">EventDetection.source_idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventDetection.times"><code class="docutils literal notranslate"><span class="pre">EventDetection.times</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.EventWaveform"><code class="docutils literal notranslate"><span class="pre">EventWaveform</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventWaveform.__getitem__"><code class="docutils literal notranslate"><span class="pre">EventWaveform.__getitem__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventWaveform.add_spike_event_series"><code class="docutils literal notranslate"><span class="pre">EventWaveform.add_spike_event_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventWaveform.create_spike_event_series"><code class="docutils literal notranslate"><span class="pre">EventWaveform.create_spike_event_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventWaveform.get_spike_event_series"><code class="docutils literal notranslate"><span class="pre">EventWaveform.get_spike_event_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventWaveform.namespace"><code class="docutils literal notranslate"><span class="pre">EventWaveform.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventWaveform.neurodata_type"><code class="docutils literal notranslate"><span class="pre">EventWaveform.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.EventWaveform.spike_event_series"><code class="docutils literal notranslate"><span class="pre">EventWaveform.spike_event_series</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.Clustering"><code class="docutils literal notranslate"><span class="pre">Clustering</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.Clustering.description"><code class="docutils literal notranslate"><span class="pre">Clustering.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.Clustering.namespace"><code class="docutils literal notranslate"><span class="pre">Clustering.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.Clustering.neurodata_type"><code class="docutils literal notranslate"><span class="pre">Clustering.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.Clustering.num"><code class="docutils literal notranslate"><span class="pre">Clustering.num</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.Clustering.peak_over_rms"><code class="docutils literal notranslate"><span class="pre">Clustering.peak_over_rms</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.Clustering.times"><code class="docutils literal notranslate"><span class="pre">Clustering.times</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.ClusterWaveforms"><code class="docutils literal notranslate"><span class="pre">ClusterWaveforms</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ClusterWaveforms.clustering_interface"><code class="docutils literal notranslate"><span class="pre">ClusterWaveforms.clustering_interface</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ClusterWaveforms.namespace"><code class="docutils literal notranslate"><span class="pre">ClusterWaveforms.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ClusterWaveforms.neurodata_type"><code class="docutils literal notranslate"><span class="pre">ClusterWaveforms.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ClusterWaveforms.waveform_filtering"><code class="docutils literal notranslate"><span class="pre">ClusterWaveforms.waveform_filtering</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ClusterWaveforms.waveform_mean"><code class="docutils literal notranslate"><span class="pre">ClusterWaveforms.waveform_mean</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.ClusterWaveforms.waveform_sd"><code class="docutils literal notranslate"><span class="pre">ClusterWaveforms.waveform_sd</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.LFP"><code class="docutils literal notranslate"><span class="pre">LFP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.LFP.__getitem__"><code class="docutils literal notranslate"><span class="pre">LFP.__getitem__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.LFP.add_electrical_series"><code class="docutils literal notranslate"><span class="pre">LFP.add_electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.LFP.create_electrical_series"><code class="docutils literal notranslate"><span class="pre">LFP.create_electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.LFP.electrical_series"><code class="docutils literal notranslate"><span class="pre">LFP.electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.LFP.get_electrical_series"><code class="docutils literal notranslate"><span class="pre">LFP.get_electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.LFP.namespace"><code class="docutils literal notranslate"><span class="pre">LFP.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.LFP.neurodata_type"><code class="docutils literal notranslate"><span class="pre">LFP.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys"><code class="docutils literal notranslate"><span class="pre">FilteredEphys</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys.__getitem__"><code class="docutils literal notranslate"><span class="pre">FilteredEphys.__getitem__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys.add_electrical_series"><code class="docutils literal notranslate"><span class="pre">FilteredEphys.add_electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys.create_electrical_series"><code class="docutils literal notranslate"><span class="pre">FilteredEphys.create_electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys.electrical_series"><code class="docutils literal notranslate"><span class="pre">FilteredEphys.electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys.get_electrical_series"><code class="docutils literal notranslate"><span class="pre">FilteredEphys.get_electrical_series</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys.namespace"><code class="docutils literal notranslate"><span class="pre">FilteredEphys.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FilteredEphys.neurodata_type"><code class="docutils literal notranslate"><span class="pre">FilteredEphys.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.ecephys.FeatureExtraction"><code class="docutils literal notranslate"><span class="pre">FeatureExtraction</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FeatureExtraction.electrodes"><code class="docutils literal notranslate"><span class="pre">FeatureExtraction.electrodes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FeatureExtraction.description"><code class="docutils literal notranslate"><span class="pre">FeatureExtraction.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FeatureExtraction.times"><code class="docutils literal notranslate"><span class="pre">FeatureExtraction.times</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FeatureExtraction.features"><code class="docutils literal notranslate"><span class="pre">FeatureExtraction.features</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FeatureExtraction.namespace"><code class="docutils literal notranslate"><span class="pre">FeatureExtraction.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.ecephys.FeatureExtraction.neurodata_type"><code class="docutils literal notranslate"><span class="pre">FeatureExtraction.neurodata_type</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ophys.html">Optophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ogen.html">Optogenetics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.image.html">General Imaging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.behavior.html">Behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.base.html">NWB Base Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.misc.html">Miscellaneous</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.epoch.html">Epoch</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pynwb.html">PyNWB</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pynwb.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="pynwb.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="pynwb.base.html">pynwb.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.behavior.html">pynwb.behavior module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.core.html">pynwb.core module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.device.html">pynwb.device module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">pynwb.ecephys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.epoch.html">pynwb.epoch module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.event.html">pynwb.event module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.file.html">pynwb.file module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.icephys.html">pynwb.icephys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.image.html">pynwb.image module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.misc.html">pynwb.misc module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ogen.html">pynwb.ogen module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ophys.html">pynwb.ophys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.resources.html">pynwb.resources module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.spec.html">pynwb.spec module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.validation.html">pynwb.validation module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.validation_cli.html">pynwb.validation_cli module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pynwb.html#module-pynwb">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api_docs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">pynwb.ecephys module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pynwb.ecephys.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pynwb.ecephys">
+<span id="pynwb-ecephys-module"></span><h1>pynwb.ecephys module<a class="headerlink" href="#module-pynwb.ecephys" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodeGroup">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">ElectrodeGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#ElectrodeGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.ElectrodeGroup" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBContainer" title="pynwb.core.NWBContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBContainer</span></code></a></p>
+<p>Defines a related group of electrodes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this electrode group</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – description of this electrode group</p></li>
+<li><p><strong>location</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – description of location of this electrode group</p></li>
+<li><p><strong>device</strong> (<a class="reference internal" href="pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a>) – the device that was used to record from this electrode group</p></li>
+<li><p><strong>position</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>) – Compound dataset with stereotaxic position of this electrode group (x, y, z). The data array must have three elements or the dtype of the array must be <code class="docutils literal notranslate"><span class="pre">(float,</span> <span class="pre">float,</span> <span class="pre">float)</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodeGroup.description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodeGroup.description" title="Link to this definition"></a></dt>
+<dd><p>description of this electrode group</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodeGroup.device">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodeGroup.device" title="Link to this definition"></a></dt>
+<dd><p>the device that was used to record from this electrode group</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodeGroup.location">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">location</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodeGroup.location" title="Link to this definition"></a></dt>
+<dd><p>description of location of this electrode group</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodeGroup.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodeGroup.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodeGroup.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ElectrodeGroup'</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodeGroup.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodeGroup.position">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">position</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodeGroup.position" title="Link to this definition"></a></dt>
+<dd><p>Compound dataset with stereotaxic position of this electrode group (x, y, z). The data array must have three elements or the dtype of the array must be <code class="docutils literal notranslate"><span class="pre">(float,</span> <span class="pre">float,</span> <span class="pre">float)</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodesTable">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">ElectrodesTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colnames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meanings_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#ElectrodesTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.ElectrodesTable" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a></p>
+<p>A table of all electrodes (i.e. channels) used for recording. Introduced in NWB 3.0.0. Replaces the “electrodes”
+table (neurodata_type_inc DynamicTable, no neurodata_type_def) that is part of NWBFile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.ElementIdentifiers" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementIdentifiers</span></code></a>) – the identifiers for this table</p></li>
+<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – the columns in this table</p></li>
+<li><p><strong>colnames</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>) – the ordered names of the columns in this table. columns must also be provided.</p></li>
+<li><p><strong>target_tables</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – dict mapping DynamicTableRegion column name to the table that the DTR points to. The column is added to the table if it is not already present (i.e., when it is optional).</p></li>
+<li><p><strong>meanings_tables</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – MeaningsTable objects that provide meanings for values in VectorData columns. Each MeaningsTable must have a name of “{column_name}_meanings” where column_name is the name of the target column in this DynamicTable. The target column must exist in this table.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodesTable.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#ElectrodesTable.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.ElectrodesTable.copy" title="Link to this definition"></a></dt>
+<dd><p>Return a copy of this ElectrodesTable.
+This is useful for linking.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodesTable.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodesTable.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectrodesTable.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ElectrodesTable'</span></span><a class="headerlink" href="#pynwb.ecephys.ElectrodesTable.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectricalSeries">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">ElectricalSeries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtering</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">comments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">description'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#ElectricalSeries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.ElectricalSeries" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+<p>Stores acquired voltage data from extracellular recordings. The data field of an ElectricalSeries
+is an int or float array storing data in Volts. TimeSeries::data array structure: [num times] [num
+channels] (or [num_times] for single electrode).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this TimeSeries dataset</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The data values. Can be 1D or 2D. The first dimension must be time. The second dimension represents electrodes/channels.</p></li>
+<li><p><strong>electrodes</strong> (<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>) – the table region corresponding to the electrodes from which this series was recorded</p></li>
+<li><p><strong>channel_conversion</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Channel-specific conversion factor. Multiply the data in the ‘data’ dataset by these values along the channel axis (as indicated by axis attribute) AND by the global conversion factor in the ‘conversion’ attribute of ‘data’ to get the data values in Volts, i.e, data in Volts = data * data.conversion * channel_conversion. This approach allows for both global and per-channel data conversion factors needed to support the storage of electrical recordings as native values generated by data acquisition systems. If this dataset is not present, then there is no channel-specific conversion factor, i.e. it is 1 for all channels.</p></li>
+<li><p><strong>filtering</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Filtering applied to all channels of the data. For example, if this ElectricalSeries represents high-pass-filtered data (also known as AP Band), then this value could be ‘High-pass 4-pole Bessel filter at 500 Hz’. If this ElectricalSeries represents low-pass-filtered LFP data and the type of filter is unknown, then this value could be ‘Low-pass filter at 300 Hz’. If a non-standard filter type is used, provide as much detail about the filter properties as possible.</p></li>
+<li><p><strong>resolution</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The smallest meaningful difference (in specified unit) between values in data</p></li>
+<li><p><strong>conversion</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to multiply each element in data to convert it to the specified unit</p></li>
+<li><p><strong>timestamps</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) – Timestamps for samples stored in data</p></li>
+<li><p><strong>starting_time</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The timestamp of the first sample</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Sampling rate in Hz</p></li>
+<li><p><strong>comments</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Human-readable comments about this TimeSeries dataset</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this TimeSeries dataset</p></li>
+<li><p><strong>control</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Numerical labels that apply to each element in data</p></li>
+<li><p><strong>control_description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Description of each control value</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to add to each element in the data scaled by ‘conversion’ to finish converting it to the specified unit.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectricalSeries.channel_conversion">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel_conversion</span></span><a class="headerlink" href="#pynwb.ecephys.ElectricalSeries.channel_conversion" title="Link to this definition"></a></dt>
+<dd><p>Channel-specific conversion factor. Multiply the data in the ‘data’ dataset by these values along the channel axis (as indicated by axis attribute) AND by the global conversion factor in the ‘conversion’ attribute of ‘data’ to get the data values in Volts, i.e, data in Volts = data * data.conversion * channel_conversion. This approach allows for both global and per-channel data conversion factors needed to support the storage of electrical recordings as native values generated by data acquisition systems. If this dataset is not present, then there is no channel-specific conversion factor, i.e. it is 1 for all channels.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectricalSeries.electrodes">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">electrodes</span></span><a class="headerlink" href="#pynwb.ecephys.ElectricalSeries.electrodes" title="Link to this definition"></a></dt>
+<dd><p>the electrodes that generated this electrical series</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectricalSeries.filtering">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">filtering</span></span><a class="headerlink" href="#pynwb.ecephys.ElectricalSeries.filtering" title="Link to this definition"></a></dt>
+<dd><p>Filtering applied to all channels of the data. For example, if this ElectricalSeries represents high-pass-filtered data (also known as AP Band), then this value could be ‘High-pass 4-pole Bessel filter at 500 Hz’. If this ElectricalSeries represents low-pass-filtered LFP data and the type of filter is unknown, then this value could be ‘Low-pass filter at 300 Hz’. If a non-standard filter type is used, provide as much detail about the filter properties as possible.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectricalSeries.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.ElectricalSeries.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ElectricalSeries.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ElectricalSeries'</span></span><a class="headerlink" href="#pynwb.ecephys.ElectricalSeries.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.SpikeEventSeries">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">SpikeEventSeries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">comments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">description'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#SpikeEventSeries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.SpikeEventSeries" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a></p>
+<p>Stores “snapshots” of spike events (i.e., threshold crossings) in data. This may also be raw data,
+as reported by ephys hardware. If so, the TimeSeries::description field should describing how
+events were detected. All events span the same
+recording channels and store snapshots of equal duration. TimeSeries::data array structure:
+[num events] [num channels] [num samples] (or [num events] [num samples] for single
+electrode).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this TimeSeries dataset</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The data values. Can be 1D or 2D. The first dimension must be time. The second dimension represents electrodes/channels.</p></li>
+<li><p><strong>timestamps</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Timestamps for samples stored in data</p></li>
+<li><p><strong>electrodes</strong> (<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>) – the table region corresponding to the electrodes from which this series was recorded</p></li>
+<li><p><strong>resolution</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The smallest meaningful difference (in specified unit) between values in data</p></li>
+<li><p><strong>conversion</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to multiply each element in data to convert it to the specified unit</p></li>
+<li><p><strong>comments</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Human-readable comments about this TimeSeries dataset</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this TimeSeries dataset</p></li>
+<li><p><strong>control</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Numerical labels that apply to each element in data</p></li>
+<li><p><strong>control_description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Description of each control value</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to add to each element in the data scaled by ‘conversion’ to finish converting it to the specified unit.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.SpikeEventSeries.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.SpikeEventSeries.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.SpikeEventSeries.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SpikeEventSeries'</span></span><a class="headerlink" href="#pynwb.ecephys.SpikeEventSeries.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventDetection">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">EventDetection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">detection_method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_electricalseries</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'EventDetection'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#EventDetection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.EventDetection" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a></p>
+<p>Detected spike events from voltage trace(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>detection_method</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of how events were detected, such as voltage threshold, or dV/dT threshold, as well as relevant values.</p></li>
+<li><p><strong>source_electricalseries</strong> (<a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>) – The source electrophysiology data</p></li>
+<li><p><strong>source_idx</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Indices (zero-based) into source ElectricalSeries::data array corresponding to time of event or time and channel of event. For 1D arrays, specifies the time index for each event. For 2D arrays with shape (num_events, 2), specifies [time_index, channel_index] for each event. Module description should define what is meant by time of event (e.g., .25msec before action potential peak, zero-crossing time, etc). The index points to each event from the raw data</p></li>
+<li><p><strong>times</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – DEPRECATED. Timestamps of events, in Seconds</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this container</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventDetection.detection_method">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">detection_method</span></span><a class="headerlink" href="#pynwb.ecephys.EventDetection.detection_method" title="Link to this definition"></a></dt>
+<dd><p>Description of how events were detected, such as voltage threshold, or dV/dT threshold, as well as relevant values.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventDetection.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.EventDetection.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventDetection.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EventDetection'</span></span><a class="headerlink" href="#pynwb.ecephys.EventDetection.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventDetection.source_electricalseries">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">source_electricalseries</span></span><a class="headerlink" href="#pynwb.ecephys.EventDetection.source_electricalseries" title="Link to this definition"></a></dt>
+<dd><p>The source electrophysiology data</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventDetection.source_idx">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">source_idx</span></span><a class="headerlink" href="#pynwb.ecephys.EventDetection.source_idx" title="Link to this definition"></a></dt>
+<dd><p>Indices (zero-based) into source ElectricalSeries::data array corresponding to time of event or time and channel of event. For 1D arrays, specifies the time index for each event. For 2D arrays with shape (num_events, 2), specifies [time_index, channel_index] for each event. Module description should define what is meant by time of event (e.g., .25msec before action potential peak, zero-crossing time, etc). The index points to each event from the raw data</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventDetection.times">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">times</span></span><a class="headerlink" href="#pynwb.ecephys.EventDetection.times" title="Link to this definition"></a></dt>
+<dd><p>DEPRECATED. Timestamps of events, in Seconds</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">EventWaveform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#EventWaveform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.EventWaveform" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.MultiContainerInterface" title="pynwb.core.MultiContainerInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiContainerInterface</span></code></a></p>
+<p>DEPRECATED as of NWB 2.8.0 and PyNWB 3.0.0.
+Spike data for spike events detected in raw data
+stored in this NWBFile, or events detect at acquisition</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this container</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.EventWaveform.__getitem__" title="Link to this definition"></a></dt>
+<dd><p>Get a SpikeEventSeries from this EventWaveform</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the SpikeEventSeries</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the SpikeEventSeries with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform.add_spike_event_series">
+<span class="sig-name descname"><span class="pre">add_spike_event_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spike_event_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.EventWaveform.add_spike_event_series" title="Link to this definition"></a></dt>
+<dd><p>Add one or multiple SpikeEventSeries objects to this EventWaveform</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>spike_event_series</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> or <a class="reference internal" href="#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a>) – one or multiple SpikeEventSeries objects to add to this EventWaveform</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform.create_spike_event_series">
+<span class="sig-name descname"><span class="pre">create_spike_event_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">comments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">description'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.EventWaveform.create_spike_event_series" title="Link to this definition"></a></dt>
+<dd><p>Create a SpikeEventSeries object and add it to this EventWaveform</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this TimeSeries dataset</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The data values. Can be 1D or 2D. The first dimension must be time. The second dimension represents electrodes/channels.</p></li>
+<li><p><strong>timestamps</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Timestamps for samples stored in data</p></li>
+<li><p><strong>electrodes</strong> (<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>) – the table region corresponding to the electrodes from which this series was recorded</p></li>
+<li><p><strong>resolution</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The smallest meaningful difference (in specified unit) between values in data</p></li>
+<li><p><strong>conversion</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to multiply each element in data to convert it to the specified unit</p></li>
+<li><p><strong>comments</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Human-readable comments about this TimeSeries dataset</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this TimeSeries dataset</p></li>
+<li><p><strong>control</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Numerical labels that apply to each element in data</p></li>
+<li><p><strong>control_description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Description of each control value</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to add to each element in the data scaled by ‘conversion’ to finish converting it to the specified unit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the SpikeEventSeries object that was created</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform.get_spike_event_series">
+<span class="sig-name descname"><span class="pre">get_spike_event_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.EventWaveform.get_spike_event_series" title="Link to this definition"></a></dt>
+<dd><p>Get a SpikeEventSeries from this EventWaveform</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the SpikeEventSeries</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the SpikeEventSeries with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.EventWaveform.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EventWaveform'</span></span><a class="headerlink" href="#pynwb.ecephys.EventWaveform.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.EventWaveform.spike_event_series">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">spike_event_series</span></span><a class="headerlink" href="#pynwb.ecephys.EventWaveform.spike_event_series" title="Link to this definition"></a></dt>
+<dd><p>a dictionary containing the SpikeEventSeries in this EventWaveform</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.Clustering">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">Clustering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_over_rms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Clustering'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#Clustering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.Clustering" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a></p>
+<p>DEPRECATED in favor of <a class="reference internal" href="pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Units</span></code></a>.
+Specifies cluster event times and cluster metric for maximum ratio of
+waveform peak to RMS on any channel in cluster.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of clusters or clustering, (e.g. cluster 0 is noise, clusters curated using Klusters, etc).</p></li>
+<li><p><strong>num</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Cluster number of each event.</p></li>
+<li><p><strong>peak_over_rms</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Maximum ratio of waveform peak to RMS on any channel in the cluster(provides a basic clustering metric).</p></li>
+<li><p><strong>times</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Times of clustered events, in seconds.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this container</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.Clustering.description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#pynwb.ecephys.Clustering.description" title="Link to this definition"></a></dt>
+<dd><p>Description of clusters or clustering, (e.g. cluster 0 is noise, clusters curated using Klusters, etc).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.Clustering.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.Clustering.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.Clustering.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Clustering'</span></span><a class="headerlink" href="#pynwb.ecephys.Clustering.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.Clustering.num">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">num</span></span><a class="headerlink" href="#pynwb.ecephys.Clustering.num" title="Link to this definition"></a></dt>
+<dd><p>Cluster number of each event.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.Clustering.peak_over_rms">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">peak_over_rms</span></span><a class="headerlink" href="#pynwb.ecephys.Clustering.peak_over_rms" title="Link to this definition"></a></dt>
+<dd><p>Maximum ratio of waveform peak to RMS on any channel in the cluster(provides a basic clustering metric).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.Clustering.times">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">times</span></span><a class="headerlink" href="#pynwb.ecephys.Clustering.times" title="Link to this definition"></a></dt>
+<dd><p>Times of clustered events, in seconds.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.ClusterWaveforms">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">ClusterWaveforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clustering_interface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">waveform_filtering</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">waveform_mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">waveform_sd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ClusterWaveforms'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#ClusterWaveforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.ClusterWaveforms" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a></p>
+<p>DEPRECATED. <cite>ClusterWaveforms</cite> was deprecated in Oct 27, 2018 and will be removed in a future release.
+Please use the <cite>Units</cite> table to store waveform mean and standard deviation
+e.g. <cite>NWBFile.units.add_unit(…, waveform_mean=…, waveform_sd=…)</cite></p>
+<p>Describe cluster waveforms by mean and standard deviation for at each sample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clustering_interface</strong> (<a class="reference internal" href="#pynwb.ecephys.Clustering" title="pynwb.ecephys.Clustering"><code class="xref py py-class docutils literal notranslate"><span class="pre">Clustering</span></code></a>) – the clustered spike data used as input for computing waveforms</p></li>
+<li><p><strong>waveform_filtering</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – filter applied to data before calculating mean and standard deviation</p></li>
+<li><p><strong>waveform_mean</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – the mean waveform for each cluster</p></li>
+<li><p><strong>waveform_sd</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – the standard deviations of waveforms for each cluster</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this container</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ClusterWaveforms.clustering_interface">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">clustering_interface</span></span><a class="headerlink" href="#pynwb.ecephys.ClusterWaveforms.clustering_interface" title="Link to this definition"></a></dt>
+<dd><p>the clustered spike data used as input for computing waveforms</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ClusterWaveforms.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.ClusterWaveforms.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.ClusterWaveforms.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ClusterWaveforms'</span></span><a class="headerlink" href="#pynwb.ecephys.ClusterWaveforms.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ClusterWaveforms.waveform_filtering">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">waveform_filtering</span></span><a class="headerlink" href="#pynwb.ecephys.ClusterWaveforms.waveform_filtering" title="Link to this definition"></a></dt>
+<dd><p>filter applied to data before calculating mean and standard deviation</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ClusterWaveforms.waveform_mean">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">waveform_mean</span></span><a class="headerlink" href="#pynwb.ecephys.ClusterWaveforms.waveform_mean" title="Link to this definition"></a></dt>
+<dd><p>the mean waveform for each cluster</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.ClusterWaveforms.waveform_sd">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">waveform_sd</span></span><a class="headerlink" href="#pynwb.ecephys.ClusterWaveforms.waveform_sd" title="Link to this definition"></a></dt>
+<dd><p>the standard deviations of waveforms for each cluster</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">LFP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrical_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'LFP'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#LFP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.LFP" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.MultiContainerInterface" title="pynwb.core.MultiContainerInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiContainerInterface</span></code></a></p>
+<p>LFP data from one or more channels. The electrode map in each published ElectricalSeries will
+identify which channels are providing LFP data. Filter properties should be noted in the
+ElectricalSeries description or comments field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>electrical_series</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> or <a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>) – ElectricalSeries to store in this interface</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this container</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.LFP.__getitem__" title="Link to this definition"></a></dt>
+<dd><p>Get an ElectricalSeries from this LFP</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the ElectricalSeries</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the ElectricalSeries with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP.add_electrical_series">
+<span class="sig-name descname"><span class="pre">add_electrical_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrical_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.LFP.add_electrical_series" title="Link to this definition"></a></dt>
+<dd><p>Add one or multiple ElectricalSeries objects to this LFP</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>electrical_series</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> or <a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>) – one or multiple ElectricalSeries objects to add to this LFP</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP.create_electrical_series">
+<span class="sig-name descname"><span class="pre">create_electrical_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtering</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">comments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">description'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.LFP.create_electrical_series" title="Link to this definition"></a></dt>
+<dd><p>Create an ElectricalSeries object and add it to this LFP</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this TimeSeries dataset</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The data values. Can be 1D or 2D. The first dimension must be time. The second dimension represents electrodes/channels.</p></li>
+<li><p><strong>electrodes</strong> (<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>) – the table region corresponding to the electrodes from which this series was recorded</p></li>
+<li><p><strong>channel_conversion</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Channel-specific conversion factor. Multiply the data in the ‘data’ dataset by these values along the channel axis (as indicated by axis attribute) AND by the global conversion factor in the ‘conversion’ attribute of ‘data’ to get the data values in Volts, i.e, data in Volts = data * data.conversion * channel_conversion. This approach allows for both global and per-channel data conversion factors needed to support the storage of electrical recordings as native values generated by data acquisition systems. If this dataset is not present, then there is no channel-specific conversion factor, i.e. it is 1 for all channels.</p></li>
+<li><p><strong>filtering</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Filtering applied to all channels of the data. For example, if this ElectricalSeries represents high-pass-filtered data (also known as AP Band), then this value could be ‘High-pass 4-pole Bessel filter at 500 Hz’. If this ElectricalSeries represents low-pass-filtered LFP data and the type of filter is unknown, then this value could be ‘Low-pass filter at 300 Hz’. If a non-standard filter type is used, provide as much detail about the filter properties as possible.</p></li>
+<li><p><strong>resolution</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The smallest meaningful difference (in specified unit) between values in data</p></li>
+<li><p><strong>conversion</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to multiply each element in data to convert it to the specified unit</p></li>
+<li><p><strong>timestamps</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) – Timestamps for samples stored in data</p></li>
+<li><p><strong>starting_time</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The timestamp of the first sample</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Sampling rate in Hz</p></li>
+<li><p><strong>comments</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Human-readable comments about this TimeSeries dataset</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this TimeSeries dataset</p></li>
+<li><p><strong>control</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Numerical labels that apply to each element in data</p></li>
+<li><p><strong>control_description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Description of each control value</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to add to each element in the data scaled by ‘conversion’ to finish converting it to the specified unit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the ElectricalSeries object that was created</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP.electrical_series">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">electrical_series</span></span><a class="headerlink" href="#pynwb.ecephys.LFP.electrical_series" title="Link to this definition"></a></dt>
+<dd><p>a dictionary containing the ElectricalSeries in this LFP</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP.get_electrical_series">
+<span class="sig-name descname"><span class="pre">get_electrical_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.LFP.get_electrical_series" title="Link to this definition"></a></dt>
+<dd><p>Get an ElectricalSeries from this LFP</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the ElectricalSeries</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the ElectricalSeries with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.LFP.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.LFP.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'LFP'</span></span><a class="headerlink" href="#pynwb.ecephys.LFP.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">FilteredEphys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrical_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FilteredEphys'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#FilteredEphys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.FilteredEphys" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.MultiContainerInterface" title="pynwb.core.MultiContainerInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiContainerInterface</span></code></a></p>
+<p>Ephys data from one or more channels that has been subjected to filtering. Examples of filtered
+data include Theta and Gamma (LFP has its own interface). FilteredEphys modules publish an
+ElectricalSeries for each filtered channel or set of channels. The name of each ElectricalSeries is
+arbitrary but should be informative. The source of the filtered data, whether this is from analysis
+of another time series or as acquired by hardware, should be noted in each’s
+TimeSeries::description field. There is no assumed 1::1 correspondence between filtered ephys
+signals and electrodes, as a single signal can apply to many nearby electrodes, and one
+electrode may have different filtered (e.g., theta and/or gamma) signals represented.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>electrical_series</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> or <a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>) – ElectricalSeries to store in this interface</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this container</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.FilteredEphys.__getitem__" title="Link to this definition"></a></dt>
+<dd><p>Get an ElectricalSeries from this FilteredEphys</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the ElectricalSeries</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the ElectricalSeries with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys.add_electrical_series">
+<span class="sig-name descname"><span class="pre">add_electrical_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrical_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.FilteredEphys.add_electrical_series" title="Link to this definition"></a></dt>
+<dd><p>Add one or multiple ElectricalSeries objects to this FilteredEphys</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>electrical_series</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> or <a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>) – one or multiple ElectricalSeries objects to add to this FilteredEphys</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys.create_electrical_series">
+<span class="sig-name descname"><span class="pre">create_electrical_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtering</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">comments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">description'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.FilteredEphys.create_electrical_series" title="Link to this definition"></a></dt>
+<dd><p>Create an ElectricalSeries object and add it to this FilteredEphys</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this TimeSeries dataset</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The data values. Can be 1D or 2D. The first dimension must be time. The second dimension represents electrodes/channels.</p></li>
+<li><p><strong>electrodes</strong> (<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>) – the table region corresponding to the electrodes from which this series was recorded</p></li>
+<li><p><strong>channel_conversion</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Channel-specific conversion factor. Multiply the data in the ‘data’ dataset by these values along the channel axis (as indicated by axis attribute) AND by the global conversion factor in the ‘conversion’ attribute of ‘data’ to get the data values in Volts, i.e, data in Volts = data * data.conversion * channel_conversion. This approach allows for both global and per-channel data conversion factors needed to support the storage of electrical recordings as native values generated by data acquisition systems. If this dataset is not present, then there is no channel-specific conversion factor, i.e. it is 1 for all channels.</p></li>
+<li><p><strong>filtering</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Filtering applied to all channels of the data. For example, if this ElectricalSeries represents high-pass-filtered data (also known as AP Band), then this value could be ‘High-pass 4-pole Bessel filter at 500 Hz’. If this ElectricalSeries represents low-pass-filtered LFP data and the type of filter is unknown, then this value could be ‘Low-pass filter at 300 Hz’. If a non-standard filter type is used, provide as much detail about the filter properties as possible.</p></li>
+<li><p><strong>resolution</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The smallest meaningful difference (in specified unit) between values in data</p></li>
+<li><p><strong>conversion</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to multiply each element in data to convert it to the specified unit</p></li>
+<li><p><strong>timestamps</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) – Timestamps for samples stored in data</p></li>
+<li><p><strong>starting_time</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The timestamp of the first sample</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Sampling rate in Hz</p></li>
+<li><p><strong>comments</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Human-readable comments about this TimeSeries dataset</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this TimeSeries dataset</p></li>
+<li><p><strong>control</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Numerical labels that apply to each element in data</p></li>
+<li><p><strong>control_description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Description of each control value</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to add to each element in the data scaled by ‘conversion’ to finish converting it to the specified unit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the ElectricalSeries object that was created</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys.electrical_series">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">electrical_series</span></span><a class="headerlink" href="#pynwb.ecephys.FilteredEphys.electrical_series" title="Link to this definition"></a></dt>
+<dd><p>a dictionary containing the ElectricalSeries in this FilteredEphys</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys.get_electrical_series">
+<span class="sig-name descname"><span class="pre">get_electrical_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.ecephys.FilteredEphys.get_electrical_series" title="Link to this definition"></a></dt>
+<dd><p>Get an ElectricalSeries from this FilteredEphys</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the ElectricalSeries</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the ElectricalSeries with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.FilteredEphys.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.FilteredEphys.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FilteredEphys'</span></span><a class="headerlink" href="#pynwb.ecephys.FilteredEphys.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.ecephys.FeatureExtraction">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.ecephys.</span></span><span class="sig-name descname"><span class="pre">FeatureExtraction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">electrodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FeatureExtraction'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/ecephys.html#FeatureExtraction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.ecephys.FeatureExtraction" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a></p>
+<p>Features, such as PC1 and PC2, that are extracted from signals stored in a SpikeEvent
+TimeSeries or other source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>electrodes</strong> (<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>) – the table region corresponding to the electrodes from which this series was recorded</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – A description for each feature extracted</p></li>
+<li><p><strong>times</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – The times of events that features correspond to</p></li>
+<li><p><strong>features</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Features for each channel</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this container</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.FeatureExtraction.electrodes">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">electrodes</span></span><a class="headerlink" href="#pynwb.ecephys.FeatureExtraction.electrodes" title="Link to this definition"></a></dt>
+<dd><p>the table region corresponding to the electrodes from which this series was recorded</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.FeatureExtraction.description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#pynwb.ecephys.FeatureExtraction.description" title="Link to this definition"></a></dt>
+<dd><p>A description for each feature extracted</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.FeatureExtraction.times">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">times</span></span><a class="headerlink" href="#pynwb.ecephys.FeatureExtraction.times" title="Link to this definition"></a></dt>
+<dd><p>The times of events that features correspond to</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.ecephys.FeatureExtraction.features">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">features</span></span><a class="headerlink" href="#pynwb.ecephys.FeatureExtraction.features" title="Link to this definition"></a></dt>
+<dd><p>Features for each channel</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.FeatureExtraction.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.ecephys.FeatureExtraction.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.ecephys.FeatureExtraction.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FeatureExtraction'</span></span><a class="headerlink" href="#pynwb.ecephys.FeatureExtraction.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pynwb.file.html" class="btn btn-neutral float-left" title="pynwb.file module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pynwb.icephys.html" class="btn btn-neutral float-right" title="pynwb.icephys module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

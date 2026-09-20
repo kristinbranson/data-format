@@ -223,11 +223,13 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
         (dataset, agent, trial_num, timestamp, prompt), or None if the path
         doesn't parse.
 
-        `dataset` has any `_minimal` or `_datalimit` suffix stripped so the
+        `dataset` has any `_minimal`, `_datalimit` or `_api` suffix stripped so the
         variants of a task share a dataset key and can be compared directly, and
         `prompt` records which variant this trial actually was: "full" (maximal
-        prompt), "minimal", or "datalimit" (minimal prompt on the
-        datalimit data).
+        prompt), "minimal", "datalimit" (minimal prompt on the datalimit data), or
+        "api" (the format's own library required rather than direct parsing).
+        The field is named for the first thing that varied; it now carries the
+        condition, which is not always a property of the prompt.
         `agent` is canonicalised through AGENT_ALIASES and keeps any
         `-config_<date>` suffix naming the versions config the trial ran under, so
         the same agent on different pins stays two arms; trials belonging to
@@ -263,12 +265,20 @@ def _identify_trial(metrics_path: Path, root: Path) -> tuple[str, str, int, str,
     if config_stem:
         agent = f"{agent}-config{config_stem}"
 
-    dataset = task.removesuffix("_minimal").removesuffix("_datalimit")
+    dataset = (task.removesuffix("_minimal")
+                   .removesuffix("_datalimit")
+                   .removesuffix("_api"))
     dataset = DATASET_ALIASES.get(dataset, dataset)
     if task.endswith("_datalimit"):
         prompt = "datalimit"
     elif task.endswith("_minimal"):
         prompt = "minimal"
+    elif task.endswith("_api"):
+        # Same task, same data, but the agent is required to read the files through the
+        # format's own library -- sosa2024_api demands pynwb rather than h5py. Without the
+        # strip above it would parse as a dataset of its own named "sosa2024_api" and sit
+        # apart from sosa2024 in every figure instead of beside it as a variant.
+        prompt = "api"
     else:
         prompt = "full"
     timestamp = trial_dir.split("_trial")[0]

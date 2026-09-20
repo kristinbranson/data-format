@@ -1,0 +1,592 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pynwb.testing.testh5io &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/favicon_96.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../pynwb.html">pynwb</a></li>
+      <li class="breadcrumb-item active">pynwb.testing.testh5io</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pynwb.testing.testh5io</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <span class="n">tzlocal</span><span class="p">,</span> <span class="n">tzutc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">get_manager</span><span class="p">,</span> <span class="n">validate</span> <span class="k">as</span> <span class="n">pynwb_validate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">remove_test_file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrokenLinkWarning</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.build.warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">MissingRequiredBuildWarning</span>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NWBH5IOMixin</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mixin class for methods to run a roundtrip test writing an NWB file with an Container and reading the Container</span>
+<span class="sd">    from the NWB file. The setUp, test_roundtrip, and tearDown methods will be run by unittest.</span>
+
+<span class="sd">    The abstract methods setUpContainer, addContainer, and getContainer needs to be implemented by classes that include</span>
+<span class="sd">    this mixin.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        class TestMyContainerIO(NWBH5IOMixin, TestCase):</span>
+<span class="sd">            def setUpContainer(self):</span>
+<span class="sd">                # return a test Container to read/write</span>
+<span class="sd">            def addContainer(self, nwbfile):</span>
+<span class="sd">                # add the test Container to an NWB file</span>
+<span class="sd">            def getContainer(self, nwbfile):</span>
+<span class="sd">                # return the test Container from an NWB file</span>
+
+<span class="sd">    This code is adapted from hdmf.testing.H5RoundTripMixin.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NWBH5IOMixin.setUp">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.setUp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setUpContainer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">1971</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzutc</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;test_</span><span class="si">%s</span><span class="s1">.nwb&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span> <span class="o">=</span> <span class="s1">&#39;test_export_</span><span class="si">%s</span><span class="s1">.nwb&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.tearDown">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.tearDown">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tearDown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">remove_test_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">remove_test_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.setUpContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.setUpContainer">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setUpContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Should return the test Container to read/write &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot run test unless setUpContainer is implemented&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.test_roundtrip">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.test_roundtrip">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test_roundtrip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test whether the read Container has the same contents as the original Container and validate the file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">roundtripContainer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsNotNone</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">))</span>  <span class="c1"># added as a test to make sure printing works</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsNotNone</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>
+        <span class="c1"># make sure we get a completely new object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertNotEqual</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">),</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>
+        <span class="c1"># make sure the object ID is preserved</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">object_id</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertContainerEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.test_roundtrip_export">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.test_roundtrip_export">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test_roundtrip_export</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test whether the test Container read from an exported file has the same contents as the original test Container</span>
+<span class="sd">        and validate the file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">roundtripExportContainer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsNotNone</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>  <span class="c1"># added as a test to make sure printing works</span>
+        <span class="c1"># make sure we get a completely new object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertNotEqual</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">),</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>
+        <span class="c1"># make sure the object ID is preserved</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_exported_nwbfile</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">object_id</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertContainerEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">,</span> <span class="n">ignore_hdmf_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.roundtripContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.roundtripContainer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">roundtripContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_spec</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the Container to an NWBFile, write it to file, read the file, and return the Container from the file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">session_description</span> <span class="o">=</span> <span class="s1">&#39;a file to test writing and reading a </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_type</span>
+        <span class="n">identifier</span> <span class="o">=</span> <span class="s1">&#39;TEST_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_type</span>
+        <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+            <span class="n">session_description</span><span class="o">=</span><span class="n">session_description</span><span class="p">,</span>
+            <span class="n">identifier</span><span class="o">=</span><span class="n">identifier</span><span class="p">,</span>
+            <span class="n">session_start_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">,</span>
+            <span class="n">file_create_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">create_date</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addContainer</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">write_io</span><span class="p">:</span>
+                <span class="n">write_io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">cache_spec</span><span class="o">=</span><span class="n">cache_spec</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_nwbfile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">ws</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="p">(</span><span class="n">MissingRequiredBuildWarning</span><span class="p">,</span>
+                                           <span class="n">BrokenLinkWarning</span><span class="p">)):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">showwarning</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">line</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_nwbfile</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.roundtripExportContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.roundtripExportContainer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">roundtripExportContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_spec</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add the test Container to an NWBFile, write it to file, read the file, export the read NWBFile to another</span>
+<span class="sd">        file, and return the test Container from the file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roundtripContainer</span><span class="p">(</span><span class="n">cache_spec</span><span class="o">=</span><span class="n">cache_spec</span><span class="p">)</span>  <span class="c1"># self.read_nwbfile is now set</span>
+
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="n">NWBHDF5IO</span><span class="o">.</span><span class="n">export_io</span><span class="p">(</span>
+                <span class="n">src_io</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="p">,</span>
+                <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">,</span>
+                <span class="n">cache_spec</span><span class="o">=</span><span class="n">cache_spec</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_exported_nwbfile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">ws</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="p">(</span><span class="n">MissingRequiredBuildWarning</span><span class="p">,</span>
+                                           <span class="n">BrokenLinkWarning</span><span class="p">)):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">showwarning</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">line</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_exported_nwbfile</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.addContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.addContainer">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">addContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Should add the test Container to the given NWBFile &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot run test unless addContainer is implemented&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.getContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.getContainer">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Should return the test Container from the given NWBFile &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot run test unless getContainer is implemented&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOMixin.validate">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin.validate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Validate the created files &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span>
+            <span class="n">errors</span> <span class="o">=</span> <span class="n">pynwb_validate</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">):</span>
+            <span class="n">errors</span> <span class="o">=</span> <span class="n">pynwb_validate</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AcquisitionH5IOMixin">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.AcquisitionH5IOMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionH5IOMixin</span><span class="p">(</span><span class="n">NWBH5IOMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mixin class for methods to run a roundtrip test writing an NWB file with an Container as an acquisition and reading</span>
+<span class="sd">    the Container as an acquisition from the NWB file. The setUp, test_roundtrip, and tearDown methods will be run by</span>
+<span class="sd">    unittest.</span>
+
+<span class="sd">    The abstract method setUpContainer needs to be implemented by classes that include this mixin.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        class TestMyContainerIO(NWBH5IOMixin, TestCase):</span>
+<span class="sd">            def setUpContainer(self):</span>
+<span class="sd">                # return a test Container to read/write</span>
+
+<span class="sd">    This code is adapted from hdmf.testing.H5RoundTripMixin.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AcquisitionH5IOMixin.addContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.AcquisitionH5IOMixin.addContainer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">addContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Add an NWBDataInterface object to the file as an acquisition &#39;&#39;&#39;</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AcquisitionH5IOMixin.getContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.AcquisitionH5IOMixin.getContainer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39; Get the NWBDataInterface object from the file &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NWBH5IOFlexMixin</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mixin class that includes methods to run a flexible roundtrip test.</span>
+<span class="sd">    The setUp, test_roundtrip, and tearDown methods will be run by unittest.</span>
+
+<span class="sd">    The abstract methods getContainerType, addContainer, and getContainer must be</span>
+<span class="sd">    implemented by classes that includethis mixin.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        class TestMyContainerIO(NWBH5IOFlexMixin, TestCase):</span>
+<span class="sd">            def getContainerType(self):</span>
+<span class="sd">                # return the name of the type of Container being tested, for test ID purposes</span>
+<span class="sd">            def addContainer(self):</span>
+<span class="sd">                # add the test Container to the test NWB file</span>
+<span class="sd">            def getContainer(self, nwbfile):</span>
+<span class="sd">                # return the test Container from an NWB file</span>
+
+<span class="sd">    This class is more flexible than NWBH5IOMixin and should be used for new roundtrip tests.</span>
+
+<span class="sd">    This code is adapted from hdmf.testing.H5RoundTripMixin.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.setUp">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.setUp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">container_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainerType</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">session_description</span> <span class="o">=</span> <span class="s1">&#39;A file to test writing and reading a </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">container_type</span>
+        <span class="n">identifier</span> <span class="o">=</span> <span class="s1">&#39;TEST_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">container_type</span>
+        <span class="n">session_start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">1971</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzutc</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+            <span class="n">session_description</span><span class="o">=</span><span class="n">session_description</span><span class="p">,</span>
+            <span class="n">identifier</span><span class="o">=</span><span class="n">identifier</span><span class="p">,</span>
+            <span class="n">session_start_time</span><span class="o">=</span><span class="n">session_start_time</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addContainer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;test_</span><span class="si">%s</span><span class="s1">.nwb&#39;</span> <span class="o">%</span> <span class="n">container_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span> <span class="o">=</span> <span class="s1">&#39;test_export_</span><span class="si">%s</span><span class="s1">.nwb&#39;</span> <span class="o">%</span> <span class="n">container_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.tearDown">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.tearDown">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tearDown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">remove_test_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">remove_test_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.get_manager">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.get_manager">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">get_manager</span><span class="p">()</span>  <span class="c1"># get the pynwb manager unless overridden</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.getContainerType">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.getContainerType">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getContainerType</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the name of the type of Container being tested, for test ID purposes.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot run test unless getContainerType is implemented.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.addContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.addContainer">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">addContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the test Container to the NWBFile.</span>
+
+<span class="sd">        The NWBFile is accessible from self.nwbfile.</span>
+<span class="sd">        The Container should be accessible from getContainer(self.nwbfile).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot run test unless addContainer is implemented.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.getContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.getContainer">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the test Container from the given NWBFile.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot run test unless getContainer is implemented.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.test_roundtrip">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.test_roundtrip">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test_roundtrip</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test whether the read Container has the same contents as the original Container and validate the file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">roundtripContainer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsNotNone</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">))</span>  <span class="c1"># added as a test to make sure printing works</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsNotNone</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>
+        <span class="c1"># make sure we get a completely new object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertNotEqual</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">),</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>
+        <span class="c1"># make sure the object ID is preserved</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">object_id</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertContainerEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.test_roundtrip_export">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.test_roundtrip_export">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test_roundtrip_export</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test whether the test Container read from an exported file has the same contents as the original test Container</span>
+<span class="sd">        and validate the file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">roundtripExportContainer</span><span class="p">()</span>  <span class="c1"># this container is read from the exported file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsNotNone</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>  <span class="c1"># added as a test to make sure printing works</span>
+        <span class="c1"># make sure we get a completely new object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertNotEqual</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">),</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">))</span>
+        <span class="c1"># make sure the object ID is preserved</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_exported_nwbfile</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">object_id</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertContainerEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_container</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">,</span> <span class="n">ignore_hdmf_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.roundtripContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.roundtripContainer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">roundtripContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_spec</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write the file, validate the file, read the file, and return the Container from the file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># catch all warnings</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_manager</span><span class="p">())</span> <span class="k">as</span> <span class="n">write_io</span><span class="p">:</span>
+                <span class="n">write_io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">cache_spec</span><span class="o">=</span><span class="n">cache_spec</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+
+            <span class="c1"># this is not closed until tearDown() or an exception from self.getContainer below</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_manager</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_nwbfile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="c1"># parse warnings and raise exceptions for certain types of warnings</span>
+        <span class="k">if</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">ws</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="p">(</span><span class="n">MissingRequiredBuildWarning</span><span class="p">,</span>
+                                           <span class="n">BrokenLinkWarning</span><span class="p">)):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_nwbfile</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.roundtripExportContainer">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.roundtripExportContainer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">roundtripExportContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_spec</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Roundtrip the container, then export the read NWBFile to a new file, validate the files, and return the test</span>
+<span class="sd">        Container from the file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># write and read the file. self.reader will be set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roundtripContainer</span><span class="p">(</span><span class="n">cache_spec</span><span class="o">=</span><span class="n">cache_spec</span><span class="p">)</span>
+
+        <span class="c1"># catch all warnings</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="n">NWBHDF5IO</span><span class="o">.</span><span class="n">export_io</span><span class="p">(</span>
+                <span class="n">src_io</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="p">,</span>
+                <span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">,</span>
+                <span class="n">cache_spec</span><span class="o">=</span><span class="n">cache_spec</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+
+            <span class="c1"># this is not closed until tearDown() or an exception from self.getContainer below</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_manager</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_exported_nwbfile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="c1"># parse warnings and raise exceptions for certain types of warnings</span>
+        <span class="k">if</span> <span class="n">ws</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">ws</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="p">(</span><span class="n">MissingRequiredBuildWarning</span><span class="p">,</span>
+                                           <span class="n">BrokenLinkWarning</span><span class="p">)):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">category</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_exported_nwbfile</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export_reader</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="NWBH5IOFlexMixin.validate">
+<a class="viewcode-back" href="../../../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOFlexMixin.validate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate the created files.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span>
+            <span class="n">errors</span> <span class="o">=</span> <span class="n">pynwb_validate</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">):</span>
+            <span class="n">errors</span> <span class="o">=</span> <span class="n">pynwb_validate</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">export_filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">))</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

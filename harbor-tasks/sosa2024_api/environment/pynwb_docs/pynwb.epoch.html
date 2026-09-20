@@ -1,0 +1,269 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pynwb.epoch module &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon_96.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pynwb package" href="pynwb.html" />
+    <link rel="prev" title="pynwb.misc module" href="pynwb.misc.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyNWB
+              <img src="_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="export.html">Exporting NWB files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_docs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pynwb.file.html">NWBFile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ecephys.html">Extracellular Electrophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ophys.html">Optophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ogen.html">Optogenetics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.image.html">General Imaging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.behavior.html">Behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.base.html">NWB Base Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.misc.html">Miscellaneous</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Epoch</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.epoch.TimeIntervals"><code class="docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.epoch.TimeIntervals.add_interval"><code class="docutils literal notranslate"><span class="pre">TimeIntervals.add_interval</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.epoch.TimeIntervals.get_starting_time"><code class="docutils literal notranslate"><span class="pre">TimeIntervals.get_starting_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.epoch.TimeIntervals.get_duration"><code class="docutils literal notranslate"><span class="pre">TimeIntervals.get_duration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.epoch.TimeIntervals.namespace"><code class="docutils literal notranslate"><span class="pre">TimeIntervals.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.epoch.TimeIntervals.neurodata_type"><code class="docutils literal notranslate"><span class="pre">TimeIntervals.neurodata_type</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="pynwb.html">PyNWB</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pynwb.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="pynwb.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="pynwb.base.html">pynwb.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.behavior.html">pynwb.behavior module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.core.html">pynwb.core module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.device.html">pynwb.device module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ecephys.html">pynwb.ecephys module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">pynwb.epoch module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.event.html">pynwb.event module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.file.html">pynwb.file module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.icephys.html">pynwb.icephys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.image.html">pynwb.image module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.misc.html">pynwb.misc module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ogen.html">pynwb.ogen module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ophys.html">pynwb.ophys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.resources.html">pynwb.resources module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.spec.html">pynwb.spec module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.validation.html">pynwb.validation module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.validation_cli.html">pynwb.validation_cli module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pynwb.html#module-pynwb">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api_docs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">pynwb.epoch module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pynwb.epoch.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pynwb.epoch">
+<span id="pynwb-epoch-module"></span><h1>pynwb.epoch module<a class="headerlink" href="#module-pynwb.epoch" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.epoch.TimeIntervals">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.epoch.</span></span><span class="sig-name descname"><span class="pre">TimeIntervals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'experimental</span> <span class="pre">intervals'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colnames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meanings_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/epoch.html#TimeIntervals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.epoch.TimeIntervals" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a></p>
+<p>Table for storing Epoch data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – name of this TimeIntervals</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this TimeIntervals</p></li>
+<li><p><strong>id</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.ElementIdentifiers" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementIdentifiers</span></code></a>) – the identifiers for this table</p></li>
+<li><p><strong>columns</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – the columns in this table</p></li>
+<li><p><strong>colnames</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>) – the ordered names of the columns in this table. columns must also be provided.</p></li>
+<li><p><strong>target_tables</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – dict mapping DynamicTableRegion column name to the table that the DTR points to. The column is added to the table if it is not already present (i.e., when it is optional).</p></li>
+<li><p><strong>meanings_tables</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>) – MeaningsTable objects that provide meanings for values in VectorData columns. Each MeaningsTable must have a name of “{column_name}_meanings” where column_name is the name of the target column in this DynamicTable. The target column must exist in this table.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.epoch.TimeIntervals.add_interval">
+<span class="sig-name descname"><span class="pre">add_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/epoch.html#TimeIntervals.add_interval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.epoch.TimeIntervals.add_interval" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start_time</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Start time of epoch, in seconds</p></li>
+<li><p><strong>stop_time</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Stop time of epoch, in seconds</p></li>
+<li><p><strong>tags</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – user-defined tags used throughout time intervals</p></li>
+<li><p><strong>timeseries</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference internal" href="pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – the TimeSeries this epoch applies to</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.epoch.TimeIntervals.get_starting_time">
+<span class="sig-name descname"><span class="pre">get_starting_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/epoch.html#TimeIntervals.get_starting_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.epoch.TimeIntervals.get_starting_time" title="Link to this definition"></a></dt>
+<dd><p>Get the earliest start time across all intervals in this TimeIntervals table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The earliest start time in seconds, or None if the table is empty.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)">float</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.epoch.TimeIntervals.get_duration">
+<span class="sig-name descname"><span class="pre">get_duration</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/epoch.html#TimeIntervals.get_duration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.epoch.TimeIntervals.get_duration" title="Link to this definition"></a></dt>
+<dd><p>Get the total duration from the earliest start time to the latest stop time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The duration in seconds, or None if the table is empty.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)">float</a> or None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The duration represents the time span from the earliest interval start to the
+latest interval stop, not the sum of individual interval durations.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.epoch.TimeIntervals.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.epoch.TimeIntervals.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.epoch.TimeIntervals.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'TimeIntervals'</span></span><a class="headerlink" href="#pynwb.epoch.TimeIntervals.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pynwb.misc.html" class="btn btn-neutral float-left" title="pynwb.misc module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pynwb.html" class="btn btn-neutral float-right" title="pynwb package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

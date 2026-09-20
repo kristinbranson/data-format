@@ -1,0 +1,618 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Annotating Time Intervals &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Exploratory Data Analysis with NWB" href="scratch.html" />
+    <link rel="prev" title="Adding/Removing Containers from an NWB File" href="add_remove_containers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_file.html">NWB File Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_remove_containers.html">Adding/Removing Containers from an NWB File</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Annotating Time Intervals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#setup-creating-an-example-nwb-file-for-the-tutorial">Setup: Creating an example NWB file for the tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-time-intervals-to-a-nwbfile">Adding Time Intervals to a NWBFile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-time-intervals">Accessing Time Intervals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-referenced-timeseries">Accessing referenced TimeSeries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-timeseries-references-to-other-tables">Adding TimeSeries references to other tables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-writing-timeintervals-to-file">Reading/Writing TimeIntervals to file</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="scratch.html">Exploratory Data Analysis with NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="extensions.html">Extending NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_configurator.html">How to Configure Term Validations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_id.html">Object IDs in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_read_basics.html">Reading and Exploring an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_external_resources.html">Linking to External Resources (HERD)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resources_streaming.html">Annotating Multiple Streamed NWB Files with a Single HERD</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Annotating Time Intervals</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/general/plot_timeintervals.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-general-plot-timeintervals-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="annotating-time-intervals">
+<span id="time-intervals"></span><span id="sphx-glr-tutorials-general-plot-timeintervals-py"></span><h1>Annotating Time Intervals<a class="headerlink" href="#annotating-time-intervals" title="Link to this heading"></a></h1>
+<p>Annotating events in time is a common need in neuroscience, e.g. to describes epochs, trials, and
+invalid times during an experimental session. NWB supports annotation of time intervals via the
+<a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> type. The <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> type is
+a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> with the following columns:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">start_time</span></code> and <code class="docutils literal notranslate"><span class="pre">stop_time</span></code> describe the start and stop times of intervals as floating point offsets in seconds
+relative to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.timestamps_reference_time" title="pynwb.file.NWBFile.timestamps_reference_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timestamps_reference_time</span></code></a> of the file. In addition,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tags</span></code> is an optional, indexed column used to associate user-defined string tags with intervals (0 or more tags per
+time interval)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timeseries</span></code> is an optional, indexed <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a> column to map intervals
+directly to ranges in select, relevant <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> (0 or more per time interval)</p></li>
+<li><p>as a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> user may add additional columns to
+<a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> via <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_column" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_column</span></code></a></p></li>
+</ol>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p><a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> is intended for storing general annotations of time ranges.
+Depending on the application (e.g., when intervals are generated by data acquisition or automatic
+data processing), it can be useful to describe intervals (or instantaneous events) in time
+as <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>. NWB provides several types for this purposes, e.g.,
+<a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a>, <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEpochs" title="pynwb.behavior.BehavioralEpochs"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEpochs</span></code></a>,
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEvents" title="pynwb.behavior.BehavioralEvents"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEvents</span></code></a>, <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.EventDetection" title="pynwb.ecephys.EventDetection"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventDetection</span></code></a>, or
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a>.</p>
+</div>
+<section id="setup-creating-an-example-nwb-file-for-the-tutorial">
+<h2>Setup: Creating an example NWB file for the tutorial<a class="headerlink" href="#setup-creating-an-example-nwb-file-for-the-tutorial" title="Link to this heading"></a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a>
+
+<span class="c1"># create the NWBFile</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>  <span class="c1"># required</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">()),</span>  <span class="c1"># required</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure with thirteen dwarves to reclaim vast treasures.&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;LONELYMTN&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+<span class="p">)</span>
+<span class="c1"># create some example TimeSeries</span>
+<span class="n">test_ts</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series1&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span>
+    <span class="n">timestamps</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">601</span><span class="p">,</span> <span class="mi">1000</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">rate_ts</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series2&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">600</span><span class="p">),</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;V&quot;</span><span class="p">,</span> <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span>
+<span class="p">)</span>
+<span class="c1"># Add the TimeSeries to the file</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">rate_ts</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="adding-time-intervals-to-a-nwbfile">
+<h2>Adding Time Intervals to a NWBFile<a class="headerlink" href="#adding-time-intervals-to-a-nwbfile" title="Link to this heading"></a></h2>
+<p>NWB provides a set of pre-defined <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a>
+tables for <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.epochs" title="pynwb.file.NWBFile.epochs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">epochs</span></code></a>, <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.trials" title="pynwb.file.NWBFile.trials"><code class="xref py py-meth docutils literal notranslate"><span class="pre">trials</span></code></a>, and
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.invalid_times" title="pynwb.file.NWBFile.invalid_times"><code class="xref py py-meth docutils literal notranslate"><span class="pre">invalid_times</span></code></a>.</p>
+<section id="trials">
+<span id="id1"></span><h3>Trials<a class="headerlink" href="#trials" title="Link to this heading"></a></h3>
+<p>Trials can be added to an NWB file using the methods <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_trial" title="pynwb.file.NWBFile.add_trial"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_trial</span></code></a>
+By default, NWBFile only requires trial <code class="docutils literal notranslate"><span class="pre">start_time</span></code> and <code class="docutils literal notranslate"><span class="pre">stop_time</span></code>. The <code class="docutils literal notranslate"><span class="pre">tags</span></code> and <code class="docutils literal notranslate"><span class="pre">timeseries</span></code> are
+optional. For <code class="docutils literal notranslate"><span class="pre">timeseries</span></code> we only need to supply the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>.
+PyNWB automatically calculates the corresponding index range (described by <code class="docutils literal notranslate"><span class="pre">idx_start</span></code> and <code class="docutils literal notranslate"><span class="pre">count</span></code>) for
+the supplied  <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> based on the given <code class="docutils literal notranslate"><span class="pre">start_time</span></code> and <code class="docutils literal notranslate"><span class="pre">stop_time</span></code> and
+the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries.timestamps" title="pynwb.base.TimeSeries.timestamps"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timestamps</span></code></a> (or <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries.starting_time" title="pynwb.base.TimeSeries.starting_time"><code class="xref py py-class docutils literal notranslate"><span class="pre">starting_time</span></code></a>
+and <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries.rate" title="pynwb.base.TimeSeries.rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rate</span></code></a>) of the given <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>.</p>
+<p>Additional columns can be added using <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_trial_column" title="pynwb.file.NWBFile.add_trial_column"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_trial_column</span></code></a>. This method takes a name
+for the column and a description of what the column stores. You do not need to supply data
+type, as this will inferred. Once all columns have been added, trial data can be populated using
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_trial" title="pynwb.file.NWBFile.add_trial"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_trial</span></code></a>. Note that if you add a custom column, you must
+add at least one row to write the table to a file.</p>
+<p>Lets add an additional column and some trial data with tags and timeseries references.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial_column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;stim&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;the visual stimuli during the trial&quot;</span><span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">stop_time</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">stim</span><span class="o">=</span><span class="s2">&quot;dog&quot;</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;animal&quot;</span><span class="p">],</span>
+    <span class="n">timeseries</span><span class="o">=</span><span class="p">[</span><span class="n">test_ts</span><span class="p">,</span> <span class="n">rate_ts</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
+    <span class="n">stop_time</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>
+    <span class="n">stim</span><span class="o">=</span><span class="s2">&quot;mountain&quot;</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;landscape&quot;</span><span class="p">],</span>
+    <span class="n">timeseries</span><span class="o">=</span><span class="p">[</span><span class="n">test_ts</span><span class="p">,</span> <span class="n">rate_ts</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span>
+    <span class="n">stop_time</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>
+    <span class="n">stim</span><span class="o">=</span><span class="s2">&quot;desert&quot;</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;landscape&quot;</span><span class="p">],</span>
+    <span class="n">timeseries</span><span class="o">=</span><span class="p">[</span><span class="n">test_ts</span><span class="p">,</span> <span class="n">rate_ts</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="mf">9.0</span><span class="p">,</span>
+    <span class="n">stop_time</span><span class="o">=</span><span class="mf">11.0</span><span class="p">,</span>
+    <span class="n">stim</span><span class="o">=</span><span class="s2">&quot;tree&quot;</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;landscape&quot;</span><span class="p">,</span> <span class="s2">&quot;plant&quot;</span><span class="p">],</span>
+    <span class="n">timeseries</span><span class="o">=</span><span class="p">[</span><span class="n">test_ts</span><span class="p">,</span> <span class="n">rate_ts</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="mf">12.0</span><span class="p">,</span>
+    <span class="n">stop_time</span><span class="o">=</span><span class="mf">14.0</span><span class="p">,</span>
+    <span class="n">stim</span><span class="o">=</span><span class="s2">&quot;bird&quot;</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;animal&quot;</span><span class="p">],</span>
+    <span class="n">timeseries</span><span class="o">=</span><span class="p">[</span><span class="n">test_ts</span><span class="p">,</span> <span class="n">rate_ts</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span>
+    <span class="n">stop_time</span><span class="o">=</span><span class="mf">17.0</span><span class="p">,</span>
+    <span class="n">stim</span><span class="o">=</span><span class="s2">&quot;flower&quot;</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;animal&quot;</span><span class="p">],</span>
+    <span class="n">timeseries</span><span class="o">=</span><span class="p">[</span><span class="n">test_ts</span><span class="p">,</span> <span class="n">rate_ts</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="epochs">
+<h3>Epochs<a class="headerlink" href="#epochs" title="Link to this heading"></a></h3>
+<p>Similarly, epochs can be added to an NWB file using the method <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_epoch" title="pynwb.file.NWBFile.add_epoch"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_epoch</span></code></a> and
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_epoch_column" title="pynwb.file.NWBFile.add_epoch_column"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_epoch_column</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_epoch</span><span class="p">(</span>
+    <span class="mf">2.0</span><span class="p">,</span>
+    <span class="mf">4.0</span><span class="p">,</span>
+    <span class="p">[</span><span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;example&quot;</span><span class="p">],</span>
+    <span class="p">[</span>
+        <span class="n">test_ts</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_epoch</span><span class="p">(</span>
+    <span class="mf">6.0</span><span class="p">,</span>
+    <span class="mf">8.0</span><span class="p">,</span>
+    <span class="p">[</span><span class="s2">&quot;second&quot;</span><span class="p">,</span> <span class="s2">&quot;example&quot;</span><span class="p">],</span>
+    <span class="p">[</span>
+        <span class="n">test_ts</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="invalid-times">
+<h3>Invalid Times<a class="headerlink" href="#invalid-times" title="Link to this heading"></a></h3>
+<p>Similarly, invalid times can be added using the method <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_invalid_time_interval" title="pynwb.file.NWBFile.add_invalid_time_interval"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_invalid_time_interval</span></code></a> and
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_invalid_times_column" title="pynwb.file.NWBFile.add_invalid_times_column"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_invalid_times_column</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_epoch</span><span class="p">(</span>
+    <span class="mf">2.0</span><span class="p">,</span>
+    <span class="mf">4.0</span><span class="p">,</span>
+    <span class="p">[</span><span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;example&quot;</span><span class="p">],</span>
+    <span class="p">[</span>
+        <span class="n">test_ts</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_epoch</span><span class="p">(</span>
+    <span class="mf">6.0</span><span class="p">,</span>
+    <span class="mf">8.0</span><span class="p">,</span>
+    <span class="p">[</span><span class="s2">&quot;second&quot;</span><span class="p">,</span> <span class="s2">&quot;example&quot;</span><span class="p">],</span>
+    <span class="p">[</span>
+        <span class="n">test_ts</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-time-intervals">
+<h3>Custom Time Intervals<a class="headerlink" href="#custom-time-intervals" title="Link to this heading"></a></h3>
+<p>To define custom, experiment-specific <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> we can add them
+either: 1) when creating the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> by defining the
+<code class="docutils literal notranslate"><span class="pre">intervals</span></code> constructor argument or 2) via the
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_time_intervals" title="pynwb.file.NWBFile.add_time_intervals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_time_intervals</span></code></a> or <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_time_intervals" title="pynwb.file.NWBFile.create_time_intervals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_time_intervals</span></code></a>
+after the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> has been created.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.epoch</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">TimeIntervals</span></a>
+
+<span class="n">sleep_stages</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">TimeIntervals</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sleep_stages&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;intervals for each sleep stage as determined by EEG&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_column" title="hdmf.common.table.DynamicTable.add_column" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_stages</span><span class="o">.</span><span class="n">add_column</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;stage&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;stage of sleep&quot;</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_column" title="hdmf.common.table.DynamicTable.add_column" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_stages</span><span class="o">.</span><span class="n">add_column</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;confidence in stage (0-1)&quot;</span><span class="p">)</span>
+
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_row" title="hdmf.common.table.DynamicTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_stages</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_row" title="hdmf.common.table.DynamicTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_stages</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="mf">0.99</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_row" title="hdmf.common.table.DynamicTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_stages</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_time_intervals</span><span class="p">(</span><span class="n">sleep_stages</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="accessing-time-intervals">
+<h2>Accessing Time Intervals<a class="headerlink" href="#accessing-time-intervals" title="Link to this heading"></a></h2>
+<p>We can access the predefined <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> tables via the corresponding
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.epochs" title="pynwb.file.NWBFile.epochs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">epochs</span></code></a>, <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.trials" title="pynwb.file.NWBFile.trials"><code class="xref py py-meth docutils literal notranslate"><span class="pre">trials</span></code></a>, and
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.invalid_times" title="pynwb.file.NWBFile.invalid_times"><code class="xref py py-meth docutils literal notranslate"><span class="pre">invalid_times</span></code></a> properties and for custom <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a>
+via the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_time_intervals" title="pynwb.file.NWBFile.get_time_intervals"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_time_intervals</span></code></a>  method. E.g.:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">intervals</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_time_intervals</span><span class="p">(</span><span class="s2">&quot;sleep_stages&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Like any <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>, we can conveniently convert any
+<a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> table to a <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> via
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.to_dataframe" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dataframe</span></code></a>, such as:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">trials</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>start_time</th>
+      <th>stop_time</th>
+      <th>stim</th>
+      <th>tags</th>
+      <th>timeseries</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.0</td>
+      <td>2.0</td>
+      <td>dog</td>
+      <td>[animal]</td>
+      <td>[(0, 3, series1 pynwb.base.TimeSeries at 0x133...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>mountain</td>
+      <td>[landscape]</td>
+      <td>[(5, 3, series1 pynwb.base.TimeSeries at 0x133...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>6.0</td>
+      <td>8.0</td>
+      <td>desert</td>
+      <td>[landscape]</td>
+      <td>[(10, 3, series1 pynwb.base.TimeSeries at 0x13...</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>9.0</td>
+      <td>11.0</td>
+      <td>tree</td>
+      <td>[landscape, plant]</td>
+      <td>[(15, 3, series1 pynwb.base.TimeSeries at 0x13...</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>12.0</td>
+      <td>14.0</td>
+      <td>bird</td>
+      <td>[animal]</td>
+      <td>[(20, 3, series1 pynwb.base.TimeSeries at 0x13...</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>15.0</td>
+      <td>17.0</td>
+      <td>flower</td>
+      <td>[animal]</td>
+      <td>[(25, 3, series1 pynwb.base.TimeSeries at 0x13...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>This approach makes it easy to query the data to, e.g., locate all time intervals within a certain time range</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trials_df</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">trials</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html#pandas.DataFrame.query" title="pandas.DataFrame.query" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-method"><span class="n">trials_df</span><span class="o">.</span><span class="n">query</span></a><span class="p">(</span><span class="s2">&quot;(start_time &gt; 2.0) &amp; (stop_time &lt; 9.0)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>start_time</th>
+      <th>stop_time</th>
+      <th>stim</th>
+      <th>tags</th>
+      <th>timeseries</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>mountain</td>
+      <td>[landscape]</td>
+      <td>[(5, 3, series1 pynwb.base.TimeSeries at 0x133...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>6.0</td>
+      <td>8.0</td>
+      <td>desert</td>
+      <td>[landscape]</td>
+      <td>[(10, 3, series1 pynwb.base.TimeSeries at 0x13...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /></section>
+<section id="accessing-referenced-timeseries">
+<h2>Accessing referenced TimeSeries<a class="headerlink" href="#accessing-referenced-timeseries" title="Link to this heading"></a></h2>
+<p>As mentioned earlier, the <code class="docutils literal notranslate"><span class="pre">timeseries</span></code> column is defined by a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a>
+which stores references to the corresponding ranges in <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>. Individual references
+to <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> are described via <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> tuples
+with the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-class docutils literal notranslate"><span class="pre">idx_start</span></code></a>, <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-class docutils literal notranslate"><span class="pre">count</span></code></a>,
+and <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.timeseries" title="pynwb.base.TimeSeriesReference.timeseries"><code class="xref py py-class docutils literal notranslate"><span class="pre">timeseries</span></code></a>.
+Using <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> we can easily access the relevant
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.data" title="pynwb.base.TimeSeriesReference.data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">data</span></code></a> and <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.timestamps" title="pynwb.base.TimeSeriesReference.timestamps"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timestamps</span></code></a>
+for the corresponding time range from the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a single example TimeSeriesReference from the trials table</span>
+<span class="n">example_tsr</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="s2">&quot;timeseries&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># Get the data values from the timeseries. This is a shorthand for:</span>
+<span class="c1"># _ = example_tsr.timeseries.data[example_tsr.idx_start: (example_tsr.idx_start + example_tsr.count)]</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">example_tsr</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c1"># Get the timestamps. Timestamps are either loaded from the TimeSeries or</span>
+<span class="c1"># computed from the starting_time and rate</span>
+<span class="n">example_tsr</span><span class="o">.</span><span class="n">timestamps</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>array([0.5      , 1.1011011, 1.7022022])
+</pre></div>
+</div>
+<p>Using <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.isvalid" title="pynwb.base.TimeSeriesReference.isvalid"><code class="xref py py-class docutils literal notranslate"><span class="pre">isvalid</span></code></a> we can further check if the reference is valid.
+A <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> is defined as invalid if both
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-class docutils literal notranslate"><span class="pre">idx_start</span></code></a>, <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-class docutils literal notranslate"><span class="pre">count</span></code></a> are
+set to <code class="docutils literal notranslate"><span class="pre">-1</span></code>. <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.isvalid" title="pynwb.base.TimeSeriesReference.isvalid"><code class="xref py py-class docutils literal notranslate"><span class="pre">isvalid</span></code></a> further also checks that the indicated
+index range and types are valid, raising <code class="docutils literal notranslate"><span class="pre">IndexError</span></code> and <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> respectively, if bad
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-class docutils literal notranslate"><span class="pre">idx_start</span></code></a>, <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-class docutils literal notranslate"><span class="pre">count</span></code></a> or
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference.timeseries" title="pynwb.base.TimeSeriesReference.timeseries"><code class="xref py py-class docutils literal notranslate"><span class="pre">timeseries</span></code></a> are found.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">example_tsr</span><span class="o">.</span><span class="n">isvalid</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>True
+</pre></div>
+</div>
+</section>
+<section id="adding-timeseries-references-to-other-tables">
+<h2>Adding TimeSeries references to other tables<a class="headerlink" href="#adding-timeseries-references-to-other-tables" title="Link to this heading"></a></h2>
+<p>Since <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a> is a regular <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">VectorData</span></code></a>
+type, we can use it to add references to intervals in <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> to any
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>. In the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>, e.g.,
+it is used to reference the recording of the stimulus and response associated with a particular intracellular
+electrophysiology recording.</p>
+</section>
+<section id="reading-writing-timeintervals-to-file">
+<h2>Reading/Writing TimeIntervals to file<a class="headerlink" href="#reading-writing-timeintervals-to-file" title="Link to this heading"></a></h2>
+<p>Reading and writing the data is as usual:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a>
+
+<span class="c1"># write the file</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;example_timeintervals_file.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+<span class="c1"># read the file</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;example_timeintervals_file.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">nwbfile_in</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+
+    <span class="c1"># plot the sleep stages TimeIntervals table</span>
+    <span class="n">nwbfile_in</span><span class="o">.</span><span class="n">get_time_intervals</span><span class="p">(</span><span class="s2">&quot;sleep_stages&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-general-plot-timeintervals-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/601cd348078a6ff30e9a0d90f70c8b55/plot_timeintervals.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_timeintervals.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/bc4d39b05a9644a4dee18c0b12d7643b/plot_timeintervals.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_timeintervals.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/34551a4a91ad60ec7930825f6dfef2d2/plot_timeintervals.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_timeintervals.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="add_remove_containers.html" class="btn btn-neutral float-left" title="Adding/Removing Containers from an NWB File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="scratch.html" class="btn btn-neutral float-right" title="Exploratory Data Analysis with NWB" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,636 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pynwb.ecephys &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../pynwb.html">pynwb</a></li>
+      <li class="breadcrumb-item active">pynwb.ecephys</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pynwb.ecephys</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicTableRegion</span><span class="p">,</span> <span class="n">DynamicTable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.data_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">assertEqualShape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">docval</span><span class="p">,</span> <span class="n">popargs</span><span class="p">,</span> <span class="n">get_docval</span><span class="p">,</span> <span class="n">popargs_to_dict</span><span class="p">,</span> <span class="n">get_data_shape</span><span class="p">,</span> <span class="n">AllowPositional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_class</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBContainer</span><span class="p">,</span> <span class="n">NWBDataInterface</span><span class="p">,</span> <span class="n">MultiContainerInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;ElectrodeGroup&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ElectricalSeries&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SpikeEventSeries&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;EventDetection&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;LFP&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;FilteredEphys&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;FeatureExtraction&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ElectrodesTable&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="ElectrodeGroup">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;ElectrodeGroup&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ElectrodeGroup</span><span class="p">(</span><span class="n">NWBContainer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Defines a related group of electrodes.&quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;description&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;location&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;device&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;position&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the name of this electrode group&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;description of this electrode group&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;description of location of this electrode group&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;device&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">Device</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the device that was used to record from this electrode group&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;array_data&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Compound dataset with stereotaxic position of this electrode group (x, y, z). &#39;</span>
+                    <span class="s1">&#39;The data array must have three elements or the dtype of the &#39;</span>
+                    <span class="s1">&#39;array must be ``(float, float, float)``&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">((</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;device&#39;</span><span class="p">,</span> <span class="s1">&#39;position&#39;</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># position is a compound dataset, i.e., this must be a scalar with a</span>
+        <span class="c1"># compound data type of three floats or a list/tuple of three entries</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">position</span><span class="p">:</span>
+            <span class="c1"># check position argument is valid</span>
+            <span class="n">position_dtype_invalid</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="p">(</span><span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">position</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">position_dtype_invalid</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ElectrodeGroup position argument must have three elements: x, y, z,&quot;</span>
+                                 <span class="sa">f</span><span class="s2">&quot;but received: </span><span class="si">{</span><span class="n">position</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># convert position to scalar with compound data type if needed</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">):</span>
+                <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">position</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)])</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ElectrodesTable">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodesTable">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;ElectrodesTable&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ElectrodesTable</span><span class="p">(</span><span class="n">DynamicTable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A table of all electrodes (i.e. channels) used for recording. Introduced in NWB 3.0.0. Replaces the &quot;electrodes&quot;</span>
+<span class="sd">    table (neurodata_type_inc DynamicTable, no neurodata_type_def) that is part of NWBFile.&quot;&quot;&quot;</span>
+
+    <span class="n">__columns__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Location of the electrode (channel).&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Reference to the ElectrodeGroup.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;group_name&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Name of the ElectrodeGroup.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;x coordinate of the channel location in the brain.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;y coordinate of the channel location in the brain.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;z coordinate of the channel location in the brain.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;imp&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Impedance of the channel, in ohms.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;filtering&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Description of hardware filtering.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;rel_x&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;x coordinate in electrode group.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;rel_y&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;xy coordinate in electrode group.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;rel_z&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;z coordinate in electrode group.&#39;</span><span class="p">,</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;reference&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;Description of the reference electrode and/or reference scheme used &#39;</span>
+                                              <span class="s1">&#39;for this electrode.&#39;</span><span class="p">),</span> <span class="s1">&#39;required&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span><span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">DynamicTable</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;columns&#39;</span><span class="p">,</span> <span class="s1">&#39;colnames&#39;</span><span class="p">,</span> <span class="s1">&#39;target_tables&#39;</span><span class="p">,</span> <span class="s1">&#39;meanings_tables&#39;</span><span class="p">),</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;electrodes&#39;</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;metadata about extracellular electrodes&#39;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ElectrodesTable.copy">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodesTable.copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a copy of this ElectrodesTable.</span>
+<span class="sd">        This is useful for linking.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">colnames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">colnames</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ElectricalSeries">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;ElectricalSeries&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ElectricalSeries</span><span class="p">(</span><span class="n">TimeSeries</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores acquired voltage data from extracellular recordings. The data field of an ElectricalSeries</span>
+<span class="sd">    is an int or float array storing data in Volts. TimeSeries::data array structure: [num times] [num</span>
+<span class="sd">    channels] (or [num_times] for single electrode).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;electrodes&#39;</span><span class="p">,</span> <span class="s1">&#39;required_name&#39;</span><span class="p">:</span> <span class="s1">&#39;electrodes&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the electrodes that generated this electrical series&#39;</span><span class="p">,</span> <span class="s1">&#39;child&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+                     <span class="s1">&#39;channel_conversion&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;filtering&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span><span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">),</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">((</span><span class="kc">None</span><span class="p">,</span> <span class="p">),</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;The data values. Can be 1D or 2D. The first dimension must be time. The second dimension &#39;</span>
+                     <span class="s1">&#39;represents electrodes/channels.&#39;</span><span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;electrodes&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">DynamicTableRegion</span><span class="p">,</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the table region corresponding to the electrodes from which this series was recorded&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;channel_conversion&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,),</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span>
+             <span class="s2">&quot;Channel-specific conversion factor. Multiply the data in the &#39;data&#39; dataset by these values along the &quot;</span>
+             <span class="s2">&quot;channel axis (as indicated by axis attribute) AND by the global conversion factor in the &#39;conversion&#39; &quot;</span>
+             <span class="s2">&quot;attribute of &#39;data&#39; to get the data values in Volts, i.e, data in Volts = data * data.conversion * &quot;</span>
+             <span class="s2">&quot;channel_conversion. This approach allows for both global and per-channel data conversion factors needed &quot;</span>
+             <span class="s2">&quot;to support the storage of electrical recordings as native values generated by data acquisition systems. &quot;</span>
+             <span class="s2">&quot;If this dataset is not present, then there is no channel-specific conversion factor, i.e. it is 1 for all&quot;</span>
+             <span class="s2">&quot; channels.&quot;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;filtering&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span>
+             <span class="s2">&quot;Filtering applied to all channels of the data. For example, if this ElectricalSeries represents &quot;</span>
+             <span class="s2">&quot;high-pass-filtered data (also known as AP Band), then this value could be &#39;High-pass 4-pole Bessel &quot;</span>
+             <span class="s2">&quot;filter at 500 Hz&#39;. If this ElectricalSeries represents low-pass-filtered LFP data and the type of &quot;</span>
+             <span class="s2">&quot;filter is unknown, then this value could be &#39;Low-pass filter at 300 Hz&#39;. If a non-standard filter &quot;</span>
+             <span class="s2">&quot;type is used, provide as much detail about the filter properties as possible.&quot;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;resolution&#39;</span><span class="p">,</span> <span class="s1">&#39;conversion&#39;</span><span class="p">,</span> <span class="s1">&#39;timestamps&#39;</span><span class="p">,</span> <span class="s1">&#39;starting_time&#39;</span><span class="p">,</span> <span class="s1">&#39;rate&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;comments&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;control&#39;</span><span class="p">,</span> <span class="s1">&#39;control_description&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">),</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">((</span><span class="s1">&#39;electrodes&#39;</span><span class="p">,</span> <span class="s1">&#39;channel_conversion&#39;</span><span class="p">,</span> <span class="s1">&#39;filtering&#39;</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">data_shape</span> <span class="o">=</span> <span class="n">get_data_shape</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="n">strict_no_data_load</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">data_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+            <span class="ow">and</span> <span class="n">data_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;electrodes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">data_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;electrodes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &#39;</span><span class="si">%s</span><span class="s2">&#39;: The second dimension of data does not match the length of electrodes, &quot;</span>
+                              <span class="s2">&quot;but instead the first does. Data is oriented incorrectly and should be transposed.&quot;</span>
+                              <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &#39;</span><span class="si">%s</span><span class="s2">&#39;: The second dimension of data does not match the length of electrodes. &quot;</span>
+                              <span class="s2">&quot;Your data may be transposed.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]))</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;volts&#39;</span>  <span class="c1"># fixed value</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SpikeEventSeries">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.SpikeEventSeries">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;SpikeEventSeries&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SpikeEventSeries</span><span class="p">(</span><span class="n">ElectricalSeries</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores &quot;snapshots&quot; of spike events (i.e., threshold crossings) in data. This may also be raw data,</span>
+<span class="sd">    as reported by ephys hardware. If so, the TimeSeries::description field should describing how</span>
+<span class="sd">    events were detected. All events span the same</span>
+<span class="sd">    recording channels and store snapshots of equal duration. TimeSeries::data array structure:</span>
+<span class="sd">    [num events] [num channels] [num samples] (or [num events] [num samples] for single</span>
+<span class="sd">    electrode).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="nd">@docval</span><span class="p">(</span><span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ElectricalSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span>  <span class="c1"># required</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;timestamps&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>  <span class="c1"># required</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Timestamps for samples stored in data&#39;</span><span class="p">},</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ElectricalSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;electrodes&#39;</span><span class="p">),</span>  <span class="c1"># required</span>
+            <span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ElectricalSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">,</span> <span class="s1">&#39;resolution&#39;</span><span class="p">,</span> <span class="s1">&#39;conversion&#39;</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;control&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;control_description&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">),</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;timestamps&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamps</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)):</span>
+            <span class="c1"># Validate the shape of the inputs. Use get_data_shape to also handle the</span>
+            <span class="c1"># case where the data is a AbstractDataChunkIterator</span>
+            <span class="n">data_shape</span> <span class="o">=</span> <span class="n">get_data_shape</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="n">strict_no_data_load</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">timestamps_shape</span> <span class="o">=</span> <span class="n">get_data_shape</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;timestamps&#39;</span><span class="p">],</span> <span class="n">strict_no_data_load</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">data_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+                <span class="n">timestamps_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">data_shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">timestamps_shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">data_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">timestamps_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span>
+                    <span class="n">data_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+                    <span class="n">timestamps_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide the same number of timestamps and spike events&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="EventDetection">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.EventDetection">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;EventDetection&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventDetection</span><span class="p">(</span><span class="n">NWBDataInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Detected spike events from voltage trace(s).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;detection_method&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;source_electricalseries&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;source_idx&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;times&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;detection_method&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Description of how events were detected, such as voltage threshold, or dV/dT threshold, &#39;</span>
+             <span class="s1">&#39;as well as relevant values.&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;source_electricalseries&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ElectricalSeries</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;The source electrophysiology data&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;source_idx&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Indices (zero-based) into source ElectricalSeries::data array corresponding &#39;</span>
+                    <span class="s1">&#39;to time of event or time and channel of event. For 1D arrays, specifies the time &#39;</span>
+                    <span class="s1">&#39;index for each event. For 2D arrays with shape (num_events, 2), specifies &#39;</span>
+                    <span class="s1">&#39;[time_index, channel_index] for each event. Module description should define what is meant &#39;</span>
+                    <span class="s1">&#39;by time of event (e.g., .25msec before action potential peak, zero-crossing time, etc). &#39;</span>
+                    <span class="s1">&#39;The index points to each event from the raw data&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;times&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;DEPRECATED. Timestamps of events, in Seconds&#39;</span><span class="p">,</span> 
+             <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the name of this container&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;EventDetection&#39;</span><span class="p">},</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">((</span><span class="s1">&#39;detection_method&#39;</span><span class="p">,</span> <span class="s1">&#39;source_electricalseries&#39;</span><span class="p">,</span> <span class="s1">&#39;source_idx&#39;</span><span class="p">,</span> <span class="s1">&#39;times&#39;</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;times&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;The &#39;times&#39; argument is deprecated and will be removed in a future version. &quot;</span> \
+                <span class="s2">&quot;Use &#39;source_idx&#39; instead to specify the time of events.&quot;</span><span class="p">,</span>
+                <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Validate source_idx shape</span>
+        <span class="n">source_idx</span> <span class="o">=</span> <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;source_idx&#39;</span><span class="p">]</span>
+        <span class="n">source_idx_shape</span> <span class="o">=</span> <span class="n">get_data_shape</span><span class="p">(</span><span class="n">source_idx</span><span class="p">,</span> <span class="n">strict_no_data_load</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">source_idx_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_idx_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">source_idx_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;EventDetection source_idx: 2D source_idx must have shape (num_events, 2) &quot;</span>
+                                    <span class="sa">f</span><span class="s2">&quot;for [time_index, channel_index], but got shape </span><span class="si">{</span><span class="n">source_idx_shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_idx_shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;EventDetection source_idx: source_idx must be 1D or 2D array, &quot;</span>
+                                 <span class="sa">f</span><span class="s2">&quot;but got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">source_idx_shape</span><span class="p">)</span><span class="si">}</span><span class="s2">D array with shape </span><span class="si">{</span><span class="n">source_idx_shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;seconds&#39;</span>  <span class="c1"># fixed value</span></div>
+
+
+
+<div class="viewcode-block" id="EventWaveform">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.EventWaveform">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;EventWaveform&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventWaveform</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    DEPRECATED as of NWB 2.8.0 and PyNWB 3.0.0.</span>
+<span class="sd">    Spike data for spike events detected in raw data</span>
+<span class="sd">    stored in this NWBFile, or events detect at acquisition</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;attr&#39;</span><span class="p">:</span> <span class="s1">&#39;spike_event_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">SpikeEventSeries</span><span class="p">,</span>
+        <span class="s1">&#39;add&#39;</span><span class="p">:</span> <span class="s1">&#39;add_spike_event_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="s1">&#39;get_spike_event_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;create&#39;</span><span class="p">:</span> <span class="s1">&#39;create_spike_event_series&#39;</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_in_construct_mode</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The EventWaveform neurodata type is deprecated. If you are interested in using it, &quot;</span>
+                <span class="s2">&quot;please create an issue on https://github.com/NeurodataWithoutBorders/nwb-schema/issues.&quot;</span>
+            <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Clustering">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.Clustering">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;Clustering&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Clustering</span><span class="p">(</span><span class="n">NWBDataInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    DEPRECATED in favor of :py:meth:`~pynwb.misc.Units`.</span>
+<span class="sd">    Specifies cluster event times and cluster metric for maximum ratio of</span>
+<span class="sd">    waveform peak to RMS on any channel in cluster.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s1">&#39;description&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;num&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;peak_over_rms&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;times&#39;</span>
+    <span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Description of clusters or clustering, (e.g. cluster 0 is noise, &#39;</span>
+                    <span class="s1">&#39;clusters curated using Klusters, etc).&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;num&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Cluster number of each event.&#39;</span><span class="p">,</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;peak_over_rms&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Maximum ratio of waveform peak to RMS on any channel in the cluster&#39;</span>
+                    <span class="s1">&#39;(provides a basic clustering metric).&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;times&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Times of clustered events, in seconds.&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the name of this container&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;Clustering&#39;</span><span class="p">})</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_on_new_pass_on_construct</span><span class="p">(</span>
+            <span class="n">error_msg</span><span class="o">=</span><span class="s1">&#39;The Clustering neurodata type is deprecated. Use pynwb.misc.Units or NWBFile.units instead&#39;</span>
+        <span class="p">)</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">((</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;num&#39;</span><span class="p">,</span> <span class="s1">&#39;peak_over_rms&#39;</span><span class="p">,</span> <span class="s1">&#39;times&#39;</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;peak_over_rms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args_to_set</span><span class="p">[</span><span class="s1">&#39;peak_over_rms&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ClusterWaveforms">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.ClusterWaveforms">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;ClusterWaveforms&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClusterWaveforms</span><span class="p">(</span><span class="n">NWBDataInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    DEPRECATED. `ClusterWaveforms` was deprecated in Oct 27, 2018 and will be removed in a future release.</span>
+<span class="sd">    Please use the `Units` table to store waveform mean and standard deviation</span>
+<span class="sd">    e.g. `NWBFile.units.add_unit(..., waveform_mean=..., waveform_sd=...)`</span>
+
+
+<span class="sd">    Describe cluster waveforms by mean and standard deviation for at each sample.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;clustering_interface&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;waveform_filtering&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;waveform_mean&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;waveform_sd&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;clustering_interface&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">Clustering</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the clustered spike data used as input for computing waveforms&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;waveform_filtering&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;filter applied to data before calculating mean and standard deviation&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;waveform_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the mean waveform for each cluster&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;waveform_sd&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the standard deviations of waveforms for each cluster&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the name of this container&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;ClusterWaveforms&#39;</span><span class="p">})</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error_on_new_pass_on_construct</span><span class="p">(</span>
+            <span class="n">error_msg</span><span class="o">=</span><span class="s1">&#39;The ClusterWaveforms neurodata type is deprecated. Use pynwb.misc.Units or NWBFile.units instead&#39;</span>
+        <span class="p">)</span>
+        <span class="n">args_to_set</span> <span class="o">=</span> <span class="n">popargs_to_dict</span><span class="p">((</span><span class="s1">&#39;clustering_interface&#39;</span><span class="p">,</span> <span class="s1">&#39;waveform_filtering&#39;</span><span class="p">,</span>
+                                       <span class="s1">&#39;waveform_mean&#39;</span><span class="p">,</span> <span class="s1">&#39;waveform_sd&#39;</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">args_to_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="LFP">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;LFP&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LFP</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    LFP data from one or more channels. The electrode map in each published ElectricalSeries will</span>
+<span class="sd">    identify which channels are providing LFP data. Filter properties should be noted in the</span>
+<span class="sd">    ElectricalSeries description or comments field.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s1">&#39;attr&#39;</span><span class="p">:</span> <span class="s1">&#39;electrical_series&#39;</span><span class="p">,</span>
+         <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ElectricalSeries</span><span class="p">,</span>
+         <span class="s1">&#39;add&#39;</span><span class="p">:</span> <span class="s1">&#39;add_electrical_series&#39;</span><span class="p">,</span>
+         <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="s1">&#39;get_electrical_series&#39;</span><span class="p">,</span>
+         <span class="s1">&#39;create&#39;</span><span class="p">:</span> <span class="s1">&#39;create_electrical_series&#39;</span><span class="p">}]</span></div>
+
+
+
+<div class="viewcode-block" id="FilteredEphys">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.FilteredEphys">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;FilteredEphys&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FilteredEphys</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ephys data from one or more channels that has been subjected to filtering. Examples of filtered</span>
+<span class="sd">    data include Theta and Gamma (LFP has its own interface). FilteredEphys modules publish an</span>
+<span class="sd">    ElectricalSeries for each filtered channel or set of channels. The name of each ElectricalSeries is</span>
+<span class="sd">    arbitrary but should be informative. The source of the filtered data, whether this is from analysis</span>
+<span class="sd">    of another time series or as acquired by hardware, should be noted in each&#39;s</span>
+<span class="sd">    TimeSeries::description field. There is no assumed 1::1 correspondence between filtered ephys</span>
+<span class="sd">    signals and electrodes, as a single signal can apply to many nearby electrodes, and one</span>
+<span class="sd">    electrode may have different filtered (e.g., theta and/or gamma) signals represented.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;attr&#39;</span><span class="p">:</span> <span class="s1">&#39;electrical_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">ElectricalSeries</span><span class="p">,</span>
+        <span class="s1">&#39;add&#39;</span><span class="p">:</span> <span class="s1">&#39;add_electrical_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="s1">&#39;get_electrical_series&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;create&#39;</span><span class="p">:</span> <span class="s1">&#39;create_electrical_series&#39;</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="FeatureExtraction">
+<a class="viewcode-back" href="../../pynwb.ecephys.html#pynwb.ecephys.FeatureExtraction">[docs]</a>
+<span class="nd">@register_class</span><span class="p">(</span><span class="s1">&#39;FeatureExtraction&#39;</span><span class="p">,</span> <span class="n">CORE_NAMESPACE</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FeatureExtraction</span><span class="p">(</span><span class="n">NWBDataInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Features, such as PC1 and PC2, that are extracted from signals stored in a SpikeEvent</span>
+<span class="sd">    TimeSeries or other source.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">,</span>
+                     <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;electrodes&#39;</span><span class="p">,</span> <span class="s1">&#39;child&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+                     <span class="s1">&#39;times&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;features&#39;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;electrodes&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">DynamicTableRegion</span><span class="p">,</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the table region corresponding to the electrodes from which this series was recorded&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;A description for each feature extracted&#39;</span><span class="p">,</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">)},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;times&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;The times of events that features correspond to&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;features&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;array_data&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">),</span> <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+             <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;Features for each channel&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="s1">&#39;the name of this container&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="s1">&#39;FeatureExtraction&#39;</span><span class="p">},</span>
+            <span class="n">allow_positional</span><span class="o">=</span><span class="n">AllowPositional</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># get the inputs</span>
+        <span class="n">electrodes</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">popargs</span><span class="p">(</span>
+            <span class="s1">&#39;electrodes&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="s1">&#39;times&#39;</span><span class="p">,</span> <span class="s1">&#39;features&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Validate the shape of the inputs</span>
+        <span class="c1"># Validate event times compared to features</span>
+        <span class="n">shape_validators</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">shape_validators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">assertEqualShape</span><span class="p">(</span><span class="n">data1</span><span class="o">=</span><span class="n">features</span><span class="p">,</span>
+                                                 <span class="n">data2</span><span class="o">=</span><span class="n">times</span><span class="p">,</span>
+                                                 <span class="n">axes1</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                 <span class="n">axes2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                 <span class="n">name1</span><span class="o">=</span><span class="s1">&#39;feature_shape&#39;</span><span class="p">,</span>
+                                                 <span class="n">name2</span><span class="o">=</span><span class="s1">&#39;times&#39;</span><span class="p">,</span>
+                                                 <span class="n">ignore_undetermined</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="c1"># Validate electrodes compared to features</span>
+        <span class="n">shape_validators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">assertEqualShape</span><span class="p">(</span><span class="n">data1</span><span class="o">=</span><span class="n">features</span><span class="p">,</span>
+                                                 <span class="n">data2</span><span class="o">=</span><span class="n">electrodes</span><span class="p">,</span>
+                                                 <span class="n">axes1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                                 <span class="n">axes2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                 <span class="n">name1</span><span class="o">=</span><span class="s1">&#39;feature_shape&#39;</span><span class="p">,</span>
+                                                 <span class="n">name2</span><span class="o">=</span><span class="s1">&#39;electrodes&#39;</span><span class="p">,</span>
+                                                 <span class="n">ignore_undetermined</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="c1"># Valided description compared to features</span>
+        <span class="n">shape_validators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">assertEqualShape</span><span class="p">(</span><span class="n">data1</span><span class="o">=</span><span class="n">features</span><span class="p">,</span>
+                                                 <span class="n">data2</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+                                                 <span class="n">axes1</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                                                 <span class="n">axes2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                 <span class="n">name1</span><span class="o">=</span><span class="s1">&#39;feature_shape&#39;</span><span class="p">,</span>
+                                                 <span class="n">name2</span><span class="o">=</span><span class="s1">&#39;description&#39;</span><span class="p">,</span>
+                                                 <span class="n">ignore_undetermined</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="c1"># Raise an error if any of the shapes do not match</span>
+        <span class="n">raise_error</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">error_msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">sv</span> <span class="ow">in</span> <span class="n">shape_validators</span><span class="p">:</span>
+            <span class="n">raise_error</span> <span class="o">|=</span> <span class="ow">not</span> <span class="n">sv</span><span class="o">.</span><span class="n">result</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">sv</span><span class="o">.</span><span class="n">result</span><span class="p">:</span>
+                <span class="n">error_msg</span> <span class="o">+=</span> <span class="n">sv</span><span class="o">.</span><span class="n">message</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the object</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">electrodes</span> <span class="o">=</span> <span class="n">electrodes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">times</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">features</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

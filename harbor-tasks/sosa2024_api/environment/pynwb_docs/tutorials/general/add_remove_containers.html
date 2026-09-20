@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adding/Removing Containers from an NWB File &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Annotating Time Intervals" href="plot_timeintervals.html" />
+    <link rel="prev" title="NWB File Basics" href="plot_file.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_file.html">NWB File Basics</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Adding/Removing Containers from an NWB File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#adding-objects-to-an-nwb-file-in-read-write-mode">Adding objects to an NWB file in read/write mode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#exporting-a-written-nwb-file-to-a-new-file-path">Exporting a written NWB file to a new file path</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#exporting-with-new-object-ids">Exporting with new object IDs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#upgrading-a-legacy-device-model-string-to-a-devicemodel">Upgrading a legacy Device.model string to a DeviceModel</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_timeintervals.html">Annotating Time Intervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scratch.html">Exploratory Data Analysis with NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="extensions.html">Extending NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_configurator.html">How to Configure Term Validations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_id.html">Object IDs in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_read_basics.html">Reading and Exploring an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_external_resources.html">Linking to External Resources (HERD)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resources_streaming.html">Annotating Multiple Streamed NWB Files with a Single HERD</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Adding/Removing Containers from an NWB File</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/general/add_remove_containers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-general-add-remove-containers-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="adding-removing-containers-from-an-nwb-file">
+<span id="modifying-data"></span><span id="sphx-glr-tutorials-general-add-remove-containers-py"></span><h1>Adding/Removing Containers from an NWB File<a class="headerlink" href="#adding-removing-containers-from-an-nwb-file" title="Link to this heading"></a></h1>
+<p>This tutorial explains how to add and remove containers from an existing NWB file and either write the data back to the
+same file or export the data to a new file.</p>
+<section id="adding-objects-to-an-nwb-file-in-read-write-mode">
+<h2>Adding objects to an NWB file in read/write mode<a class="headerlink" href="#adding-objects-to-an-nwb-file-in-read-write-mode" title="Link to this heading"></a></h2>
+<p>PyNWB supports adding container objects to an existing NWB file - that is, reading data from an NWB file, adding a
+container object, such as a new <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> object, and writing the modified
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> back to the same file path on disk. To do so:</p>
+<ol class="arabic simple">
+<li><p>open the file with an <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> object in read/write mode (<code class="docutils literal notranslate"><span class="pre">mode='r+'</span></code> or <code class="docutils literal notranslate"><span class="pre">mode='a'</span></code>)</p></li>
+<li><p>read the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a></p></li>
+<li><p>add container objects to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object</p></li>
+<li><p>write the modified <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> using the same <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> object</p></li>
+</ol>
+<p>For example:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">TimeSeries</span>
+
+<span class="c1"># first, write a test NWB file</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate adding to an NWB file&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;NWB123&quot;</span><span class="p">,</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.timezone.utc" title="datetime.timezone.utc" class="sphx-glr-backref-module-datetime-timezone sphx-glr-backref-type-py-attribute"><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span></a><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;nwbfile.nwb&quot;</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+<span class="c1"># open the NWB file in r+ mode</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="c1"># create a TimeSeries and add it to the file under the acquisition group</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">timestamps</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">test_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span>
+    <span class="p">)</span>
+    <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+
+    <span class="c1"># write the modified NWB file</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="p">)</span>
+
+<span class="c1"># confirm the file contains the new TimeSeries in acquisition</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You cannot remove objects from an NWB file using the above method.</p>
+</div>
+<p>Modifying an NWB file in this way has limitations. The destination file path must be the same as the source
+file path, and it is not possible to remove objects from an NWB file. You can use the
+<a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO.export" title="pynwb.NWBHDF5IO.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBHDF5IO.export</span></code></a> method, detailed below, to modify an NWB file in these ways.</p>
+</section>
+<section id="exporting-a-written-nwb-file-to-a-new-file-path">
+<h2>Exporting a written NWB file to a new file path<a class="headerlink" href="#exporting-a-written-nwb-file-to-a-new-file-path" title="Link to this heading"></a></h2>
+<p>Use the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO.export" title="pynwb.NWBHDF5IO.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBHDF5IO.export</span></code></a> method to read data from an existing NWB file,
+modify the data, and write the modified data to a new file path. Modifications to the data can be additions or
+removals of objects, such as <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> objects. This is especially useful if you
+have raw data and processed data in the same NWB file and you want to create a new NWB file with all the contents of
+the original file except for the raw data for sharing with collaborators.</p>
+<p>To remove existing containers, use the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.LabelledDict.pop" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pop</span></code></a> method on any
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.LabelledDict" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LabelledDict</span></code></a> object, such as <code class="docutils literal notranslate"><span class="pre">NWBFile.acquisition</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.processing</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NWBFile.analysis</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.processing</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.scratch</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.devices</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.stimulus</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NWBFile.stimulus_template</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.electrode_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.imaging_planes</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NWBFile.icephys_electrodes</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.ogen_sites</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.lab_meta_data</span></code>,
+and <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ProcessingModule" title="pynwb.base.ProcessingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a> objects.</p>
+<p>For example:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># first, create a test NWB file with a TimeSeries in the acquisition group</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate export of an NWB file&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;NWB123&quot;</span><span class="p">,</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.timezone.utc" title="datetime.timezone.utc" class="sphx-glr-backref-module-datetime-timezone sphx-glr-backref-type-py-attribute"><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span></a><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">data1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">timestamps1</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">test_ts1</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries1&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps1</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts1</span><span class="p">)</span>
+
+<span class="c1"># then, create a processing module for processed behavioral data</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;behavior&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;processed behavioral data&quot;</span>
+<span class="p">)</span>
+<span class="n">data2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">timestamps2</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">test_ts2</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries2&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data2</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps2</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">test_ts2</span><span class="p">)</span>
+
+<span class="c1"># write these objects to an NWB file</span>
+<span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;nwbfile.nwb&quot;</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+<span class="c1"># read the written file</span>
+<span class="n">export_filename</span> <span class="o">=</span> <span class="s2">&quot;exported_nwbfile.nwb&quot;</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="c1"># add a new TimeSeries to the behavior processing module</span>
+    <span class="n">data3</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">timestamps3</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">test_ts3</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries3&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data3</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps3</span>
+    <span class="p">)</span>
+    <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">test_ts3</span><span class="p">)</span>
+
+    <span class="c1"># use the pop method to remove the original TimeSeries from the acquisition group</span>
+    <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;test_timeseries1&quot;</span><span class="p">)</span>
+
+    <span class="c1"># use the pop method to remove a TimeSeries from a processing module</span>
+    <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data_interfaces</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;test_timeseries2&quot;</span><span class="p">)</span>
+
+    <span class="c1"># call the export method to write the modified NWBFile instance to a new file path.</span>
+    <span class="c1"># the original file is not modified</span>
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">export_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">export_io</span><span class="p">:</span>
+        <span class="n">export_io</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">src_io</span><span class="o">=</span><span class="n">read_io</span><span class="p">,</span> <span class="n">nwbfile</span><span class="o">=</span><span class="n">read_nwbfile</span><span class="p">)</span>
+
+<span class="c1"># confirm the exported file does not contain TimeSeries with names &#39;test_timeseries1&#39; or &#39;test_timeseries2&#39;</span>
+<span class="c1"># but does contain a new TimeSeries in processing[&#39;behavior&#39;] with name &#39;test_timeseries3&#39;</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">export_filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> objects, such as <code class="docutils literal notranslate"><span class="pre">NWBFile.epochs</span></code>, <code class="docutils literal notranslate"><span class="pre">NWBFile.trials</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NWBFile.invalid_times</span></code>, and custom <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> objects cannot be
+removed (popped) from <code class="docutils literal notranslate"><span class="pre">NWBFile.intervals</span></code>.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Removing an object from an NWBFile may break links and references within the file and across files.
+This is analogous to having shortcuts/aliases to a file on your filesystem and then deleting the file.
+Extra caution should be taken when removing heavily referenced items such as
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> objects,
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a> objects, the electrodes table, and the
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table.</p>
+</div>
+</section>
+<section id="exporting-with-new-object-ids">
+<h2>Exporting with new object IDs<a class="headerlink" href="#exporting-with-new-object-ids" title="Link to this heading"></a></h2>
+<p>When exporting a read NWB file to a new file path, the object IDs within the original NWB file will be copied to the
+new file. To make the exported NWB file contain a new set of object IDs, call
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.generate_new_id" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_new_id</span></code></a> on your <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object.
+This will generate a new object ID for the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object and all of the objects within
+the NWB file.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">export_filename</span> <span class="o">=</span> <span class="s2">&quot;exported_nwbfile.nwb&quot;</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">generate_new_id</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">export_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">export_io</span><span class="p">:</span>
+        <span class="n">export_io</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">src_io</span><span class="o">=</span><span class="n">read_io</span><span class="p">,</span> <span class="n">nwbfile</span><span class="o">=</span><span class="n">read_nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="upgrading-a-legacy-device-model-string-to-a-devicemodel">
+<h2>Upgrading a legacy Device.model string to a DeviceModel<a class="headerlink" href="#upgrading-a-legacy-device-model-string-to-a-devicemodel" title="Link to this heading"></a></h2>
+<p>NWB Schema 2.9 changed <code class="docutils literal notranslate"><span class="pre">Device.model</span></code> from a string to a link to a
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.DeviceModel" title="pynwb.device.DeviceModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceModel</span></code></a>. When you read a file written with an older version of the
+schema, a string <code class="docutils literal notranslate"><span class="pre">Device.model</span></code> is upgraded to a <a class="reference internal" href="../../pynwb.device.html#pynwb.device.DeviceModel" title="pynwb.device.DeviceModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceModel</span></code></a> whose name
+is the original string, so that it conforms to the latest schema. PyNWB issues a warning when this
+upgrade happens.</p>
+<p>NWB object names cannot contain <code class="docutils literal notranslate"><span class="pre">/</span></code> or <code class="docutils literal notranslate"><span class="pre">:</span></code>. If the legacy model string contained either
+character (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;MFC_200/250-0.66_40mm_MF2.5:FLT&quot;</span></code>), the upgraded
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.DeviceModel" title="pynwb.device.DeviceModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceModel</span></code></a> is read-only: building it for write or export raises an error,
+because the invalid name would otherwise be interpreted as nested HDF5 groups and corrupt the file.</p>
+<p>The example below first synthesizes a legacy file by writing a <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> and
+then adding the string <code class="docutils literal notranslate"><span class="pre">model</span></code> attribute directly with h5py (PyNWB cannot write a string
+<code class="docutils literal notranslate"><span class="pre">model</span></code> under the current schema). It then reads the file and replaces the read-only model.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeviceModel</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate upgrading a legacy device model&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;NWB123&quot;</span><span class="p">,</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.timezone.utc" title="datetime.timezone.utc" class="sphx-glr-backref-module-datetime-timezone sphx-glr-backref-type-py-attribute"><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span></a><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_device&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;a mass flow controller&quot;</span><span class="p">)</span>
+
+<span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;legacy_device_model.nwb&quot;</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+<span class="c1"># add the legacy Device.model string attribute that schema versions before 2.9 used</span>
+<span class="k">with</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">h5py</span><span class="o">.</span><span class="n">File</span></a><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="p">[</span><span class="s2">&quot;general/devices/my_device&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;MFC_200/250-0.66_40mm_MF2.5:FLT&quot;</span>
+</pre></div>
+</div>
+<p>Read the file and replace the read-only model with a new
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.DeviceModel" title="pynwb.device.DeviceModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceModel</span></code></a> that has a valid name, copying the metadata from the original
+model. The example builds a valid name by replacing <code class="docutils literal notranslate"><span class="pre">/</span></code> and <code class="docutils literal notranslate"><span class="pre">:</span></code> with <code class="docutils literal notranslate"><span class="pre">_</span></code>.</p>
+<p>The legacy file stores <code class="docutils literal notranslate"><span class="pre">model</span></code> as a string attribute, so it cannot be modified in place
+(<code class="docutils literal notranslate"><span class="pre">mode=&quot;r+&quot;</span></code>) or written to a new path with <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">write</span></code></a>. Use
+<a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO.export" title="pynwb.NWBHDF5IO.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export</span></code></a> instead, and call
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.set_modified" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_modified</span></code></a> on the <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> so
+that export rewrites it, dropping the legacy string attribute and writing a link to the new
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.DeviceModel" title="pynwb.device.DeviceModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceModel</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">devices</span><span class="p">[</span><span class="s2">&quot;my_device&quot;</span><span class="p">]</span>
+    <span class="n">read_only_model</span> <span class="o">=</span> <span class="n">device</span><span class="o">.</span><span class="n">model</span>
+
+    <span class="c1"># build a valid name by replacing the characters that are not allowed in NWB object names</span>
+    <span class="n">valid_name</span> <span class="o">=</span> <span class="n">read_only_model</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+
+    <span class="c1"># create a new DeviceModel with a valid name, copying the metadata from the read-only model</span>
+    <span class="n">new_model</span> <span class="o">=</span> <span class="n">DeviceModel</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">valid_name</span><span class="p">,</span>
+        <span class="n">manufacturer</span><span class="o">=</span><span class="n">read_only_model</span><span class="o">.</span><span class="n">manufacturer</span><span class="p">,</span>
+        <span class="n">model_number</span><span class="o">=</span><span class="n">read_only_model</span><span class="o">.</span><span class="n">model_number</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">read_only_model</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Device.model is write-once, so clear it with fields.pop before assigning the new model</span>
+    <span class="n">device</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">)</span>
+    <span class="n">device</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">new_model</span>
+    <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">add_device_model</span><span class="p">(</span><span class="n">new_model</span><span class="p">)</span>
+
+    <span class="c1"># mark the Device as modified so export rewrites it without the legacy string attribute</span>
+    <span class="n">device</span><span class="o">.</span><span class="n">set_modified</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">export_filename</span> <span class="o">=</span> <span class="s2">&quot;upgraded_device_model.nwb&quot;</span>
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">export_filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">export_io</span><span class="p">:</span>
+        <span class="n">export_io</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">src_io</span><span class="o">=</span><span class="n">read_io</span><span class="p">,</span> <span class="n">nwbfile</span><span class="o">=</span><span class="n">read_nwbfile</span><span class="p">)</span>
+
+<span class="c1"># the exported file reads back with a valid, writable DeviceModel and no upgrade warning</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">export_filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">devices</span><span class="p">[</span><span class="s2">&quot;my_device&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more information about the export functionality, see <a class="reference internal" href="../../export.html#export"><span class="std std-ref">Exporting NWB files</span></a>
+and the PyNWB documentation for <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO.export" title="pynwb.NWBHDF5IO.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBHDF5IO.export</span></code></a>.</p>
+<p>For more information about editing a file in place, see <a class="reference internal" href="../advanced_io/plot_editing.html#editing"><span class="std std-ref">Editing NWB files</span></a>.</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-general-add-remove-containers-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/d7347940e7c5b29ebb2070cc3a5d4633/add_remove_containers.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">add_remove_containers.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/2a363220c124e3c73e1a0ea5952f72d5/add_remove_containers.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">add_remove_containers.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/933d1eebdc84f6873a82d9b9d0f6179a/add_remove_containers.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">add_remove_containers.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_file.html" class="btn btn-neutral float-left" title="NWB File Basics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_timeintervals.html" class="btn btn-neutral float-right" title="Annotating Time Intervals" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

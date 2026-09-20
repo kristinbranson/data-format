@@ -1,0 +1,360 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Streaming NWB files &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Zarr IO" href="plot_zarr_io.html" />
+    <link rel="prev" title="Parallel I/O using MPI" href="parallelio.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="h5dataio.html">Defining HDF5 Dataset I/O Settings (chunking, compression, etc.)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_editing.html">Editing NWB files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_iterative_write.html">Iterative Data Write</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_linking_data.html">Modular Data Storage using External Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallelio.html">Parallel I/O using MPI</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Streaming NWB files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#getting-the-location-of-the-file-on-dandi">Getting the location of the file on DANDI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#streaming-data-with-remfile">Streaming data with <code class="docutils literal notranslate"><span class="pre">remfile</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#streaming-data-with-fsspec">Streaming data with <code class="docutils literal notranslate"><span class="pre">fsspec</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#streaming-data-with-ros3">Streaming data with ROS3</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_zarr_io.html">Zarr IO</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Streaming NWB files</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/advanced_io/streaming.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-advanced-io-streaming-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="streaming-nwb-files">
+<span id="streaming"></span><span id="sphx-glr-tutorials-advanced-io-streaming-py"></span><h1>Streaming NWB files<a class="headerlink" href="#streaming-nwb-files" title="Link to this heading"></a></h1>
+<p>You can read specific sections within individual data files directly from remote stores such as the
+<a class="reference external" href="https://dandiarchive.org/">DANDI Archive</a>. This is especially useful for reading small pieces of data
+from a large NWB file stored remotely. First, you will need to get the location of the file. The code
+below illustrates how to do this on DANDI using the dandi API library.</p>
+<section id="getting-the-location-of-the-file-on-dandi">
+<h2>Getting the location of the file on DANDI<a class="headerlink" href="#getting-the-location-of-the-file-on-dandi" title="Link to this heading"></a></h2>
+<p>The <a class="reference external" href="https://dandi.readthedocs.io/en/stable/modref/dandiapi.html#dandi.dandiapi.DandiAPIClient" title="(in dandi v0.80.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DandiAPIClient</span></code></a> can be used to get the S3 URL of any NWB file stored in the DANDI
+Archive. If you have not already, install the latest release of the <code class="docutils literal notranslate"><span class="pre">dandi</span></code> package.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>dandi
+</pre></div>
+</div>
+<p>Now you can get the url of a particular NWB file using the dandiset ID and the path of that file within the dandiset.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To learn more about the dandi API see the
+<a class="reference external" href="https://dandi.readthedocs.io/en/stable/modref/index.html">DANDI Python API docs</a></p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dandi.dandiapi</span><span class="w"> </span><span class="kn">import</span> <a href="https://dandi.readthedocs.io/en/stable/modref/dandiapi.html#dandi.dandiapi.DandiAPIClient" title="dandi.dandiapi.DandiAPIClient" class="sphx-glr-backref-module-dandi-dandiapi sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">DandiAPIClient</span></a>
+
+<span class="n">dandiset_id</span> <span class="o">=</span> <span class="s1">&#39;000006&#39;</span>  <span class="c1"># ephys dataset from the Svoboda Lab</span>
+<span class="n">filepath</span> <span class="o">=</span> <span class="s1">&#39;sub-anm372795/sub-anm372795_ses-20170718.nwb&#39;</span>  <span class="c1"># 450 kB file</span>
+<span class="k">with</span> <a href="https://dandi.readthedocs.io/en/stable/modref/dandiapi.html#dandi.dandiapi.DandiAPIClient" title="dandi.dandiapi.DandiAPIClient" class="sphx-glr-backref-module-dandi-dandiapi sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">DandiAPIClient</span></a><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+    <span class="n">asset</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_dandiset</span><span class="p">(</span><span class="n">dandiset_id</span><span class="p">,</span> <span class="s1">&#39;draft&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_asset_by_path</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="n">s3_url</span> <span class="o">=</span> <span class="n">asset</span><span class="o">.</span><span class="n">get_content_url</span><span class="p">(</span><span class="n">follow_redirects</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">strip_query</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once you have an S3 URL, you can use it to read the NWB file directly from the remote store. There are several
+ways to do this, including using the <code class="docutils literal notranslate"><span class="pre">remfile</span></code> library, the <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> library, or the ROS3 driver in h5py.</p>
+</section>
+<section id="streaming-data-with-remfile">
+<h2>Streaming data with <code class="docutils literal notranslate"><span class="pre">remfile</span></code><a class="headerlink" href="#streaming-data-with-remfile" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">remfile</span></code> is a library that enables indexing and streaming of files in s3, optimized for reading HDF5 files.
+remfile is simple and fast, especially for the initial load of the nwb file and for accessing small pieces of data.
+It is a lightweight dependency with a very small codebase. Although <code class="docutils literal notranslate"><span class="pre">remfile</span></code> is a very new project that has not
+been tested in a variety of use-cases, but it has worked well in our hands.</p>
+<p>You can install <code class="docutils literal notranslate"><span class="pre">remfile</span></code> with pip:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>remfile
+</pre></div>
+</div>
+<p>Then in use Python:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">remfile</span>
+
+<span class="c1"># Create a disk cache to store downloaded data (optional)</span>
+<span class="n">cache_dirname</span> <span class="o">=</span> <span class="s1">&#39;/tmp/remfile_cache&#39;</span>
+<span class="n">disk_cache</span> <span class="o">=</span> <span class="n">remfile</span><span class="o">.</span><span class="n">DiskCache</span><span class="p">(</span><span class="n">cache_dirname</span><span class="p">)</span>
+
+<span class="c1"># open the file</span>
+<span class="n">rem_file</span> <span class="o">=</span> <span class="n">remfile</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">s3_url</span><span class="p">,</span> <span class="n">disk_cache</span><span class="o">=</span><span class="n">disk_cache</span><span class="p">)</span>
+<span class="n">h5py_file</span> <span class="o">=</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">h5py</span><span class="o">.</span><span class="n">File</span></a><span class="p">(</span><span class="n">rem_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">io</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">h5py_file</span><span class="p">)</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="c1"># now you can access the data</span>
+<span class="n">streamed_data</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;lick_times&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">time_series</span><span class="p">[</span><span class="s2">&quot;lick_left_times&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+
+<span class="c1"># close the file</span>
+<span class="n">io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">h5py_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">rem_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also use contexts to open the file. This will automatically close the file when the context is exited.
+This approach can be a bit cumbersome when exploring files interactively, but is the preferred approach once
+the program is finalized because it will ensure that the file is closed properly even if an exception is raised.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">rem_file</span> <span class="o">=</span> <span class="n">remfile</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">s3_url</span><span class="p">,</span> <span class="n">disk_cache</span><span class="o">=</span><span class="n">disk_cache</span><span class="p">)</span>
+<span class="k">with</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">h5py</span><span class="o">.</span><span class="n">File</span></a><span class="p">(</span><span class="n">rem_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5py_file</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">h5py_file</span><span class="p">,</span> <span class="n">load_namespaces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+        <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">streamed_data</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;lick_times&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">time_series</span><span class="p">[</span><span class="s2">&quot;lick_left_times&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+
+<span class="c1"># After the contexts end, the file is closed, so you cannot download new data from the file.</span>
+</pre></div>
+</div>
+</section>
+<section id="streaming-data-with-fsspec">
+<h2>Streaming data with <code class="docutils literal notranslate"><span class="pre">fsspec</span></code><a class="headerlink" href="#streaming-data-with-fsspec" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">fsspec</span></code> is a data streaming approach that is quite flexible. This library creates a virtual filesystem for remote
+stores. With this approach, a virtual file is created for the file and the virtual filesystem layer takes care of
+requesting data from the S3 bucket whenever data is read from the virtual file.  Note that this implementation is
+completely unaware of internals of the HDF5 format and thus can work for <strong>any</strong> file, not only for the purpose of
+use with <code class="docutils literal notranslate"><span class="pre">h5py</span></code> and PyNWB. <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> can also be used to access data from other storage backends, such as Google
+Drive or Dropbox.</p>
+<p>First install <code class="docutils literal notranslate"><span class="pre">fsspec</span></code> and the dependencies of the <a class="reference external" href="https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.http.HTTPFileSystem" title="(in fsspec v2026.6.0.post22+g5e266e0a9.d20260727)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HTTPFileSystem</span></code></a>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>fsspec<span class="w"> </span>requests<span class="w"> </span>aiohttp
+</pre></div>
+</div>
+<p>Then in Python:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">fsspec</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pynwb</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fsspec.implementations.cached</span><span class="w"> </span><span class="kn">import</span> <a href="https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.cached.CachingFileSystem" title="fsspec.implementations.cached.CachingFileSystem" class="sphx-glr-backref-module-fsspec-implementations-cached sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">CachingFileSystem</span></a>
+
+<span class="c1"># first, create a virtual filesystem based on the http protocol</span>
+<span class="n">fs</span> <span class="o">=</span> <a href="https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.filesystem" title="fsspec.filesystem" class="sphx-glr-backref-module-fsspec sphx-glr-backref-type-py-function"><span class="n">fsspec</span><span class="o">.</span><span class="n">filesystem</span></a><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+
+<span class="c1"># create a cache to save downloaded data to disk (optional)</span>
+<span class="n">fs</span> <span class="o">=</span> <a href="https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.cached.CachingFileSystem" title="fsspec.implementations.cached.CachingFileSystem" class="sphx-glr-backref-module-fsspec-implementations-cached sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">CachingFileSystem</span></a><span class="p">(</span>
+    <span class="n">fs</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+    <span class="n">cache_storage</span><span class="o">=</span><span class="s2">&quot;nwb-cache&quot;</span><span class="p">,</span>  <span class="c1"># Local folder for the cache</span>
+<span class="p">)</span>
+
+<span class="c1"># open the file</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">s3_url</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+<span class="n">file</span> <span class="o">=</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">h5py</span><span class="o">.</span><span class="n">File</span></a><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="n">io</span> <span class="o">=</span> <span class="n">pynwb</span><span class="o">.</span><span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="c1"># now you can access the data</span>
+<span class="n">streamed_data</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s1">&#39;lick_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">time_series</span><span class="p">[</span><span class="s1">&#39;lick_left_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+
+<span class="c1"># close the file</span>
+<span class="n">io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also use context managers to open the file. This will automatically close the file when the context is exited.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">fs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">s3_url</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">h5py</span><span class="o">.</span><span class="n">File</span></a><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">pynwb</span><span class="o">.</span><span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">file</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+            <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s1">&#39;lick_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">time_series</span><span class="p">[</span><span class="s1">&#39;lick_left_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:])</span>
+</pre></div>
+</div>
+<p>fsspec can be used to access a variety of different stores, including (at the time of writing):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fsspec.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">known_implementations</span>
+<span class="n">known_implementations</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>abfs, adl, arrow_hdfs, asynclocal, az, blockcache, box, cached, dask, data, dbfs, dir, dropbox, dvc,
+file, filecache, ftp, gcs, gdrive, generic, git, github, gs, hdfs, hf, http, https, jlab, jupyter,
+lakefs, libarchive, local, memory, oci, ocilake, oss, reference, root, s3, s3a, sftp, simplecache,
+smb, ssh, tar, wandb, webdav, webhdfs, zip</p>
+<p>The S3 backend, in particular, may provide additional functionality for accessing data on DANDI. See the
+<a class="reference external" href="https://filesystem-spec.readthedocs.io/en/latest/api.html?highlight=S3#other-known-implementations">fsspec documentation on known implementations</a>
+for a full updated list of supported store formats.</p>
+<p>One downside of the fsspec method is that fsspec is not optimized for reading HDF5 files, and so streaming data
+using this method can be slow. <code class="docutils literal notranslate"><span class="pre">remfile</span></code> may be a faster alternative.</p>
+</section>
+<section id="streaming-data-with-ros3">
+<h2>Streaming data with ROS3<a class="headerlink" href="#streaming-data-with-ros3" title="Link to this heading"></a></h2>
+<p>ROS3 stands for “read only S3” and is a driver created by the HDF5 Group that allows HDF5 to read HDF5 files stored
+remotely in s3 buckets. Using this method requires that your HDF5 library is installed with the ROS3 driver enabled.
+With ROS3 support enabled in h5py, we can instantiate a <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> object with the S3 URL,
+specify the driver as “ros3”, and pass the AWS region of the S3 bucket as <code class="docutils literal notranslate"><span class="pre">aws_region</span></code> (DANDI data are stored
+in <code class="docutils literal notranslate"><span class="pre">us-east-2</span></code>). Like the other methods, you can use a context manager to open the file and close it,
+or open the file and close it manually.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span>
+
+<span class="c1"># open with context manager</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">s3_url</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;ros3&#39;</span><span class="p">,</span> <span class="n">aws_region</span><span class="o">=</span><span class="s2">&quot;us-east-2&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">streamed_data</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s1">&#39;lick_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">time_series</span><span class="p">[</span><span class="s1">&#39;lick_left_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+
+<span class="c1"># open and close manually</span>
+<span class="n">io</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">s3_url</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;ros3&#39;</span><span class="p">,</span> <span class="n">aws_region</span><span class="o">=</span><span class="s2">&quot;us-east-2&quot;</span><span class="p">)</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="n">streamed_data</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s1">&#39;lick_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">time_series</span><span class="p">[</span><span class="s1">&#39;lick_left_times&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+<span class="n">io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This will download metadata about the file from the S3 bucket to memory. The values of datasets are accessed lazily,
+just like when reading an NWB file stored locally. So, slicing into a dataset will download the sliced data (and
+only the sliced data) and load it directly to memory.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Pre-built h5py packages on PyPI do not include this S3 support. If you want this feature, we recommend installing
+<code class="docutils literal notranslate"><span class="pre">h5py</span></code> using conda:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>uninstall<span class="w"> </span>h5py
+conda<span class="w"> </span>install<span class="w"> </span>h5py
+</pre></div>
+</div>
+</div>
+<p>Alternatively, you can build h5py from source against an HDF5 build with S3 support, but this is more complicated.</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-advanced-io-streaming-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/e565a512f7954270d1b0cc38def66513/streaming.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">streaming.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/20ef98fa1833c7dc387f0ec7efbf9005/streaming.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">streaming.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/2c8af6f181dc2b87e2e7ec91244277ad/streaming.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">streaming.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="parallelio.html" class="btn btn-neutral float-left" title="Parallel I/O using MPI" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_zarr_io.html" class="btn btn-neutral float-right" title="Zarr IO" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

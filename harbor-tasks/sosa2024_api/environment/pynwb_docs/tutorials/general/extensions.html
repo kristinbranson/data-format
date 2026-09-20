@@ -1,0 +1,632 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extending NWB &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="How to Configure Term Validations" href="plot_configurator.html" />
+    <link rel="prev" title="Exploratory Data Analysis with NWB" href="scratch.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_file.html">NWB File Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_remove_containers.html">Adding/Removing Containers from an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_timeintervals.html">Annotating Time Intervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scratch.html">Exploratory Data Analysis with NWB</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Extending NWB</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#defining-extensions">Defining extensions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-extensions">Using extensions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caching-extensions-to-file">Caching extensions to file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-and-using-a-custom-multicontainerinterface">Creating and using a custom MultiContainerInterface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-cortical-surface-mesh">Example: Cortical Surface Mesh</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_configurator.html">How to Configure Term Validations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_id.html">Object IDs in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_read_basics.html">Reading and Exploring an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_external_resources.html">Linking to External Resources (HERD)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resources_streaming.html">Annotating Multiple Streamed NWB Files with a Single HERD</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Extending NWB</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/general/extensions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-general-extensions-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="extending-nwb">
+<span id="tutorial-extending-nwb"></span><span id="sphx-glr-tutorials-general-extensions-py"></span><h1>Extending NWB<a class="headerlink" href="#extending-nwb" title="Link to this heading"></a></h1>
+<p>The NWB format was designed to be easily extendable. Here we discuss some of the basic functionality
+in PyNWB for creating  Neurodata Extensions (NDX).</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>For a more in-depth, step-by-step guide on how to create, document, and publish NWB extensions, we highly
+recommend visiting the <a class="extlink-nwb_overview reference external" href="https://nwb-overview.readthedocs.io/en/latest/extensions_tutorial/extensions_tutorial_home.html">extension tutorial</a>
+on the <a class="extlink-nwb_overview reference external" href="https://nwb-overview.readthedocs.io/en/latest/">nwb overview</a> website.</p>
+</div>
+<section id="defining-extensions">
+<span id="defining-extension"></span><h2>Defining extensions<a class="headerlink" href="#defining-extensions" title="Link to this heading"></a></h2>
+<p>Extensions should be defined separately from the code that uses the extensions. This design decision is
+based on the assumption that the extension will be written once, and read or used multiple times. Here, we
+provide an example of how to create an extension for subsequent use.</p>
+<p>The following block of code demonstrates how to create a new namespace, and then add a new <cite>neurodata_type</cite>
+to this namespace. Finally,
+it calls <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.spec.write.html#hdmf.spec.write.NamespaceBuilder.export" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export</span></code></a> to save the extensions to disk for downstream use.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBAttributeSpec</span><span class="p">,</span> <span class="n">NWBGroupSpec</span><span class="p">,</span> <span class="n">NWBNamespaceBuilder</span>
+
+<span class="n">ns_path</span> <span class="o">=</span> <span class="s2">&quot;mylab.namespace.yaml&quot;</span>
+<span class="n">ext_source</span> <span class="o">=</span> <span class="s2">&quot;mylab.extensions.yaml&quot;</span>
+
+<span class="n">ns_builder</span> <span class="o">=</span> <span class="n">NWBNamespaceBuilder</span><span class="p">(</span>
+    <span class="s2">&quot;Extension for use in my Lab&quot;</span><span class="p">,</span> <span class="s2">&quot;mylab&quot;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;0.1.0&quot;</span>
+<span class="p">)</span>
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">include_namespace</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+
+<span class="n">ext</span> <span class="o">=</span> <span class="n">NWBGroupSpec</span><span class="p">(</span>
+    <span class="s2">&quot;A custom ElectricalSeries for my lab&quot;</span><span class="p">,</span>
+    <span class="n">attributes</span><span class="o">=</span><span class="p">[</span><span class="n">NWBAttributeSpec</span><span class="p">(</span><span class="s2">&quot;trode_id&quot;</span><span class="p">,</span> <span class="s2">&quot;the tetrode id&quot;</span><span class="p">,</span> <span class="s2">&quot;int&quot;</span><span class="p">)],</span>
+    <span class="n">neurodata_type_inc</span><span class="o">=</span><span class="s2">&quot;ElectricalSeries&quot;</span><span class="p">,</span>
+    <span class="n">neurodata_type_def</span><span class="o">=</span><span class="s2">&quot;TetrodeSeries&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">add_spec</span><span class="p">(</span><span class="n">ext_source</span><span class="p">,</span> <span class="n">ext</span><span class="p">)</span>
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">ns_path</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Running this block will produce two YAML files.</p>
+<p>The first file, mylab.namespace.yaml, contains the specification of the namespace.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">namespaces</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">doc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Extension for use in my Lab</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mylab</span>
+<span class="w">  </span><span class="nt">schema</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">core</span>
+<span class="w">    </span><span class="nt">neurodata_type</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ElectricalSeries</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mylab.extensions.yaml</span>
+</pre></div>
+</div>
+<p>The second file, mylab.extensions.yaml, contains the details on newly defined types.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">groups</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">attributes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">doc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">the tetrode id</span>
+<span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trode_id</span>
+<span class="w">  </span><span class="nt">doc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">A custom ElectricalSeries for my lab</span>
+<span class="w">  </span><span class="nt">neurodata_type_def</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TetrodeSeries</span>
+<span class="w">  </span><span class="nt">neurodata_type_inc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ElectricalSeries</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Detailed documentation of all components and <cite>neurodata_types</cite> that are part of the core schema of NWB:N are
+available in the <a class="reference external" href="https://nwb-schema.readthedocs.io/en/latest/">schema docs</a> .
+Before creating a new type from scratch, please have a look at the schema docs to see if using or extending an
+existing type may solve your problem. Also, the schema docs are helpful when extending an existing type to
+better understand the design and structure of the neurodata_type you are using.</p>
+</div>
+</section>
+<section id="using-extensions">
+<span id="using-extension"></span><h2>Using extensions<a class="headerlink" href="#using-extensions" title="Link to this heading"></a></h2>
+<p>After an extension has been created, it can be used by downstream code for reading and writing data.
+There are two main mechanisms for reading and writing extension data with PyNWB.
+The first involves defining new <a class="reference internal" href="../../pynwb.core.html#pynwb.core.NWBContainer" title="pynwb.core.NWBContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBContainer</span></code></a> classes that are then mapped
+to the neurodata types in the extension.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.docval" title="hdmf.utils.docval" class="sphx-glr-backref-module-hdmf-utils sphx-glr-backref-type-py-function"><span class="n">docval</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.get_docval" title="hdmf.utils.get_docval" class="sphx-glr-backref-module-hdmf-utils sphx-glr-backref-type-py-function"><span class="n">get_docval</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.popargs" title="hdmf.utils.popargs" class="sphx-glr-backref-module-hdmf-utils sphx-glr-backref-type-py-function"><span class="n">popargs</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_namespaces</span><span class="p">,</span> <span class="n">register_class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.ecephys</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElectricalSeries</span>
+
+<span class="n">ns_path</span> <span class="o">=</span> <span class="s2">&quot;mylab.namespace.yaml&quot;</span>
+<span class="n">load_namespaces</span><span class="p">(</span><span class="n">ns_path</span><span class="p">)</span>
+
+
+<span class="nd">@register_class</span><span class="p">(</span><span class="s2">&quot;TetrodeSeries&quot;</span><span class="p">,</span> <span class="s2">&quot;mylab&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TetrodeSeries</span><span class="p">(</span><span class="n">ElectricalSeries</span><span class="p">):</span>
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;trode_id&quot;</span><span class="p">,)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span>
+        <span class="o">*</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.get_docval" title="hdmf.utils.get_docval" class="sphx-glr-backref-module-hdmf-utils sphx-glr-backref-type-py-function"><span class="n">get_docval</span></a><span class="p">(</span><span class="n">ElectricalSeries</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span>
+        <span class="o">+</span> <span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;trode_id&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;the tetrode id&quot;</span><span class="p">},)</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">trode_id</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.popargs" title="hdmf.utils.popargs" class="sphx-glr-backref-module-hdmf-utils sphx-glr-backref-type-py-function"><span class="n">popargs</span></a><span class="p">(</span><span class="s2">&quot;trode_id&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trode_id</span> <span class="o">=</span> <span class="n">trode_id</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See the API docs for more information about <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.docval" title="(in HDMF v6.2.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">docval</span></code></a>,
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.popargs" title="(in HDMF v6.2.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">popargs</span></code></a>, and <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.get_docval" title="(in HDMF v6.2.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_docval</span></code></a></p>
+</div>
+<p>When extending <a class="reference internal" href="../../pynwb.core.html#pynwb.core.NWBContainer" title="pynwb.core.NWBContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBContainer</span></code></a> or <a class="reference internal" href="../../pynwb.core.html#pynwb.core.NWBContainer" title="pynwb.core.NWBContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBContainer</span></code></a>
+subclasses, you should define the class field <code class="docutils literal notranslate"><span class="pre">__nwbfields__</span></code>. This will
+tell PyNWB the properties of the <a class="reference internal" href="../../pynwb.core.html#pynwb.core.NWBContainer" title="pynwb.core.NWBContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBContainer</span></code></a> extension.</p>
+<p>If you do not want to write additional code to read your extensions, PyNWB is able to dynamically
+create an <a class="reference internal" href="../../pynwb.core.html#pynwb.core.NWBContainer" title="pynwb.core.NWBContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBContainer</span></code></a> subclass for use within the PyNWB API.
+Dynamically created classes can be inspected using the built-in <a class="reference external" href="https://docs.python.org/3.11/library/inspect.html#module-inspect" title="(in Python v3.11)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">inspect</span></code></a> module.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_class</span><span class="p">,</span> <span class="n">load_namespaces</span>
+
+<span class="n">ns_path</span> <span class="o">=</span> <span class="s2">&quot;mylab.namespace.yaml&quot;</span>
+<span class="n">load_namespaces</span><span class="p">(</span><span class="n">ns_path</span><span class="p">)</span>
+
+<span class="n">AutoTetrodeSeries</span> <span class="o">=</span> <span class="n">get_class</span><span class="p">(</span><span class="s2">&quot;TetrodeSeries&quot;</span><span class="p">,</span> <span class="s2">&quot;mylab&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When defining your own <a class="reference internal" href="../../pynwb.core.html#pynwb.core.NWBContainer" title="pynwb.core.NWBContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBContainer</span></code></a>, the subclass name does not need to be the same
+as the extension type name. However, it is encouraged to keep class and extension names the same for the
+purposes of readability.</p>
+</div>
+</section>
+<section id="caching-extensions-to-file">
+<span id="caching-extension"></span><h2>Caching extensions to file<a class="headerlink" href="#caching-extensions-to-file" title="Link to this heading"></a></h2>
+<p>By default, extensions are cached to file so that your NWB file will carry the extensions needed to read the file
+with it.</p>
+<p>To demonstrate this, first we will make some simulated data using our extensions.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <span class="n">tzlocal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="p">())</span>
+<span class="n">create_date</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="p">())</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="s2">&quot;demonstrate caching&quot;</span><span class="p">,</span> <span class="s2">&quot;NWB456&quot;</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">file_create_date</span><span class="o">=</span><span class="n">create_date</span>
+<span class="p">)</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;trodes_rig123&quot;</span><span class="p">)</span>
+
+<span class="n">electrode_name</span> <span class="o">=</span> <span class="s2">&quot;tetrode1&quot;</span>
+<span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;an example tetrode&quot;</span>
+<span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;somewhere in the hippocampus&quot;</span>
+
+<span class="n">electrode_group</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_electrode_group</span><span class="p">(</span>
+    <span class="n">electrode_name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]:</span>
+    <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_electrode</span><span class="p">(</span>
+        <span class="nb">id</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+        <span class="n">z</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
+        <span class="n">imp</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="o">-</span><span class="n">idx</span><span class="p">),</span>
+        <span class="n">location</span><span class="o">=</span><span class="s2">&quot;CA1&quot;</span><span class="p">,</span>
+        <span class="n">filtering</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
+        <span class="n">group</span><span class="o">=</span><span class="n">electrode_group</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="n">electrode_table_region</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_electrode_table_region</span><span class="p">(</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;the first and third electrodes&quot;</span>
+<span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">rate</span> <span class="o">=</span> <span class="mf">10.0</span>
+<a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.seed.html#numpy.random.seed" title="numpy.random.seed" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span></a><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>
+<span class="n">data_len</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html#numpy.random.rand" title="numpy.random.rand" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span></a><span class="p">(</span><span class="n">data_len</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">data_len</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">timestamps</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="n">data_len</span><span class="p">)</span> <span class="o">/</span> <span class="n">rate</span>
+
+<span class="n">ts</span> <span class="o">=</span> <span class="n">TetrodeSeries</span><span class="p">(</span>
+    <span class="s2">&quot;test_ephys_data&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">electrode_table_region</span><span class="p">,</span>
+    <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+    <span class="n">trode_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># Alternatively, could specify starting_time and rate as follows</span>
+    <span class="c1"># starting_time=ephys_timestamps[0],</span>
+    <span class="c1"># rate=rate,</span>
+    <span class="n">resolution</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+    <span class="n">comments</span><span class="o">=</span><span class="s2">&quot;This data was randomly generated with numpy, using 1234 as the seed&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Random numbers generated with numpy.random.rand&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information on writing <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>,
+see <a class="reference internal" href="../domain/ecephys.html#ecephys-tutorial"><span class="std std-ref">Extracellular Electrophysiology Data</span></a>.</p>
+</div>
+<p>Now that we have some data, lets write our file. You can choose not to cache the spec by setting
+cache_spec=False in <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">write</span></code></a></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span>
+
+<span class="n">io</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;cache_spec_example.nwb&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
+<span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+<span class="n">io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information on writing NWB files, see <a class="reference internal" href="plot_file.html#basic-writing"><span class="std std-ref">Writing an NWB file</span></a>.</p>
+</div>
+<p>By default, if a namespace is not already loaded, PyNWB loads the namespace cached in
+the file. To disable this, set <code class="docutils literal notranslate"><span class="pre">load_namespaces=False</span></code> in the
+<a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> constructor.</p>
+</section>
+<section id="creating-and-using-a-custom-multicontainerinterface">
+<span id="multicontainerinterface"></span><h2>Creating and using a custom MultiContainerInterface<a class="headerlink" href="#creating-and-using-a-custom-multicontainerinterface" title="Link to this heading"></a></h2>
+<p>It is sometimes the case that we need a group to hold zero-or-more or
+one-or-more of the same object. Here we show how to create an extension that
+defines a group (<cite>PotatoSack</cite>) that holds multiple objects (<cite>Potato</cite>) and
+then how to use the new data types. First, we use <cite>pynwb</cite> to define the new
+data types.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBAttributeSpec</span><span class="p">,</span> <span class="n">NWBGroupSpec</span><span class="p">,</span> <span class="n">NWBNamespaceBuilder</span>
+
+<span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;test_multicontainerinterface&quot;</span>
+<span class="n">ns_path</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.namespace.yaml&quot;</span>
+<span class="n">ext_source</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.extensions.yaml&quot;</span>
+
+<span class="n">ns_builder</span> <span class="o">=</span> <span class="n">NWBNamespaceBuilder</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot; extensions&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;0.1.0&quot;</span><span class="p">)</span>
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">include_namespace</span><span class="p">(</span><span class="s2">&quot;core&quot;</span><span class="p">)</span>
+
+<span class="n">potato</span> <span class="o">=</span> <span class="n">NWBGroupSpec</span><span class="p">(</span>
+    <span class="n">neurodata_type_def</span><span class="o">=</span><span class="s2">&quot;Potato&quot;</span><span class="p">,</span>
+    <span class="n">neurodata_type_inc</span><span class="o">=</span><span class="s2">&quot;NWBDataInterface&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;A potato&quot;</span><span class="p">,</span>
+    <span class="n">quantity</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">attributes</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">NWBAttributeSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;weight of potato&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">),</span>
+        <span class="n">NWBAttributeSpec</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;age of potato&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">potato_sack</span> <span class="o">=</span> <span class="n">NWBGroupSpec</span><span class="p">(</span>
+    <span class="n">neurodata_type_def</span><span class="o">=</span><span class="s2">&quot;PotatoSack&quot;</span><span class="p">,</span>
+    <span class="n">neurodata_type_inc</span><span class="o">=</span><span class="s2">&quot;NWBDataInterface&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;potato_sack&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;A sack of potatoes&quot;</span><span class="p">,</span>
+    <span class="n">quantity</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+    <span class="n">groups</span><span class="o">=</span><span class="p">[</span><span class="n">potato</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">add_spec</span><span class="p">(</span><span class="n">ext_source</span><span class="p">,</span> <span class="n">potato_sack</span><span class="p">)</span>
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">ns_path</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then create Container classes registered to the new data types (this is
+generally done in a different file)</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_namespaces</span><span class="p">,</span> <span class="n">register_class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiContainerInterface</span><span class="p">,</span> <span class="n">NWBContainer</span>
+
+<span class="n">load_namespaces</span><span class="p">(</span><span class="n">ns_path</span><span class="p">)</span>
+
+
+<span class="nd">@register_class</span><span class="p">(</span><span class="s2">&quot;Potato&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Potato</span><span class="p">(</span><span class="n">NWBContainer</span><span class="p">):</span>
+    <span class="n">__nwbfields__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">)</span>
+
+    <span class="nd">@docval</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;who names a potato?&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;weight of potato in grams&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s2">&quot;doc&quot;</span><span class="p">:</span> <span class="s2">&quot;age of potato in days&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">]</span>
+
+
+<span class="nd">@register_class</span><span class="p">(</span><span class="s2">&quot;PotatoSack&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PotatoSack</span><span class="p">(</span><span class="n">MultiContainerInterface</span><span class="p">):</span>
+    <span class="n">__clsconf__</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;attr&quot;</span><span class="p">:</span> <span class="s2">&quot;potatos&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">Potato</span><span class="p">,</span>
+        <span class="s2">&quot;add&quot;</span><span class="p">:</span> <span class="s2">&quot;add_potato&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;get&quot;</span><span class="p">:</span> <span class="s2">&quot;get_potato&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;create&quot;</span><span class="p">:</span> <span class="s2">&quot;create_potato&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<p>Then use the objects (again, this would often be done in a different file).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <span class="n">tzlocal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span>
+
+<span class="c1"># You can add potatoes to a potato sack in different ways</span>
+<span class="n">potato_sack</span> <span class="o">=</span> <span class="n">PotatoSack</span><span class="p">(</span><span class="n">potatos</span><span class="o">=</span><span class="n">Potato</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;potato1&quot;</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">3.0</span><span class="p">))</span>
+<span class="n">potato_sack</span><span class="o">.</span><span class="n">add_potato</span><span class="p">(</span><span class="n">Potato</span><span class="p">(</span><span class="s2">&quot;potato2&quot;</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">))</span>
+<span class="n">potato_sack</span><span class="o">.</span><span class="n">create_potato</span><span class="p">(</span><span class="s2">&quot;big_potato&quot;</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">)</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="s2">&quot;a file with metadata&quot;</span><span class="p">,</span> <span class="s2">&quot;NB123A&quot;</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="p">())</span>
+<span class="p">)</span>
+
+<span class="n">pmod</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span><span class="s2">&quot;module_name&quot;</span><span class="p">,</span> <span class="s2">&quot;desc&quot;</span><span class="p">)</span>
+<span class="n">pmod</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">potato_sack</span><span class="p">)</span>
+
+
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;test_multicontainerinterface.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is how you read the NWB file (again, this would often be done in a
+different file).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">load_namespaces</span><span class="p">(</span><span class="n">ns_path</span><span class="p">)</span>
+<span class="c1"># from xxx import PotatoSack, Potato</span>
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;test_multicontainerinterface.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">nwb</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">nwb</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">()[</span><span class="s2">&quot;potato_sack&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get_potato</span><span class="p">(</span><span class="s2">&quot;big_potato&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+<span class="c1"># note: you can call get_processing_module() with or without the module name as</span>
+<span class="c1"># an argument. However, if there is more than one module, the name is required.</span>
+<span class="c1"># Here, there is more than one potato, so the name of the potato is required as</span>
+<span class="c1"># an argument to get_potato</span>
+</pre></div>
+</div>
+</section>
+<section id="example-cortical-surface-mesh">
+<h2>Example: Cortical Surface Mesh<a class="headerlink" href="#example-cortical-surface-mesh" title="Link to this heading"></a></h2>
+<p>Here we show how to create extensions by creating a data class for a
+cortical surface mesh. This data type is particularly important for ECoG data, since we need to know where
+each electrode is with respect to the gyri and sulci. Surface mesh objects contain two types of data:</p>
+<ol class="arabic simple">
+<li><p><cite>vertices</cite>, which is an (n, 3) matrix of floats that represents points in 3D space</p></li>
+</ol>
+<p>2. <cite>faces</cite>, which is an (m, 3) matrix of uints that represents indices of the <cite>vertices</cite> matrix. Each triplet of
+points defines a triangular face, and the mesh is comprised of a collection of triangular faces.</p>
+<p>First, we set up our extension. I am going to use the name <cite>ecog</cite></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBDatasetSpec</span><span class="p">,</span> <span class="n">NWBGroupSpec</span><span class="p">,</span> <span class="n">NWBNamespaceBuilder</span>
+
+<span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;ecog&quot;</span>
+<span class="n">ns_path</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.namespace.yaml&quot;</span>
+<span class="n">ext_source</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.extensions.yaml&quot;</span>
+
+<span class="c1"># Now we define the data structures. We use `NWBDataInterface` as the base type,</span>
+<span class="c1"># which is the most primitive type you are likely to use as a base. The name of the</span>
+<span class="c1"># class is `CorticalSurface`, and it requires two matrices, `vertices` and</span>
+<span class="c1"># `faces`.</span>
+
+<span class="n">surface</span> <span class="o">=</span> <span class="n">NWBGroupSpec</span><span class="p">(</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;brain cortical surface&quot;</span><span class="p">,</span>
+    <span class="n">datasets</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">NWBDatasetSpec</span><span class="p">(</span>
+            <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;faces for surface, indexes vertices&quot;</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;faces&quot;</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;uint&quot;</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;face_number&quot;</span><span class="p">,</span> <span class="s2">&quot;vertex_index&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">NWBDatasetSpec</span><span class="p">(</span>
+            <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;vertices for surface, points in 3D space&quot;</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;vertices&quot;</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float&quot;</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;vertex_number&quot;</span><span class="p">,</span> <span class="s2">&quot;xyz&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">neurodata_type_def</span><span class="o">=</span><span class="s2">&quot;CorticalSurface&quot;</span><span class="p">,</span>
+    <span class="n">neurodata_type_inc</span><span class="o">=</span><span class="s2">&quot;NWBDataInterface&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Now we set up the builder and add this object</span>
+
+<span class="n">ns_builder</span> <span class="o">=</span> <span class="n">NWBNamespaceBuilder</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot; extensions&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;0.1.0&quot;</span><span class="p">)</span>
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">add_spec</span><span class="p">(</span><span class="n">ext_source</span><span class="p">,</span> <span class="n">surface</span><span class="p">)</span>
+<span class="n">ns_builder</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">ns_path</span><span class="p">)</span>
+
+<span class="c1">################</span>
+<span class="c1"># The above should generate 2 YAML files. `ecog.extensions.yaml`,</span>
+<span class="c1"># defines the newly defined types</span>
+<span class="c1">#</span>
+<span class="c1"># .. code-block:: yaml</span>
+<span class="c1">#</span>
+<span class="c1">#     # ecog.namespace.yaml</span>
+<span class="c1">#       groups:</span>
+<span class="c1">#       - datasets:</span>
+<span class="c1">#       - dims:</span>
+<span class="c1">#           - face_number</span>
+<span class="c1">#           - vertex_index</span>
+<span class="c1">#           doc: faces for surface, indexes vertices</span>
+<span class="c1">#           dtype: uint</span>
+<span class="c1">#           name: faces</span>
+<span class="c1">#           shape:</span>
+<span class="c1">#           - null</span>
+<span class="c1">#           - 3</span>
+<span class="c1">#       - dims:</span>
+<span class="c1">#           - vertex_number</span>
+<span class="c1">#           - xyz</span>
+<span class="c1">#           doc: vertices for surface, points in 3D space</span>
+<span class="c1">#           dtype: float</span>
+<span class="c1">#           name: vertices</span>
+<span class="c1">#           shape:</span>
+<span class="c1">#           - null</span>
+<span class="c1">#           - 3</span>
+<span class="c1">#       doc: brain cortical surface</span>
+<span class="c1">#       neurodata_type_def: CorticalSurface</span>
+<span class="c1">#       neurodata_type_inc: NWBDataInterface</span>
+<span class="c1">#</span>
+<span class="c1"># Finally, we should test the new types to make sure they run as expected</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">get_class</span><span class="p">,</span> <span class="n">load_namespaces</span>
+
+<span class="n">load_namespaces</span><span class="p">(</span><span class="s2">&quot;ecog.namespace.yaml&quot;</span><span class="p">)</span>
+<span class="n">CorticalSurface</span> <span class="o">=</span> <span class="n">get_class</span><span class="p">(</span><span class="s2">&quot;CorticalSurface&quot;</span><span class="p">,</span> <span class="s2">&quot;ecog&quot;</span><span class="p">)</span>
+
+<span class="n">cortical_surface</span> <span class="o">=</span> <span class="n">CorticalSurface</span><span class="p">(</span>
+    <span class="n">vertices</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+    <span class="p">],</span>
+    <span class="n">faces</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;uint&quot;</span><span class="p">),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;cortex&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span> <span class="s2">&quot;EXAMPLE_ID&quot;</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">())</span>
+
+<span class="n">cortex_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;cortex&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;description&quot;</span>
+<span class="p">)</span>
+<span class="n">cortex_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cortical_surface</span><span class="p">)</span>
+
+
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;test_cortical_surface.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-general-extensions-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/100e961199add479f48fdec3829db901/extensions.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">extensions.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/925cb75a3c3e4f78cc6520c100a9d5ca/extensions.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">extensions.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/e6a72dd00c91a729c53dd46727affff7/extensions.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">extensions.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="scratch.html" class="btn btn-neutral float-left" title="Exploratory Data Analysis with NWB" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_configurator.html" class="btn btn-neutral float-right" title="How to Configure Term Validations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

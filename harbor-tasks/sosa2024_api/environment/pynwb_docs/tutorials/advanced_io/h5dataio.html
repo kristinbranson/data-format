@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Defining HDF5 Dataset I/O Settings (chunking, compression, etc.) &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Editing NWB files" href="plot_editing.html" />
+    <link rel="prev" title="Optogenetics" href="../domain/ogen.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Defining HDF5 Dataset I/O Settings (chunking, compression, etc.)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wrapping-data-arrays-with-h5dataio">Wrapping data arrays with <code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chunking">Chunking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compression-and-other-i-o-filters">Compression and Other I/O Filters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-the-data">Writing the data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-the-data">Reading the data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wrapping-h5py-datasets-with-h5dataio">Wrapping <code class="docutils literal notranslate"><span class="pre">h5py.Datasets</span></code> with <code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dynamically-loaded-filters">Dynamically Loaded Filters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#disclaimer">Disclaimer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_editing.html">Editing NWB files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_iterative_write.html">Iterative Data Write</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_linking_data.html">Modular Data Storage using External Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallelio.html">Parallel I/O using MPI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="streaming.html">Streaming NWB files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_zarr_io.html">Zarr IO</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Defining HDF5 Dataset I/O Settings (chunking, compression, etc.)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/advanced_io/h5dataio.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-advanced-io-h5dataio-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="defining-hdf5-dataset-i-o-settings-chunking-compression-etc">
+<span id="sphx-glr-tutorials-advanced-io-h5dataio-py"></span><h1>Defining HDF5 Dataset I/O Settings (chunking, compression, etc.)<a class="headerlink" href="#defining-hdf5-dataset-i-o-settings-chunking-compression-etc" title="Link to this heading"></a></h1>
+<p>The HDF5 storage backend supports a broad range of advanced dataset I/O options, such as,
+chunking and compression. Here we demonstrate how to use these features
+from PyNWB.</p>
+<section id="wrapping-data-arrays-with-h5dataio">
+<h2>Wrapping data arrays with <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a><a class="headerlink" href="#wrapping-data-arrays-with-h5dataio" title="Link to this heading"></a></h2>
+<p>In order to customize the I/O of datasets using the HDF I/O backend we simply need to wrap our datasets
+using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a>. Using H5DataIO allows us to keep the Container
+classes independent of the I/O backend while still allowing us to customize HDF5-specific I/O features.</p>
+<p>Before we get started, lets create an NWBFile for testing so that we can add our data to it.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <span class="n">tzlocal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="p">())</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate advanced HDF5 I/O features&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;NWB123&quot;</span><span class="p">,</span>
+    <span class="n">session_start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Normally if we create a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> we would do</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="n">data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">timestamps</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">test_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_regular_timeseries&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now let’s say we want to chunk and compress the recorded data values. We now simply need to wrap our data with
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a>. Everything else remains the same</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.hdf5.h5_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">H5DataIO</span></a>
+
+<span class="n">test_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_compressed_timeseries&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">H5DataIO</span></a><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># &lt;----</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This simple approach gives us access to a broad range of advanced I/O features, such as, chunking and
+compression. For a complete list of all available settings see <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a>.
+Here, the settings for chunking and compression are determined automatically.</p>
+</section>
+<section id="chunking">
+<h2>Chunking<a class="headerlink" href="#chunking" title="Link to this heading"></a></h2>
+<p>By default, data arrays are stored <em>contiguously</em>. This means that on disk/in memory the elements of a
+multi-dimensional, such as, <code class="docutils literal notranslate"><span class="pre">`[[1</span> <span class="pre">2]</span> <span class="pre">[3</span> <span class="pre">4]]`</span></code> are actually stored in a one-dimensional buffer
+<code class="docutils literal notranslate"><span class="pre">`1</span> <span class="pre">2</span> <span class="pre">3</span> <span class="pre">4`</span></code>. Using chunking allows us to break up our array into chunks so that our array will be
+stored not in one but multiple buffers, e.g., <code class="docutils literal notranslate"><span class="pre">[1</span> <span class="pre">2]</span> <span class="pre">[3</span> <span class="pre">4]</span></code>. Using this approach allows optimization
+of data locality for I/O operations and enables the application of filters (e.g., compression) on a
+per-chunk basis.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>For an introduction to chunking and compression in HDF5 and h5py in particular see also the online book
+<a class="reference external" href="https://www.oreilly.com/library/view/python-and-hdf5/9781491944981/ch04.html">Python and HDF5</a>
+by Andrew Collette.</p>
+</div>
+<p>To use chunking we again, simply need to wrap our dataset via <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a>.
+Using chunking then also allows to also create resizable arrays simply by defining the <code class="docutils literal notranslate"><span class="pre">maxshape</span></code> of the array.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">wrapped_data</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">H5DataIO</span></a><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+    <span class="n">chunks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># &lt;---- Enable chunking</span>
+    <span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>  <span class="c1"># &lt;---- Make the time dimension unlimited and hence resizable</span>
+<span class="p">)</span>
+<span class="n">test_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_chunked_timeseries&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">wrapped_data</span><span class="p">,</span>  <span class="c1"># &lt;----</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>By also specifying <code class="docutils literal notranslate"><span class="pre">fillvalue</span></code> we can define the value that should be used when reading uninitialized
+portions of the dataset. If no fill value has been defined, then HDF5 will use a type-appropriate default value.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Chunking can help improve data read/write performance by allowing us to align chunks with common
+read/write operations. You can find a discussion on how chunking can help in the
+<a class="reference external" href="https://www.oreilly.com/library/view/python-and-hdf5/9781491944981/ch04.html">Python and HDF5 book</a>.
+by Andrew Collette. But you should also know that, with great power comes great responsibility! I.e., if you choose
+a bad chunk size e.g., too small chunks that don’t align with our read/write operations, then chunking can
+also harm I/O performance.</p>
+</div>
+</section>
+<section id="compression-and-other-i-o-filters">
+<h2>Compression and Other I/O Filters<a class="headerlink" href="#compression-and-other-i-o-filters" title="Link to this heading"></a></h2>
+<p>HDF5 supports I/O filters, i.e, data transformation (e.g, compression) that are applied transparently on
+read/write operations.  I/O filters operate on a per-chunk basis in HDF5 and as such require the use of chunking.
+Chunking will be automatically enabled by h5py when compression and other I/O filters are enabled.</p>
+<p>To use compression, we can wrap our dataset using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a> and
+define the appropriate options:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">wrapped_data</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">H5DataIO</span></a><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+    <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;gzip&quot;</span><span class="p">,</span>  <span class="c1"># &lt;---- Use GZip</span>
+    <span class="n">compression_opts</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># &lt;---- Optional GZip aggression option</span>
+<span class="p">)</span>
+<span class="n">test_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_gzipped_timeseries&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">wrapped_data</span><span class="p">,</span>  <span class="c1"># &lt;----</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>In addition to <code class="docutils literal notranslate"><span class="pre">compression</span></code>, <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a> also allows us to
+enable the <code class="docutils literal notranslate"><span class="pre">shuffle</span></code> and <code class="docutils literal notranslate"><span class="pre">fletcher32</span></code> HDF5 I/O filters.</p>
+</div>
+</section>
+<section id="writing-the-data">
+<h2>Writing the data<a class="headerlink" href="#writing-the-data" title="Link to this heading"></a></h2>
+<p>Writing the data now works as usual.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span>
+
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;advanced_io_example.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="reading-the-data">
+<h2>Reading the data<a class="headerlink" href="#reading-the-data" title="Link to this heading"></a></h2>
+<p>Nothing has changed for read. All the above advanced I/O features are handled transparently.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">io</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;advanced_io_example.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now lets have a look to confirm that all our I/O settings where indeed used.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;name=</span><span class="si">%s</span><span class="s2">, chunks=</span><span class="si">%s</span><span class="s2">, compression=</span><span class="si">%s</span><span class="s2">, maxshape=</span><span class="si">%s</span><span class="s2">&quot;</span>
+        <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">chunks</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">compression</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">maxshape</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="n">io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">name</span><span class="o">=</span><span class="n">test_regular_timeseries</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,)</span>
+<span class="n">name</span><span class="o">=</span><span class="n">test_compressed_timeseries</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,),</span> <span class="n">compression</span><span class="o">=</span><span class="n">gzip</span><span class="p">,</span> <span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,)</span>
+<span class="n">name</span><span class="o">=</span><span class="n">test_chunked_timeseries</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">250</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">compression</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">name</span><span class="o">=</span><span class="n">test_gzipped_timeseries</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">250</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">compression</span><span class="o">=</span><span class="n">gzip</span><span class="p">,</span> <span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As we can see, the datasets have been chunked and compressed correctly. Also, as expected, chunking
+was automatically enabled for the compressed datasets.</p>
+</section>
+<section id="wrapping-h5py-datasets-with-h5dataio">
+<h2>Wrapping <code class="docutils literal notranslate"><span class="pre">h5py.Datasets</span></code> with <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a><a class="headerlink" href="#wrapping-h5py-datasets-with-h5dataio" title="Link to this heading"></a></h2>
+<p>Just for completeness, <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a> also allows us to customize
+how <code class="docutils literal notranslate"><span class="pre">h5py.Dataset</span></code> objects should be handled on write by the PyNWBs HDF5 backend via the <code class="docutils literal notranslate"><span class="pre">link_data</span></code>
+parameter. If <code class="docutils literal notranslate"><span class="pre">link_data</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> then a <code class="docutils literal notranslate"><span class="pre">SoftLink</span></code> or <code class="docutils literal notranslate"><span class="pre">ExternalLink</span></code> will be created to
+point to the HDF5 dataset On the other hand, if <code class="docutils literal notranslate"><span class="pre">link_data</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> then the dataset
+be copied using <a class="reference external" href="https://docs.h5py.org/en/latest/high/group.html#h5py.Group.copy">h5py.Group.copy</a>
+<strong>without copying attributes</strong> and <strong>without expanding soft links, external links, or references</strong>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When wrapping an <code class="docutils literal notranslate"><span class="pre">h5py.Dataset</span></code> object using H5DataIO, then  all settings except <code class="docutils literal notranslate"><span class="pre">link_data</span></code>
+will be ignored as the h5py.Dataset will either be linked to or copied as on write.</p>
+</div>
+</section>
+<section id="dynamically-loaded-filters">
+<h2>Dynamically Loaded Filters<a class="headerlink" href="#dynamically-loaded-filters" title="Link to this heading"></a></h2>
+<p>HDF5 allows you to install additional filters and use these filters as plugins. Some of these filters may have
+superior performance to the default <em>GZIP</em> when it comes to read speed, write speed, or compression ratio. You can
+install several of the most popular filter plugins using the
+<a class="reference external" href="http://www.silx.org/doc/hdf5plugin/latest/index.html">hdf5plugin library</a>.</p>
+<p>First, use <code class="docutils literal notranslate"><span class="pre">pip</span></code> to install hdf5plugin:</p>
+<p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">hdf5plugin</span></code></p>
+<p>This command automatically installs the filters. Here is an example of how you would use the Z Standard algorithm:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">hdf5plugin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.hdf5.h5_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">H5DataIO</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="n">wrapped_data</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">H5DataIO</span></a><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">hdf5plugin</span><span class="o">.</span><span class="n">Zstd</span><span class="p">(</span><span class="n">clevel</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>  <span class="c1"># set the compression and compression_opts parameters</span>
+    <span class="n">allow_plugin_filters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">test_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_gzipped_timeseries&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">wrapped_data</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>See a list of supported compressors
+<a class="reference external" href="http://www.silx.org/doc/hdf5plugin/latest/usage.html#write-compressed-datasets">here</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>h5py</em> (and <em>HDF5</em> more broadly) supports a number of different compression
+algorithms, e.g., <em>GZIP</em>, <em>SZIP</em>, or <em>LZF</em> (or even custom compression filters).
+However, only <em>GZIP</em> is built by default with HDF5, i.e., while data compressed
+with <em>GZIP</em> can be read on all platforms and installation of HDF5, other
+compressors may not be installed, so some users may not be able to access those
+datasets.</p>
+</div>
+</section>
+<section id="disclaimer">
+<h2>Disclaimer<a class="headerlink" href="#disclaimer" title="Link to this heading"></a></h2>
+<p>External links included in the tutorial are being provided as a convenience and for informational purposes only;
+they do not constitute an endorsement or an approval by the authors of any of the products, services or opinions of
+the corporation or organization or individual. The authors bear no responsibility for the accuracy, legality or
+content of the external site or for that of subsequent links. Contact the external site for answers to questions
+regarding its content.</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-advanced-io-h5dataio-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/fc427b0f711a91f63a34bd461bce8dab/h5dataio.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">h5dataio.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/a97bb86d67e56be2cc39564a8651c395/h5dataio.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">h5dataio.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/d33cb2df10983006ab186639d93643de/h5dataio.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">h5dataio.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../domain/ogen.html" class="btn btn-neutral float-left" title="Optogenetics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_editing.html" class="btn btn-neutral float-right" title="Editing NWB files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

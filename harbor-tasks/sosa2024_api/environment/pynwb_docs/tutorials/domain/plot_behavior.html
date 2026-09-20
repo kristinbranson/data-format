@@ -1,0 +1,1201 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Behavior Data &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Storing Image Data in NWB" href="images.html" />
+    <link rel="prev" title="Query Intracellular Electrophysiology Metadata" href="plot_icephys_pandas.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ecephys.html">Extracellular Electrophysiology Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ophys.html">Calcium Imaging Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys_pandas.html">Query Intracellular Electrophysiology Metadata</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Behavior Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-an-nwb-file">Create an NWB File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spatialseries-storing-continuous-spatial-data">SpatialSeries: Storing continuous spatial data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#position-storing-position-measured-over-time">Position: Storing position measured over time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-behavior-processing-module">Create a Behavior Processing Module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compassdirection-storing-view-angle-measured-over-time">CompassDirection: Storing view angle measured over time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#behavioraltimeseries-storing-continuous-behavior-data">BehavioralTimeSeries: Storing continuous behavior data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#eventstable-storing-behavioral-events">EventsTable: Storing behavioral events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#behavioralepochs-storing-intervals-of-behavior-data">BehavioralEpochs: Storing intervals of behavior data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pupiltracking-storing-continuous-eye-tracking-data-of-pupil-size">PupilTracking: Storing continuous eye-tracking data of pupil size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#eyetracking-storing-continuous-eye-tracking-data-of-gaze-direction">EyeTracking: Storing continuous eye-tracking data of gaze direction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-the-behavior-data-to-an-nwb-file">Writing the behavior data to an NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-and-accessing-the-behavior-data">Reading and accessing the behavior data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="images.html">Storing Image Data in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ogen.html">Optogenetics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Behavior Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/domain/plot_behavior.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-domain-plot-behavior-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="behavior-data">
+<span id="behavior-basics"></span><span id="sphx-glr-tutorials-domain-plot-behavior-py"></span><h1>Behavior Data<a class="headerlink" href="#behavior-data" title="Link to this heading"></a></h1>
+<p>This tutorial will demonstrate the usage of the <a class="reference internal" href="../../pynwb.behavior.html#module-pynwb.behavior" title="pynwb.behavior"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pynwb.behavior</span></code></a> module for adding
+behavioral data to an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>You can learn more about the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> format in the <a class="reference internal" href="../general/plot_file.html#basics"><span class="std std-ref">NWB File Basics</span></a> tutorial.</p>
+</div>
+<p>The examples below follow this general workflow for adding behavior data to an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>:</p>
+<ul class="simple">
+<li><p>create an object:</p>
+<ul>
+<li><p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> for continuous time series data,</p></li>
+<li><p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> for continuous spatial data (e.g. position, direction relative to some
+reference frame),</p></li>
+<li><p><a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a> or <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> for time intervals</p></li>
+</ul>
+</li>
+<li><p>store that object inside a behavior interface object:</p>
+<ul>
+<li><p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> for position measured over time</p></li>
+<li><p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.CompassDirection" title="pynwb.behavior.CompassDirection"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompassDirection</span></code></a> for view angle measured over time</p></li>
+<li><p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralTimeSeries" title="pynwb.behavior.BehavioralTimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralTimeSeries</span></code></a> for continuous time series data</p></li>
+<li><p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEpochs" title="pynwb.behavior.BehavioralEpochs"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEpochs</span></code></a> for behavioral intervals (e.g. sleep intervals)</p></li>
+<li><p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.PupilTracking" title="pynwb.behavior.PupilTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">PupilTracking</span></code></a> for eye-tracking data of pupil size</p></li>
+<li><p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.EyeTracking" title="pynwb.behavior.EyeTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">EyeTracking</span></code></a> for eye-tracking data of gaze direction</p></li>
+<li><p><a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a> for behavioral events (e.g. reward times)</p></li>
+</ul>
+</li>
+<li><p>create a behavior processing module for the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> and add the interface object(s) to it</p></li>
+</ul>
+<p>The following examples will reference variables that may not be defined within the block they are used in. For
+clarity, we define them here:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.behavior</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">BehavioralEpochs</span></a><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">BehavioralTimeSeries</span></a><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">CompassDirection</span></a><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">EyeTracking</span></a><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Position</span></a><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">PupilTracking</span></a><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">SpatialSeries</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.epoch</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">TimeIntervals</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.event</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">EventsTable</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.misc</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">IntervalSeries</span></a>
+</pre></div>
+</div>
+<section id="create-an-nwb-file">
+<h2>Create an NWB File<a class="headerlink" href="#create-an-nwb-file" title="Link to this heading"></a></h2>
+<p>Create an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object with the required fields
+(<code class="docutils literal notranslate"><span class="pre">session_description</span></code>, <code class="docutils literal notranslate"><span class="pre">identifier</span></code>, <code class="docutils literal notranslate"><span class="pre">session_start_time</span></code>) and additional metadata.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">()),</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure to reclaim vast treasures.&quot;</span><span class="p">,</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;LONELYMTN001&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>root (NWBFile)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".session_description">session_description: </span><span class="field-value">my first synthetic recording</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".identifier">identifier: </span><span class="field-value">d91c96cc-cb47-4ec5-b62b-6023c0de1d7e</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".session_start_time"><b>session_start_time</b></summary><span class="field-key">2026-09-19 21:22:41.849029-04:00</span></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps_reference_time"><b>timestamps_reference_time</b></summary><span class="field-key">2026-09-19 21:22:41.849029-04:00</span></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".file_create_date"><b>file_create_date</b></summary><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title=".file_create_date[0]"><b>0</b></summary><span class="field-key">2026-09-19 21:22:41.849211-04:00</span></details></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".experimenter"><b>experimenter</b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".experimenter[0]">0: </span><span class="field-value">Baggins, Bilbo</span></div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".experiment_description">experiment_description: </span><span class="field-value">I went on an adventure to reclaim vast treasures.</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".session_id">session_id: </span><span class="field-value">LONELYMTN001</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".lab">lab: </span><span class="field-value">Bag End Laboratory</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".institution">institution: </span><span class="field-value">University of Middle Earth at the Shire</span></div></div>
+</div>
+<br />
+<br /></section>
+<section id="spatialseries-storing-continuous-spatial-data">
+<h2>SpatialSeries: Storing continuous spatial data<a class="headerlink" href="#spatialseries-storing-continuous-spatial-data" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> is a subclass of <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>
+that represents data in space, such as the spatial direction, e.g., of gaze or travel,
+or position of an animal over time.</p>
+<p>Create data that corresponds to x, y position over time.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">position_data</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">([</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">50</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span>
+
+<a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">position_data</span><span class="o">.</span><span class="n">shape</span></a>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(50, 2)
+</pre></div>
+</div>
+<p>In <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> <code class="docutils literal notranslate"><span class="pre">data</span></code>, the first dimension is always time (in seconds),
+the second dimension represents the x, y position (in meters).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> data should be stored as one continuous stream,
+as it is acquired, not by trial as is often reshaped for analysis.
+Data can be trial-aligned on-the-fly using the trials table. See the <a class="reference internal" href="../general/plot_timeintervals.html#time-intervals"><span class="std std-ref">Annotating Time Intervals</span></a> tutorial
+for further information.</p>
+</div>
+<p>For position data <code class="docutils literal notranslate"><span class="pre">reference_frame</span></code> indicates the zero-position, e.g.
+the 0,0 point might be the bottom-left corner of an enclosure, as viewed from the tracking camera.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span> <span class="o">/</span> <span class="mi">200</span>
+
+<span class="n">position_spatial_series</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">SpatialSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;SpatialSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Position (x, y) in an open field.&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">position_data</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+    <span class="n">reference_frame</span><span class="o">=</span><span class="s2">&quot;(0,0) is bottom left corner&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">position_spatial_series</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>SpatialSeries</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">Position (x, y) in an open field.</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".unit">unit: </span><span class="field-value">meters</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".data"><b>data</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50, 2)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">800.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps"><b>timestamps</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".reference_frame">reference_frame: </span><span class="field-value">(0,0) is bottom left corner</span></div></div>
+</div>
+<br />
+<br /></section>
+<section id="position-storing-position-measured-over-time">
+<h2>Position: Storing position measured over time<a class="headerlink" href="#position-storing-position-measured-over-time" title="Link to this heading"></a></h2>
+<p>To help data analysis and visualization tools know that this <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object
+represents the position of the subject, store the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object inside
+a <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object, which can hold one or more <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a>
+objects.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">position</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Position</span></a><span class="p">(</span><span class="n">spatial_series</span><span class="o">=</span><span class="n">position_spatial_series</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>You can learn more about the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> data type and
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> interface in the <a class="reference internal" href="../general/plot_file.html#basic-spatialseries"><span class="std std-ref">Spatial Series and Position</span></a> tutorial.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>You can learn more about best practices that can be applied to
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> at <a class="reference external" href="https://nwbinspector.readthedocs.io/en/dev/best_practices/time_series.html">NWB Best Practices</a>.</p>
+</div>
+</section>
+<section id="create-a-behavior-processing-module">
+<h2>Create a Behavior Processing Module<a class="headerlink" href="#create-a-behavior-processing-module" title="Link to this heading"></a></h2>
+<p>Create a processing module called <code class="docutils literal notranslate"><span class="pre">&quot;behavior&quot;</span></code> for storing behavioral data in the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+using the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_processing_module" title="pynwb.file.NWBFile.create_processing_module"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_processing_module</span></code></a> method, and then add the
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object to the processing module.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">behavior_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;behavior&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Processed behavioral data&quot;</span>
+<span class="p">)</span>
+
+<span class="n">behavior_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>Position</h3></div></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['SpatialSeries']"><b>SpatialSeries <span style='font-weight: normal; color: #888;'>(SpatialSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].description">description: </span><span class="field-value">Position (x, y) in an open field.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].unit">unit: </span><span class="field-value">meters</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['SpatialSeries'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50, 2)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">800.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['SpatialSeries'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].reference_frame">reference_frame: </span><span class="field-value">(0,0) is bottom left corner</span></div></details></div>
+</div>
+<br />
+<br /><div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>You can read more about the basic concepts of processing modules in the <a class="reference internal" href="../general/plot_file.html#modules-overview"><span class="std std-ref">Processing Modules</span></a> tutorial.</p>
+</div>
+</section>
+<section id="compassdirection-storing-view-angle-measured-over-time">
+<h2>CompassDirection: Storing view angle measured over time<a class="headerlink" href="#compassdirection-storing-view-angle-measured-over-time" title="Link to this heading"></a></h2>
+<p>Analogous to how position can be stored, we can create a <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a>
+object for representing the view angle of the subject.</p>
+<p>For direction data <code class="docutils literal notranslate"><span class="pre">reference_frame</span></code> indicates the zero-axes, for instance
+“straight-ahead” might be a specific pixel on the monitor, or some other point in space.
+The unit of measurement for the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object should be radians or degrees.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">view_angle_data</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="n">direction_spatial_series</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">SpatialSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;SpatialSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;View angle of the subject measured in radians.&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">view_angle_data</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+    <span class="n">reference_frame</span><span class="o">=</span><span class="s2">&quot;straight ahead&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;radians&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">direction</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">CompassDirection</span></a><span class="p">(</span>
+    <span class="n">spatial_series</span><span class="o">=</span><span class="n">direction_spatial_series</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;CompassDirection&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>We can add a <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.CompassDirection" title="pynwb.behavior.CompassDirection"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompassDirection</span></code></a> object to the <code class="docutils literal notranslate"><span class="pre">behavior</span></code> processing module
+the same way as we have added the position data:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">behavior_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">direction</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>CompassDirection</h3></div></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['SpatialSeries']"><b>SpatialSeries <span style='font-weight: normal; color: #888;'>(SpatialSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].description">description: </span><span class="field-value">View angle of the subject measured in radians.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].unit">unit: </span><span class="field-value">radians</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['SpatialSeries'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['SpatialSeries'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].reference_frame">reference_frame: </span><span class="field-value">straight ahead</span></div></details></div>
+</div>
+<br />
+<br /></section>
+<section id="behavioraltimeseries-storing-continuous-behavior-data">
+<h2>BehavioralTimeSeries: Storing continuous behavior data<a class="headerlink" href="#behavioraltimeseries-storing-continuous-behavior-data" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralTimeSeries" title="pynwb.behavior.BehavioralTimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralTimeSeries</span></code></a> is an interface for storing continuous behavior data, such as the
+speed of a subject.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">speed_data</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="n">speed_time_series</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;speed&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">speed_data</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The speed of the subject measured over time.&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m/s&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">behavioral_time_series</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">BehavioralTimeSeries</span></a><span class="p">(</span>
+    <span class="n">time_series</span><span class="o">=</span><span class="n">speed_time_series</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;BehavioralTimeSeries&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">behavior_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">behavioral_time_series</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>BehavioralTimeSeries</h3></div></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['speed']"><b>speed <span style='font-weight: normal; color: #888;'>(TimeSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].description">description: </span><span class="field-value">The speed of the subject measured over time.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].unit">unit: </span><span class="field-value">m/s</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['speed'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['speed'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['speed'].interval">interval: </span><span class="field-value">1</span></div></details></div>
+</div>
+<br />
+<br /></section>
+<section id="eventstable-storing-behavioral-events">
+<h2>EventsTable: Storing behavioral events<a class="headerlink" href="#eventstable-storing-behavioral-events" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a> is for storing behavioral events such as the timing
+and amount of rewards (e.g., water amount) or lever press times. EventsTable is stored
+in <code class="docutils literal notranslate"><span class="pre">NWBFile.events</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEvents" title="pynwb.behavior.BehavioralEvents"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEvents</span></code></a> is deprecated. Use
+<a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a> instead.</p>
+</div>
+<p>Create an <a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a> to store reward delivery events.
+The required <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> column stores the time of each event in seconds from the
+session start time. Additional columns can be added to store metadata about each
+event, such as the amount of reward delivered.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">reward_events</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">EventsTable</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;reward_events&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Times and amounts of water rewards delivered to the animal.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_column" title="hdmf.common.table.DynamicTable.add_column" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">reward_events</span><span class="o">.</span><span class="n">add_column</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;amount_ml&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Volume of water reward in mL.&quot;</span><span class="p">)</span>
+
+<span class="n">reward_events</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="mf">12.5</span><span class="p">,</span> <span class="n">amount_ml</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">reward_events</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="mf">27.3</span><span class="p">,</span> <span class="n">amount_ml</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">reward_events</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="mf">44.1</span><span class="p">,</span> <span class="n">amount_ml</span><span class="o">=</span><span class="mf">0.10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Add the <a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a> to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+using <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_events_table" title="pynwb.file.NWBFile.add_events_table"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_events_table</span></code></a>. Events tables are stored in
+<code class="docutils literal notranslate"><span class="pre">NWBFile.events</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_events_table</span><span class="p">(</span><span class="n">reward_events</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>reward_events (EventsTable)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title="">description: </span><span class="field-value">Times and amounts of water rewards delivered to the animal.</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key"><b>columns</b></summary><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['timestamp']"><b>timestamp</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">The time that each event occurred, in seconds, from the session start time.</span></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['amount_ml']"><b>amount_ml</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">Volume of water reward in mL.</span></div></details></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=""><b>table</b></summary><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>timestamp</th>
+      <th>amount_ml</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>12.5</td>
+      <td>0.05</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>27.3</td>
+      <td>0.05</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>44.1</td>
+      <td>0.10</td>
+    </tr>
+  </tbody>
+</table></details></div>
+</div>
+<br />
+<br /></section>
+<section id="behavioralepochs-storing-intervals-of-behavior-data">
+<h2>BehavioralEpochs: Storing intervals of behavior data<a class="headerlink" href="#behavioralepochs-storing-intervals-of-behavior-data" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEpochs" title="pynwb.behavior.BehavioralEpochs"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEpochs</span></code></a> is for storing intervals of behavior data.
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEpochs" title="pynwb.behavior.BehavioralEpochs"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEpochs</span></code></a> uses <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a>
+to represent behavioral epochs.</p>
+<p>Create <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a> object that represents the time intervals
+when the animal was running. <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a> uses 1 to indicate
+the beginning of an interval and -1 to indicate the end.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">run_intervals</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">IntervalSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;running&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Intervals when the animal was running.&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">7.0</span><span class="p">,</span> <span class="mf">7.3</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">behavioral_epochs</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">BehavioralEpochs</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;BehavioralEpochs&quot;</span><span class="p">)</span>
+
+<span class="n">behavioral_epochs</span><span class="o">.</span><span class="n">add_interval_series</span><span class="p">(</span><span class="n">run_intervals</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>running (IntervalSeries)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">Intervals when the animal was running.</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".unit">unit: </span><span class="field-value">n/a</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".data"><b>data</b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".data[0]">0: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".data[0][1]">1: </span><span class="field-value">-1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".data[0][1][2]">2: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".data[0][1][2][3]">3: </span><span class="field-value">-1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".data[0][1][2][3][4]">4: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".data[0][1][2][3][4][5]">5: </span><span class="field-value">-1</span></div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps"><b>timestamps</b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".timestamps[0]">0: </span><span class="field-value">0.5</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".timestamps[0][1]">1: </span><span class="field-value">1.5</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".timestamps[0][1][2]">2: </span><span class="field-value">3.5</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".timestamps[0][1][2][3]">3: </span><span class="field-value">4.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".timestamps[0][1][2][3][4]">4: </span><span class="field-value">7.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".timestamps[0][1][2][3][4][5]">5: </span><span class="field-value">7.3</span></div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".interval">interval: </span><span class="field-value">1</span></div></div>
+</div>
+<br />
+<br /><p>you can add more than one <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a> to a
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEpochs" title="pynwb.behavior.BehavioralEpochs"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEpochs</span></code></a></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">sleep_intervals</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">IntervalSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sleeping&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Intervals when the animal was sleeping.&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><span class="p">[</span><span class="mf">15.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">,</span> <span class="mf">95.0</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">behavioral_epochs</span><span class="o">.</span><span class="n">add_interval_series</span><span class="p">(</span><span class="n">sleep_intervals</span><span class="p">)</span>
+
+<span class="n">behavior_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">behavioral_epochs</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>BehavioralEpochs</h3></div></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['running']"><b>running <span style='font-weight: normal; color: #888;'>(IntervalSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].description">description: </span><span class="field-value">Intervals when the animal was running.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].unit">unit: </span><span class="field-value">n/a</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['running'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].data[0]">0: </span><span class="field-value">1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].data[0][1]">1: </span><span class="field-value">-1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].data[0][1][2]">2: </span><span class="field-value">1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].data[0][1][2][3]">3: </span><span class="field-value">-1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].data[0][1][2][3][4]">4: </span><span class="field-value">1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].data[0][1][2][3][4][5]">5: </span><span class="field-value">-1</span></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['running'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].timestamps[0]">0: </span><span class="field-value">0.5</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].timestamps[0][1]">1: </span><span class="field-value">1.5</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].timestamps[0][1][2]">2: </span><span class="field-value">3.5</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].timestamps[0][1][2][3]">3: </span><span class="field-value">4.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].timestamps[0][1][2][3][4]">4: </span><span class="field-value">7.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['running'].timestamps[0][1][2][3][4][5]">5: </span><span class="field-value">7.3</span></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['running'].interval">interval: </span><span class="field-value">1</span></div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['sleeping']"><b>sleeping <span style='font-weight: normal; color: #888;'>(IntervalSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].description">description: </span><span class="field-value">Intervals when the animal was sleeping.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].unit">unit: </span><span class="field-value">n/a</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['sleeping'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].data[0]">0: </span><span class="field-value">1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].data[0][1]">1: </span><span class="field-value">-1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].data[0][1][2]">2: </span><span class="field-value">1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].data[0][1][2][3]">3: </span><span class="field-value">-1</span></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['sleeping'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].timestamps[0]">0: </span><span class="field-value">15.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].timestamps[0][1]">1: </span><span class="field-value">30.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].timestamps[0][1][2]">2: </span><span class="field-value">60.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['sleeping'].timestamps[0][1][2][3]">3: </span><span class="field-value">95.0</span></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['sleeping'].interval">interval: </span><span class="field-value">1</span></div></details></div>
+</div>
+<br />
+<br /><p>Using <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> representing time intervals
+is often preferred over <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEpochs" title="pynwb.behavior.BehavioralEpochs"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEpochs</span></code></a> and <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a>.
+<a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> is a subclass of <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> which offers
+flexibility for tabular data by allowing the addition of optional columns which are not defined in the standard.</p>
+<p>Create a <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> object that represents the time
+intervals when the animal was sleeping.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">sleep_intervals</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">TimeIntervals</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sleep_intervals&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Intervals when the animal was sleeping.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_column" title="hdmf.common.table.DynamicTable.add_column" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_intervals</span><span class="o">.</span><span class="n">add_column</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;stage&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The stage of sleep.&quot;</span><span class="p">)</span>
+
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_row" title="hdmf.common.table.DynamicTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_intervals</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_row" title="hdmf.common.table.DynamicTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_intervals</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_row" title="hdmf.common.table.DynamicTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">sleep_intervals</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_time_intervals</span><span class="p">(</span><span class="n">sleep_intervals</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>sleep_intervals (TimeIntervals)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title="">description: </span><span class="field-value">Intervals when the animal was sleeping.</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key"><b>columns</b></summary><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['start_time']"><b>start_time</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">Start time of epoch, in seconds</span></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['stop_time']"><b>stop_time</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">Stop time of epoch, in seconds</span></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['stage']"><b>stage</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">The stage of sleep.</span></div></details></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=""><b>table</b></summary><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>start_time</th>
+      <th>stop_time</th>
+      <th>stage</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.3</td>
+      <td>0.35</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.7</td>
+      <td>0.90</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1.3</td>
+      <td>3.00</td>
+      <td>3</td>
+    </tr>
+  </tbody>
+</table></details></div>
+</div>
+<br />
+<br /></section>
+<section id="pupiltracking-storing-continuous-eye-tracking-data-of-pupil-size">
+<h2>PupilTracking: Storing continuous eye-tracking data of pupil size<a class="headerlink" href="#pupiltracking-storing-continuous-eye-tracking-data-of-pupil-size" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.PupilTracking" title="pynwb.behavior.PupilTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">PupilTracking</span></code></a> is for storing eye-tracking data which
+represents pupil size. <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.PupilTracking" title="pynwb.behavior.PupilTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">PupilTracking</span></code></a> holds one or more
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> objects that can represent different features
+such as the dilation of the pupil measured over time by a pupil tracking algorithm.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">pupil_diameter</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pupil_diameter&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Pupil diameter extracted from the video of the right eye.&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;meters&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">pupil_tracking</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">PupilTracking</span></a><span class="p">(</span><span class="n">time_series</span><span class="o">=</span><span class="n">pupil_diameter</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PupilTracking&quot;</span><span class="p">)</span>
+
+<span class="n">behavior_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pupil_tracking</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>PupilTracking</h3></div></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['pupil_diameter']"><b>pupil_diameter <span style='font-weight: normal; color: #888;'>(TimeSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].description">description: </span><span class="field-value">Pupil diameter extracted from the video of the right eye.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].unit">unit: </span><span class="field-value">meters</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['pupil_diameter'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['pupil_diameter'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['pupil_diameter'].interval">interval: </span><span class="field-value">1</span></div></details></div>
+</div>
+<br />
+<br /></section>
+<section id="eyetracking-storing-continuous-eye-tracking-data-of-gaze-direction">
+<h2>EyeTracking: Storing continuous eye-tracking data of gaze direction<a class="headerlink" href="#eyetracking-storing-continuous-eye-tracking-data-of-gaze-direction" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.EyeTracking" title="pynwb.behavior.EyeTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">EyeTracking</span></code></a> is for storing eye-tracking data which
+represents direction of gaze as measured by an eye tracking algorithm.
+An <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.EyeTracking" title="pynwb.behavior.EyeTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">EyeTracking</span></code></a> object holds one or more
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> objects that represents the vertical and
+horizontal gaze positions extracted from a video.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">right_eye_position</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="n">right_eye_positions</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">SpatialSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;right_eye_position&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The position of the right eye measured in degrees.&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">right_eye_position</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+    <span class="n">reference_frame</span><span class="o">=</span><span class="s2">&quot;bottom left&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;degrees&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">eye_tracking</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">EyeTracking</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;EyeTracking&quot;</span><span class="p">,</span> <span class="n">spatial_series</span><span class="o">=</span><span class="n">right_eye_positions</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can add another <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> representing the position
+of the left eye in degrees.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">left_eye_position</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="n">left_eye_positions</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">SpatialSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;left_eye_position&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The position of the left eye measured in degrees.&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">left_eye_position</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+    <span class="n">reference_frame</span><span class="o">=</span><span class="s2">&quot;bottom left&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;degrees&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">eye_tracking</span><span class="o">.</span><span class="n">add_spatial_series</span><span class="p">(</span><span class="n">spatial_series</span><span class="o">=</span><span class="n">left_eye_positions</span><span class="p">)</span>
+
+<span class="n">behavior_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">eye_tracking</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>EyeTracking</h3></div></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['right_eye_position']"><b>right_eye_position <span style='font-weight: normal; color: #888;'>(SpatialSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].description">description: </span><span class="field-value">The position of the right eye measured in degrees.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].unit">unit: </span><span class="field-value">degrees</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['right_eye_position'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['right_eye_position'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['right_eye_position'].reference_frame">reference_frame: </span><span class="field-value">bottom left</span></div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['left_eye_position']"><b>left_eye_position <span style='font-weight: normal; color: #888;'>(SpatialSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].description">description: </span><span class="field-value">The position of the left eye measured in degrees.</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].unit">unit: </span><span class="field-value">degrees</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['left_eye_position'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['left_eye_position'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['left_eye_position'].reference_frame">reference_frame: </span><span class="field-value">bottom left</span></div></details></div>
+</div>
+<br />
+<br /></section>
+<section id="writing-the-behavior-data-to-an-nwb-file">
+<h2>Writing the behavior data to an NWB file<a class="headerlink" href="#writing-the-behavior-data-to-an-nwb-file" title="Link to this heading"></a></h2>
+<p>As demonstrated in the <a class="reference internal" href="../general/plot_file.html#basic-writing"><span class="std std-ref">Writing an NWB file</span></a> tutorial, we will use <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> to write the file.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;behavioral_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="reading-and-accessing-the-behavior-data">
+<h2>Reading and accessing the behavior data<a class="headerlink" href="#reading-and-accessing-the-behavior-data" title="Link to this heading"></a></h2>
+<p>To read the NWB file we just wrote, use another <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> object,
+and use the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO.read" title="pynwb.NWBHDF5IO.read"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read</span></code></a> method to retrieve an
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object.</p>
+<p>We can access the behavior processing module by indexing <code class="docutils literal notranslate"><span class="pre">nwbfile.processing</span></code>
+with the name of the processing module <code class="docutils literal notranslate"><span class="pre">&quot;behavior&quot;</span></code>. We can also inspect the objects
+hierarchy within this processing module with the <code class="docutils literal notranslate"><span class="pre">.children</span></code> attribute.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;behavioral_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="n">behavior_module</span> <span class="o">=</span> <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">]</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available data interfaces: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">behavior_module</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Available data interfaces: [BehavioralEpochs pynwb.behavior.BehavioralEpochs at 0x133234036187376
+Fields:
+  interval_series: {
+    running &lt;class &#39;pynwb.misc.IntervalSeries&#39;&gt;,
+    sleeping &lt;class &#39;pynwb.misc.IntervalSeries&#39;&gt;
+  }
+, BehavioralTimeSeries pynwb.behavior.BehavioralTimeSeries at 0x133235014289504
+Fields:
+  time_series: {
+    speed &lt;class &#39;pynwb.base.TimeSeries&#39;&gt;
+  }
+, CompassDirection pynwb.behavior.CompassDirection at 0x133235014264128
+Fields:
+  spatial_series: {
+    SpatialSeries &lt;class &#39;pynwb.behavior.SpatialSeries&#39;&gt;
+  }
+, EyeTracking pynwb.behavior.EyeTracking at 0x133235014255248
+Fields:
+  spatial_series: {
+    left_eye_position &lt;class &#39;pynwb.behavior.SpatialSeries&#39;&gt;,
+    right_eye_position &lt;class &#39;pynwb.behavior.SpatialSeries&#39;&gt;
+  }
+, Position pynwb.behavior.Position at 0x133235014270800
+Fields:
+  spatial_series: {
+    SpatialSeries &lt;class &#39;pynwb.behavior.SpatialSeries&#39;&gt;
+  }
+, PupilTracking pynwb.behavior.PupilTracking at 0x133234593540928
+Fields:
+  time_series: {
+    pupil_diameter &lt;class &#39;pynwb.base.TimeSeries&#39;&gt;
+  }
+]
+</pre></div>
+</div>
+<p>For instance, we can access the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> data
+by referencing the names of the objects in the hierarchy that contain it.
+We can access the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object inside the <code class="docutils literal notranslate"><span class="pre">behavior</span></code>
+processing module by indexing it with the name of the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object,
+<code class="docutils literal notranslate"><span class="pre">&quot;Position&quot;</span></code>. Then, we can access the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object inside the
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object by indexing it with the name of the
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object, <code class="docutils literal notranslate"><span class="pre">&quot;SpatialSeries&quot;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;behavioral_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">][</span><span class="s2">&quot;Position&quot;</span><span class="p">][</span><span class="s2">&quot;SpatialSeries&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>SpatialSeries pynwb.behavior.SpatialSeries at 0x133234016871792
+Fields:
+  comments: no comments
+  conversion: 1.0
+  data: &lt;HDF5 dataset &quot;data&quot;: shape (50, 2), type &quot;&lt;f8&quot;&gt;
+  description: Position (x, y) in an open field.
+  interval: 1
+  offset: 0.0
+  reference_frame: (0,0) is bottom left corner
+  resolution: -1.0
+  timestamps: &lt;HDF5 dataset &quot;timestamps&quot;: shape (50,), type &quot;&lt;f8&quot;&gt;
+  timestamps_unit: seconds
+  unit: meters
+</pre></div>
+</div>
+<p>Data arrays are read passively from the file.
+Accessing the <code class="docutils literal notranslate"><span class="pre">data</span></code> attribute of the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object
+does not read the data values, but presents an HDF5 object that can be indexed to read data.
+You can use the <code class="docutils literal notranslate"><span class="pre">[:]</span></code> operator to read the entire data array into memory.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;behavioral_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">][</span><span class="s2">&quot;Position&quot;</span><span class="p">][</span><span class="s2">&quot;SpatialSeries&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[[ 0.          0.        ]
+ [ 0.20408163  0.16326531]
+ [ 0.40816327  0.32653061]
+ [ 0.6122449   0.48979592]
+ [ 0.81632653  0.65306122]
+ [ 1.02040816  0.81632653]
+ [ 1.2244898   0.97959184]
+ [ 1.42857143  1.14285714]
+ [ 1.63265306  1.30612245]
+ [ 1.83673469  1.46938776]
+ [ 2.04081633  1.63265306]
+ [ 2.24489796  1.79591837]
+ [ 2.44897959  1.95918367]
+ [ 2.65306122  2.12244898]
+ [ 2.85714286  2.28571429]
+ [ 3.06122449  2.44897959]
+ [ 3.26530612  2.6122449 ]
+ [ 3.46938776  2.7755102 ]
+ [ 3.67346939  2.93877551]
+ [ 3.87755102  3.10204082]
+ [ 4.08163265  3.26530612]
+ [ 4.28571429  3.42857143]
+ [ 4.48979592  3.59183673]
+ [ 4.69387755  3.75510204]
+ [ 4.89795918  3.91836735]
+ [ 5.10204082  4.08163265]
+ [ 5.30612245  4.24489796]
+ [ 5.51020408  4.40816327]
+ [ 5.71428571  4.57142857]
+ [ 5.91836735  4.73469388]
+ [ 6.12244898  4.89795918]
+ [ 6.32653061  5.06122449]
+ [ 6.53061224  5.2244898 ]
+ [ 6.73469388  5.3877551 ]
+ [ 6.93877551  5.55102041]
+ [ 7.14285714  5.71428571]
+ [ 7.34693878  5.87755102]
+ [ 7.55102041  6.04081633]
+ [ 7.75510204  6.20408163]
+ [ 7.95918367  6.36734694]
+ [ 8.16326531  6.53061224]
+ [ 8.36734694  6.69387755]
+ [ 8.57142857  6.85714286]
+ [ 8.7755102   7.02040816]
+ [ 8.97959184  7.18367347]
+ [ 9.18367347  7.34693878]
+ [ 9.3877551   7.51020408]
+ [ 9.59183673  7.67346939]
+ [ 9.79591837  7.83673469]
+ [10.          8.        ]]
+</pre></div>
+</div>
+<p>Alternatively, you can read only a portion of the data by indexing or slicing into
+the <code class="docutils literal notranslate"><span class="pre">data</span></code> attribute just like if you were indexing or slicing a numpy array.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;behavioral_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">][</span><span class="s2">&quot;Position&quot;</span><span class="p">][</span><span class="s2">&quot;SpatialSeries&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[[0.         0.        ]
+ [0.20408163 0.16326531]]
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-domain-plot-behavior-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/6fed62c9fc13b548dd8f87a03f01ec6d/plot_behavior.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_behavior.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/e3fc76bbb09ce8b2d42b6920b2dc2b72/plot_behavior.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_behavior.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/39357402989568a2a899c025e86d9117/plot_behavior.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_behavior.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_icephys_pandas.html" class="btn btn-neutral float-left" title="Query Intracellular Electrophysiology Metadata" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="images.html" class="btn btn-neutral float-right" title="Storing Image Data in NWB" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

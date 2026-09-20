@@ -144,6 +144,13 @@ MINIMAL_SUFFIX = "_minimal"
 # the <task>_minimal trials serve as the datalimit arm, so they are not rerun.
 DATALIMIT_SUFFIX = "_datalimit"
 
+# Suffix marking the API variant: the same task and the same data, with the agent required
+# to read the files through the format's own library rather than parsing them directly --
+# sosa2024_api demands pynwb instead of h5py, and carries pynwb's documentation in the
+# image. It varies which interface the agent is told to use, where _minimal varies how much
+# the prompt says and _datalimit how much data there is.
+API_SUFFIX = "_api"
+
 
 def discover_tasks(scope: str = "all") -> list[str]:
     """Return the benchmark task directory names for a scope.
@@ -154,24 +161,34 @@ def discover_tasks(scope: str = "all") -> list[str]:
                         default sweep),
             "minimal"   only the minimal-prompt <task>_minimal directories,
             "maximal"   only the full-prompt <task> directories,
-            "datalimit" only the datalimit <task>_datalimit directories.
+            "datalimit" only the datalimit <task>_datalimit directories,
+            "api"       only the <task>_api directories.
 
     Returns:
         Sorted task directory names, excluding NON_BENCHMARK_TASKS. A maximal task is one
-        with a <task>_minimal twin, so experimental directories such as sosa2024_api are
-        not swept by accident. Anything can still be run by naming it with --tasks.
+        with a <task>_minimal twin, which keeps every variant out of the maximal list
+        without naming them: an _api or _datalimit directory has no _minimal twin, so
+        neither can be swept as though it were the full-prompt task.
+
+        "all" is maximal plus minimal, so neither _datalimit nor _api joins a default
+        sweep. Both vary a different dimension from the prompt detail those two compare,
+        so their rows are not comparable to the ones they would sit beside. Ask for them
+        by scope, or name them with --tasks.
     """
     names = sorted(p.name for p in (REPO_ROOT / "harbor-tasks").iterdir()
                    if p.is_dir() and p.name not in NON_BENCHMARK_TASKS)
     minimal = [n for n in names if n.endswith(MINIMAL_SUFFIX)]
     maximal = [n for n in names if n + MINIMAL_SUFFIX in names]
     datalimit = [n for n in names if n.endswith(DATALIMIT_SUFFIX)]
+    api = [n for n in names if n.endswith(API_SUFFIX)]
     if scope == "minimal":
         return minimal
     if scope == "maximal":
         return maximal
     if scope == "datalimit":
         return datalimit
+    if scope == "api":
+        return api
     return sorted(maximal + minimal)
 
 
@@ -371,6 +388,9 @@ def main():
     scope_group.add_argument("--datalimit", dest="scope", action="store_const",
                              const="datalimit",
                              help="only the datalimit *_datalimit tasks")
+    scope_group.add_argument("--api", dest="scope", action="store_const",
+                             const="api",
+                             help="only the *_api tasks (library-required variant)")
     parser.set_defaults(scope="all")
     parser.add_argument("--queue", choices=sorted(QUEUE_SPECS), default=DEFAULT_QUEUE,
                         help=f"LSF GPU queue; sets the slot count from its "

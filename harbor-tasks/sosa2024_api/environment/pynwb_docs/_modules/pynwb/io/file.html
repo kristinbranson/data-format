@@ -1,0 +1,560 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pynwb.io.file &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/favicon_96.png"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../../pynwb.html">pynwb</a></li>
+      <li class="breadcrumb-item active">pynwb.io.file</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pynwb.io.file</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse</span> <span class="k">as</span> <span class="n">dateutil_parse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.build</span><span class="w"> </span><span class="kn">import</span> <span class="n">ObjectMapper</span><span class="p">,</span> <span class="n">Builder</span><span class="p">,</span> <span class="n">GroupBuilder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">docval</span><span class="p">,</span> <span class="n">get_docval</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_map</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..file</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">Subject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScratchData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_nwb_version</span><span class="p">,</span> <span class="n">NO_OVERRIDE</span>
+
+
+<div class="viewcode-block" id="NWBFileMap">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap">[docs]</a>
+<span class="nd">@register_map</span><span class="p">(</span><span class="n">NWBFile</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NWBFileMap</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+
+        <span class="n">acq_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;acquisition&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">acq_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;acquisition&#39;</span><span class="p">,</span> <span class="n">acq_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;NWBDataInterface&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;acquisition&#39;</span><span class="p">,</span> <span class="n">acq_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;DynamicTable&#39;</span><span class="p">))</span>
+        <span class="c1"># TODO: note that double mapping &quot;acquisition&quot; means __carg2spec and __attr2spec (both unused)</span>
+        <span class="c1"># map &quot;acquisition&quot; to the last spec, in this case, DynamicTable</span>
+
+        <span class="n">ana_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;analysis&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">ana_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;analysis&#39;</span><span class="p">,</span> <span class="n">ana_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;NWBContainer&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;analysis&#39;</span><span class="p">,</span> <span class="n">ana_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;DynamicTable&#39;</span><span class="p">))</span>
+
+        <span class="c1"># map constructor arg and property &#39;stimulus&#39; -&gt; stimulus__presentation</span>
+        <span class="n">stimulus_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;stimulus&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">stimulus_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">stimulus_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;presentation&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">stimulus_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;templates&#39;</span><span class="p">))</span>
+        <span class="c1"># map &quot;stimulus&quot; to NWBDataInterface and DynamicTable and unmap the spec for TimeSeries because it is</span>
+        <span class="c1"># included in the mapping to NWBDataInterface</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">stimulus_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;presentation&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;stimulus&#39;</span><span class="p">,</span> <span class="n">stimulus_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;presentation&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;NWBDataInterface&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;stimulus&#39;</span><span class="p">,</span> <span class="n">stimulus_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;presentation&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;DynamicTable&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;stimulus_template&#39;</span><span class="p">,</span> <span class="n">stimulus_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;templates&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;stimulus_template&#39;</span><span class="p">,</span> <span class="n">stimulus_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;templates&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;Images&#39;</span><span class="p">))</span>
+
+        <span class="n">intervals_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;intervals&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">intervals_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;intervals&#39;</span><span class="p">,</span> <span class="n">intervals_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;TimeIntervals&#39;</span><span class="p">))</span>
+
+        <span class="n">epochs_spec</span> <span class="o">=</span> <span class="n">intervals_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;epochs&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;epochs&#39;</span><span class="p">,</span> <span class="n">epochs_spec</span><span class="p">)</span>
+
+        <span class="n">trials_spec</span> <span class="o">=</span> <span class="n">intervals_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;trials&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;trials&#39;</span><span class="p">,</span> <span class="n">trials_spec</span><span class="p">)</span>
+
+        <span class="n">invalid_times_spec</span> <span class="o">=</span> <span class="n">intervals_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;invalid_times&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;invalid_times&#39;</span><span class="p">,</span> <span class="n">invalid_times_spec</span><span class="p">)</span>
+
+        <span class="n">events_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;events&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">events_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;events&#39;</span><span class="p">,</span> <span class="n">events_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;EventsTable&#39;</span><span class="p">))</span>
+
+        <span class="n">general_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;general&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">general_spec</span><span class="p">)</span>
+
+        <span class="c1"># map icephys metadata structures and tables</span>
+        <span class="n">icephys_spec</span> <span class="o">=</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;intracellular_ephys&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">icephys_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;icephys_electrodes&#39;</span><span class="p">,</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;IntracellularElectrode&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;sweep_table&#39;</span><span class="p">,</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;SweepTable&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;intracellular_recordings&#39;</span><span class="p">,</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;IntracellularRecordingsTable&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;icephys_simultaneous_recordings&#39;</span><span class="p">,</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;SimultaneousRecordingsTable&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;icephys_sequential_recordings&#39;</span><span class="p">,</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;SequentialRecordingsTable&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;icephys_repetitions&#39;</span><span class="p">,</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;RepetitionsTable&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;icephys_experimental_conditions&#39;</span><span class="p">,</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;ExperimentalConditionsTable&#39;</span><span class="p">))</span>
+
+        <span class="c1"># &#39;filtering&#39; has been deprecated. add this mapping in the meantime</span>
+        <span class="n">icephys_filtering_spec</span> <span class="o">=</span> <span class="n">icephys_spec</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="s1">&#39;filtering&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">icephys_filtering_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;icephys_filtering&#39;</span><span class="p">,</span> <span class="n">icephys_filtering_spec</span><span class="p">)</span>
+
+        <span class="n">ecephys_spec</span> <span class="o">=</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;extracellular_ephys&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">ecephys_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;electrodes&#39;</span><span class="p">,</span> <span class="n">ecephys_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;electrodes&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;electrode_groups&#39;</span><span class="p">,</span> <span class="n">ecephys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;ElectrodeGroup&#39;</span><span class="p">))</span>
+
+        <span class="n">ogen_spec</span> <span class="o">=</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;optogenetics&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">ogen_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;ogen_sites&#39;</span><span class="p">,</span> <span class="n">ogen_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;OptogeneticStimulusSite&#39;</span><span class="p">))</span>
+
+        <span class="n">ophys_spec</span> <span class="o">=</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;optophysiology&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">ophys_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;imaging_planes&#39;</span><span class="p">,</span> <span class="n">ophys_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;ImagingPlane&#39;</span><span class="p">))</span>
+
+        <span class="n">general_datasets</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;data_collection&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;experiment_description&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;experimenter&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;institution&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;keywords&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lab&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;notes&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;pharmacology&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;protocol&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;related_publications&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;session_id&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;slices&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;source_script&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;was_generated_by&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;stimulus&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;surgery&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;virus&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">dataset_name</span> <span class="ow">in</span> <span class="n">general_datasets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">))</span>
+
+        <span class="c1"># note: constructor arg and property &#39;stimulus&#39; is already mapped above, so use a different name here</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;stimulus_notes&#39;</span><span class="p">,</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="s1">&#39;stimulus&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;source_script_file_name&#39;</span><span class="p">,</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="s1">&#39;source_script&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_attribute</span><span class="p">(</span><span class="s1">&#39;file_name&#39;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;subject&#39;</span><span class="p">,</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;subject&#39;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;external_resources&#39;</span><span class="p">,</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;external_resources&#39;</span><span class="p">))</span>
+
+        <span class="n">device_spec</span> <span class="o">=</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;devices&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">device_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;devices&#39;</span><span class="p">,</span> <span class="n">device_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;Device&#39;</span><span class="p">))</span>
+
+        <span class="n">device_model_spec</span> <span class="o">=</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;devices&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;models&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">device_model_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;device_models&#39;</span><span class="p">,</span> <span class="n">device_model_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;DeviceModel&#39;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;lab_meta_data&#39;</span><span class="p">,</span> <span class="n">general_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;LabMetaData&#39;</span><span class="p">))</span>
+
+        <span class="n">proc_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;processing&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">proc_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;processing&#39;</span><span class="p">,</span> <span class="n">proc_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;ProcessingModule&#39;</span><span class="p">))</span>
+
+        <span class="n">scratch_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="s1">&#39;scratch&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unmap</span><span class="p">(</span><span class="n">scratch_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;scratch_datas&#39;</span><span class="p">,</span> <span class="n">scratch_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;ScratchData&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;scratch_containers&#39;</span><span class="p">,</span> <span class="n">scratch_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;NWBContainer&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_spec</span><span class="p">(</span><span class="s1">&#39;scratch_containers&#39;</span><span class="p">,</span> <span class="n">scratch_spec</span><span class="o">.</span><span class="n">get_neurodata_type</span><span class="p">(</span><span class="s1">&#39;DynamicTable&#39;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="NWBFileMap.construct">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.construct">[docs]</a>
+    <span class="nd">@docval</span><span class="p">(</span><span class="o">*</span><span class="n">get_docval</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="o">.</span><span class="n">construct</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">construct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">nwbfile_builder</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;builder&quot;</span><span class="p">]</span>
+        <span class="n">electrodes_builder</span> <span class="o">=</span> <span class="n">nwbfile_builder</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;general&quot;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extracellular_ephys&quot;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;electrodes&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">electrodes_builder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">electrodes_builder</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s1">&#39;neurodata_type&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;ElectrodesTable&#39;</span><span class="p">):</span>
+            <span class="n">electrodes_builder</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s1">&#39;neurodata_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;ElectrodesTable&#39;</span>
+            <span class="n">electrodes_builder</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;core&#39;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">apply_to_child_builders</span><span class="p">(</span><span class="n">builder</span><span class="p">:</span> <span class="n">Builder</span><span class="p">,</span> <span class="n">funcs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">]):</span>
+            <span class="c1"># iterate recursively through each builder (which is just a dict of dicts) and make migration changes</span>
+            <span class="k">for</span> <span class="n">bchild_value</span> <span class="ow">in</span> <span class="n">builder</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bchild_value</span><span class="p">,</span> <span class="n">Builder</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs</span><span class="p">:</span>
+                        <span class="n">func</span><span class="p">(</span><span class="n">bchild_value</span><span class="p">)</span>
+                    <span class="n">apply_to_child_builders</span><span class="p">(</span><span class="n">bchild_value</span><span class="p">,</span> <span class="n">funcs</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">update_builder_frequency_bands_table</span><span class="p">(</span><span class="n">builder</span><span class="p">:</span> <span class="n">Builder</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">builder</span><span class="p">,</span> <span class="n">GroupBuilder</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="n">builder</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;namespace&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;core&#39;</span> <span class="ow">and</span>
+                <span class="n">builder</span><span class="o">.</span><span class="n">attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;neurodata_type&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;DecompositionSeries&#39;</span> <span class="ow">and</span>
+                <span class="n">builder</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s1">&#39;bands&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s1">&#39;neurodata_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;DynamicTable&#39;</span><span class="p">):</span>
+                <span class="n">builder</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s1">&#39;bands&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s1">&#39;neurodata_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;FrequencyBandsTable&#39;</span>
+                <span class="n">builder</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s1">&#39;bands&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s1">&#39;namespace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;core&#39;</span>
+
+        <span class="n">apply_to_child_builders</span><span class="p">(</span><span class="n">nwbfile_builder</span><span class="p">,</span> <span class="p">[</span><span class="n">update_builder_frequency_bands_table</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">construct</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.scratch_datas">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.scratch_datas">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">object_attr</span><span class="p">(</span><span class="s1">&#39;scratch_datas&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scratch_datas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the value for the &#39;scratch_datas&#39; spec on NWBFile to a list of ScratchData objects.</span>
+
+<span class="sd">        Used when writing (building) the NWBFile container to a file.</span>
+
+<span class="sd">        The &#39;scratch&#39; group can contain both groups and datasets. This mapping function</span>
+<span class="sd">        is used when writing the value for the &#39;scratch_datas&#39; spec (ScratchData type</span>
+<span class="sd">        -- see __init__ above). The value is set to a list of all ScratchData</span>
+<span class="sd">        objects in the &#39;scratch&#39; field of the NWBFile container.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scratch</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">scratch</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">scratch</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ScratchData</span><span class="p">):</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.scratch_containers">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.scratch_containers">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">object_attr</span><span class="p">(</span><span class="s1">&#39;scratch_containers&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scratch_containers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the value for the &#39;scratch_containers&#39; spec on NWBFile to a list of non-ScratchData objects.</span>
+
+<span class="sd">        Used when writing (building) the NWBFile container to a file.</span>
+
+<span class="sd">        The &#39;scratch&#39; group can contain both groups and datasets. This mapping function</span>
+<span class="sd">        is used when writing the value for the &#39;scratch_containers&#39; spec (NWBContainers</span>
+<span class="sd">        and DynamicTable type -- see __init__ above). The value is set to a list of all non-ScratchData</span>
+<span class="sd">        objects in the &#39;scratch&#39; field of the NWBFile container.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scratch</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="n">scratch</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">scratch</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ScratchData</span><span class="p">):</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.scratch">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.scratch">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s1">&#39;scratch&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scratch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;scratch&#39; to a tuple of objects.</span>
+
+<span class="sd">        Used when constructing the NWBFile container from a written file.</span>
+
+<span class="sd">        The &#39;scratch&#39; group can contain both groups and datasets. This mapping function</span>
+<span class="sd">        is used to construct the contained groups and datasets and put them into a single</span>
+<span class="sd">        field &#39;scratch&#39; on the NWBFile container for user convenience.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scratch</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scratch&#39;</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">scratch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">scratch</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">manager</span><span class="o">.</span><span class="n">construct</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">scratch</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">manager</span><span class="o">.</span><span class="n">construct</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.dateconversion">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.dateconversion">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s1">&#39;session_start_time&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dateconversion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;session_start_time&#39; to a datetime object.</span>
+
+<span class="sd">        Used when constructing the NWBFile container from a written file.</span>
+
+<span class="sd">        Dates are read into builders as strings and are parsed into datetime objects</span>
+<span class="sd">        for user convenience and consistency with how they are written.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">datestr</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;session_start_time&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">dateutil_parse</span><span class="p">(</span><span class="n">datestr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">date</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.dateconversion_trt">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.dateconversion_trt">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s1">&#39;timestamps_reference_time&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dateconversion_trt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;timestamps_reference_time&#39; to a datetime object.</span>
+
+<span class="sd">        Used when constructing the NWBFile container from a written file.</span>
+
+<span class="sd">        Dates are read into builders as strings and are parsed into datetime objects</span>
+<span class="sd">        for user convenience and consistency with how they are written.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">datestr</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;timestamps_reference_time&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">dateutil_parse</span><span class="p">(</span><span class="n">datestr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">date</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.dateconversion_list">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.dateconversion_list">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s1">&#39;file_create_date&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dateconversion_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;file_create_date&#39; to a datetime object.</span>
+
+<span class="sd">        Used when constructing the NWBFile container from a written file.</span>
+
+<span class="sd">        Dates are read into builders as strings and are parsed into datetime objects</span>
+<span class="sd">        for user convenience and consistency with how they are written.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">datestr</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file_create_date&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">dates</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">dateutil_parse</span><span class="p">,</span> <span class="n">datestr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">dates</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.experimenter_carg">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.experimenter_carg">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s1">&#39;experimenter&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">experimenter_carg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;experimenter&#39; to a tuple if the builder value is a string.</span>
+
+<span class="sd">        Used when constructing the NWBFile container from a written file.</span>
+
+<span class="sd">        In early versions of the NWB 2 schema, &#39;experimenter&#39; was specified as a string.</span>
+<span class="sd">        Then it was changed to be a 1-D array of strings. This mapping function is necessary</span>
+<span class="sd">        to allow reading of both data where &#39;experimenter&#39; was specified as a string and data</span>
+<span class="sd">        where &#39;experimenter&#39; was specified as an array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">exp_bldr</span> <span class="o">=</span> <span class="n">builder</span><span class="p">[</span><span class="s1">&#39;general&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;experimenter&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exp_bldr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exp_bldr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">exp_bldr</span><span class="o">.</span><span class="n">data</span><span class="p">,)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">exp_bldr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.experimenter_obj_attr">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.experimenter_obj_attr">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">object_attr</span><span class="p">(</span><span class="s1">&#39;experimenter&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">experimenter_obj_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the value for the field &#39;experimenter&#39; on NWBFile to a tuple if it is a string.</span>
+
+<span class="sd">        Used when writing (building) the NWBFile container to a file.</span>
+
+<span class="sd">        In early versions of the NWB 2 schema, &#39;experimenter&#39; was specified as a string.</span>
+<span class="sd">        Then it was changed to be a 1-D array of strings. This mapping function is necessary</span>
+<span class="sd">        for writing a valid &#39;experimenter&#39; array if it is a string in the NWBFile container.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">NO_OVERRIDE</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">container</span><span class="o">.</span><span class="n">experimenter</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">container</span><span class="o">.</span><span class="n">experimenter</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.publications_carg">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.publications_carg">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s1">&#39;related_publications&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publications_carg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;related_publications&#39; to a tuple if the builder value is a string.</span>
+
+<span class="sd">        Used when constructing the NWBFile container from a written file.</span>
+
+<span class="sd">        In early versions of the NWB 2 schema, &#39;related_publications&#39; was specified as a string.</span>
+<span class="sd">        Then it was changed to be a 1-D array of strings. This mapping function is necessary</span>
+<span class="sd">        to allow reading of both data where &#39;related_publications&#39; was specified as a string and data</span>
+<span class="sd">        where &#39;related_publications&#39; was specified as an array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">pubs_bldr</span> <span class="o">=</span> <span class="n">builder</span><span class="p">[</span><span class="s1">&#39;general&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;related_publications&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pubs_bldr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pubs_bldr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">pubs_bldr</span><span class="o">.</span><span class="n">data</span><span class="p">,)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pubs_bldr</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<div class="viewcode-block" id="NWBFileMap.publication_obj_attr">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.NWBFileMap.publication_obj_attr">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">object_attr</span><span class="p">(</span><span class="s1">&#39;related_publications&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publication_obj_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the value for the field &#39;related_publications&#39; on NWBFile to a tuple if it is a string.</span>
+
+<span class="sd">        Used when writing (building) the NWBFile container to a file.</span>
+
+<span class="sd">        In early versions of the NWB 2 schema, &#39;related_publications&#39; was specified as a string.</span>
+<span class="sd">        Then it was changed to be a 1-D array of strings. This mapping function is necessary</span>
+<span class="sd">        for writing a valid &#39;related_publications&#39; array if it is a string in the NWBFile container.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">NO_OVERRIDE</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">container</span><span class="o">.</span><span class="n">related_publications</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">container</span><span class="o">.</span><span class="n">related_publications</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SubjectMap">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.SubjectMap">[docs]</a>
+<span class="nd">@register_map</span><span class="p">(</span><span class="n">Subject</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SubjectMap</span><span class="p">(</span><span class="n">ObjectMapper</span><span class="p">):</span>
+
+<div class="viewcode-block" id="SubjectMap.dateconversion">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.SubjectMap.dateconversion">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s1">&#39;date_of_birth&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dateconversion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;date_of_birth&#39; to a datetime object.</span>
+
+<span class="sd">        Used when constructing the Subject container from a written file.</span>
+
+<span class="sd">        Dates are read into builders as strings and are parsed into datetime objects</span>
+<span class="sd">        for user convenience and consistency with how they are written.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dob_builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;date_of_birth&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dob_builder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">datestr</span> <span class="o">=</span> <span class="n">dob_builder</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">dateutil_parse</span><span class="p">(</span><span class="n">datestr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">date</span></div>
+
+
+<div class="viewcode-block" id="SubjectMap.age_reference_none">
+<a class="viewcode-back" href="../../../pynwb.io.file.html#pynwb.io.file.SubjectMap.age_reference_none">[docs]</a>
+    <span class="nd">@ObjectMapper</span><span class="o">.</span><span class="n">constructor_arg</span><span class="p">(</span><span class="s2">&quot;age__reference&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">age_reference_none</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">builder</span><span class="p">,</span> <span class="n">manager</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the constructor arg for &#39;age__reference&#39; to &quot;unspecified&quot; for NWB files &lt; 2.6, else &quot;birth&quot;.</span>
+
+<span class="sd">        Used when constructing the Subject container from a written file.</span>
+
+<span class="sd">        NWB schema 2.6.0 introduced a new optional attribute &#39;reference&#39; on the &#39;age&#39; dataset with a default</span>
+<span class="sd">        value of &quot;birth&quot;. When data written with NWB versions &lt; 2.6 are read, &#39;age__reference&#39; is set to</span>
+<span class="sd">        &quot;unspecified&quot; in the Subject constructor. &quot;unspecified&quot; is a special non-None placeholder value</span>
+<span class="sd">        that is handled specially in Subject.__init__ to distinguish it from no value being provided by the</span>
+<span class="sd">        user. When data written with NWB versions &gt;= 2.6 are read, &#39;age__reference&#39; is set to the default</span>
+<span class="sd">        value, &quot;birth&quot;, in the Subject constructor (this is not strictly necessary because Subject.__init__</span>
+<span class="sd">        has default value &quot;birth&quot; for &#39;age__reference&#39;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">age_builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">)</span>
+        <span class="n">age_reference</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">age_builder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">age_reference</span> <span class="o">=</span> <span class="n">age_builder</span><span class="p">[</span><span class="s2">&quot;attributes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">age_reference</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">get_nwb_version</span><span class="p">(</span><span class="n">builder</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">return</span> <span class="s2">&quot;unspecified&quot;</span>  <span class="c1"># this is handled specially in Subject.__init__</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;birth&quot;</span>
+        <span class="k">return</span> <span class="n">age_reference</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

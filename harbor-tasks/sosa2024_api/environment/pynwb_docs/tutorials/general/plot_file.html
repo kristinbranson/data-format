@@ -1,0 +1,1251 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NWB File Basics &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Adding/Removing Containers from an NWB File" href="add_remove_containers.html" />
+    <link rel="prev" title="Tutorials" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">NWB File Basics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#background-basic-concepts">Background: Basic concepts</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-nwb-file">The NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#subject-information">Subject Information</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#time-series-data">Time Series Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spatial-series-and-position">Spatial Series and Position</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#behavior-processing-module">Behavior Processing Module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#time-intervals">Time Intervals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-an-nwb-file">Writing an NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-an-nwb-file">Reading an NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#appending-to-an-nwb-file">Appending to an NWB file</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="add_remove_containers.html">Adding/Removing Containers from an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_timeintervals.html">Annotating Time Intervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scratch.html">Exploratory Data Analysis with NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="extensions.html">Extending NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_configurator.html">How to Configure Term Validations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_id.html">Object IDs in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_read_basics.html">Reading and Exploring an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_external_resources.html">Linking to External Resources (HERD)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resources_streaming.html">Annotating Multiple Streamed NWB Files with a Single HERD</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">NWB File Basics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/general/plot_file.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-general-plot-file-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="nwb-file-basics">
+<span id="basics"></span><span id="sphx-glr-tutorials-general-plot-file-py"></span><h1>NWB File Basics<a class="headerlink" href="#nwb-file-basics" title="Link to this heading"></a></h1>
+<p>This example will focus on the basics of working with an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object,
+including writing and reading of an NWB file, and giving you an introduction to the basic data types.
+Before we dive into code showing how to use an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>, we first provide
+a brief overview of the basic concepts of NWB.</p>
+<section id="background-basic-concepts">
+<span id="basics-background"></span><h2>Background: Basic concepts<a class="headerlink" href="#background-basic-concepts" title="Link to this heading"></a></h2>
+<p>In the <a class="reference external" href="https://nwb-schema.readthedocs.io/en/latest/">NWB Format</a>, each experiment session is typically
+represented by a separate NWB file. NWB files are represented in PyNWB by <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+objects which provide functionality for creating and retrieving:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="#timeseries-overview"><span class="std std-ref">TimeSeries</span></a> datasets – objects for storing time series data</p></li>
+<li><p><a class="reference internal" href="#modules-overview"><span class="std std-ref">Processing Modules</span></a> – objects for storing and grouping analyses, and</p></li>
+<li><p>experiment metadata and other metadata related to data provenance.</p></li>
+</ul>
+</div></blockquote>
+<p>The following sections describe the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> and <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ProcessingModule" title="pynwb.base.ProcessingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a>
+classes in further detail.</p>
+<section id="timeseries">
+<span id="timeseries-overview"></span><h3>TimeSeries<a class="headerlink" href="#timeseries" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> objects store time series data and correspond to the <em>TimeSeries</em> specifications
+provided by the <a class="reference external" href="https://nwb-schema.readthedocs.io/en/latest/">NWB Format</a>. Like the NWB specification, <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> Python objects
+follow an object-oriented inheritance pattern, i.e., the class <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>
+serves as the base class for all other <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> types, such as,
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>, which itself may have further subtypes, e.g.,
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>For your reference, NWB defines the following main <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> subtypes:</p>
+<ul class="simple">
+<li><p><strong>Extracellular electrophysiology:</strong>
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>, <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a></p></li>
+<li><p><strong>Intracellular electrophysiology:</strong>
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.PatchClampSeries" title="pynwb.icephys.PatchClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">PatchClampSeries</span></code></a> is the base type for all intracellular time series, which
+is further refined into subtypes depending on the type of recording:
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.CurrentClampSeries" title="pynwb.icephys.CurrentClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">CurrentClampSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IZeroClampSeries" title="pynwb.icephys.IZeroClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IZeroClampSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.CurrentClampStimulusSeries" title="pynwb.icephys.CurrentClampStimulusSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">CurrentClampStimulusSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.VoltageClampSeries" title="pynwb.icephys.VoltageClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">VoltageClampSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.VoltageClampStimulusSeries" title="pynwb.icephys.VoltageClampStimulusSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">VoltageClampStimulusSeries</span></code></a>.</p></li>
+<li><p><strong>Optical physiology and imaging:</strong> <a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a> is the base type
+for image recordings and is further refined by the
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.OnePhotonSeries" title="pynwb.ophys.OnePhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OnePhotonSeries</span></code></a>, and
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.TwoPhotonSeries" title="pynwb.ophys.TwoPhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TwoPhotonSeries</span></code></a> types.
+Other related time series types are:
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.IndexSeries" title="pynwb.image.IndexSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a>.</p></li>
+<li><p><strong>Others:</strong> <a class="reference internal" href="../../pynwb.ogen.html#pynwb.ogen.OptogeneticSeries" title="pynwb.ogen.OptogeneticSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OptogeneticSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.DecompositionSeries" title="pynwb.misc.DecompositionSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">DecompositionSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.AbstractFeatureSeries" title="pynwb.misc.AbstractFeatureSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractFeatureSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.IntervalSeries" title="pynwb.misc.IntervalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntervalSeries</span></code></a>.</p></li>
+</ul>
+</div>
+</section>
+<section id="processing-modules">
+<span id="modules-overview"></span><h3>Processing Modules<a class="headerlink" href="#processing-modules" title="Link to this heading"></a></h3>
+<p>Processing modules are objects that group together common analyses done during processing of data. They
+often hold data of different processing/analysis data types.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>For your reference, NWB defines the following main processing/analysis data types:</p>
+<ul class="simple">
+<li><p><strong>Behavior:</strong> <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralEpochs" title="pynwb.behavior.BehavioralEpochs"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralEpochs</span></code></a>,
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.BehavioralTimeSeries" title="pynwb.behavior.BehavioralTimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">BehavioralTimeSeries</span></code></a>,
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.CompassDirection" title="pynwb.behavior.CompassDirection"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompassDirection</span></code></a>,
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.PupilTracking" title="pynwb.behavior.PupilTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">PupilTracking</span></code></a>,
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a>,
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.EyeTracking" title="pynwb.behavior.EyeTracking"><code class="xref py py-class docutils literal notranslate"><span class="pre">EyeTracking</span></code></a>.</p></li>
+<li><p><strong>Events:</strong> <a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a>.</p></li>
+<li><p><strong>Extracellular electrophysiology:</strong> <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.EventDetection" title="pynwb.ecephys.EventDetection"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventDetection</span></code></a>,
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.FeatureExtraction" title="pynwb.ecephys.FeatureExtraction"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureExtraction</span></code></a>,
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.FilteredEphys" title="pynwb.ecephys.FilteredEphys"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilteredEphys</span></code></a>,
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP" title="pynwb.ecephys.LFP"><code class="xref py py-class docutils literal notranslate"><span class="pre">LFP</span></code></a>.</p></li>
+<li><p><strong>Optical physiology:</strong> <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.DfOverF" title="pynwb.ophys.DfOverF"><code class="xref py py-class docutils literal notranslate"><span class="pre">DfOverF</span></code></a>,
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a>,
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImageSegmentation" title="pynwb.ophys.ImageSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSegmentation</span></code></a>,
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.MotionCorrection" title="pynwb.ophys.MotionCorrection"><code class="xref py py-class docutils literal notranslate"><span class="pre">MotionCorrection</span></code></a>.</p></li>
+<li><p><strong>Others:</strong> <a class="reference internal" href="../../pynwb.base.html#pynwb.base.Images" title="pynwb.base.Images"><code class="xref py py-class docutils literal notranslate"><span class="pre">Images</span></code></a>.</p></li>
+<li><p><strong>TimeSeries:</strong> Any <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> can be used to store processing/analysis data.</p></li>
+</ul>
+</div>
+<p>NWB organizes data into different groups depending on the type of data. Groups can be thought of
+as folders within the file. Here are some of the groups within an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> and the types of
+data they are intended to store:</p>
+<ul class="simple">
+<li><p><strong>acquisition</strong>: raw, acquired data that should never change</p></li>
+<li><p><strong>processing</strong>: processed data, typically the results of preprocessing algorithms and could change</p></li>
+<li><p><strong>analysis</strong>: results of data analysis</p></li>
+<li><p><strong>stimuli</strong>: stimuli used in the experiment (e.g., images, videos, light pulses)</p></li>
+</ul>
+<p>The following examples will reference variables that may not be defined within the block they are used in. For
+clarity, we define them here:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil</span><span class="w"> </span><span class="kn">import</span> <span class="n">tz</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.common</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.MeaningsTable" title="hdmf.common.table.MeaningsTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">MeaningsTable</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.behavior</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Position</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">SpatialSeries</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.event</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">EventsTable</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.file</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Subject</span></a>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="the-nwb-file">
+<span id="basics-nwbfile"></span><h2>The NWB file<a class="headerlink" href="#the-nwb-file" title="Link to this heading"></a></h2>
+<p>An <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> represents a single session of an experiment.
+Each <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> must have a session description, identifier, and session start time.
+Importantly, the session start time is the reference time for all timestamps in the file.
+For instance, an event with a timestamp of 0 in the file means the event
+occurred exactly at the session start time.</p>
+<p>Create an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object with the required fields
+(<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.session_description" title="pynwb.file.NWBFile.session_description"><code class="xref py py-attr docutils literal notranslate"><span class="pre">session_description</span></code></a>, <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.identifier" title="pynwb.file.NWBFile.identifier"><code class="xref py py-attr docutils literal notranslate"><span class="pre">identifier</span></code></a>,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.session_start_time" title="pynwb.file.NWBFile.session_start_time"><code class="xref py py-attr docutils literal notranslate"><span class="pre">session_start_time</span></code></a>) and additional metadata.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use keyword arguments when constructing <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> objects.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">session_start_time</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tz</span><span class="o">.</span><span class="n">gettz</span><span class="p">(</span><span class="s2">&quot;US/Pacific&quot;</span><span class="p">))</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;Mouse exploring an open field&quot;</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>  <span class="c1"># required</span>
+    <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">session_start_time</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">session_start_time</span></a><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;session_1234&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>
+    <span class="p">],</span>  <span class="c1"># optional</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure to reclaim vast treasures.&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">keywords</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">,</span> <span class="s2">&quot;exploration&quot;</span><span class="p">,</span> <span class="s2">&quot;wanderlust&quot;</span><span class="p">],</span>  <span class="c1"># optional</span>
+    <span class="n">related_publications</span><span class="o">=</span><span class="s2">&quot;doi:10.1016/j.neuron.2016.12.011&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>root (NWBFile)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".session_description">session_description: </span><span class="field-value">Mouse exploring an open field</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".identifier">identifier: </span><span class="field-value">86bfa7b3-eac9-47f7-b291-f1239d4ddd0f</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".session_start_time"><b>session_start_time</b></summary><span class="field-key">2018-04-25 02:30:03-07:00</span></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps_reference_time"><b>timestamps_reference_time</b></summary><span class="field-key">2018-04-25 02:30:03-07:00</span></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".file_create_date"><b>file_create_date</b></summary><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title=".file_create_date[0]"><b>0</b></summary><span class="field-key">2026-09-19 21:22:24.931343-04:00</span></details></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".experimenter"><b>experimenter</b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".experimenter[0]">0: </span><span class="field-value">Baggins, Bilbo</span></div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".related_publications"><b>related_publications</b></summary><span class="field-key">('doi:10.1016/j.neuron.2016.12.011',)</span></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".keywords"><b>keywords</b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".keywords[0]">0: </span><span class="field-value">behavior</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".keywords[0][1]">1: </span><span class="field-value">exploration</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title=".keywords[0][1][2]">2: </span><span class="field-value">wanderlust</span></div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".experiment_description">experiment_description: </span><span class="field-value">I went on an adventure to reclaim vast treasures.</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".session_id">session_id: </span><span class="field-value">session_1234</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".lab">lab: </span><span class="field-value">Bag End Laboratory</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".institution">institution: </span><span class="field-value">University of Middle Earth at the Shire</span></div></div>
+</div>
+<br />
+<br /><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See the <a class="reference external" href="https://nwbinspector.readthedocs.io/en/dev/best_practices/nwbfile_metadata.html#file-metadata">NWBFile Best Practices</a>
+for detailed information about the arguments to
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a></p>
+</div>
+</section>
+<section id="subject-information">
+<span id="basic-subject"></span><h2>Subject Information<a class="headerlink" href="#subject-information" title="Link to this heading"></a></h2>
+<p>In the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.Subject" title="pynwb.file.Subject"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subject</span></code></a> object we can store information about the experiment subject,
+such as <code class="docutils literal notranslate"><span class="pre">age</span></code>, <code class="docutils literal notranslate"><span class="pre">species</span></code>, <code class="docutils literal notranslate"><span class="pre">genotype</span></code>, <code class="docutils literal notranslate"><span class="pre">sex</span></code>, and a <code class="docutils literal notranslate"><span class="pre">description</span></code>.</p>
+<a class="reference internal image-reference" href="../../_images/Subject.svg"><img alt="subject UML diagram" class="align-center" src="../../_images/Subject.svg" width="150" />
+</a>
+<p>The fields in the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.Subject" title="pynwb.file.Subject"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subject</span></code></a> object are all free-form text (any format will be valid),
+however it is recommended to follow particular conventions to help software tools interpret the data:</p>
+<ul class="simple">
+<li><p><strong>age</strong>: <a class="reference external" href="https://en.wikipedia.org/wiki/ISO_8601#Durations">ISO 8601 Duration format</a>, e.g., <code class="docutils literal notranslate"><span class="pre">&quot;P90D&quot;</span></code> for 90
+days old</p></li>
+<li><p><strong>species</strong>: The formal Latin binomial nomenclature, e.g., <code class="docutils literal notranslate"><span class="pre">&quot;Mus</span> <span class="pre">musculus&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Homo</span> <span class="pre">sapiens&quot;</span></code></p></li>
+<li><p><strong>sex</strong>: Single letter abbreviation, e.g., <code class="docutils literal notranslate"><span class="pre">&quot;F&quot;</span></code> (female), <code class="docutils literal notranslate"><span class="pre">&quot;M&quot;</span></code> (male), <code class="docutils literal notranslate"><span class="pre">&quot;U&quot;</span></code> (unknown), and <code class="docutils literal notranslate"><span class="pre">&quot;O&quot;</span></code> (other)</p></li>
+</ul>
+<p>Add the subject information to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+by setting the <code class="docutils literal notranslate"><span class="pre">subject</span></code> field to a new <a class="reference internal" href="../../pynwb.file.html#pynwb.file.Subject" title="pynwb.file.Subject"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subject</span></code></a> object.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">subject</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Subject</span></a><span class="p">(</span>
+    <span class="n">subject_id</span><span class="o">=</span><span class="s2">&quot;001&quot;</span><span class="p">,</span>
+    <span class="n">age</span><span class="o">=</span><span class="s2">&quot;P90D&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;mouse 5&quot;</span><span class="p">,</span>
+    <span class="n">species</span><span class="o">=</span><span class="s2">&quot;Mus musculus&quot;</span><span class="p">,</span>
+    <span class="n">sex</span><span class="o">=</span><span class="s2">&quot;M&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">subject</span> <span class="o">=</span> <span class="n">subject</span>
+<span class="n">subject</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>subject (Subject)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".age">age: </span><span class="field-value">P90D</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".age__reference">age__reference: </span><span class="field-value">birth</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">mouse 5</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".sex">sex: </span><span class="field-value">M</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".species">species: </span><span class="field-value">Mus musculus</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".subject_id">subject_id: </span><span class="field-value">001</span></div></div>
+</div>
+<br />
+<br /></section>
+<section id="time-series-data">
+<span id="basic-timeseries"></span><h2>Time Series Data<a class="headerlink" href="#time-series-data" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> is a common base class for measurements sampled over time,
+and provides fields for <code class="docutils literal notranslate"><span class="pre">data</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamps</span></code> (regularly or irregularly sampled).
+You will also need to supply the <code class="docutils literal notranslate"><span class="pre">name</span></code> and <code class="docutils literal notranslate"><span class="pre">unit</span></code> of measurement
+(<a class="reference external" href="https://en.wikipedia.org/wiki/International_System_of_Units">SI unit</a>).</p>
+<a class="reference internal image-reference" href="../../_images/TimeSeries.png"><img alt="timeseries UML diagram" class="align-center" src="../../_images/TimeSeries.png" width="200" />
+</a>
+<p>For instance, we can store a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> data where recording started
+<code class="docutils literal notranslate"><span class="pre">0.0</span></code> seconds after <code class="docutils literal notranslate"><span class="pre">start_time</span></code> and sampled every second (1 Hz):</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">time_series_with_rate</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;an example time series&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">time_series_with_rate</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>test_timeseries (TimeSeries)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".starting_time">starting_time: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".rate">rate: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">an example time series</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".unit">unit: </span><span class="field-value">m</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".data"><b>data</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">int64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(10,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">80.00 bytes</td></tr></tbody></table><br>[100 110 120 130 140 150 160 170 180 190]</div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".starting_time_unit">starting_time_unit: </span><span class="field-value">seconds</span></div></div>
+</div>
+<br />
+<br /><p>For irregularly sampled recordings, we need to provide the <code class="docutils literal notranslate"><span class="pre">timestamps</span></code> for the <code class="docutils literal notranslate"><span class="pre">data</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mf">10.</span><span class="p">)</span>
+<span class="n">time_series_with_timestamps</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;an example time series&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">time_series_with_timestamps</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>test_timeseries (TimeSeries)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">an example time series</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".unit">unit: </span><span class="field-value">m</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".data"><b>data</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">int64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(10,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">80.00 bytes</td></tr></tbody></table><br>[100 110 120 130 140 150 160 170 180 190]</div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps"><b>timestamps</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(10,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">80.00 bytes</td></tr></tbody></table><br>[0. 1. 2. 3. 4. 5. 6. 7. 8. 9.]</div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".interval">interval: </span><span class="field-value">1</span></div></div>
+</div>
+<br />
+<br /><p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> objects can be added directly to <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> using:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_acquisition" title="pynwb.file.NWBFile.add_acquisition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_acquisition</span></code></a> to add <em>acquisition</em> data (raw, acquired data that should never change),</p></li>
+<li><p><a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_stimulus" title="pynwb.file.NWBFile.add_stimulus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_stimulus</span></code></a> to add <em>stimulus</em> data, or</p></li>
+<li><p><a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_stimulus_template" title="pynwb.file.NWBFile.add_stimulus_template"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_stimulus_template</span></code></a> to store <em>stimulus templates</em>.</p></li>
+</ul>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">time_series_with_timestamps</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can access the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> object <code class="docutils literal notranslate"><span class="pre">'test_timeseries'</span></code>
+in <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> from <code class="docutils literal notranslate"><span class="pre">acquisition</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>test_timeseries (TimeSeries)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">an example time series</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".unit">unit: </span><span class="field-value">m</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".data"><b>data</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">int64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(10,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">80.00 bytes</td></tr></tbody></table><br>[100 110 120 130 140 150 160 170 180 190]</div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps"><b>timestamps</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(10,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">80.00 bytes</td></tr></tbody></table><br>[0. 1. 2. 3. 4. 5. 6. 7. 8. 9.]</div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".interval">interval: </span><span class="field-value">1</span></div></div>
+</div>
+<br />
+<br /><p>or using the method <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_acquisition" title="pynwb.file.NWBFile.get_acquisition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.get_acquisition</span></code></a>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>test_timeseries (TimeSeries)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">an example time series</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".unit">unit: </span><span class="field-value">m</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".data"><b>data</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">int64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(10,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">80.00 bytes</td></tr></tbody></table><br>[100 110 120 130 140 150 160 170 180 190]</div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps"><b>timestamps</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(10,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">80.00 bytes</td></tr></tbody></table><br>[0. 1. 2. 3. 4. 5. 6. 7. 8. 9.]</div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".interval">interval: </span><span class="field-value">1</span></div></div>
+</div>
+<br />
+<br /><section id="other-types-of-time-series">
+<h3>Other Types of Time Series<a class="headerlink" href="#other-types-of-time-series" title="Link to this heading"></a></h3>
+<p>As mentioned previously, there are many subtypes of <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> that are used to store
+different kinds of data. The approach of creating a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> object and adding it
+to the appropriate <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> group can be used for all subtypes of
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> data.</p>
+<p>For storing events with annotations (e.g., behaviors scored from video), use
+<a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a> in <code class="docutils literal notranslate"><span class="pre">NWBFile.events</span></code>. The required <code class="docutils literal notranslate"><span class="pre">timestamp</span></code>
+column stores the time of each event in seconds from the session start time. The
+optional built-in <code class="docutils literal notranslate"><span class="pre">duration</span></code> column stores the length of each event in seconds, and
+the optional built-in <code class="docutils literal notranslate"><span class="pre">annotation</span></code> column can be used to store a text label for each
+event.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">behavior_events</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">EventsTable</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;scored_behaviors&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Behaviors of the animal scored from video recordings.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">behavior_events</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="mf">10.2</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="s2">&quot;grooming&quot;</span><span class="p">)</span>
+<span class="n">behavior_events</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="mf">18.7</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="s2">&quot;rearing&quot;</span><span class="p">)</span>
+<span class="n">behavior_events</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="mf">25.0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">2.1</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="s2">&quot;grooming&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To define what each value in the <code class="docutils literal notranslate"><span class="pre">annotation</span></code> column means, attach an optional
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.MeaningsTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeaningsTable</span></code></a> to the <a class="reference internal" href="../../pynwb.event.html#pynwb.event.EventsTable" title="pynwb.event.EventsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventsTable</span></code></a>.
+The <code class="docutils literal notranslate"><span class="pre">MeaningsTable</span></code> is named <code class="docutils literal notranslate"><span class="pre">{column_name}_meanings</span></code> automatically and should
+include one row per possible value of the target column, even if the value does not
+appear in the data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.MeaningsTable" title="hdmf.common.table.MeaningsTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">annotation_meanings</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.MeaningsTable" title="hdmf.common.table.MeaningsTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">MeaningsTable</span></a><span class="p">(</span>
+    <span class="n">target</span><span class="o">=</span><span class="n">behavior_events</span><span class="p">[</span><span class="s2">&quot;annotation&quot;</span><span class="p">],</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Meanings of the values in the &#39;annotation&#39; column.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.MeaningsTable.add_row" title="hdmf.common.table.MeaningsTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">annotation_meanings</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;grooming&quot;</span><span class="p">,</span> <span class="n">meaning</span><span class="o">=</span><span class="s2">&quot;Self-grooming with the forepaws.&quot;</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.MeaningsTable.add_row" title="hdmf.common.table.MeaningsTable.add_row" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">annotation_meanings</span><span class="o">.</span><span class="n">add_row</span></a><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;rearing&quot;</span><span class="p">,</span> <span class="n">meaning</span><span class="o">=</span><span class="s2">&quot;Rearing up on the hind legs.&quot;</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_meanings_table" title="hdmf.common.table.DynamicTable.add_meanings_table" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">behavior_events</span><span class="o">.</span><span class="n">add_meanings_table</span></a><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.MeaningsTable" title="hdmf.common.table.MeaningsTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">annotation_meanings</span></a><span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_events_table</span><span class="p">(</span><span class="n">behavior_events</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>scored_behaviors (EventsTable)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title="">description: </span><span class="field-value">Behaviors of the animal scored from video recordings.</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key"><b>columns</b></summary><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['timestamp']"><b>timestamp</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">The time that each event occurred, in seconds, from the session start time.</span></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['duration']"><b>duration</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">The duration of each event, in seconds. A value of NaN can be used for events without a duration.</span></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['annotation']"><b>annotation</b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-value">User annotations about events.</span></div></details></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=""><b>table</b></summary><table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>timestamp</th>
+      <th>duration</th>
+      <th>annotation</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10.2</td>
+      <td>1.4</td>
+      <td>grooming</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>18.7</td>
+      <td>0.6</td>
+      <td>rearing</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>25.0</td>
+      <td>2.1</td>
+      <td>grooming</td>
+    </tr>
+  </tbody>
+</table></details></div>
+</div>
+<br />
+<br /></section>
+</section>
+<section id="spatial-series-and-position">
+<span id="basic-spatialseries"></span><h2>Spatial Series and Position<a class="headerlink" href="#spatial-series-and-position" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> is a subclass of <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>
+that represents the spatial position of an animal over time.</p>
+<a class="reference internal image-reference" href="../../_images/SpatialSeries.svg"><img alt="spatialseries UML diagram" class="align-center" src="../../_images/SpatialSeries.svg" width="200" />
+</a>
+<p>Create a <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object named <code class="docutils literal notranslate"><span class="pre">&quot;SpatialSeries&quot;</span></code> with some fake data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># create fake data with shape (50, 2)</span>
+<span class="c1"># the first dimension should always represent time</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">position_data</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">([</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">50</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">position_timestamps</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">/</span> <span class="mi">200</span>
+
+<span class="n">spatial_series_obj</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">SpatialSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;SpatialSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;(x,y) position in open field&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">position_data</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">position_timestamps</span></a><span class="p">,</span>
+    <span class="n">reference_frame</span><span class="o">=</span><span class="s2">&quot;(0,0) is bottom left corner&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">spatial_series_obj</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>SpatialSeries</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">(x,y) position in open field</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".unit">unit: </span><span class="field-value">meters</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".data"><b>data</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50, 2)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">800.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title=".timestamps"><b>timestamps</b></summary><div style="margin-left: 20px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".reference_frame">reference_frame: </span><span class="field-value">(0,0) is bottom left corner</span></div></div>
+</div>
+<br />
+<br /><p>To help data analysis and visualization tools know that this <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object
+represents the position of the subject, store the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object inside
+of a <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object, which can hold one or more <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a>
+objects.</p>
+<a class="reference internal image-reference" href="../../_images/Position.svg"><img alt="position UML diagram" class="align-center" src="../../_images/Position.svg" width="450" />
+</a>
+<p>Create a <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object named <code class="docutils literal notranslate"><span class="pre">&quot;Position&quot;</span></code> <a class="footnote-reference brackets" href="#id5" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># name is set to &quot;Position&quot; by default</span>
+<span class="n">position_obj</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.MultiContainerInterface" title="hdmf.container.MultiContainerInterface" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Position</span></a><span class="p">(</span><span class="n">spatial_series</span><span class="o">=</span><span class="n">spatial_series_obj</span><span class="p">)</span>
+<span class="n">position_obj</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>Position</h3></div></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['SpatialSeries']"><b>SpatialSeries <span style='font-weight: normal; color: #888;'>(SpatialSeries)</span></b></summary><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].description">description: </span><span class="field-value">(x,y) position in open field</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].unit">unit: </span><span class="field-value">meters</span></div><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['SpatialSeries'].data"><b>data</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50, 2)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">800.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['SpatialSeries'].timestamps"><b>timestamps</b></summary><div style="margin-left: 40px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 20px;" class="container-fields"><span class="field-key" title="['SpatialSeries'].reference_frame">reference_frame: </span><span class="field-value">(0,0) is bottom left corner</span></div></details></div>
+</div>
+<br />
+<br /></section>
+<section id="behavior-processing-module">
+<h2>Behavior Processing Module<a class="headerlink" href="#behavior-processing-module" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.ProcessingModule" title="pynwb.base.ProcessingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a> is a container for data interfaces that are related to a particular
+processing workflow. NWB differentiates between raw, acquired data (<em>acquisition</em>), which should never change,
+and processed data (<em>processing</em>), which are the results of preprocessing algorithms and could change.
+Processing modules can be thought of as folders within the file for storing the related processed data.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use the NWB schema module names as processing module names where appropriate.
+These are: <code class="docutils literal notranslate"><span class="pre">&quot;behavior&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;ecephys&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;icephys&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;ophys&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;ogen&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;misc&quot;</span></code>.</p>
+</div>
+<p>Let’s assume that the subject’s position was computed from a video tracking algorithm,
+so it would be classified as processed data.</p>
+<p>Create a processing module called <code class="docutils literal notranslate"><span class="pre">&quot;behavior&quot;</span></code> for storing behavioral data in the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+and add the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object to the processing module using the method
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_processing_module" title="pynwb.file.NWBFile.create_processing_module"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.create_processing_module</span></code></a>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">behavior_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;behavior&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;processed behavioral data&quot;</span>
+<span class="p">)</span>
+<span class="n">behavior_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">position_obj</span><span class="p">)</span>
+<span class="n">behavior_module</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>behavior (ProcessingModule)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">processed behavioral data</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['Position']"><b>Position <span style='font-weight: normal; color: #888;'>(Position)</span></b></summary><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['Position']['SpatialSeries']"><b>SpatialSeries <span style='font-weight: normal; color: #888;'>(SpatialSeries)</span></b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].description">description: </span><span class="field-value">(x,y) position in open field</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].unit">unit: </span><span class="field-value">meters</span></div><details><summary style="display: list-item; margin-left: 40px;" class="container-fields field-key" title="['Position']['SpatialSeries'].data"><b>data</b></summary><div style="margin-left: 60px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50, 2)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">800.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 40px;" class="container-fields field-key" title="['Position']['SpatialSeries'].timestamps"><b>timestamps</b></summary><div style="margin-left: 60px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].reference_frame">reference_frame: </span><span class="field-value">(0,0) is bottom left corner</span></div></details></details></div>
+</div>
+<br />
+<br /><a class="reference internal image-reference" href="../../_images/Behavior.svg"><img alt="behavior UML diagram" class="align-center" src="../../_images/Behavior.svg" width="600" />
+</a>
+<p>Once the behavior processing module is added to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>,
+you can access it with:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+
+        <style>
+            .container-fields {
+                font-family: "Open Sans", Arial, sans-serif;
+            }
+            .container-fields .field-value {
+                color: #00788E;
+            }
+            .container-fields details > summary {
+                cursor: pointer;
+                display: list-item;
+            }
+            .container-fields details > summary:hover {
+                color: #0A6EAA;
+            }
+        </style>
+
+        <script>
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copied to clipboard: ' + text);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                let fieldKeys = document.querySelectorAll('.container-fields .field-key');
+                fieldKeys.forEach(function(fieldKey) {
+                    fieldKey.addEventListener('click', function() {
+                        let accessCode = fieldKey.getAttribute('title').replace('Access code: ', '');
+                        copyToClipboard(accessCode);
+                    });
+                });
+            });
+        </script>
+        <div class='container-wrap'><div class='container-header'><div class='xr-obj-type'><h3>behavior (ProcessingModule)</h3></div></div><div style="margin-left: 0px;" class="container-fields"><span class="field-key" title=".description">description: </span><span class="field-value">processed behavioral data</span></div><details><summary style="display: list-item; margin-left: 0px;" class="container-fields field-key" title="['Position']"><b>Position <span style='font-weight: normal; color: #888;'>(Position)</span></b></summary><details><summary style="display: list-item; margin-left: 20px;" class="container-fields field-key" title="['Position']['SpatialSeries']"><b>SpatialSeries <span style='font-weight: normal; color: #888;'>(SpatialSeries)</span></b></summary><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].resolution">resolution: </span><span class="field-value">-1.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].comments">comments: </span><span class="field-value">no comments</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].description">description: </span><span class="field-value">(x,y) position in open field</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].conversion">conversion: </span><span class="field-value">1.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].offset">offset: </span><span class="field-value">0.0</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].unit">unit: </span><span class="field-value">meters</span></div><details><summary style="display: list-item; margin-left: 40px;" class="container-fields field-key" title="['Position']['SpatialSeries'].data"><b>data</b></summary><div style="margin-left: 60px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50, 2)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">800.00 bytes</td></tr></tbody></table></div></details><details><summary style="display: list-item; margin-left: 40px;" class="container-fields field-key" title="['Position']['SpatialSeries'].timestamps"><b>timestamps</b></summary><div style="margin-left: 60px;" class="container-fields">NumPy array<br><table class="data-info"><tbody><tr><th style="text-align: left">Data type</th><td style="text-align: left">float64</td></tr><tr><th style="text-align: left">Shape</th><td style="text-align: left">(50,)</td></tr><tr><th style="text-align: left">Array size</th><td style="text-align: left">400.00 bytes</td></tr></tbody></table></div></details><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].timestamps_unit">timestamps_unit: </span><span class="field-value">seconds</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].interval">interval: </span><span class="field-value">1</span></div><div style="margin-left: 40px;" class="container-fields"><span class="field-key" title="['Position']['SpatialSeries'].reference_frame">reference_frame: </span><span class="field-value">(0,0) is bottom left corner</span></div></details></details></div>
+</div>
+<br />
+<br /></section>
+<section id="time-intervals">
+<h2>Time Intervals<a class="headerlink" href="#time-intervals" title="Link to this heading"></a></h2>
+<p id="basic-trials">The following provides a brief introduction to managing annotations in time via
+<a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a>. See the <a class="reference internal" href="plot_timeintervals.html#time-intervals"><span class="std std-ref">Annotating Time Intervals</span></a> tutorial
+for a more detailed introduction to <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a>.</p>
+<section id="trials">
+<h3>Trials<a class="headerlink" href="#trials" title="Link to this heading"></a></h3>
+<p>Trials are stored in <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a>, which is
+a subclass of <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>.
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> is used to store
+tabular metadata throughout NWB, including trials, electrodes and sorted units. This
+class offers flexibility for tabular data by allowing required columns, optional
+columns, and custom columns which are not defined in the standard.</p>
+<a class="reference internal image-reference" href="../../_images/Trials.svg"><img alt="trials UML diagram" class="align-center" src="../../_images/Trials.svg" width="300" />
+</a>
+<p>The <code class="docutils literal notranslate"><span class="pre">trials</span></code> <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> class can be thought of
+as a table with this structure:</p>
+<a class="reference internal image-reference" href="../../_images/trials_example.png"><img alt="trials table example" class="align-center" src="../../_images/trials_example.png" width="400" />
+</a>
+<p>By default, <a class="reference internal" href="../../pynwb.epoch.html#pynwb.epoch.TimeIntervals" title="pynwb.epoch.TimeIntervals"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeIntervals</span></code></a> objects only require <code class="docutils literal notranslate"><span class="pre">start_time</span></code>
+and <code class="docutils literal notranslate"><span class="pre">stop_time</span></code> of each trial. Additional columns can be added using
+the method <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_trial_column" title="pynwb.file.NWBFile.add_trial_column"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_trial_column</span></code></a>. When all the desired custom columns
+have been defined, use the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_trial" title="pynwb.file.NWBFile.add_trial"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_trial</span></code></a> method to add each row.
+In this case, we will add one custom column to the trials table named “correct”
+which will take a boolean array, then add two trials as rows of the table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial_column</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;correct&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;whether the trial was correct&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">correct</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_trial</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">stop_time</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">correct</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> and its subclasses can be converted to a pandas
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a> for convenient analysis using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.to_dataframe" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dataframe</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">trials</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>start_time</th>
+      <th>stop_time</th>
+      <th>correct</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.0</td>
+      <td>5.0</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>6.0</td>
+      <td>10.0</td>
+      <td>False</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /></section>
+</section>
+<section id="writing-an-nwb-file">
+<span id="basic-writing"></span><h2>Writing an NWB file<a class="headerlink" href="#writing-an-nwb-file" title="Link to this heading"></a></h2>
+<p>Writing of an NWB file is carried out using the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> class <a class="footnote-reference brackets" href="#id6" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>.</p>
+<p>To write an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>, use the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO.write" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">write</span></code></a> method.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">io</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basics_tutorial.nwb&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also use <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> as a context manager:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basics_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="reading-an-nwb-file">
+<span id="basic-reading"></span><h2>Reading an NWB file<a class="headerlink" href="#reading-an-nwb-file" title="Link to this heading"></a></h2>
+<p>As with writing, reading is also carried out using the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> class.
+To read the NWB file we just wrote, create another <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> object with the mode set to <code class="docutils literal notranslate"><span class="pre">&quot;r&quot;</span></code>,
+and use the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO.read" title="pynwb.NWBHDF5IO.read"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read</span></code></a> method to retrieve an
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object.</p>
+<p>Data arrays are read passively from the file.
+Accessing the <code class="docutils literal notranslate"><span class="pre">data</span></code> attribute of the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> object
+does not read the data values, but presents an HDF5 object that can be indexed to read data.
+You can use the <code class="docutils literal notranslate"><span class="pre">[:]</span></code> operator to read the entire data array into memory.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basics_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">]</span><span class="o">.</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">[:])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>test_timeseries pynwb.base.TimeSeries at 0x133234034565072
+Fields:
+  comments: no comments
+  conversion: 1.0
+  data: &lt;HDF5 dataset &quot;data&quot;: shape (10,), type &quot;&lt;i8&quot;&gt;
+  description: an example time series
+  interval: 1
+  offset: 0.0
+  resolution: -1.0
+  timestamps: &lt;HDF5 dataset &quot;timestamps&quot;: shape (10,), type &quot;&lt;f8&quot;&gt;
+  timestamps_unit: seconds
+  unit: m
+
+[100 110 120 130 140 150 160 170 180 190]
+</pre></div>
+</div>
+<p>It is often preferable to read only a portion of the data.
+To do this, index or slice into the <code class="docutils literal notranslate"><span class="pre">data</span></code> attribute just like you
+index or slice a numpy array.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basics_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;test_timeseries&quot;</span><span class="p">]</span><span class="o">.</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[100 110]
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you use <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> as a context manager during read,
+be aware that the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> gets closed and when the
+context completes and the data will not be available outside of the
+context manager <a class="footnote-reference brackets" href="#id7" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>.</p>
+</div>
+<section id="accessing-data">
+<h3>Accessing data<a class="headerlink" href="#accessing-data" title="Link to this heading"></a></h3>
+<p>We can also access the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> data by referencing the names
+of the objects in the hierarchy that contain it. We can access a processing module by indexing
+<code class="docutils literal notranslate"><span class="pre">nwbfile.processing</span></code> with the name of the processing module, <code class="docutils literal notranslate"><span class="pre">&quot;behavior&quot;</span></code>.</p>
+<p>Then, we can access the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object inside of the <code class="docutils literal notranslate"><span class="pre">&quot;behavior&quot;</span></code>
+processing module by indexing it with the name of the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object,
+<code class="docutils literal notranslate"><span class="pre">&quot;Position&quot;</span></code>.</p>
+<p>Finally, we can access the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object inside of the
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object by indexing it with the name of the
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object, <code class="docutils literal notranslate"><span class="pre">&quot;SpatialSeries&quot;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basics_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">][</span><span class="s2">&quot;Position&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;behavior&quot;</span><span class="p">][</span><span class="s2">&quot;Position&quot;</span><span class="p">][</span><span class="s2">&quot;SpatialSeries&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>behavior pynwb.base.ProcessingModule at 0x133234036192128
+Fields:
+  data_interfaces: {
+    Position &lt;class &#39;pynwb.behavior.Position&#39;&gt;
+  }
+  description: processed behavioral data
+
+Position pynwb.behavior.Position at 0x133234036191792
+Fields:
+  spatial_series: {
+    SpatialSeries &lt;class &#39;pynwb.behavior.SpatialSeries&#39;&gt;
+  }
+
+SpatialSeries pynwb.behavior.SpatialSeries at 0x133234036191600
+Fields:
+  comments: no comments
+  conversion: 1.0
+  data: &lt;HDF5 dataset &quot;data&quot;: shape (50, 2), type &quot;&lt;f8&quot;&gt;
+  description: (x,y) position in open field
+  interval: 1
+  offset: 0.0
+  reference_frame: (0,0) is bottom left corner
+  resolution: -1.0
+  timestamps: &lt;HDF5 dataset &quot;timestamps&quot;: shape (50,), type &quot;&lt;f8&quot;&gt;
+  timestamps_unit: seconds
+  unit: meters
+</pre></div>
+</div>
+</section>
+</section>
+<section id="appending-to-an-nwb-file">
+<span id="basic-appending"></span><h2>Appending to an NWB file<a class="headerlink" href="#appending-to-an-nwb-file" title="Link to this heading"></a></h2>
+<p>To append to a file, read it with <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> and set the <code class="docutils literal notranslate"><span class="pre">mode</span></code> argument to <code class="docutils literal notranslate"><span class="pre">'a'</span></code>.
+After you have read the file, you can add <a class="footnote-reference brackets" href="#id8" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a> new data to it using the standard write/add functionality demonstrated
+above. Let’s see how this works by adding another <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> to acquisition.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">io</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="s2">&quot;basics_tutorial.nwb&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mf">10.</span><span class="p">)</span>
+<span class="n">new_time_series</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;new_time_series&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;a new time series&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;n.a.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">new_time_series</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, write the changes back to the file and close it.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id5" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Some data interface objects have a default name. This default name is the type of the data interface. For
+example, the default name for <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImageSegmentation" title="pynwb.ophys.ImageSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSegmentation</span></code></a> is “ImageSegmentation”.</p>
+</aside>
+<aside class="footnote brackets" id="id6" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>HDF5 is the primary backend supported by NWB.</p>
+</aside>
+<aside class="footnote brackets" id="id7" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
+<p>Neurodata sets can be <em>very</em> large, so individual components of the dataset are only loaded into memory when
+you request them. This functionality is only possible if an open file handle is kept around until users want to
+load data.</p>
+</aside>
+<aside class="footnote brackets" id="id8" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">4</a><span class="fn-bracket">]</span></span>
+<p>NWB only supports <em>adding</em> to files. Removal and modifying of existing data is not allowed.</p>
+</aside>
+</aside>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-general-plot-file-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/ccb2067d7b92d2fcb27f60e15f0af306/plot_file.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_file.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/4c82067adf4cfb8778420b1acace3d07/plot_file.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_file.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/98dedb2df1d9e1c0c847a1ff790785af/plot_file.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_file.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="add_remove_containers.html" class="btn btn-neutral float-right" title="Adding/Removing Containers from an NWB File" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
